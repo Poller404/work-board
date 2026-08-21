@@ -279,19 +279,34 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 }
 
 /* ---- Responsive / mobile ---- */
+button.mobile-only{display:none;}
 @media (max-width: 680px){
   body{font-size:15px;}
   #topbar{padding:8px 10px; gap:6px;}
-  #topbar .brand{font-size:14px;}
+  #topbar .brand{font-size:14px; flex:1;}
   #topbar button.btn, #topbar select{padding:9px 10px; font-size:13px;}
-  #searchInput{width:120px;}
-  .column{width:82vw; min-width:82vw; scroll-snap-align:start;}
+  #searchInput{width:100%;}
+  button.mobile-only{display:inline-flex;}
+  #topbar button.topbar-more, #topbar select.topbar-more, #topbar input.topbar-more{display:none;}
+  #topbar.expanded button.topbar-more{display:inline-flex;}
+  #topbar.expanded select.topbar-more, #topbar.expanded input.topbar-more{display:inline-block;}
+  #topbar.expanded{padding-bottom:10px;}
+  #xpBadge, #liveClock{display:none;}
+  .column{width:88vw; min-width:88vw; scroll-snap-align:start;}
   #board{scroll-snap-type:x proximity; padding:10px;}
   .modal-overlay{padding:0; align-items:stretch;}
   .modal{max-width:100%; width:100%; height:100%; border-radius:0; max-height:100%;}
   .modal.wide{max-width:100%;}
   .form-row-inline{flex-direction:column; gap:13px;}
   #bulkBar{flex-wrap:wrap;}
+  button.btn.big-action{white-space:normal; text-align:center; line-height:1.35;}
+  .modal-body button.btn{white-space:normal; text-align:left; line-height:1.3;}
+  .modal-body div[style*="display:flex"]{flex-wrap:wrap;}
+  .modal-footer{flex-wrap:wrap; justify-content:flex-start;}
+  .modal-footer button.btn{white-space:normal;}
+  #statusbar{flex-wrap:wrap; row-gap:2px;}
+  #cmdPaletteOverlay{padding-top:0;}
+  #cmdPaletteBox{max-width:100%; height:100%; border-radius:0;}
 }
 </style>
 </head>
@@ -299,15 +314,16 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 <div id="app">
   <div id="topbar">
     <div class="brand">🗂️ Work Board <span id="boardNameLabel" style="color:var(--text-faint); font-weight:500; font-size:12.5px;"></span></div>
-    <button class="btn" id="btnHotline">📞 Hotline-Anruf</button>
-    <button class="btn" id="btnMeeting">📅 Meeting</button>
-    <button class="btn" id="btnQuickCapture">🤖 Schnellerfassung</button>
-    <button class="btn" id="btnClipboardImport">📋 Aus Zwischenablage</button>
-    <button class="btn" id="btnWhatNow" title="Schlägt den nächsten Task vor">🧭 Was jetzt?</button>
-    <button class="btn" id="btnFocus" title="Fokus-Modus für den aktuellen Task">🎯 Fokus</button>
-    <button class="btn" id="btnSnoozed" title="Tasks in Wiedervorlage" style="display:none;">😴 Wiedervorlage</button>
-    <button class="btn" id="btnSelectMode" title="Mehrere Tasks auswählen">☑️ Auswahl</button>
-    <select id="boardViewSelect" title="Board-Ansicht">
+    <button class="btn icon-btn mobile-only" id="btnMoreToggle" title="Mehr Aktionen">☰</button>
+    <button class="btn topbar-more" id="btnHotline">📞 Hotline-Anruf</button>
+    <button class="btn topbar-more" id="btnMeeting">📅 Meeting</button>
+    <button class="btn topbar-more" id="btnQuickCapture">🤖 Schnellerfassung</button>
+    <button class="btn topbar-more" id="btnClipboardImport">📋 Aus Zwischenablage</button>
+    <button class="btn topbar-more" id="btnWhatNow" title="Schlägt den nächsten Task vor">🧭 Was jetzt?</button>
+    <button class="btn topbar-more" id="btnFocus" title="Fokus-Modus für den aktuellen Task">🎯 Fokus</button>
+    <button class="btn topbar-more" id="btnSnoozed" title="Tasks in Wiedervorlage" style="display:none;">😴 Wiedervorlage</button>
+    <button class="btn topbar-more" id="btnSelectMode" title="Mehrere Tasks auswählen">☑️ Auswahl</button>
+    <select id="boardViewSelect" class="topbar-more" title="Board-Ansicht">
       <option value="status">📋 Status</option>
       <option value="priority">🎯 Nach Priorität</option>
       <option value="eisenhower">🧭 Eisenhower-Matrix</option>
@@ -316,8 +332,8 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
     <div class="spacer"></div>
     <span id="xpBadge" class="pill medium" style="cursor:default;"></span>
     <span id="liveClock" style="font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:13px; margin-right:4px;"></span>
-    <input type="search" id="searchInput" placeholder="Suche (Titel, Ticket, Tag)…">
-    <select id="filterType">
+    <input type="search" id="searchInput" class="topbar-more" placeholder="Suche (Titel, Ticket, Tag)…">
+    <select id="filterType" class="topbar-more">
       <option value="">Alle Typen</option>
       <option value="jira">🎫 Jira</option>
       <option value="mail">✉️ Mail</option>
@@ -325,17 +341,18 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
       <option value="meeting">📅 Meeting</option>
       <option value="adhoc">⚡ Ad-hoc</option>
     </select>
-    <select id="filterPriority">
+    <select id="filterPriority" class="topbar-more">
       <option value="">Alle Prioritäten</option>
       <option value="critical">🔴 Kritisch</option>
       <option value="high">🟠 Hoch</option>
       <option value="medium">🔵 Mittel</option>
       <option value="low">⚪ Niedrig</option>
     </select>
-    <button class="btn" id="btnDyce">🧾 Tagesabschluss</button>
-    <button class="btn" id="btnStats">📊 Statistik</button>
-    <button class="btn" id="btnArchive">🗄️ Archiv</button>
+    <button class="btn topbar-more" id="btnDyce">🧾 Tagesabschluss</button>
+    <button class="btn topbar-more" id="btnStats">📊 Statistik</button>
+    <button class="btn topbar-more" id="btnArchive">🗄️ Archiv</button>
     <button class="btn primary" id="btnQuickSave" title="Backup in OneDrive/iCloud-Ordner speichern (Strg+S)">💾 Sichern</button>
+    <button class="btn" id="btnCloudSyncTopbar" title="Cloud-Sync jetzt anstoßen">☁️ Sync</button>
     <button class="btn icon-btn" id="btnSettings" title="Einstellungen">⚙️</button>
   </div>
 
@@ -377,6 +394,7 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 
   <div id="statusbar">
     <span id="storageLabel">–</span>
+    <span id="cloudStatusLabel"></span>
     <span id="saveLabel"></span>
     <span id="dirtyLabel"></span>
     <div class="spacer"></div>
@@ -900,14 +918,14 @@ var I18N = {
     btnHotline:'📞 Hotline-Anruf', btnMeeting:'📅 Meeting', btnQuickCapture:'🤖 Schnellerfassung',
     btnClipboardImport:'📋 Aus Zwischenablage', btnWhatNow:'🧭 Was jetzt?', btnFocus:'🎯 Fokus',
     btnSelectMode:'☑️ Auswahl', btnDyce:'🧾 Tagesabschluss', btnStats:'📊 Statistik',
-    btnArchive:'🗄️ Archiv', btnQuickSave:'💾 Sichern', searchPlaceholder:'Suche (Titel, Ticket, Tag)…',
+    btnArchive:'🗄️ Archiv', btnQuickSave:'💾 Sichern', btnCloudSyncTopbar:'☁️ Sync', searchPlaceholder:'Suche (Titel, Ticket, Tag)…',
     optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten'
   },
   en: {
     btnHotline:'📞 Hotline Call', btnMeeting:'📅 Meeting', btnQuickCapture:'🤖 Quick Capture',
     btnClipboardImport:'📋 From Clipboard', btnWhatNow:'🧭 What now?', btnFocus:'🎯 Focus',
     btnSelectMode:'☑️ Select', btnDyce:'🧾 Day Summary', btnStats:'📊 Stats',
-    btnArchive:'🗄️ Archive', btnQuickSave:'💾 Save', searchPlaceholder:'Search (title, ticket, tag)…',
+    btnArchive:'🗄️ Archive', btnQuickSave:'💾 Save', btnCloudSyncTopbar:'☁️ Sync', searchPlaceholder:'Search (title, ticket, tag)…',
     optAllTypes:'All types', optAllPrio:'All priorities'
   }
 };
@@ -925,6 +943,7 @@ function applyLanguage(){
   document.getElementById('btnStats').textContent = dict.btnStats;
   document.getElementById('btnArchive').textContent = dict.btnArchive;
   document.getElementById('btnQuickSave').textContent = dict.btnQuickSave;
+  document.getElementById('btnCloudSyncTopbar').textContent = dict.btnCloudSyncTopbar;
   document.getElementById('searchInput').placeholder = dict.searchPlaceholder;
   document.querySelector('#filterType option[value=""]').textContent = dict.optAllTypes;
   document.querySelector('#filterPriority option[value=""]').textContent = dict.optAllPrio;
@@ -2213,8 +2232,9 @@ function renderStatusbar(){
   } else if(!FS_SUPPORTED){
     storageLabel.textContent = '💾 Browser-Speicher (Datei-Anbindung in diesem Browser nicht unterstützt)';
   } else {
-    storageLabel.textContent = '💾 Nur Browser-Speicher (nicht mit Cloud verbunden)';
+    storageLabel.textContent = '💾 Nur Browser-Speicher';
   }
+  renderCloudSyncStatus();
   var count = state.tasks.filter(function(t){ return !t.archived; }).length;
   document.getElementById('taskCountLabel').textContent = count + ' aktive Tasks';
   document.getElementById('boardNameLabel').textContent = '· ' + state.settings.activeBoardName;
@@ -3484,15 +3504,29 @@ function cloudJoinExisting(){
   }).finally(function(){ cloudSyncBusy = false; });
 }
 function renderCloudSyncStatus(){
-  var el = document.getElementById('cloudSyncStatus');
-  if(!el) return;
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled){
-    el.innerHTML = '<span class="dot warn"></span> Nicht aktiv';
-  } else if(cfg.lastError){
-    el.innerHTML = '<span class="dot warn"></span> Fehler: ' + escapeHtml(cfg.lastError);
-  } else {
-    el.innerHTML = '<span class="dot ok"></span> Aktiv – zuletzt synchronisiert ' + (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) : 'nie');
+  var el = document.getElementById('cloudSyncStatus');
+  if(el){
+    if(!cfg.enabled){
+      el.innerHTML = '<span class="dot warn"></span> Nicht aktiv';
+    } else if(cfg.lastError){
+      el.innerHTML = '<span class="dot warn"></span> Fehler: ' + escapeHtml(cfg.lastError);
+    } else {
+      el.innerHTML = '<span class="dot ok"></span> Aktiv – zuletzt synchronisiert ' + (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) : 'nie');
+    }
+  }
+  var bar = document.getElementById('cloudStatusLabel');
+  if(bar){
+    if(!cfg.enabled){
+      bar.textContent = '';
+      bar.removeAttribute('title');
+    } else if(cfg.lastError){
+      bar.textContent = '· ☁️ Sync-Fehler';
+      bar.title = cfg.lastError;
+    } else {
+      bar.textContent = '· ☁️ Sync aktiv' + (cfg.lastSyncedAt ? ' (' + new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) + ')' : ' (noch nicht synchronisiert)');
+      bar.removeAttribute('title');
+    }
   }
 }
 
@@ -4494,6 +4528,19 @@ document.getElementById('btnStats').addEventListener('click', openStats);
 document.getElementById('btnArchive').addEventListener('click', toggleArchiveView);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
 document.getElementById('btnQuickSave').addEventListener('click', exportBackup);
+document.getElementById('btnMoreToggle').addEventListener('click', function(){
+  document.getElementById('topbar').classList.toggle('expanded');
+});
+document.getElementById('btnCloudSyncTopbar').addEventListener('click', function(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled){
+    toast('☁️ Cloud-Sync ist noch nicht eingerichtet – siehe Einstellungen.');
+    openSettings();
+    return;
+  }
+  toast('☁️ Synchronisiere…');
+  cloudPushNow().then(function(){ return cloudPullNow(true); });
+});
 document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
