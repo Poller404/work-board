@@ -1549,27 +1549,116 @@ function openQrShare(t){
 
 /* =========================================================
    CLOUD-SYNC GERÄTE-KOPPLUNG PER QR (wie z.B. bei 1Password)
-   Der QR-Code enthält Token+Gist-ID+Passphrase im Klartext (per
-   Design – ähnlich einem Passwort). Format: "WBP1:<token>:<gistId>:<passphrase>"
-   ("WBP1:" als Erkennungs-Präfix, damit "📋 Aus Zwischenablage" den
-   Kopplungs-Code von normalem Task-Import unterscheiden kann).
+   Der QR-Code enthält NUR Token+Gist-ID (nicht die Passphrase – die
+   wird aus Sicherheitsgründen auf dem neuen Gerät separat von Hand
+   eingegeben). Format: "WBP1:<token>:<gistId>" ("WBP1:" als
+   Erkennungs-Präfix, damit Scanner/Zwischenablage-Import den
+   Kopplungs-Code von normalem Task-Import unterscheiden können).
    ========================================================= */
 function openCloudPairQr(){
   var cfg = getCloudSyncConfig();
   if(!cfg.enabled || !cfg.gistId){ toast('Bitte zuerst auf diesem Gerät Cloud-Sync einrichten.'); return; }
-  var text = 'WBP1:' + cfg.token + ':' + cfg.gistId + ':' + cfg.passphrase;
+  var text = 'WBP1:' + cfg.token + ':' + cfg.gistId;
   var result = encodeQR(text);
   var html =
     '<div class="modal-header"><h2>📱 Gerät koppeln</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body" style="text-align:center;">' +
       (result ?
         '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 6)+'</div>' +
-        '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen, den erkannten Text <strong>kopieren</strong> (nicht öffnen). Dann auf dem Handy Work Board aufrufen und dort oben auf <strong>📋 Aus Zwischenablage</strong> tippen – Cloud-Sync wird automatisch mit den Zugangsdaten dieses Geräts verbunden, kein Abtippen von Token/Passphrase nötig.</p>' +
-        '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token und deine Passphrase im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
-        : '<p class="hint">Deine Passphrase ist leider zu lang, um zusammen mit Token und Gist-ID in einen QR-Code zu passen. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen), oder eine kürzere Passphrase wählen.</p>') +
+        '<p class="hint" style="margin-top:10px;">Auf dem Handy in Work Board beim Start (oder ⚙️ Einstellungen → Cloud-Sync) <strong>"📷 Mit QR-Code verbinden"</strong> wählen und diesen Code scannen – Token und Gist-ID werden automatisch übernommen. Die <strong>Passphrase</strong> musst du danach zur Sicherheit selbst eingeben, sie steckt nicht im QR-Code.</p>' +
+        '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
+        : '<p class="hint">Token und Gist-ID sind leider zu lang für einen QR-Code. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen).</p>') +
     '</div>' +
     '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
   openModal(html, {wide:true});
+}
+
+/* ---- Passphrase-Abfrage nach QR-Scan/Zwischenablage-Kopplung ---- */
+function promptPassphraseAndJoin(token, gistId){
+  var html =
+    '<div class="modal-header"><h2>🔑 Passphrase eingeben</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-bottom:10px;">Kopplungs-Code erkannt. Aus Sicherheitsgründen wird die Passphrase nicht im QR-Code übertragen – bitte auf diesem Gerät einmalig eingeben (dieselbe wie auf dem anderen Gerät).</p>' +
+      '<div class="form-row"><label>Passphrase</label><input type="password" id="pairPassphraseInput" placeholder="Eigene, sichere Passphrase"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn ghost" data-close-modal>Abbrechen</button><button class="btn primary" id="pairConfirmBtn">Verbinden</button></div>';
+  openModal(html);
+  var input = document.getElementById('pairPassphraseInput');
+  input.focus();
+  function submit(){
+    var passphrase = input.value;
+    if(!passphrase){ toast('Bitte Passphrase eingeben.'); return; }
+    closeModal();
+    var cfg = getCloudSyncConfig();
+    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
+    setCloudSyncConfig(cfg);
+    toast('☁️ Verbinde und lade Cloud-Stand…');
+    cloudJoinExisting().catch(function(){});
+  }
+  document.getElementById('pairConfirmBtn').addEventListener('click', submit);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); });
+}
+
+/* ---- Kamera-QR-Scanner (nutzt die native BarcodeDetector-API des Browsers,
+   keine externe Library). Fällt bei fehlender Unterstützung (v.a. iOS Safari)
+   auf den Hinweis zurück, stattdessen mit der Kamera-App zu scannen und über
+   "📋 Aus Zwischenablage" zu importieren. ---- */
+function openQrScanner(){
+  if(!('BarcodeDetector' in window)){
+    toast('Kamera-Scan wird von diesem Browser nicht unterstützt. Bitte stattdessen mit der normalen Kamera-App scannen, Text kopieren und "📋 Aus Zwischenablage" verwenden.');
+    return;
+  }
+  var html =
+    '<div class="modal-header"><h2>📷 QR-Code scannen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body" style="text-align:center;">' +
+      '<video id="qrScanVideo" playsinline autoplay muted style="width:100%; max-width:400px; border-radius:8px; background:#000;"></video>' +
+      '<p class="hint" id="qrScanStatus" style="margin-top:10px;">Kamera wird gestartet…</p>' +
+    '</div>';
+  openModal(html);
+  var video = document.getElementById('qrScanVideo');
+  var statusEl = document.getElementById('qrScanStatus');
+  var stream = null;
+  var stopped = false;
+  modalCloseCleanup = function(){
+    stopped = true;
+    if(stream){ stream.getTracks().forEach(function(tr){ tr.stop(); }); stream = null; }
+  };
+  var detector;
+  try{ detector = new BarcodeDetector({formats:['qr_code']}); }
+  catch(e){ statusEl.textContent = 'QR-Scanner konnte nicht gestartet werden: ' + e.message; return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){
+    if(stopped){ s.getTracks().forEach(function(tr){ tr.stop(); }); return; }
+    stream = s;
+    video.srcObject = s;
+    statusEl.textContent = 'Kamera auf den QR-Code richten…';
+    function scanLoop(){
+      if(stopped) return;
+      detector.detect(video).then(function(codes){
+        if(stopped) return;
+        if(codes && codes.length){
+          var text = codes[0].rawValue || '';
+          if(text.indexOf('WBP1:') === 0){
+            var parts = text.slice(5).split(':');
+            var token = parts[0] || '';
+            var gistId = parts[1] || '';
+            if(token && gistId){
+              modalCloseCleanup && modalCloseCleanup();
+              closeModal();
+              promptPassphraseAndJoin(token, gistId);
+              return;
+            }
+          }
+          statusEl.textContent = 'QR-Code erkannt, aber kein gültiger Work-Board-Kopplungs-Code – weiter versuchen…';
+        }
+        requestAnimationFrame(scanLoop);
+      }).catch(function(){
+        requestAnimationFrame(scanLoop);
+      });
+    }
+    requestAnimationFrame(scanLoop);
+  }).catch(function(err){
+    statusEl.textContent = 'Kamera-Zugriff nicht möglich (' + err.message + '). Bitte stattdessen mit der normalen Kamera-App scannen und über "📋 Aus Zwischenablage" importieren.';
+  });
 }
 
 /* =========================================================
@@ -2286,10 +2375,12 @@ function openModal(html, opts){
   var closeEls = root.querySelectorAll('[data-close-modal]');
   closeEls.forEach(function(el){ el.addEventListener('click', closeModal); });
 }
+var modalCloseCleanup = null;
 function closeModal(){
   document.getElementById('modalOverlay').classList.add('hidden');
   document.getElementById('modalRoot').innerHTML = '';
   openTaskModalId = null;
+  if(modalCloseCleanup){ var fn = modalCloseCleanup; modalCloseCleanup = null; fn(); }
 }
 document.addEventListener('paste', function(e){
   if(!openTaskModalId) return;
@@ -3061,13 +3152,8 @@ function handleCloudPairPayload(text){
   var parts = text.slice(5).split(':');
   var token = parts[0] || '';
   var gistId = parts[1] || '';
-  var passphrase = parts.slice(2).join(':');
-  if(!token || !gistId || !passphrase){ toast('Ungültiger Kopplungs-Code.'); return; }
-  var cfg = getCloudSyncConfig();
-  cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
-  setCloudSyncConfig(cfg);
-  toast('📱 Kopplungs-Code erkannt – verbinde mit Cloud-Sync…');
-  cloudJoinExisting().catch(function(){});
+  if(!token || !gistId){ toast('Ungültiger Kopplungs-Code.'); return; }
+  promptPassphraseAndJoin(token, gistId);
 }
 function importFromClipboard(){
   if(!navigator.clipboard || !navigator.clipboard.readText){
@@ -3602,10 +3688,11 @@ function openSettings(){
       '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
         (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
       '</div></div>' +
-      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📱 Gerät per QR-Code koppeln</strong> verwenden. Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
+      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📷 Mit QR-Code verbinden</strong> verwenden (auf dem bereits eingerichteten Gerät dafür <strong>📱 Gerät per QR-Code koppeln</strong> antippen, um den Code anzuzeigen). Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
         '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
         '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
+        '<button class="btn" id="btnCloudScanQr">📷 Mit QR-Code verbinden</button>' +
         (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
         '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
         (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
@@ -3796,6 +3883,9 @@ function openSettings(){
     setCloudSyncConfig(cfg);
     toast('☁️ Verbinde und lade Cloud-Stand…');
     cloudJoinExisting().catch(function(){});
+  });
+  document.getElementById('btnCloudScanQr').addEventListener('click', function(){
+    openQrScanner();
   });
   var copyGistBtn = document.getElementById('btnCopyGistId');
   if(copyGistBtn) copyGistBtn.addEventListener('click', function(){
@@ -4757,7 +4847,8 @@ function showOnboardingIfNeeded(){
         : '') +
       (getCloudSyncConfig().enabled ?
         '<div class="hint" style="margin-bottom:14px;">☁️ Cloud-Sync ist bereits eingerichtet – deine Daten werden gleich automatisch geladen.</div>'
-        : '<button class="btn big-action" id="obCloudSync" style="width:100%; margin-bottom:10px; justify-content:center;">☁️ Schon auf einem anderen Gerät eingerichtet? Cloud-Sync verbinden</button>' +
+        : '<button class="btn primary big-action" id="obQrScan" style="width:100%; margin-bottom:10px; justify-content:center;">📷 Mit QR-Code verbinden</button>' +
+          '<button class="btn big-action" id="obCloudSync" style="width:100%; margin-bottom:10px; justify-content:center;">🔗 Manuell verbinden (Token/Gist-ID eintragen)</button>' +
           '<div class="hint" style="margin-bottom:14px;">Ende-zu-Ende-verschlüsselt über einen privaten GitHub Gist. Neu einrichten geht auch jederzeit später unter ⚙️ Einstellungen.</div>') +
       '<p class="hint">Für eine Sicherung in deinem OneDrive- oder iCloud-Drive-Ordner (z.B. für ein zweites Gerät) klicke jederzeit oben auf <strong>💾 Sichern</strong>. Details findest du unter ⚙️ Einstellungen.</p>' +
       '<button class="btn big-action" id="obSkip" style="width:100%; justify-content:center;">Los geht\'s</button>' +
@@ -4769,6 +4860,12 @@ function showOnboardingIfNeeded(){
       pickNewFile().then(function(){ closeModal(); renderAll(); }).catch(function(err){
         if(err.name !== 'AbortError') toast('Fehler: ' + err.message);
       });
+    });
+  }
+  var qrScanBtn = document.getElementById('obQrScan');
+  if(qrScanBtn){
+    qrScanBtn.addEventListener('click', function(){
+      openQrScanner();
     });
   }
   var cloudBtn = document.getElementById('obCloudSync');

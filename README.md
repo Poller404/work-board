@@ -65,18 +65,26 @@ Geräts – nie unterwegs oder auf einem Server.
 
 ### 📱 Handy per QR-Code koppeln (wie z.B. bei 1Password)
 
-Sobald auf einem Gerät Cloud-Sync aktiv ist, erscheint in ⚙️ Einstellungen → Cloud-Sync der Button
-**"📱 Gerät per QR-Code koppeln"**. Das zeigt einen QR-Code mit Token, Gist-ID und Passphrase
-dieses Geräts.
+**Auf dem bereits eingerichteten Gerät:** in ⚙️ Einstellungen → Cloud-Sync auf **"📱 Gerät per
+QR-Code koppeln"** klicken. Das zeigt einen QR-Code mit Token und Gist-ID dieses Geräts (**ohne**
+Passphrase – die wird aus Sicherheitsgründen nie im QR-Code übertragen).
 
-**Aufs Handy übertragen:** Mit der Handy-Kamera scannen, den erkannten Text **kopieren** (nicht
-öffnen), dann auf dem Handy Work Board aufrufen und oben auf **"📋 Aus Zwischenablage"** tippen –
-Cloud-Sync wird automatisch verbunden, kein Abtippen von Token oder Passphrase nötig.
+**Auf dem neuen Gerät (z.B. Smartphone):** beim Willkommensbildschirm (oder später in
+⚙️ Einstellungen → Cloud-Sync) auf **"📷 Mit QR-Code verbinden"** tippen. Das öffnet die
+Handy-Kamera direkt in der App (nutzt die native Scan-Funktion des Browsers, ohne zusätzliche
+Kamera-App). Code scannen → Token und Gist-ID werden automatisch übernommen, danach fragt die App
+nach der **Passphrase** – die muss man einmalig selbst eingeben (zweite Sicherheitsebene: wer nur
+den QR-Code sieht/fotografiert, kommt ohne Passphrase trotzdem nicht an die Daten).
 
-🔒 Der QR-Code enthält die Zugangsdaten im Klartext (Design-bedingt, wie ein Passwort) – nicht
-fotografieren oder weiterleiten, Fenster nach dem Koppeln schliessen. Ist die Passphrase zu lang
-für die QR-Kapazität, weist die App darauf hin und man trägt die Daten stattdessen manuell ein
-(Schritt 3 oben).
+🔒 Der QR-Code enthält deinen GitHub-Token im Klartext (Design-bedingt) – trotzdem nicht
+fotografieren/weiterleiten, Fenster nach dem Koppeln schliessen. Die Passphrase steckt bewusst
+nicht mit drin, damit ein blosses Foto des QR-Codes allein nicht reicht, um an die Daten zu
+kommen.
+
+Unterstützt der Browser keinen Kamera-Scan direkt in der App (z.B. iPhone/Safari – dort gibt es
+die nötige Browser-Funktion `BarcodeDetector` bislang nicht), zeigt die App das automatisch an und
+verweist auf die Alternative: mit der normalen Kamera-App scannen, erkannten Text kopieren, in
+Work Board auf **"📋 Aus Zwischenablage"** tippen – landet ebenfalls bei der Passphrase-Abfrage.
 
 Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
 Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
