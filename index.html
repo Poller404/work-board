@@ -3429,6 +3429,60 @@ function cloudPullNow(showToastIfUpToDate){
     renderCloudSyncStatus();
   }).finally(function(){ cloudSyncBusy = false; });
 }
+/* Explizites "Mit bestehender Sync verbinden" (z.B. auf einem zweiten Gerät):
+   hier NICHT nach Zeitstempel entscheiden — ein frisch geöffnetes, leeres Board
+   hat immer einen ganz aktuellen Zeitstempel und würde den echten Cloud-Stand
+   sonst fälschlich als "schon aktuell" ignorieren. Bei explizitem Verbinden ist
+   die Absicht klar: den vorhandenen Cloud-Stand übernehmen. */
+function cloudJoinExisting(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.token || !cfg.passphrase || !cfg.gistId){ toast('Bitte Token, Passphrase und Gist-ID ausfüllen.'); return Promise.reject(); }
+  cloudSyncBusy = true;
+  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+  .then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(json){
+    var file = json.files && json.files[CLOUD_SYNC_FILE];
+    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden. Stimmt die Gist-ID?'); }
+    return cloudDecryptPayload(file.content, cfg.passphrase);
+  }).then(function(result){
+    cfg.enabled = true;
+    cfg.lastSyncedAt = nowIso();
+    cfg.lastError = '';
+    setCloudSyncConfig(cfg);
+    function adopt(){
+      state = migrateState(result.state);
+      renderAll();
+      save();
+      toast('☁️ Verbunden – Cloud-Stand geladen.');
+      renderCloudSyncStatus();
+      openSettings();
+    }
+    var localHasData = state.tasks.length > 0;
+    if(localHasData){
+      confirmDialog(
+        'Es liegen bereits lokale Tasks auf diesem Gerät. Durch den Cloud-Stand ersetzen? (Dein aktueller lokaler Stand geht dabei verloren, ausser du hast vorher "💾 Sichern" gemacht.)',
+        'Ersetzen',
+        function(){ closeModal(); adopt(); },
+        function(){
+          closeModal();
+          toast('Lokaler Stand behalten. Wird beim nächsten Speichern in die Cloud hochgeladen (überschreibt dort den bisherigen Stand).');
+          renderCloudSyncStatus();
+          openSettings();
+        }
+      );
+    } else {
+      adopt();
+    }
+  }).catch(function(err){
+    cfg.lastError = err.message || String(err);
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+    toast('Fehler: ' + cfg.lastError);
+    openSettings();
+  }).finally(function(){ cloudSyncBusy = false; });
+}
 function renderCloudSyncStatus(){
   var el = document.getElementById('cloudSyncStatus');
   if(!el) return;
@@ -3638,10 +3692,8 @@ function openSettings(){
     cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
     setCloudSyncConfig(cfg);
     if(gistId){
-      cfg.enabled = true;
-      setCloudSyncConfig(cfg);
-      toast('☁️ Verbinde…');
-      cloudPullNow(true).then(function(){ openSettings(); });
+      toast('☁️ Verbinde und lade Cloud-Stand…');
+      cloudJoinExisting().catch(function(){});
     } else {
       toast('☁️ Erstelle neuen Sync-Speicher…');
       cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
