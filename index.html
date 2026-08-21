@@ -105,6 +105,11 @@ button.icon-btn:hover{background:var(--surface-2); color:var(--text);}
   background:var(--warn-bg); color:var(--warn); border-bottom:1px solid var(--border); font-weight:600;
 }
 #externalChangeBanner.show{display:flex;}
+#cloudChangeBanner{
+  display:none; align-items:center; gap:10px; padding:8px 16px;
+  background:var(--info-bg,rgba(0,101,255,.1)); color:var(--accent); border-bottom:1px solid var(--border); font-weight:600;
+}
+#cloudChangeBanner.show{display:flex;}
 
 /* ---- Board ---- */
 #board{flex:1; overflow-x:auto; overflow-y:hidden; display:flex; gap:12px; padding:14px; align-items:flex-start;}
@@ -360,6 +365,12 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
     <span>⚠️ Die Datei wurde extern verändert (evtl. von einem anderen Gerät synchronisiert).</span>
     <button class="btn" id="btnReloadExternal">Neu laden</button>
     <button class="btn ghost" id="btnDismissExternal">Ignorieren</button>
+  </div>
+
+  <div id="cloudChangeBanner">
+    <span>☁️ Neuere Daten in der Cloud-Synchronisation gefunden (vermutlich von einem anderen Gerät).</span>
+    <button class="btn" id="btnReloadCloud">Cloud-Stand laden</button>
+    <button class="btn ghost" id="btnDismissCloud">Ignorieren (meinen Stand behalten)</button>
   </div>
 
   <div id="board"></div>
@@ -672,6 +683,7 @@ function save(){
   saveTimer = setTimeout(function(){
     doSave();
   }, 600);
+  scheduleCloudPush();
 }
 function doSave(){
   var label = document.getElementById('saveLabel');
@@ -3237,6 +3249,200 @@ function importBackupFile(file){
 }
 
 /* =========================================================
+   CLOUD-SYNC (Ende-zu-Ende-verschlüsselt via privatem GitHub Gist)
+   Token/Passphrase/Gist-ID leben bewusst NICHT in state.settings,
+   damit sie nie in Sichern-Exports, Ausdrucken oder der Gist-Nutzlast
+   selbst landen — nur in einem eigenen, nicht synchronisierten
+   localStorage-Schlüssel pro Browser/Gerät.
+   ========================================================= */
+var CLOUD_SYNC_KEY = 'wb-cloud-sync-config';
+var CLOUD_SYNC_FILE = 'workboard-sync.json.txt';
+var cloudSyncPushTimer = null;
+var cloudSyncBusy = false;
+
+function getCloudSyncConfig(){
+  try{
+    var raw = localStorage.getItem(CLOUD_SYNC_KEY);
+    if(!raw) return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''};
+    var cfg = JSON.parse(raw);
+    return Object.assign({enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''}, cfg);
+  }catch(e){
+    return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''};
+  }
+}
+function setCloudSyncConfig(cfg){
+  try{ localStorage.setItem(CLOUD_SYNC_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+
+/* ---- Verschlüsselung (Web Crypto API, AES-256-GCM + PBKDF2) ---- */
+function cloudDeriveKey(passphrase, saltBytes){
+  var enc = new TextEncoder();
+  return crypto.subtle.importKey('raw', enc.encode(passphrase), {name:'PBKDF2'}, false, ['deriveKey']).then(function(keyMaterial){
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt: saltBytes, iterations: 100000, hash:'SHA-256'},
+      keyMaterial,
+      {name:'AES-GCM', length:256},
+      false,
+      ['encrypt','decrypt']
+    );
+  });
+}
+function bufToB64(buf){
+  var bytes = new Uint8Array(buf);
+  var bin = '';
+  for(var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64ToBuf(b64){
+  var bin = atob(b64);
+  var bytes = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function cloudEncryptState(passphrase){
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return cloudDeriveKey(passphrase, salt).then(function(key){
+    var plaintext = new TextEncoder().encode(JSON.stringify(state));
+    return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, plaintext);
+  }).then(function(ciphertext){
+    return JSON.stringify({
+      v:1, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(ciphertext),
+      updatedAt: state.meta.updatedAt
+    });
+  });
+}
+function cloudDecryptPayload(payloadText, passphrase){
+  var payload = JSON.parse(payloadText);
+  var salt = b64ToBuf(payload.salt);
+  var iv = b64ToBuf(payload.iv);
+  var ciphertext = b64ToBuf(payload.data);
+  return cloudDeriveKey(passphrase, salt).then(function(key){
+    return crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ciphertext);
+  }).then(function(plainBuf){
+    var text = new TextDecoder().decode(plainBuf);
+    return {state: JSON.parse(text), updatedAt: payload.updatedAt};
+  });
+}
+
+/* ---- GitHub Gist API ---- */
+function cloudGistHeaders(token){
+  return {
+    'Authorization': 'token ' + token,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+}
+function cloudCreateGist(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.token || !cfg.passphrase){ toast('Bitte zuerst Token und Passphrase eingeben.'); return Promise.reject(); }
+  return cloudEncryptState(cfg.passphrase).then(function(encrypted){
+    return fetch('https://api.github.com/gists', {
+      method:'POST',
+      headers: cloudGistHeaders(cfg.token),
+      body: JSON.stringify({
+        description: 'Work Board Sync (verschlüsselt – nicht lesbar ohne Passphrase)',
+        public: false,
+        files: (function(){ var o={}; o[CLOUD_SYNC_FILE] = {content: encrypted}; return o; })()
+      })
+    });
+  }).then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(json){
+    cfg.gistId = json.id;
+    cfg.enabled = true;
+    cfg.lastSyncedAt = nowIso();
+    cfg.lastError = '';
+    setCloudSyncConfig(cfg);
+    toast('☁️ Neuer verschlüsselter Sync-Speicher erstellt.');
+    renderCloudSyncStatus();
+    return cfg;
+  }).catch(function(err){
+    cfg.lastError = err.message || String(err);
+    setCloudSyncConfig(cfg);
+    toast('Fehler beim Erstellen: ' + cfg.lastError);
+    renderCloudSyncStatus();
+    throw err;
+  });
+}
+function cloudPushNow(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
+  if(cloudSyncBusy) return Promise.resolve();
+  cloudSyncBusy = true;
+  return cloudEncryptState(cfg.passphrase).then(function(encrypted){
+    return fetch('https://api.github.com/gists/' + cfg.gistId, {
+      method:'PATCH',
+      headers: cloudGistHeaders(cfg.token),
+      body: JSON.stringify({files: (function(){ var o={}; o[CLOUD_SYNC_FILE] = {content: encrypted}; return o; })()})
+    });
+  }).then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(){
+    cfg.lastSyncedAt = nowIso();
+    cfg.lastError = '';
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+  }).catch(function(err){
+    cfg.lastError = err.message || String(err);
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+  }).finally(function(){ cloudSyncBusy = false; });
+}
+function scheduleCloudPush(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled) return;
+  if(cloudSyncPushTimer) clearTimeout(cloudSyncPushTimer);
+  cloudSyncPushTimer = setTimeout(cloudPushNow, 8000);
+}
+function cloudPullNow(showToastIfUpToDate){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
+  if(cloudSyncBusy) return Promise.resolve();
+  cloudSyncBusy = true;
+  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+  .then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(json){
+    var file = json.files && json.files[CLOUD_SYNC_FILE];
+    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden.'); }
+    return cloudDecryptPayload(file.content, cfg.passphrase);
+  }).then(function(result){
+    cfg.lastSyncedAt = nowIso();
+    cfg.lastError = '';
+    setCloudSyncConfig(cfg);
+    var remoteTime = new Date(result.updatedAt).getTime();
+    var localTime = new Date(state.meta.updatedAt).getTime();
+    if(remoteTime > localTime + 2000){
+      window.__pendingCloudState = result.state;
+      document.getElementById('cloudChangeBanner').classList.add('show');
+    } else if(showToastIfUpToDate){
+      toast('☁️ Bereits aktuell.');
+    }
+    renderCloudSyncStatus();
+  }).catch(function(err){
+    cfg.lastError = err.message || String(err);
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+  }).finally(function(){ cloudSyncBusy = false; });
+}
+function renderCloudSyncStatus(){
+  var el = document.getElementById('cloudSyncStatus');
+  if(!el) return;
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled){
+    el.innerHTML = '<span class="dot warn"></span> Nicht aktiv';
+  } else if(cfg.lastError){
+    el.innerHTML = '<span class="dot warn"></span> Fehler: ' + escapeHtml(cfg.lastError);
+  } else {
+    el.innerHTML = '<span class="dot ok"></span> Aktiv – zuletzt synchronisiert ' + (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) : 'nie');
+  }
+}
+
+/* =========================================================
    SETTINGS MODAL
    ========================================================= */
 function openSettings(){
@@ -3250,13 +3456,25 @@ function openSettings(){
       '<div class="hint" style="margin-bottom:10px;"><strong>Einmalige Einrichtung für automatisches Ablegen im Cloud-Ordner:</strong> Browser-Einstellungen → Downloads → Standard-Speicherort auf deinen OneDrive- oder iCloud-Drive-Ordner ändern (und "Vor dem Herunterladen jedes Mal fragen" aktivieren, damit du beim Ersetzen bestätigen kannst). Danach landet jedes Backup automatisch synchron in der Cloud.</div>' +
       (FS_SUPPORTED ?
         '<div style="display:flex; gap:8px; margin-bottom:6px;">' +
-          '<button class="btn" id="btnPickNewFile">📄 Direkt mit Datei verbinden (nur falls über einen Server geöffnet)…</button>' +
+          '<button class="btn" id="btnPickNewFile">📄 Direkt mit Datei verbinden (neu, live auto-speichernd)…</button>' +
           '<button class="btn" id="btnPickExistingFile">📂 Bestehende Datei öffnen…</button>' +
         '</div>'
         : '') +
       '<div style="display:flex; gap:8px; margin:10px 0;">' +
         '<button class="btn primary" id="btnExportJson">💾 Jetzt sichern (.json herunterladen)</button>' +
         '<label class="btn" style="margin:0;">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
+      '</div>' +
+
+      '<div class="section-title">☁️ Cloud-Sync (Ende-zu-Ende-verschlüsselt)</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt).</div>' +
+      '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
+      '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
+      '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
+      '<div class="form-row"><label>Gist-ID (leer lassen, um neu zu erstellen)</label><input id="sCloudGistId" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="z.B. auf einem zweiten Gerät die ID von hier eintragen"></div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
+        '<button class="btn primary" id="btnCloudConnect">🔗 Verbinden / Neu erstellen</button>' +
+        '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
+        (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
       '</div>' +
 
       '<div class="section-title">Darstellung</div>' +
@@ -3408,6 +3626,38 @@ function openSettings(){
     var file = e.target.files[0];
     if(!file) return;
     importBackupFile(file);
+  });
+
+  renderCloudSyncStatus();
+  document.getElementById('btnCloudConnect').addEventListener('click', function(){
+    var token = document.getElementById('sCloudToken').value.trim();
+    var passphrase = document.getElementById('sCloudPassphrase').value;
+    var gistId = document.getElementById('sCloudGistId').value.trim();
+    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    var cfg = getCloudSyncConfig();
+    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
+    setCloudSyncConfig(cfg);
+    if(gistId){
+      cfg.enabled = true;
+      setCloudSyncConfig(cfg);
+      toast('☁️ Verbinde…');
+      cloudPullNow(true).then(function(){ openSettings(); });
+    } else {
+      toast('☁️ Erstelle neuen Sync-Speicher…');
+      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
+    }
+  });
+  document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
+    toast('☁️ Synchronisiere…');
+    cloudPushNow().then(function(){ return cloudPullNow(true); });
+  });
+  var cloudDisableBtn = document.getElementById('btnCloudDisable');
+  if(cloudDisableBtn) cloudDisableBtn.addEventListener('click', function(){
+    var cfg = getCloudSyncConfig();
+    cfg.enabled = false;
+    setCloudSyncConfig(cfg);
+    toast('Cloud-Sync deaktiviert (Konfiguration bleibt gespeichert).');
+    openSettings();
   });
 
   document.getElementById('sTheme').addEventListener('change', function(e){
@@ -3866,6 +4116,11 @@ function cmdActionsList(){
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
+    {icon:'☁️', label:'Cloud-Sync jetzt ausführen', run: function(){
+      if(!getCloudSyncConfig().enabled){ toast('Cloud-Sync ist nicht eingerichtet (⚙️ Einstellungen).'); return; }
+      toast('☁️ Synchronisiere…');
+      cloudPushNow().then(function(){ return cloudPullNow(true); });
+    }},
     {icon:'📝', label:'Tages-Recap erstellen', run: openDailyRecap},
     {icon:'📄', label:'Wochenbericht erstellen', run: openWeeklyReport},
     {icon:'🎡', label:'Entscheidungs-Glücksrad', run: openDecisionWheel},
@@ -4205,6 +4460,20 @@ document.getElementById('btnDismissExternal').addEventListener('click', function
   document.getElementById('externalChangeBanner').classList.remove('show');
   lastWriteAt = Date.now();
 });
+document.getElementById('btnReloadCloud').addEventListener('click', function(){
+  if(window.__pendingCloudState){
+    state = migrateState(window.__pendingCloudState);
+    window.__pendingCloudState = null;
+    renderAll();
+    save();
+    toast('☁️ Cloud-Stand geladen.');
+  }
+  document.getElementById('cloudChangeBanner').classList.remove('show');
+});
+document.getElementById('btnDismissCloud').addEventListener('click', function(){
+  window.__pendingCloudState = null;
+  document.getElementById('cloudChangeBanner').classList.remove('show');
+});
 
 var searchDebounce = null;
 document.getElementById('searchInput').addEventListener('input', function(e){
@@ -4360,6 +4629,10 @@ function init(){
     setTimeout(checkOvernightTimers, 1200);
     captureDailySnapshotIfNeeded();
     if(state.settings.clipboardWatchEnabled) startClipboardWatch();
+    if(getCloudSyncConfig().enabled){
+      cloudPullNow();
+      setInterval(cloudPullNow, 45000);
+    }
   });
 }
 
