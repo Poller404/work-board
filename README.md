@@ -53,14 +53,30 @@ Geräts – nie unterwegs oder auf einem Server.
    **Passphrase** wählen, Gist-ID-Feld leer lassen → **"☁️ Neuen Speicher erstellen (1. Gerät)"**.
    Das legt einen neuen, privaten ("secret") Gist an. Die neu erzeugte Gist-ID erscheint danach
    im Gist-ID-Feld, daneben ein **"📋 Kopieren"**-Button.
-3. **Auf jedem weiteren Gerät:** gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe
-   Passphrase**, und die kopierte **Gist-ID** ins Gist-ID-Feld einfügen → **"🔗 Mit bestehendem
-   Speicher verbinden (weiteres Gerät)"** klicken.
+3. **Auf jedem weiteren Gerät** – am einfachsten fürs Handy per QR-Code, siehe unten. Alternativ
+   manuell: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe Passphrase**, und die
+   kopierte **Gist-ID** ins Gist-ID-Feld einfügen → **"🔗 Mit bestehendem Speicher verbinden
+   (weiteres Gerät)"** klicken.
 
    ⚠️ Wichtig: Auf dem zweiten (und jedem weiteren) Gerät **nicht** erneut "Neuen Speicher
    erstellen" klicken – das würde einen zweiten, komplett getrennten Speicher anlegen, der nicht
    mit dem ersten synchronisiert (die App warnt davor, falls auf einem Gerät schon Sync aktiv
    ist, aber zwischen zwei brandneuen Geräten kann sie das nicht automatisch erkennen).
+
+### 📱 Handy per QR-Code koppeln (wie z.B. bei 1Password)
+
+Sobald auf einem Gerät Cloud-Sync aktiv ist, erscheint in ⚙️ Einstellungen → Cloud-Sync der Button
+**"📱 Gerät per QR-Code koppeln"**. Das zeigt einen QR-Code mit Token, Gist-ID und Passphrase
+dieses Geräts.
+
+**Aufs Handy übertragen:** Mit der Handy-Kamera scannen, den erkannten Text **kopieren** (nicht
+öffnen), dann auf dem Handy Work Board aufrufen und oben auf **"📋 Aus Zwischenablage"** tippen –
+Cloud-Sync wird automatisch verbunden, kein Abtippen von Token oder Passphrase nötig.
+
+🔒 Der QR-Code enthält die Zugangsdaten im Klartext (Design-bedingt, wie ein Passwort) – nicht
+fotografieren oder weiterleiten, Fenster nach dem Koppeln schliessen. Ist die Passphrase zu lang
+für die QR-Kapazität, weist die App darauf hin und man trägt die Daten stattdessen manuell ein
+(Schritt 3 oben).
 
 Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
 Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
