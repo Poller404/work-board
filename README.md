@@ -32,6 +32,42 @@ synchronisiert den Rest von selbst.
 Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten Cloud-Backup
 angefallen sind.
 
+## ☁️ Cloud-Sync (automatisch, Ende-zu-Ende-verschlüsselt)
+
+Läuft die App über `https://` (z.B. via GitHub Pages), kannst du dir das manuelle
+Sichern/Laden komplett sparen: **⚙️ Einstellungen → Cloud-Sync** synchronisiert automatisch im
+Hintergrund über einen **privaten GitHub Gist** – ohne dass GitHub oder sonst jemand deine Daten
+lesen kann.
+
+**Wie es funktioniert:** Deine Daten werden direkt in deinem Browser mit einer selbst gewählten
+Passphrase verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Erst danach geht die
+verschlüsselte Datei an GitHub. Entschlüsselt wird ebenfalls nur lokal im Browser des jeweiligen
+Geräts – nie unterwegs oder auf einem Server.
+
+**Einrichtung (einmalig pro Gerät):**
+1. Einen GitHub **Personal Access Token** erstellen: GitHub → Settings → Developer settings →
+   Personal access tokens → **nur die Berechtigung `gist`** aktivieren (keine anderen Rechte
+   nötig).
+2. In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine **Passphrase** wählen, Feld "Gist-ID"
+   leer lassen → **"🔗 Verbinden / Neu erstellen"**. Das legt einen neuen, privaten
+   ("secret") Gist an.
+3. Auf jedem weiteren Gerät: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe
+   Passphrase**, und die **Gist-ID** vom ersten Gerät eintragen (steht z.B. in der URL des Gists
+   auf github.com) → wieder "Verbinden".
+
+Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
+Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
+falls ja, erscheint ein Hinweisbanner zum Nachladen (dein aktueller Stand wird dabei **nicht**
+automatisch überschrieben).
+
+**Wichtig:**
+- **Passphrase verloren = Cloud-Daten unwiederbringlich weg.** Es gibt keine
+  Wiederherstellungsmöglichkeit – das ist der Preis für echte Verschlüsselung. Dein lokales
+  "💾 Sichern"-Backup ist davon nicht betroffen.
+- Der Token braucht wirklich nur die Berechtigung `gist`, sonst nichts.
+- Cloud-Sync ist optional und komplett unabhängig vom manuellen Sichern/Laden – du kannst
+  jederzeit beides parallel nutzen oder Cloud-Sync über "⏸ Sync deaktivieren" wieder ausschalten.
+
 ## Jira- & Confluence-Inhalte automatisch übernehmen (Bookmarklets)
 
 Da eine echte API-Anbindung auf dem Arbeitsgerät nicht möglich ist, gibt es stattdessen zwei
@@ -144,12 +180,11 @@ Wochen-Kennzahlen (Anrufe, Meetings, längste Sitzung).
 
 ## Handy / mobiler Zugriff
 
-Die Oberfläche ist jetzt responsiv (schmale Spalten, grössere Touch-Ziele) und lässt sich auf dem
-Handy per "Zum Home-Bildschirm hinzufügen" ablegen (`manifest.json` liegt bei). Wichtig zu wissen:
-eine automatische Live-Synchronisation zwischen PC und Handy ist mit dieser rein lokalen Datei
-technisch nicht möglich (bräuchte einen Cloud-Dienst als Backend) – nutze dafür weiterhin
-**💾 Sichern** und die Datei über OneDrive/iCloud, oder das **📱 QR-Code**-Feature für einzelne
-Tasks (siehe unten).
+Die Oberfläche ist responsiv (schmale Spalten, grössere Touch-Ziele) und lässt sich auf dem Handy
+per "Zum Home-Bildschirm hinzufügen" ablegen (`manifest.json` liegt bei). Für automatischen Sync
+zwischen PC und Handy: siehe **☁️ Cloud-Sync** oben – damit läuft es im Hintergrund, ganz ohne
+manuelles Exportieren/Importieren. Alternativ weiterhin **💾 Sichern** über OneDrive/iCloud, oder
+das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 
 ## Struktur-Ansichten
 
