@@ -1539,7 +1539,7 @@ function openQrShare(t){
     '<div class="modal-header"><h2>📱 Task als QR-Code</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body" style="text-align:center;">' +
       (result ?
-        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 6)+'</div>' +
+        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
         '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen. Öffnet auf dem Handy dieselbe Work-Board-Datei (z.B. über OneDrive/iCloud) und importiert den Task über "📋 Aus Zwischenablage" – die App fragt beim Scannen automatisch nach Kopieren in die Zwischenablage, falls die Kamera-App das anbietet; sonst Text manuell in die Schnellerfassung einfügen.</p>'
         : '<p class="hint">Der Task-Inhalt ist leider zu lang für einen QR-Code. Bitte Beschreibung kürzen oder Text manuell teilen.</p>') +
     '</div>' +
@@ -1564,7 +1564,7 @@ function openCloudPairQr(){
     '<div class="modal-header"><h2>📱 Gerät koppeln</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body" style="text-align:center;">' +
       (result ?
-        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 6)+'</div>' +
+        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
         '<p class="hint" style="margin-top:10px;">Auf dem Handy in Work Board beim Start (oder ⚙️ Einstellungen → Cloud-Sync) <strong>"📷 Mit QR-Code verbinden"</strong> wählen und diesen Code scannen – Token und Gist-ID werden automatisch übernommen. Die <strong>Passphrase</strong> musst du danach zur Sicherheit selbst eingeben, sie steckt nicht im QR-Code.</p>' +
         '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
         : '<p class="hint">Token und Gist-ID sind leider zu lang für einen QR-Code. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen).</p>') +
