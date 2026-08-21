@@ -1,0 +1,211 @@
+# Work Board – Kanban & Zeiterfassung
+
+Ein einziges lokales HTML-File, keine Installation, kein Server, keine Admin-Rechte nötig.
+Funktioniert offline im Browser – ideal fürs Arbeitsgerät.
+
+## Start
+
+Doppelklick auf `index.html` (öffnet sich im Standardbrowser, idealerweise Edge oder Chrome).
+
+Am besten die Datei selbst gleich in deinen OneDrive- oder iCloud-Drive-Ordner legen, dann hast du
+sie automatisch auf allen Geräten verfügbar.
+
+## Wie werden meine Daten gespeichert?
+
+Da die Datei per Doppelklick (`file://`) geöffnet wird, kann sie aus Sicherheitsgründen nicht
+direkt und automatisch in eine beliebige Cloud-Datei schreiben (das würde nur mit einem echten
+Server/`https://` funktionieren – auf einem Arbeitsgerät meist nicht möglich). Deshalb funktioniert
+die Speicherung zweistufig:
+
+1. **Automatisch, laufend:** Jede Änderung wird sofort im Browser gespeichert (localStorage).
+   Solange du die Browserdaten nicht löschst, bleibt alles erhalten – auch nach Neustart.
+2. **Cloud-Backup, 1 Klick:** Oben rechts auf **💾 Sichern** klicken (oder `Strg+S`). Das lädt eine
+   Datei `work-board-daten.json` herunter. Über **📂 Datei laden** kannst du sie (z.B. auf einem
+   zweiten Gerät) wieder einlesen.
+
+**Empfohlene Einmal-Einrichtung**, damit das Backup automatisch im Cloud-Ordner landet:
+Browser-Einstellungen → Downloads → Standard-Speicherort auf deinen OneDrive- oder
+iCloud-Drive-Ordner ändern, und "Vor dem Herunterladen jedes Mal fragen" aktivieren. Dann zeigt
+`💾 Sichern` jedes Mal den Speicherort mit der Option "Ersetzen" – ein Klick, und OneDrive/iCloud
+synchronisiert den Rest von selbst.
+
+Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten Cloud-Backup
+angefallen sind.
+
+## Jira- & Confluence-Inhalte automatisch übernehmen (Bookmarklets)
+
+Da eine echte API-Anbindung auf dem Arbeitsgerät nicht möglich ist, gibt es stattdessen zwei
+Lesezeichen-Werkzeuge:
+
+1. Im Tool: ⚙️ Einstellungen → Abschnitt "Jira- & Confluence-Import per Bookmarklet".
+2. Die Links **📌 Jira → Board** und **📘 Confluence → Board** in die Lesezeichenleiste deines
+   Browsers **ziehen** (nicht klicken).
+3. Ein Jira-Ticket bzw. eine Confluence-Seite öffnen und auf das passende Lesezeichen klicken.
+   Bei Jira werden Titel, Ticket-Nummer, Beschreibung und Priorität automatisch in die
+   Zwischenablage kopiert; bei Confluence Titel, Space und Link.
+4. Im Work Board auf **📋 Aus Zwischenablage** klicken – der Task-Entwurf ist bereits ausgefüllt
+   (inkl. automatisch verknüpftem Link), nur noch prüfen und "Task erstellen" klicken.
+
+Jira/Confluence Cloud ändern gelegentlich ihre Seitenstruktur – falls ein Bookmarklet nichts
+findet, einfach Titel/Beschreibung manuell markieren, kopieren und stattdessen
+**🤖 Schnellerfassung** nutzen (dort reicht simples Einfügen/`Strg+V`).
+
+## Hotline-Anrufe & Meetings
+
+- **📞 Hotline-Anruf**: Ein Klick erstellt sofort einen Task, startet den Timer und öffnet ein
+  Notizfeld. Während des Gesprächs einfach Notizen eintippen (mit Zeitstempel). Am Ende:
+  **📋 Notizen + Dauer für Jira-Kommentar kopieren** – fertig formatiert zum Einfügen ins Ticket.
+- **📅 Meeting**: gleiches Prinzip, misst automatisch die Meeting-Dauer.
+
+## Mail zu Task
+
+Eine vollautomatische Mail-Überwachung ist mit einer rein lokalen Datei technisch nicht möglich
+(es bräuchte einen dauerhaft laufenden Dienst). Stattdessen: Mailtext markieren, kopieren, im Tool
+auf **🤖 Schnellerfassung** klicken, einfügen (`Strg+V`), "Task-Entwurf erstellen" – dauert
+wenige Sekunden. Mit einem eigenen Anthropic-API-Key (⚙️ Einstellungen) erstellt eine KI daraus
+automatisch Titel, Beschreibung, Typ und Priorität; ohne Key wird eine einfache Texterkennung
+verwendet.
+
+## Tagesabschluss für Dyce
+
+**🧾 Tagesabschluss** zeigt alle an einem Tag erfassten Zeiten gruppiert nach Ticket/Task, inkl.
+Total. Über **📋 Als Tabelle kopieren** lässt sich die Übersicht direkt in Dyce oder Excel
+einfügen.
+
+## Statistik
+
+**📊 Statistik** zeigt für Heute/Woche/Monat: Zeit pro Typ, Durchsatz (erledigte Tasks), eine
+7-Tage-Sparkline, eine 12-Wochen-Verlaufs-Heatmap, offen-vs-erledigt sowie ein paar
+Wochen-Kennzahlen (Anrufe, Meetings, längste Sitzung).
+
+## Fokus, Priorität & Tempo
+
+- **🧭 Was jetzt?** schlägt automatisch den nächsten Task vor (angepinnt zuerst, dann höchste
+  Priorität, dann ältester Task).
+- **🎯 Fokus** startet einen Pomodoro-artigen Fokus-Block (Dauer einstellbar) für den aktuellen
+  bzw. vorgeschlagenen Task, mit Countdown-Overlay.
+- **🎯 Nach Priorität**: Board umschalten von Status-Spalten auf Prioritäts-Swimlanes; Karten
+  zwischen Spalten ziehen ändert dann die Priorität statt den Status.
+- **📌 Anpinnen**: wichtige Tasks bleiben immer oben in ihrer Spalte.
+- **☑️ Auswahl**: Mehrfachauswahl von Karten für Bulk-Verschieben/-Priorisieren/-Archivieren.
+- Titel/Beschreibung werden beim Verlassen des Feldes automatisch nach Dringlichkeits-Wörtern
+  ("dringend", "ASAP" …), passenden Tags (z.B. "VPN" → #vpn) und relativen Datumsangaben
+  ("morgen", "Freitag", "in 3 Tagen") durchsucht – Priorität/Tags/Fälligkeitsdatum werden
+  automatisch vorgeschlagen. Ähnlich klingende, evtl. doppelte Tickets werden ebenfalls erkannt.
+
+## Zeiterfassung – Komfort & Sicherheit
+
+- **Zeit-Budget**: pro Task eine Schätzung (Minuten) hinterlegen, Fortschrittsbalken auf der
+  Karte zeigt Ist vs. Soll.
+- **SLA-Ampel** für Hotline-Tickets: färbt sich gelb/rot, wenn ein Ticket zu lange offen ist
+  (Schwellwerte in ⚙️ Einstellungen).
+- **Idle-Erkennung**: warst du >10 Min. inaktiv während ein Timer lief, fragt das Tool beim
+  Weitermachen, ob die Zeit abgezogen werden soll.
+- **Übernacht-Timer-Wächter**: erkennt beim Start, wenn ein Timer vergessen wurde zu stoppen
+  (>10 h ununterbrochen), und bietet an, ihn zu stoppen oder auf 18:00 des Vortags zu kürzen.
+- **Pausen-Erinnerung**: meldet sich, wenn seit der letzten markierten Pause zu lange gearbeitet
+  wurde ("☕ Pause jetzt markieren" in den Einstellungen).
+- **😴 Wiedervorlage**: Tasks für später "einschlafen" lassen (morgen 9 Uhr / in 2h / eigenes
+  Datum) – sie verschwinden vom Board und tauchen automatisch (mit Hinweis) wieder auf.
+- **🔁 Wiederkehrend**: Task täglich/wöchentlich bei Erledigung automatisch neu anlegen.
+
+## Aktivität, Übergabe & Abhängigkeiten
+
+- **Aktivitäts-Verlauf**: jeder Task protokolliert automatisch Erstellung, Verschiebungen und
+  Prioritätsänderungen.
+- **🤝 Übergabe**: Task mit "an wen + Grund" als übergeben markieren.
+- **Abhängigkeiten**: "Blockiert durch"-Verknüpfungen zu anderen Tasks, inkl. Erledigt-Status.
+
+## Eingabe-Komfort
+
+- **⌨️ Strg+K**: Command Palette – Tasks suchen oder Aktionen ausführen, ohne die Maus.
+- **Pfeiltasten**: zwischen Karten navigieren (bei fokussierter Karte), **Shift+Pfeil** verschiebt
+  die Karte in die Nachbarspalte (bzw. ändert die Priorität in der Swimlane-Ansicht).
+- **📎 Textbausteine**: wiederkehrende Notizen/Antworten in den Einstellungen anlegen, per
+  📎-Button in Notizen und Schnellerfassung einfügen.
+- **🎙️ Diktieren**: Notizen per Spracheingabe eintippen (sofern der Browser das unterstützt).
+- **Screenshot einfügen**: Bild aus der Zwischenablage direkt mit `Strg+V` im Task-Fenster
+  einfügen – landet automatisch als Notiz.
+- **Automatische Zwischenablage-Erkennung** (optional, ⚙️ Einstellungen): erinnert von selbst,
+  wenn Bookmarklet-Daten in der Zwischenablage liegen.
+- **Meeting-Titel-Gedächtnis**: häufige Meeting-Titel als Chips zum schnellen Wiederverwenden.
+- **📅 .ics-Export**: ein Meeting nachträglich als Kalendereintrag herunterladen (Outlook-Import).
+
+## Berichte & Spielereien
+
+- **📝 Tages-Recap** / **📄 Wochenbericht** (über `Strg+K`): fertig formatierte Zusammenfassung
+  aus Tasks, Zeiten und Notizen – kopierbar für Status-Updates.
+- **🎡 Entscheidungs-Glücksrad** (über `Strg+K`): wenn mehrere Tasks gleich wichtig sind, wählt
+  ein kleines Glücksrad eins davon aus.
+- **🎉 Konfetti**, wenn ein Task nach "Erledigt" wandert.
+- **Boards**: mehrere getrennte Boards (z.B. "Arbeit"/"Privat") anlegen und wechseln, in
+  ⚙️ Einstellungen.
+- **Eigene Akzentfarbe** in den Einstellungen.
+
+## Handy / mobiler Zugriff
+
+Die Oberfläche ist jetzt responsiv (schmale Spalten, grössere Touch-Ziele) und lässt sich auf dem
+Handy per "Zum Home-Bildschirm hinzufügen" ablegen (`manifest.json` liegt bei). Wichtig zu wissen:
+eine automatische Live-Synchronisation zwischen PC und Handy ist mit dieser rein lokalen Datei
+technisch nicht möglich (bräuchte einen Cloud-Dienst als Backend) – nutze dafür weiterhin
+**💾 Sichern** und die Datei über OneDrive/iCloud, oder das **📱 QR-Code**-Feature für einzelne
+Tasks (siehe unten).
+
+## Struktur-Ansichten
+
+- **Eigene Task-Typen**: über ⚙️ Einstellungen zusätzliche Typen mit eigenem Icon definieren.
+- **Checklisten**: pro Task Unterpunkte mit Fortschrittsanzeige (X/Y) auf der Karte.
+- **Board-Ansicht umschalten** (oben): Status (klassisches Kanban), Priorität, **Eisenhower-Matrix**
+  (Wichtig×Dringend, basierend auf Anpinnen + Priorität) oder **nach Person** (Teammitglieder in
+  ⚙️ Einstellungen anlegen, Tasks per Drag&Drop zuweisen).
+- **🗺️ Timeline** (`Strg+K`): Tasks mit Fälligkeitsdatum als Balken über die nächsten 30 Tage.
+- **🕰️ Zeitreise** (`Strg+K`): Board-Zustand von einem früheren Tag ansehen (Snapshots werden
+  automatisch einmal täglich erstellt).
+- **📥 .ics-Import** (`Strg+K`): Outlook-Kalenderexport als Meeting-Tasks mit Fälligkeitsdatum
+  einlesen.
+
+## Bedienkomfort & Vorlagen
+
+- **Rechtsklick auf eine Karte**: Schnellmenü (Öffnen, Anpinnen, Duplizieren, Priorität, Archivieren,
+  Löschen) ohne den Task zu öffnen.
+- **📐 Task-Vorlagen**: komplette Vorlagen (Typ, Priorität, Tags, Beschreibung) anlegen – im Task auf
+  "💾 Als Vorlage", neue Tasks daraus über `Strg+K` → "Aus Vorlage".
+- **`?`-Taste**: zeigt alle Tastaturkürzel.
+- **🔒 PIN-Sichtschutz** (⚙️ Einstellungen): Startbildschirm blendet sich aus, bis der PIN eingegeben
+  wird – reiner Sichtschutz vor vorbeigehenden Blicken, **keine echte Verschlüsselung**.
+
+## Auswertung, KI & Spielereien
+
+- **🧠 KI-Wochenanalyse** (`Strg+K`, benötigt eigenen Anthropic-API-Key): kurze Einschätzung +
+  2-3 konkrete Tipps zur laufenden Woche.
+- **💰 Zeit-Preis-Rechner**: Stundensatz hinterlegen (⚙️ Einstellungen) – die Statistik zeigt den
+  erarbeiteten Wert für den gewählten Zeitraum.
+- **🖨️ Board drucken/als PDF** (`Strg+K`): saubere Druckansicht, gruppiert nach Spalte.
+- **📱 QR-Code-Sync**: einzelnen Task als QR-Code anzeigen (im Task-Fenster), mit dem Handy scannen
+  und die Daten über "📋 Aus Zwischenablage" bzw. Schnellerfassung auf einem zweiten Gerät
+  übernehmen – funktioniert komplett ohne Server.
+- **🏆 Level-/XP-System**: für jeden erledigten Task gibt's XP (mehr bei hoher Priorität), inkl.
+  Level-Anzeige oben in der Leiste.
+- **🔊 Sound-Effekte** (⚙️ Einstellungen, standardmässig aus): dezente Töne bei Timer-Start und
+  erledigtem Task.
+- **🖼️ Eigenes Hintergrundbild** fürs Board (⚙️ Einstellungen).
+- **🌐 Deutsch/Englisch**: übersetzt die Hauptnavigation (Menüs/Formulare bleiben Deutsch).
+
+## Tastenkürzel
+
+- `N` – neuen Task erstellen
+- `Leertaste` – laufenden Timer pausieren
+- `Strg+S` – Cloud-Backup herunterladen
+- `Strg+K` – Command Palette öffnen
+- Pfeiltasten (bei fokussierter Karte) – navigieren; `Shift`+Pfeil – Karte verschieben
+- `Rechtsklick` auf Karte – Schnellmenü
+- `?` – Tastaturkürzel-Übersicht
+- `Esc` – Dialog schliessen
+
+## Weitere Funktionen
+
+- Spalten frei benennen, verschieben, per Priorität sortieren
+- Suche & Filter nach Typ/Priorität
+- Fälligkeitsdatum, Tags, mehrere Links (Jira/Confluence/Sonstige) pro Task
+- Erledigte Tasks werden nach X Tagen automatisch archiviert (einstellbar), Archiv jederzeit einsehbar
+- Hell/Dunkel-Theme
