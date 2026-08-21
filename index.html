@@ -3558,9 +3558,13 @@ function openSettings(){
       '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
       '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
       '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
-      '<div class="form-row"><label>Gist-ID (leer lassen, um neu zu erstellen)</label><input id="sCloudGistId" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="z.B. auf einem zweiten Gerät die ID von hier eintragen"></div>' +
+      '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
+        (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
+      '</div></div>' +
+      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und dort "Mit bestehendem Speicher verbinden" klicken – sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
-        '<button class="btn primary" id="btnCloudConnect">🔗 Verbinden / Neu erstellen</button>' +
+        '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
+        '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
         '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
         (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
       '</div>' +
@@ -3717,21 +3721,46 @@ function openSettings(){
   });
 
   renderCloudSyncStatus();
-  document.getElementById('btnCloudConnect').addEventListener('click', function(){
+  document.getElementById('btnCloudCreateNew').addEventListener('click', function(){
+    var token = document.getElementById('sCloudToken').value.trim();
+    var passphrase = document.getElementById('sCloudPassphrase').value;
+    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    var cfg = getCloudSyncConfig();
+    function doCreate(){
+      cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = '';
+      setCloudSyncConfig(cfg);
+      toast('☁️ Erstelle neuen Sync-Speicher…');
+      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
+    }
+    if(cfg.enabled && cfg.gistId){
+      confirmDialog(
+        'Auf diesem Gerät ist bereits ein Sync-Speicher aktiv (ID: ' + cfg.gistId + '). Jetzt "Neuen Speicher erstellen" legt einen ZWEITEN, komplett getrennten Speicher an, der nicht mit dem bisherigen synchronisiert – das ist meistens nicht das, was du willst. Trotzdem einen zweiten, separaten Speicher erstellen?',
+        'Ja, zweiten Speicher erstellen',
+        function(){ closeModal(); doCreate(); },
+        function(){ closeModal(); openSettings(); }
+      );
+    } else {
+      doCreate();
+    }
+  });
+  document.getElementById('btnCloudJoin').addEventListener('click', function(){
     var token = document.getElementById('sCloudToken').value.trim();
     var passphrase = document.getElementById('sCloudPassphrase').value;
     var gistId = document.getElementById('sCloudGistId').value.trim();
     if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    if(!gistId){ toast('Bitte zuerst die Gist-ID des ersten Geräts eintragen (siehe Hinweis oben).'); return; }
     var cfg = getCloudSyncConfig();
     cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
     setCloudSyncConfig(cfg);
-    if(gistId){
-      toast('☁️ Verbinde und lade Cloud-Stand…');
-      cloudJoinExisting().catch(function(){});
-    } else {
-      toast('☁️ Erstelle neuen Sync-Speicher…');
-      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
-    }
+    toast('☁️ Verbinde und lade Cloud-Stand…');
+    cloudJoinExisting().catch(function(){});
+  });
+  var copyGistBtn = document.getElementById('btnCopyGistId');
+  if(copyGistBtn) copyGistBtn.addEventListener('click', function(){
+    var id = getCloudSyncConfig().gistId;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(id).then(function(){ toast('📋 Gist-ID kopiert.'); }).catch(function(){ fallbackCopy(id); });
+    } else { fallbackCopy(id); }
   });
   document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
     toast('☁️ Synchronisiere…');

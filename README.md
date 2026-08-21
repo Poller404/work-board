@@ -30,7 +30,8 @@ iCloud-Drive-Ordner ändern, und "Vor dem Herunterladen jedes Mal fragen" aktivi
 synchronisiert den Rest von selbst.
 
 Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten Cloud-Backup
-angefallen sind.
+angefallen sind – und, falls eingerichtet, auch den aktuellen Cloud-Sync-Status (aktiv, Fehler,
+oder nicht eingerichtet).
 
 ## ☁️ Cloud-Sync (automatisch, Ende-zu-Ende-verschlüsselt)
 
@@ -44,21 +45,32 @@ Passphrase verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Ers
 verschlüsselte Datei an GitHub. Entschlüsselt wird ebenfalls nur lokal im Browser des jeweiligen
 Geräts – nie unterwegs oder auf einem Server.
 
-**Einrichtung (einmalig pro Gerät):**
+**Einrichtung:**
 1. Einen GitHub **Personal Access Token** erstellen: GitHub → Settings → Developer settings →
    Personal access tokens → **nur die Berechtigung `gist`** aktivieren (keine anderen Rechte
    nötig).
-2. In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine **Passphrase** wählen, Feld "Gist-ID"
-   leer lassen → **"🔗 Verbinden / Neu erstellen"**. Das legt einen neuen, privaten
-   ("secret") Gist an.
-3. Auf jedem weiteren Gerät: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe
-   Passphrase**, und die **Gist-ID** vom ersten Gerät eintragen (steht z.B. in der URL des Gists
-   auf github.com) → wieder "Verbinden".
+2. **Auf dem ersten Gerät:** In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine
+   **Passphrase** wählen, Gist-ID-Feld leer lassen → **"☁️ Neuen Speicher erstellen (1. Gerät)"**.
+   Das legt einen neuen, privaten ("secret") Gist an. Die neu erzeugte Gist-ID erscheint danach
+   im Gist-ID-Feld, daneben ein **"📋 Kopieren"**-Button.
+3. **Auf jedem weiteren Gerät:** gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe
+   Passphrase**, und die kopierte **Gist-ID** ins Gist-ID-Feld einfügen → **"🔗 Mit bestehendem
+   Speicher verbinden (weiteres Gerät)"** klicken.
+
+   ⚠️ Wichtig: Auf dem zweiten (und jedem weiteren) Gerät **nicht** erneut "Neuen Speicher
+   erstellen" klicken – das würde einen zweiten, komplett getrennten Speicher anlegen, der nicht
+   mit dem ersten synchronisiert (die App warnt davor, falls auf einem Gerät schon Sync aktiv
+   ist, aber zwischen zwei brandneuen Geräten kann sie das nicht automatisch erkennen).
 
 Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
 Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
 falls ja, erscheint ein Hinweisbanner zum Nachladen (dein aktueller Stand wird dabei **nicht**
 automatisch überschrieben).
+
+Für den manuellen Fall zwischendurch gibt es oben rechts direkt neben **💾 Sichern** den Button
+**☁️ Sync** – ein Klick stößt sofort ein Hoch- und Herunterladen an, ohne die Einstellungen zu
+öffnen (ist Cloud-Sync noch nicht eingerichtet, öffnet der Button stattdessen direkt die
+Einstellungen dafür).
 
 **Wichtig:**
 - **Passphrase verloren = Cloud-Daten unwiederbringlich weg.** Es gibt keine
