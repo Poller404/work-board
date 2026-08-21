@@ -4583,7 +4583,11 @@ function showOnboardingIfNeeded(){
         '<button class="btn primary big-action" id="obPickFile" style="width:100%; margin-bottom:10px; justify-content:center;">📁 Direkt mit Datei in OneDrive/iCloud verbinden</button>' +
         '<div class="hint" style="margin-bottom:14px;">Nur relevant, falls du diese Seite über einen lokalen Server statt per Doppelklick geöffnet hast.</div>'
         : '') +
-      '<p class="hint">Für eine Sicherung in deinem OneDrive- oder iCloud-Drive-Ordner (z.B. für ein zweites Gerät) klicke jederzeit oben auf <strong>💾 Sichern</strong>. Details & ein Tipp für automatische Ablage findest du unter ⚙️ Einstellungen.</p>' +
+      (getCloudSyncConfig().enabled ?
+        '<div class="hint" style="margin-bottom:14px;">☁️ Cloud-Sync ist bereits eingerichtet – deine Daten werden gleich automatisch geladen.</div>'
+        : '<button class="btn big-action" id="obCloudSync" style="width:100%; margin-bottom:10px; justify-content:center;">☁️ Schon auf einem anderen Gerät eingerichtet? Cloud-Sync verbinden</button>' +
+          '<div class="hint" style="margin-bottom:14px;">Ende-zu-Ende-verschlüsselt über einen privaten GitHub Gist. Neu einrichten geht auch jederzeit später unter ⚙️ Einstellungen.</div>') +
+      '<p class="hint">Für eine Sicherung in deinem OneDrive- oder iCloud-Drive-Ordner (z.B. für ein zweites Gerät) klicke jederzeit oben auf <strong>💾 Sichern</strong>. Details findest du unter ⚙️ Einstellungen.</p>' +
       '<button class="btn big-action" id="obSkip" style="width:100%; justify-content:center;">Los geht\'s</button>' +
     '</div>';
   openModal(html);
@@ -4593,6 +4597,13 @@ function showOnboardingIfNeeded(){
       pickNewFile().then(function(){ closeModal(); renderAll(); }).catch(function(err){
         if(err.name !== 'AbortError') toast('Fehler: ' + err.message);
       });
+    });
+  }
+  var cloudBtn = document.getElementById('obCloudSync');
+  if(cloudBtn){
+    cloudBtn.addEventListener('click', function(){
+      closeModal();
+      openSettings();
     });
   }
   document.getElementById('obSkip').addEventListener('click', function(){
