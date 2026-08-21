@@ -1548,6 +1548,31 @@ function openQrShare(t){
 }
 
 /* =========================================================
+   CLOUD-SYNC GERÄTE-KOPPLUNG PER QR (wie z.B. bei 1Password)
+   Der QR-Code enthält Token+Gist-ID+Passphrase im Klartext (per
+   Design – ähnlich einem Passwort). Format: "WBP1:<token>:<gistId>:<passphrase>"
+   ("WBP1:" als Erkennungs-Präfix, damit "📋 Aus Zwischenablage" den
+   Kopplungs-Code von normalem Task-Import unterscheiden kann).
+   ========================================================= */
+function openCloudPairQr(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled || !cfg.gistId){ toast('Bitte zuerst auf diesem Gerät Cloud-Sync einrichten.'); return; }
+  var text = 'WBP1:' + cfg.token + ':' + cfg.gistId + ':' + cfg.passphrase;
+  var result = encodeQR(text);
+  var html =
+    '<div class="modal-header"><h2>📱 Gerät koppeln</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body" style="text-align:center;">' +
+      (result ?
+        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 6)+'</div>' +
+        '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen, den erkannten Text <strong>kopieren</strong> (nicht öffnen). Dann auf dem Handy Work Board aufrufen und dort oben auf <strong>📋 Aus Zwischenablage</strong> tippen – Cloud-Sync wird automatisch mit den Zugangsdaten dieses Geräts verbunden, kein Abtippen von Token/Passphrase nötig.</p>' +
+        '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token und deine Passphrase im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
+        : '<p class="hint">Deine Passphrase ist leider zu lang, um zusammen mit Token und Gist-ID in einen QR-Code zu passen. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen), oder eine kürzere Passphrase wählen.</p>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+}
+
+/* =========================================================
    DRUCK-/PDF-ANSICHT
    ========================================================= */
 function printBoard(){
@@ -3032,6 +3057,18 @@ function tryParseImportPayload(text){
   }
   return null;
 }
+function handleCloudPairPayload(text){
+  var parts = text.slice(5).split(':');
+  var token = parts[0] || '';
+  var gistId = parts[1] || '';
+  var passphrase = parts.slice(2).join(':');
+  if(!token || !gistId || !passphrase){ toast('Ungültiger Kopplungs-Code.'); return; }
+  var cfg = getCloudSyncConfig();
+  cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
+  setCloudSyncConfig(cfg);
+  toast('📱 Kopplungs-Code erkannt – verbinde mit Cloud-Sync…');
+  cloudJoinExisting().catch(function(){});
+}
 function importFromClipboard(){
   if(!navigator.clipboard || !navigator.clipboard.readText){
     openQuickCapture('');
@@ -3039,6 +3076,10 @@ function importFromClipboard(){
     return;
   }
   navigator.clipboard.readText().then(function(text){
+    if(text && text.indexOf('WBP1:') === 0){
+      handleCloudPairPayload(text);
+      return;
+    }
     var payload = tryParseImportPayload(text);
     if(payload){
       openDraftPreview(payload, text);
@@ -3561,10 +3602,11 @@ function openSettings(){
       '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
         (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
       '</div></div>' +
-      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und dort "Mit bestehendem Speicher verbinden" klicken – sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
+      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📱 Gerät per QR-Code koppeln</strong> verwenden. Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
         '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
         '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
+        (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
         '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
         (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
       '</div>' +
@@ -3762,6 +3804,8 @@ function openSettings(){
       navigator.clipboard.writeText(id).then(function(){ toast('📋 Gist-ID kopiert.'); }).catch(function(){ fallbackCopy(id); });
     } else { fallbackCopy(id); }
   });
+  var pairQrBtn = document.getElementById('btnCloudPairQr');
+  if(pairQrBtn) pairQrBtn.addEventListener('click', openCloudPairQr);
   document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
     toast('☁️ Synchronisiere…');
     cloudPushNow().then(function(){ return cloudPullNow(true); });
