@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Work Board</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0052cc">
@@ -279,19 +279,67 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 }
 
 /* ---- Responsive / mobile ---- */
+button.mobile-only{display:none;}
+@supports (height: 100dvh){ #app{height:100dvh;} }
 @media (max-width: 680px){
   body{font-size:15px;}
-  #topbar{padding:8px 10px; gap:6px;}
-  #topbar .brand{font-size:14px;}
-  #topbar button.btn, #topbar select{padding:9px 10px; font-size:13px;}
-  #searchInput{width:120px;}
-  .column{width:82vw; min-width:82vw; scroll-snap-align:start;}
-  #board{scroll-snap-type:x proximity; padding:10px;}
+  #app{overscroll-behavior-y:contain;}
+  #topbar{
+    padding:max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+    gap:8px; row-gap:8px;
+  }
+  #topbar .brand{font-size:15px; flex:1;}
+  #topbar button.btn, #topbar select{padding:10px 12px; font-size:14px; min-height:40px;}
+  button.icon-btn{min-width:40px; min-height:40px;}
+  #searchInput{width:100%; padding:10px 12px; min-height:40px;}
+  button.mobile-only{display:inline-flex; min-width:40px; min-height:40px;}
+  #topbar button.topbar-more, #topbar select.topbar-more, #topbar input.topbar-more{display:none;}
+  #topbar.expanded button.topbar-more{display:inline-flex;}
+  #topbar.expanded select.topbar-more, #topbar.expanded input.topbar-more{display:inline-block;}
+  #topbar.expanded{padding-bottom:10px;}
+  #xpBadge, #liveClock{display:none;}
+  #board{
+    scroll-snap-type:x mandatory; padding:12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overscroll-behavior-x:contain;
+  }
+  .column{width:86vw; min-width:86vw; scroll-snap-align:start; scroll-snap-stop:always; border-radius:14px; box-shadow:var(--shadow);}
+  .column-header{padding:14px 12px 10px 14px; font-size:13.5px;}
+  .card{border-radius:12px; padding:12px 12px 10px;}
+  .card .card-title{font-size:15px;}
+  .card .card-desc{font-size:13px; max-height:38px;}
+  .card .timer-toggle{width:34px; height:34px; font-size:14px;}
+  .card .select-check{width:22px; height:22px;}
+  .add-column-btn{width:86vw; min-width:86vw; height:52px; border-radius:14px;}
+  .column-add button, .column-footer button{min-height:38px;}
   .modal-overlay{padding:0; align-items:stretch;}
-  .modal{max-width:100%; width:100%; height:100%; border-radius:0; max-height:100%;}
+  .modal{
+    max-width:100%; width:100%; height:100%; border-radius:0; max-height:100%;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
   .modal.wide{max-width:100%;}
+  .modal-header{padding-left:max(18px, env(safe-area-inset-left)); padding-right:max(18px, env(safe-area-inset-right));}
+  .modal-body{padding-left:max(18px, env(safe-area-inset-left)); padding-right:max(18px, env(safe-area-inset-right));}
+  .modal-footer{padding-left:max(18px, env(safe-area-inset-left)); padding-right:max(18px, env(safe-area-inset-right)); padding-bottom:max(14px, env(safe-area-inset-bottom));}
   .form-row-inline{flex-direction:column; gap:13px;}
   #bulkBar{flex-wrap:wrap;}
+  button.btn.big-action{white-space:normal; text-align:center; line-height:1.35; min-height:48px;}
+  .modal-body button.btn{white-space:normal; text-align:left; line-height:1.3;}
+  .modal-body div[style*="display:flex"]{flex-wrap:wrap;}
+  .modal-footer{flex-wrap:wrap; justify-content:flex-start;}
+  .modal-footer button.btn{white-space:normal; min-height:40px;}
+  #statusbar{
+    flex-wrap:wrap; row-gap:2px;
+    padding:6px max(14px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+  #toastHost{
+    left:16px; right:16px; bottom:max(18px, env(safe-area-inset-bottom));
+  }
+  .toast{max-width:none;}
+  #cmdPaletteOverlay{padding-top:env(safe-area-inset-top);}
+  #cmdPaletteBox{max-width:100%; height:100%; border-radius:0;}
+  #lockOverlay, #focusOverlay{
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
 }
 </style>
 </head>
@@ -299,15 +347,17 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 <div id="app">
   <div id="topbar">
     <div class="brand">🗂️ Work Board <span id="boardNameLabel" style="color:var(--text-faint); font-weight:500; font-size:12.5px;"></span></div>
-    <button class="btn" id="btnHotline">📞 Hotline-Anruf</button>
-    <button class="btn" id="btnMeeting">📅 Meeting</button>
-    <button class="btn" id="btnQuickCapture">🤖 Schnellerfassung</button>
-    <button class="btn" id="btnClipboardImport">📋 Aus Zwischenablage</button>
-    <button class="btn" id="btnWhatNow" title="Schlägt den nächsten Task vor">🧭 Was jetzt?</button>
-    <button class="btn" id="btnFocus" title="Fokus-Modus für den aktuellen Task">🎯 Fokus</button>
-    <button class="btn" id="btnSnoozed" title="Tasks in Wiedervorlage" style="display:none;">😴 Wiedervorlage</button>
-    <button class="btn" id="btnSelectMode" title="Mehrere Tasks auswählen">☑️ Auswahl</button>
-    <select id="boardViewSelect" title="Board-Ansicht">
+    <button class="btn icon-btn mobile-only" id="btnMoreToggle" title="Mehr Aktionen">☰</button>
+    <button class="btn topbar-more" id="btnHotline">📞 Hotline-Anruf</button>
+    <button class="btn topbar-more" id="btnMeeting">📅 Meeting</button>
+    <button class="btn topbar-more" id="btnQuickTimeEntry" title="Sofort Zeiterfassung für eine freie Tätigkeit starten">⏱️ Zeit erfassen</button>
+    <button class="btn topbar-more" id="btnQuickCapture">🤖 Schnellerfassung</button>
+    <button class="btn topbar-more" id="btnClipboardImport">📋 Aus Zwischenablage</button>
+    <button class="btn topbar-more" id="btnWhatNow" title="Schlägt den nächsten Task vor">🧭 Was jetzt?</button>
+    <button class="btn topbar-more" id="btnFocus" title="Fokus-Modus für den aktuellen Task">🎯 Fokus</button>
+    <button class="btn topbar-more" id="btnSnoozed" title="Tasks in Wiedervorlage" style="display:none;">😴 Wiedervorlage</button>
+    <button class="btn topbar-more" id="btnSelectMode" title="Mehrere Tasks auswählen">☑️ Auswahl</button>
+    <select id="boardViewSelect" class="topbar-more" title="Board-Ansicht">
       <option value="status">📋 Status</option>
       <option value="priority">🎯 Nach Priorität</option>
       <option value="eisenhower">🧭 Eisenhower-Matrix</option>
@@ -316,8 +366,8 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
     <div class="spacer"></div>
     <span id="xpBadge" class="pill medium" style="cursor:default;"></span>
     <span id="liveClock" style="font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:13px; margin-right:4px;"></span>
-    <input type="search" id="searchInput" placeholder="Suche (Titel, Ticket, Tag)…">
-    <select id="filterType">
+    <input type="search" id="searchInput" class="topbar-more" placeholder="Suche (Titel, Ticket, Tag)…">
+    <select id="filterType" class="topbar-more">
       <option value="">Alle Typen</option>
       <option value="jira">🎫 Jira</option>
       <option value="mail">✉️ Mail</option>
@@ -325,17 +375,18 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
       <option value="meeting">📅 Meeting</option>
       <option value="adhoc">⚡ Ad-hoc</option>
     </select>
-    <select id="filterPriority">
+    <select id="filterPriority" class="topbar-more">
       <option value="">Alle Prioritäten</option>
       <option value="critical">🔴 Kritisch</option>
       <option value="high">🟠 Hoch</option>
       <option value="medium">🔵 Mittel</option>
       <option value="low">⚪ Niedrig</option>
     </select>
-    <button class="btn" id="btnDyce">🧾 Tagesabschluss</button>
-    <button class="btn" id="btnStats">📊 Statistik</button>
-    <button class="btn" id="btnArchive">🗄️ Archiv</button>
+    <button class="btn topbar-more" id="btnDyce">🧾 Tagesabschluss</button>
+    <button class="btn topbar-more" id="btnStats">📊 Statistik</button>
+    <button class="btn topbar-more" id="btnArchive">🗄️ Archiv</button>
     <button class="btn primary" id="btnQuickSave" title="Backup in OneDrive/iCloud-Ordner speichern (Strg+S)">💾 Sichern</button>
+    <button class="btn" id="btnCloudSyncTopbar" title="Cloud-Sync jetzt anstoßen">☁️ Sync</button>
     <button class="btn icon-btn" id="btnSettings" title="Einstellungen">⚙️</button>
   </div>
 
@@ -377,6 +428,7 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 
   <div id="statusbar">
     <span id="storageLabel">–</span>
+    <span id="cloudStatusLabel"></span>
     <span id="saveLabel"></span>
     <span id="dirtyLabel"></span>
     <div class="spacer"></div>
@@ -897,17 +949,17 @@ function mapPriorityHint(hint){
    ========================================================= */
 var I18N = {
   de: {
-    btnHotline:'📞 Hotline-Anruf', btnMeeting:'📅 Meeting', btnQuickCapture:'🤖 Schnellerfassung',
+    btnHotline:'📞 Hotline-Anruf', btnMeeting:'📅 Meeting', btnQuickTimeEntry:'⏱️ Zeit erfassen', btnQuickCapture:'🤖 Schnellerfassung',
     btnClipboardImport:'📋 Aus Zwischenablage', btnWhatNow:'🧭 Was jetzt?', btnFocus:'🎯 Fokus',
     btnSelectMode:'☑️ Auswahl', btnDyce:'🧾 Tagesabschluss', btnStats:'📊 Statistik',
-    btnArchive:'🗄️ Archiv', btnQuickSave:'💾 Sichern', searchPlaceholder:'Suche (Titel, Ticket, Tag)…',
+    btnArchive:'🗄️ Archiv', btnQuickSave:'💾 Sichern', btnCloudSyncTopbar:'☁️ Sync', searchPlaceholder:'Suche (Titel, Ticket, Tag)…',
     optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten'
   },
   en: {
-    btnHotline:'📞 Hotline Call', btnMeeting:'📅 Meeting', btnQuickCapture:'🤖 Quick Capture',
+    btnHotline:'📞 Hotline Call', btnMeeting:'📅 Meeting', btnQuickTimeEntry:'⏱️ Track Time', btnQuickCapture:'🤖 Quick Capture',
     btnClipboardImport:'📋 From Clipboard', btnWhatNow:'🧭 What now?', btnFocus:'🎯 Focus',
     btnSelectMode:'☑️ Select', btnDyce:'🧾 Day Summary', btnStats:'📊 Stats',
-    btnArchive:'🗄️ Archive', btnQuickSave:'💾 Save', searchPlaceholder:'Search (title, ticket, tag)…',
+    btnArchive:'🗄️ Archive', btnQuickSave:'💾 Save', btnCloudSyncTopbar:'☁️ Sync', searchPlaceholder:'Search (title, ticket, tag)…',
     optAllTypes:'All types', optAllPrio:'All priorities'
   }
 };
@@ -916,6 +968,7 @@ function applyLanguage(){
   var dict = I18N[lang];
   document.getElementById('btnHotline').textContent = dict.btnHotline;
   document.getElementById('btnMeeting').textContent = dict.btnMeeting;
+  document.getElementById('btnQuickTimeEntry').textContent = dict.btnQuickTimeEntry;
   document.getElementById('btnQuickCapture').textContent = dict.btnQuickCapture;
   document.getElementById('btnClipboardImport').textContent = dict.btnClipboardImport;
   document.getElementById('btnWhatNow').textContent = dict.btnWhatNow;
@@ -925,6 +978,7 @@ function applyLanguage(){
   document.getElementById('btnStats').textContent = dict.btnStats;
   document.getElementById('btnArchive').textContent = dict.btnArchive;
   document.getElementById('btnQuickSave').textContent = dict.btnQuickSave;
+  document.getElementById('btnCloudSyncTopbar').textContent = dict.btnCloudSyncTopbar;
   document.getElementById('searchInput').placeholder = dict.searchPlaceholder;
   document.querySelector('#filterType option[value=""]').textContent = dict.optAllTypes;
   document.querySelector('#filterPriority option[value=""]').textContent = dict.optAllPrio;
@@ -1520,12 +1574,126 @@ function openQrShare(t){
     '<div class="modal-header"><h2>📱 Task als QR-Code</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body" style="text-align:center;">' +
       (result ?
-        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 6)+'</div>' +
+        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
         '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen. Öffnet auf dem Handy dieselbe Work-Board-Datei (z.B. über OneDrive/iCloud) und importiert den Task über "📋 Aus Zwischenablage" – die App fragt beim Scannen automatisch nach Kopieren in die Zwischenablage, falls die Kamera-App das anbietet; sonst Text manuell in die Schnellerfassung einfügen.</p>'
         : '<p class="hint">Der Task-Inhalt ist leider zu lang für einen QR-Code. Bitte Beschreibung kürzen oder Text manuell teilen.</p>') +
     '</div>' +
     '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
   openModal(html, {wide:true});
+}
+
+/* =========================================================
+   CLOUD-SYNC GERÄTE-KOPPLUNG PER QR (wie z.B. bei 1Password)
+   Der QR-Code enthält NUR Token+Gist-ID (nicht die Passphrase – die
+   wird aus Sicherheitsgründen auf dem neuen Gerät separat von Hand
+   eingegeben). Format: "WBP1:<token>:<gistId>" ("WBP1:" als
+   Erkennungs-Präfix, damit Scanner/Zwischenablage-Import den
+   Kopplungs-Code von normalem Task-Import unterscheiden können).
+   ========================================================= */
+function openCloudPairQr(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled || !cfg.gistId){ toast('Bitte zuerst auf diesem Gerät Cloud-Sync einrichten.'); return; }
+  var text = 'WBP1:' + cfg.token + ':' + cfg.gistId;
+  var result = encodeQR(text);
+  var html =
+    '<div class="modal-header"><h2>📱 Gerät koppeln</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body" style="text-align:center;">' +
+      (result ?
+        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
+        '<p class="hint" style="margin-top:10px;">Auf dem Handy in Work Board beim Start (oder ⚙️ Einstellungen → Cloud-Sync) <strong>"📷 Mit QR-Code verbinden"</strong> wählen und diesen Code scannen – Token und Gist-ID werden automatisch übernommen. Die <strong>Passphrase</strong> musst du danach zur Sicherheit selbst eingeben, sie steckt nicht im QR-Code.</p>' +
+        '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
+        : '<p class="hint">Token und Gist-ID sind leider zu lang für einen QR-Code. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen).</p>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+}
+
+/* ---- Passphrase-Abfrage nach QR-Scan/Zwischenablage-Kopplung ---- */
+function promptPassphraseAndJoin(token, gistId){
+  var html =
+    '<div class="modal-header"><h2>🔑 Passphrase eingeben</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-bottom:10px;">Kopplungs-Code erkannt. Aus Sicherheitsgründen wird die Passphrase nicht im QR-Code übertragen – bitte auf diesem Gerät einmalig eingeben (dieselbe wie auf dem anderen Gerät).</p>' +
+      '<div class="form-row"><label>Passphrase</label><input type="password" id="pairPassphraseInput" placeholder="Eigene, sichere Passphrase"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn ghost" data-close-modal>Abbrechen</button><button class="btn primary" id="pairConfirmBtn">Verbinden</button></div>';
+  openModal(html);
+  var input = document.getElementById('pairPassphraseInput');
+  input.focus();
+  function submit(){
+    var passphrase = input.value;
+    if(!passphrase){ toast('Bitte Passphrase eingeben.'); return; }
+    closeModal();
+    var cfg = getCloudSyncConfig();
+    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
+    setCloudSyncConfig(cfg);
+    toast('☁️ Verbinde und lade Cloud-Stand…');
+    cloudJoinExisting().catch(function(){});
+  }
+  document.getElementById('pairConfirmBtn').addEventListener('click', submit);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); });
+}
+
+/* ---- Kamera-QR-Scanner (nutzt die native BarcodeDetector-API des Browsers,
+   keine externe Library). Fällt bei fehlender Unterstützung (v.a. iOS Safari)
+   auf den Hinweis zurück, stattdessen mit der Kamera-App zu scannen und über
+   "📋 Aus Zwischenablage" zu importieren. ---- */
+function openQrScanner(){
+  if(!('BarcodeDetector' in window)){
+    toast('Kamera-Scan wird von diesem Browser nicht unterstützt. Bitte stattdessen mit der normalen Kamera-App scannen, Text kopieren und "📋 Aus Zwischenablage" verwenden.');
+    return;
+  }
+  var html =
+    '<div class="modal-header"><h2>📷 QR-Code scannen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body" style="text-align:center;">' +
+      '<video id="qrScanVideo" playsinline autoplay muted style="width:100%; max-width:400px; border-radius:8px; background:#000;"></video>' +
+      '<p class="hint" id="qrScanStatus" style="margin-top:10px;">Kamera wird gestartet…</p>' +
+    '</div>';
+  openModal(html);
+  var video = document.getElementById('qrScanVideo');
+  var statusEl = document.getElementById('qrScanStatus');
+  var stream = null;
+  var stopped = false;
+  modalCloseCleanup = function(){
+    stopped = true;
+    if(stream){ stream.getTracks().forEach(function(tr){ tr.stop(); }); stream = null; }
+  };
+  var detector;
+  try{ detector = new BarcodeDetector({formats:['qr_code']}); }
+  catch(e){ statusEl.textContent = 'QR-Scanner konnte nicht gestartet werden: ' + e.message; return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){
+    if(stopped){ s.getTracks().forEach(function(tr){ tr.stop(); }); return; }
+    stream = s;
+    video.srcObject = s;
+    statusEl.textContent = 'Kamera auf den QR-Code richten…';
+    function scanLoop(){
+      if(stopped) return;
+      detector.detect(video).then(function(codes){
+        if(stopped) return;
+        if(codes && codes.length){
+          var text = codes[0].rawValue || '';
+          if(text.indexOf('WBP1:') === 0){
+            var parts = text.slice(5).split(':');
+            var token = parts[0] || '';
+            var gistId = parts[1] || '';
+            if(token && gistId){
+              modalCloseCleanup && modalCloseCleanup();
+              closeModal();
+              promptPassphraseAndJoin(token, gistId);
+              return;
+            }
+          }
+          statusEl.textContent = 'QR-Code erkannt, aber kein gültiger Work-Board-Kopplungs-Code – weiter versuchen…';
+        }
+        requestAnimationFrame(scanLoop);
+      }).catch(function(){
+        requestAnimationFrame(scanLoop);
+      });
+    }
+    requestAnimationFrame(scanLoop);
+  }).catch(function(err){
+    statusEl.textContent = 'Kamera-Zugriff nicht möglich (' + err.message + '). Bitte stattdessen mit der normalen Kamera-App scannen und über "📋 Aus Zwischenablage" importieren.';
+  });
 }
 
 /* =========================================================
@@ -2213,8 +2381,9 @@ function renderStatusbar(){
   } else if(!FS_SUPPORTED){
     storageLabel.textContent = '💾 Browser-Speicher (Datei-Anbindung in diesem Browser nicht unterstützt)';
   } else {
-    storageLabel.textContent = '💾 Nur Browser-Speicher (nicht mit Cloud verbunden)';
+    storageLabel.textContent = '💾 Nur Browser-Speicher';
   }
+  renderCloudSyncStatus();
   var count = state.tasks.filter(function(t){ return !t.archived; }).length;
   document.getElementById('taskCountLabel').textContent = count + ' aktive Tasks';
   document.getElementById('boardNameLabel').textContent = '· ' + state.settings.activeBoardName;
@@ -2241,10 +2410,12 @@ function openModal(html, opts){
   var closeEls = root.querySelectorAll('[data-close-modal]');
   closeEls.forEach(function(el){ el.addEventListener('click', closeModal); });
 }
+var modalCloseCleanup = null;
 function closeModal(){
   document.getElementById('modalOverlay').classList.add('hidden');
   document.getElementById('modalRoot').innerHTML = '';
   openTaskModalId = null;
+  if(modalCloseCleanup){ var fn = modalCloseCleanup; modalCloseCleanup = null; fn(); }
 }
 document.addEventListener('paste', function(e){
   if(!openTaskModalId) return;
@@ -2774,6 +2945,34 @@ function quickStart(type, defaultTitlePrefix){
   openTaskModal(t.id);
 }
 
+/* ---- Freie Zeiterfassung: fragt kurz nach einem Titel, erstellt dann
+   sofort einen Ad-hoc-Task in "In Bearbeitung" und startet den Timer
+   (gleiches Prinzip wie quickStart() für Hotline/Meeting, nur mit
+   Titel-Abfrage davor statt automatischem Zeitstempel-Titel). ---- */
+function openQuickTimeEntry(){
+  var timeLabel = new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+  var html =
+    '<div class="modal-header"><h2>⏱️ Zeiterfassung starten</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><label>Wofür?</label><input id="qteTitle" placeholder="z.B. Rechnungen kontrollieren"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="qteStartBtn">▶ Starten</button></div>';
+  openModal(html);
+  var input = document.getElementById('qteTitle');
+  input.focus();
+  function start(){
+    var title = input.value.trim() || ('Zeiterfassung ' + timeLabel);
+    closeModal();
+    var col = state.columns.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); }) || state.columns[0];
+    var t = createTask({ title: title, type: 'adhoc', priority: 'medium', columnId: col.id });
+    startTimer(t.id);
+    renderAll();
+    openTaskModal(t.id);
+  }
+  document.getElementById('qteStartBtn').addEventListener('click', start);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') start(); });
+}
+
 /* =========================================================
    QUICK CAPTURE (AI or heuristic)
    ========================================================= */
@@ -3012,6 +3211,13 @@ function tryParseImportPayload(text){
   }
   return null;
 }
+function handleCloudPairPayload(text){
+  var parts = text.slice(5).split(':');
+  var token = parts[0] || '';
+  var gistId = parts[1] || '';
+  if(!token || !gistId){ toast('Ungültiger Kopplungs-Code.'); return; }
+  promptPassphraseAndJoin(token, gistId);
+}
 function importFromClipboard(){
   if(!navigator.clipboard || !navigator.clipboard.readText){
     openQuickCapture('');
@@ -3019,6 +3225,10 @@ function importFromClipboard(){
     return;
   }
   navigator.clipboard.readText().then(function(text){
+    if(text && text.indexOf('WBP1:') === 0){
+      handleCloudPairPayload(text);
+      return;
+    }
     var payload = tryParseImportPayload(text);
     if(payload){
       openDraftPreview(payload, text);
@@ -3484,15 +3694,29 @@ function cloudJoinExisting(){
   }).finally(function(){ cloudSyncBusy = false; });
 }
 function renderCloudSyncStatus(){
-  var el = document.getElementById('cloudSyncStatus');
-  if(!el) return;
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled){
-    el.innerHTML = '<span class="dot warn"></span> Nicht aktiv';
-  } else if(cfg.lastError){
-    el.innerHTML = '<span class="dot warn"></span> Fehler: ' + escapeHtml(cfg.lastError);
-  } else {
-    el.innerHTML = '<span class="dot ok"></span> Aktiv – zuletzt synchronisiert ' + (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) : 'nie');
+  var el = document.getElementById('cloudSyncStatus');
+  if(el){
+    if(!cfg.enabled){
+      el.innerHTML = '<span class="dot warn"></span> Nicht aktiv';
+    } else if(cfg.lastError){
+      el.innerHTML = '<span class="dot warn"></span> Fehler: ' + escapeHtml(cfg.lastError);
+    } else {
+      el.innerHTML = '<span class="dot ok"></span> Aktiv – zuletzt synchronisiert ' + (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) : 'nie');
+    }
+  }
+  var bar = document.getElementById('cloudStatusLabel');
+  if(bar){
+    if(!cfg.enabled){
+      bar.textContent = '';
+      bar.removeAttribute('title');
+    } else if(cfg.lastError){
+      bar.textContent = '· ☁️ Sync-Fehler';
+      bar.title = cfg.lastError;
+    } else {
+      bar.textContent = '· ☁️ Sync aktiv' + (cfg.lastSyncedAt ? ' (' + new Date(cfg.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) + ')' : ' (noch nicht synchronisiert)');
+      bar.removeAttribute('title');
+    }
   }
 }
 
@@ -3524,9 +3748,15 @@ function openSettings(){
       '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
       '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
       '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
-      '<div class="form-row"><label>Gist-ID (leer lassen, um neu zu erstellen)</label><input id="sCloudGistId" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="z.B. auf einem zweiten Gerät die ID von hier eintragen"></div>' +
+      '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
+        (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
+      '</div></div>' +
+      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📷 Mit QR-Code verbinden</strong> verwenden (auf dem bereits eingerichteten Gerät dafür <strong>📱 Gerät per QR-Code koppeln</strong> antippen, um den Code anzuzeigen). Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher.</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
-        '<button class="btn primary" id="btnCloudConnect">🔗 Verbinden / Neu erstellen</button>' +
+        '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
+        '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
+        '<button class="btn" id="btnCloudScanQr">📷 Mit QR-Code verbinden</button>' +
+        (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
         '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
         (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
       '</div>' +
@@ -3683,22 +3913,52 @@ function openSettings(){
   });
 
   renderCloudSyncStatus();
-  document.getElementById('btnCloudConnect').addEventListener('click', function(){
+  document.getElementById('btnCloudCreateNew').addEventListener('click', function(){
+    var token = document.getElementById('sCloudToken').value.trim();
+    var passphrase = document.getElementById('sCloudPassphrase').value;
+    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    var cfg = getCloudSyncConfig();
+    function doCreate(){
+      cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = '';
+      setCloudSyncConfig(cfg);
+      toast('☁️ Erstelle neuen Sync-Speicher…');
+      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
+    }
+    if(cfg.enabled && cfg.gistId){
+      confirmDialog(
+        'Auf diesem Gerät ist bereits ein Sync-Speicher aktiv (ID: ' + cfg.gistId + '). Jetzt "Neuen Speicher erstellen" legt einen ZWEITEN, komplett getrennten Speicher an, der nicht mit dem bisherigen synchronisiert – das ist meistens nicht das, was du willst. Trotzdem einen zweiten, separaten Speicher erstellen?',
+        'Ja, zweiten Speicher erstellen',
+        function(){ closeModal(); doCreate(); },
+        function(){ closeModal(); openSettings(); }
+      );
+    } else {
+      doCreate();
+    }
+  });
+  document.getElementById('btnCloudJoin').addEventListener('click', function(){
     var token = document.getElementById('sCloudToken').value.trim();
     var passphrase = document.getElementById('sCloudPassphrase').value;
     var gistId = document.getElementById('sCloudGistId').value.trim();
     if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    if(!gistId){ toast('Bitte zuerst die Gist-ID des ersten Geräts eintragen (siehe Hinweis oben).'); return; }
     var cfg = getCloudSyncConfig();
     cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
     setCloudSyncConfig(cfg);
-    if(gistId){
-      toast('☁️ Verbinde und lade Cloud-Stand…');
-      cloudJoinExisting().catch(function(){});
-    } else {
-      toast('☁️ Erstelle neuen Sync-Speicher…');
-      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
-    }
+    toast('☁️ Verbinde und lade Cloud-Stand…');
+    cloudJoinExisting().catch(function(){});
   });
+  document.getElementById('btnCloudScanQr').addEventListener('click', function(){
+    openQrScanner();
+  });
+  var copyGistBtn = document.getElementById('btnCopyGistId');
+  if(copyGistBtn) copyGistBtn.addEventListener('click', function(){
+    var id = getCloudSyncConfig().gistId;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(id).then(function(){ toast('📋 Gist-ID kopiert.'); }).catch(function(){ fallbackCopy(id); });
+    } else { fallbackCopy(id); }
+  });
+  var pairQrBtn = document.getElementById('btnCloudPairQr');
+  if(pairQrBtn) pairQrBtn.addEventListener('click', openCloudPairQr);
   document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
     toast('☁️ Synchronisiere…');
     cloudPushNow().then(function(){ return cloudPullNow(true); });
@@ -4160,6 +4420,7 @@ function cmdActionsList(){
     {icon:'➕', label:'Neuer Task', run:function(){ var t=createTask({columnId:state.columns[0].id}); renderAll(); openTaskModal(t.id); }},
     {icon:'📞', label:'Hotline-Anruf starten', run:function(){ quickStart('hotline','📞 Hotline-Anruf'); }},
     {icon:'📅', label:'Meeting starten', run:function(){ quickStart('meeting','📅 Meeting'); }},
+    {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
     {icon:'🎯', label:'Fokus-Modus starten', run: enterFocusMode},
@@ -4459,6 +4720,7 @@ function openSnoozedList(){
    ========================================================= */
 document.getElementById('btnHotline').addEventListener('click', function(){ quickStart('hotline', '📞 Hotline-Anruf'); });
 document.getElementById('btnMeeting').addEventListener('click', function(){ quickStart('meeting', '📅 Meeting'); });
+document.getElementById('btnQuickTimeEntry').addEventListener('click', openQuickTimeEntry);
 document.getElementById('btnQuickCapture').addEventListener('click', function(){ openQuickCapture(''); });
 document.getElementById('btnClipboardImport').addEventListener('click', importFromClipboard);
 document.getElementById('btnWhatNow').addEventListener('click', openWhatNow);
@@ -4494,6 +4756,19 @@ document.getElementById('btnStats').addEventListener('click', openStats);
 document.getElementById('btnArchive').addEventListener('click', toggleArchiveView);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
 document.getElementById('btnQuickSave').addEventListener('click', exportBackup);
+document.getElementById('btnMoreToggle').addEventListener('click', function(){
+  document.getElementById('topbar').classList.toggle('expanded');
+});
+document.getElementById('btnCloudSyncTopbar').addEventListener('click', function(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.enabled){
+    toast('☁️ Cloud-Sync ist noch nicht eingerichtet – siehe Einstellungen.');
+    openSettings();
+    return;
+  }
+  toast('☁️ Synchronisiere…');
+  cloudPushNow().then(function(){ return cloudPullNow(true); });
+});
 document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
@@ -4637,7 +4912,8 @@ function showOnboardingIfNeeded(){
         : '') +
       (getCloudSyncConfig().enabled ?
         '<div class="hint" style="margin-bottom:14px;">☁️ Cloud-Sync ist bereits eingerichtet – deine Daten werden gleich automatisch geladen.</div>'
-        : '<button class="btn big-action" id="obCloudSync" style="width:100%; margin-bottom:10px; justify-content:center;">☁️ Schon auf einem anderen Gerät eingerichtet? Cloud-Sync verbinden</button>' +
+        : '<button class="btn primary big-action" id="obQrScan" style="width:100%; margin-bottom:10px; justify-content:center;">📷 Mit QR-Code verbinden</button>' +
+          '<button class="btn big-action" id="obCloudSync" style="width:100%; margin-bottom:10px; justify-content:center;">🔗 Manuell verbinden (Token/Gist-ID eintragen)</button>' +
           '<div class="hint" style="margin-bottom:14px;">Ende-zu-Ende-verschlüsselt über einen privaten GitHub Gist. Neu einrichten geht auch jederzeit später unter ⚙️ Einstellungen.</div>') +
       '<p class="hint">Für eine Sicherung in deinem OneDrive- oder iCloud-Drive-Ordner (z.B. für ein zweites Gerät) klicke jederzeit oben auf <strong>💾 Sichern</strong>. Details findest du unter ⚙️ Einstellungen.</p>' +
       '<button class="btn big-action" id="obSkip" style="width:100%; justify-content:center;">Los geht\'s</button>' +
@@ -4649,6 +4925,12 @@ function showOnboardingIfNeeded(){
       pickNewFile().then(function(){ closeModal(); renderAll(); }).catch(function(err){
         if(err.name !== 'AbortError') toast('Fehler: ' + err.message);
       });
+    });
+  }
+  var qrScanBtn = document.getElementById('obQrScan');
+  if(qrScanBtn){
+    qrScanBtn.addEventListener('click', function(){
+      openQrScanner();
     });
   }
   var cloudBtn = document.getElementById('obCloudSync');

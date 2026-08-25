@@ -30,7 +30,8 @@ iCloud-Drive-Ordner ändern, und "Vor dem Herunterladen jedes Mal fragen" aktivi
 synchronisiert den Rest von selbst.
 
 Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten Cloud-Backup
-angefallen sind.
+angefallen sind – und, falls eingerichtet, auch den aktuellen Cloud-Sync-Status (aktiv, Fehler,
+oder nicht eingerichtet).
 
 ## ☁️ Cloud-Sync (automatisch, Ende-zu-Ende-verschlüsselt)
 
@@ -44,21 +45,56 @@ Passphrase verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Ers
 verschlüsselte Datei an GitHub. Entschlüsselt wird ebenfalls nur lokal im Browser des jeweiligen
 Geräts – nie unterwegs oder auf einem Server.
 
-**Einrichtung (einmalig pro Gerät):**
+**Einrichtung:**
 1. Einen GitHub **Personal Access Token** erstellen: GitHub → Settings → Developer settings →
    Personal access tokens → **nur die Berechtigung `gist`** aktivieren (keine anderen Rechte
    nötig).
-2. In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine **Passphrase** wählen, Feld "Gist-ID"
-   leer lassen → **"🔗 Verbinden / Neu erstellen"**. Das legt einen neuen, privaten
-   ("secret") Gist an.
-3. Auf jedem weiteren Gerät: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe
-   Passphrase**, und die **Gist-ID** vom ersten Gerät eintragen (steht z.B. in der URL des Gists
-   auf github.com) → wieder "Verbinden".
+2. **Auf dem ersten Gerät:** In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine
+   **Passphrase** wählen, Gist-ID-Feld leer lassen → **"☁️ Neuen Speicher erstellen (1. Gerät)"**.
+   Das legt einen neuen, privaten ("secret") Gist an. Die neu erzeugte Gist-ID erscheint danach
+   im Gist-ID-Feld, daneben ein **"📋 Kopieren"**-Button.
+3. **Auf jedem weiteren Gerät** – am einfachsten fürs Handy per QR-Code, siehe unten. Alternativ
+   manuell: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe Passphrase**, und die
+   kopierte **Gist-ID** ins Gist-ID-Feld einfügen → **"🔗 Mit bestehendem Speicher verbinden
+   (weiteres Gerät)"** klicken.
+
+   ⚠️ Wichtig: Auf dem zweiten (und jedem weiteren) Gerät **nicht** erneut "Neuen Speicher
+   erstellen" klicken – das würde einen zweiten, komplett getrennten Speicher anlegen, der nicht
+   mit dem ersten synchronisiert (die App warnt davor, falls auf einem Gerät schon Sync aktiv
+   ist, aber zwischen zwei brandneuen Geräten kann sie das nicht automatisch erkennen).
+
+### 📱 Handy per QR-Code koppeln (wie z.B. bei 1Password)
+
+**Auf dem bereits eingerichteten Gerät:** in ⚙️ Einstellungen → Cloud-Sync auf **"📱 Gerät per
+QR-Code koppeln"** klicken. Das zeigt einen QR-Code mit Token und Gist-ID dieses Geräts (**ohne**
+Passphrase – die wird aus Sicherheitsgründen nie im QR-Code übertragen).
+
+**Auf dem neuen Gerät (z.B. Smartphone):** beim Willkommensbildschirm (oder später in
+⚙️ Einstellungen → Cloud-Sync) auf **"📷 Mit QR-Code verbinden"** tippen. Das öffnet die
+Handy-Kamera direkt in der App (nutzt die native Scan-Funktion des Browsers, ohne zusätzliche
+Kamera-App). Code scannen → Token und Gist-ID werden automatisch übernommen, danach fragt die App
+nach der **Passphrase** – die muss man einmalig selbst eingeben (zweite Sicherheitsebene: wer nur
+den QR-Code sieht/fotografiert, kommt ohne Passphrase trotzdem nicht an die Daten).
+
+🔒 Der QR-Code enthält deinen GitHub-Token im Klartext (Design-bedingt) – trotzdem nicht
+fotografieren/weiterleiten, Fenster nach dem Koppeln schliessen. Die Passphrase steckt bewusst
+nicht mit drin, damit ein blosses Foto des QR-Codes allein nicht reicht, um an die Daten zu
+kommen.
+
+Unterstützt der Browser keinen Kamera-Scan direkt in der App (z.B. iPhone/Safari – dort gibt es
+die nötige Browser-Funktion `BarcodeDetector` bislang nicht), zeigt die App das automatisch an und
+verweist auf die Alternative: mit der normalen Kamera-App scannen, erkannten Text kopieren, in
+Work Board auf **"📋 Aus Zwischenablage"** tippen – landet ebenfalls bei der Passphrase-Abfrage.
 
 Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
 Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
 falls ja, erscheint ein Hinweisbanner zum Nachladen (dein aktueller Stand wird dabei **nicht**
 automatisch überschrieben).
+
+Für den manuellen Fall zwischendurch gibt es oben rechts direkt neben **💾 Sichern** den Button
+**☁️ Sync** – ein Klick stößt sofort ein Hoch- und Herunterladen an, ohne die Einstellungen zu
+öffnen (ist Cloud-Sync noch nicht eingerichtet, öffnet der Button stattdessen direkt die
+Einstellungen dafür).
 
 **Wichtig:**
 - **Passphrase verloren = Cloud-Daten unwiederbringlich weg.** Es gibt keine
@@ -86,12 +122,17 @@ Jira/Confluence Cloud ändern gelegentlich ihre Seitenstruktur – falls ein Boo
 findet, einfach Titel/Beschreibung manuell markieren, kopieren und stattdessen
 **🤖 Schnellerfassung** nutzen (dort reicht simples Einfügen/`Strg+V`).
 
-## Hotline-Anrufe & Meetings
+## Hotline-Anrufe, Meetings & freie Zeiterfassung
 
 - **📞 Hotline-Anruf**: Ein Klick erstellt sofort einen Task, startet den Timer und öffnet ein
   Notizfeld. Während des Gesprächs einfach Notizen eintippen (mit Zeitstempel). Am Ende:
   **📋 Notizen + Dauer für Jira-Kommentar kopieren** – fertig formatiert zum Einfügen ins Ticket.
 - **📅 Meeting**: gleiches Prinzip, misst automatisch die Meeting-Dauer.
+- **⏱️ Zeit erfassen**: für alles andere, was nicht Hotline/Meeting/Jira ist. Ein Klick, kurz
+  eintippen wofür (z.B. "Rechnungen kontrollieren"), Enter oder "▶ Starten" – legt sofort einen
+  Ad-hoc-Task in "In Bearbeitung" an und startet direkt den Timer. Titel leer lassen geht auch,
+  dann heisst der Task "Zeiterfassung HH:MM" und kann jederzeit im Task selbst umbenannt werden.
+  Auch über die Command Palette (`Strg+K`) erreichbar.
 
 ## Mail zu Task
 
