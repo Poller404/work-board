@@ -24,8 +24,14 @@ self.addEventListener('activate', function(event){
    hängen (was die vorherige Cache-first-Strategie verursachen konnte). */
 self.addEventListener('fetch', function(event){
   if(event.request.method !== 'GET') return;
+  /* cache:'no-store' umgeht zusätzlich den normalen HTTP-Cache des Browsers
+     (der sonst trotz Network-first-Strategie hier die Antwort gemäss
+     GitHub Pages' eigenem Cache-Control: max-age=600 wiederverwenden
+     würde). GitHub Pages' CDN selbst cached serverseitig bis zu 10 Minuten
+     pro Datei - das kann diese App nicht umgehen, das betrifft aber nur
+     den CDN-Edge, nicht mehr den Browser dieses Geräts. */
   event.respondWith(
-    fetch(event.request).then(function(networkResponse){
+    fetch(event.request, {cache:'no-store'}).then(function(networkResponse){
       var copy = networkResponse.clone();
       caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
       return networkResponse;
