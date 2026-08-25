@@ -4274,28 +4274,59 @@ function cloudPushNow(){
   if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
-  return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-    return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
-      extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
-      return fetch('https://api.github.com/gists/' + cfg.gistId, {
-        method:'PATCH',
-        headers: cloudGistHeaders(cfg.token),
-        body: JSON.stringify({files: extraFiles})
+
+  var safetyCheck = Promise.resolve(true);
+  if(state.tasks.length === 0){
+    /* Sicherheits-Check: nie ein leeres lokales Board pushen, wenn die Cloud
+       noch echte Tasks enthalten könnte (z.B. lokal gerade erst
+       zurückgesetzt/neu installiert, automatischer Pull noch nicht
+       gelaufen oder fehlgeschlagen). Ohne diesen Check würde ein Push von
+       einem frischen, leeren Gerät aus den echten Cloud-Stand mit "nichts"
+       überschreiben. Im Zweifel (Netzwerkfehler bei der Prüfung selbst)
+       lieber NICHT pushen. */
+    safetyCheck = fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(json){
+        var file = json && json.files && json.files[CLOUD_SYNC_FILE];
+        if(!file) return true;
+        return cloudDecryptPayload(file.content, cfg.passphrase).then(function(result){
+          var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
+          return !remoteHasTasks;
+        });
+      }).catch(function(){ return false; });
+  }
+
+  return safetyCheck.then(function(safeToPush){
+    if(!safeToPush){
+      cfg.lastError = 'Push übersprungen: lokal keine Tasks, Cloud enthält noch welche. "🔄 Jetzt synchronisieren" nutzen, um sie zuerst zu laden.';
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+      cloudSyncBusy = false;
+      return;
+    }
+    return cloudEncryptState(cfg.passphrase).then(function(encrypted){
+      return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
+        extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
+        return fetch('https://api.github.com/gists/' + cfg.gistId, {
+          method:'PATCH',
+          headers: cloudGistHeaders(cfg.token),
+          body: JSON.stringify({files: extraFiles})
+        });
       });
-    });
-  }).then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    return res.json();
-  }).then(function(){
-    cfg.lastSyncedAt = nowIso();
-    cfg.lastError = '';
-    setCloudSyncConfig(cfg);
-    renderCloudSyncStatus();
-  }).catch(function(err){
-    cfg.lastError = err.message || String(err);
-    setCloudSyncConfig(cfg);
-    renderCloudSyncStatus();
-  }).finally(function(){ cloudSyncBusy = false; });
+    }).then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+      return res.json();
+    }).then(function(){
+      cfg.lastSyncedAt = nowIso();
+      cfg.lastError = '';
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+    }).catch(function(err){
+      cfg.lastError = err.message || String(err);
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+    }).finally(function(){ cloudSyncBusy = false; });
+  });
 }
 function scheduleCloudPush(){
   var cfg = getCloudSyncConfig();
