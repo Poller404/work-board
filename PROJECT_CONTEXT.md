@@ -4,7 +4,20 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
-## 🔴 AKTUELL OFFENES PROBLEM (Stand 2026-08-25, noch ungelöst)
+## 🟡 PROBLEM VERMUTLICH GELÖST (Stand 2026-08-25, 3 Fixes gepusht, Nutzer-Bestätigung steht noch aus)
+
+**Update:** Nach den unten beschriebenen zwei Fixes kam noch ein dritter, wahrscheinlich
+entscheidender Fund dazu: GitHub Pages selbst sendet `Cache-Control: max-age=600` (per `curl -I`
+bestätigt) – der Browser cached jede Datei bis zu 10 Minuten lang, **unabhängig vom Service
+Worker**. Live reproduziert: ein Tab, der die Seite früher in der Session besucht hatte, zeigte
+auch nach Service-Worker-Neuinstallation noch alten Code; erst mit `{cache:'no-store'}` im
+Service-Worker-Fetch (Commit `e241bd3`) + einer Cache-Bust-URL kam zuverlässig der aktuelle Stand
+an. Drei Fixes jetzt gepusht: SW Network-first (`d709afa`), Cloud-Pull-Autoload (`030e639`),
+Push-Sicherheitscheck (`a1828df`), HTTP-Cache-Bypass (`e241bd3`). **Nutzer muss noch bestätigen,
+dass nach diesen Fixes + etwas Wartezeit (GitHub-Pages-CDN kann bis zu 10 Min brauchen) alles
+wieder passt.** Falls nicht: die Debugging-Schritte unten weiter abarbeiten.
+
+## 🔴 URSPRÜNGLICHES PROBLEM (Beschreibung, für Kontext)
 
 Der Nutzer meldet: Beim Öffnen der App (auf `https://poller404.github.io/work-board/`, seinem
 echten Firmengerät) erscheint **immer wieder der Willkommens-Dialog**, obwohl unter
