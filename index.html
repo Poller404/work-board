@@ -250,7 +250,9 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .bookmarklet-box a.bkm{background:var(--accent); color:#fff !important; padding:9px 16px; border-radius:6px; font-weight:700; text-decoration:none; white-space:nowrap;}
 .kbd{background:var(--surface-2); border:1px solid var(--border); border-bottom-width:2px; border-radius:4px; padding:1px 6px; font-size:11.5px; font-family:monospace;}
 #toastHost{position:fixed; bottom:18px; right:18px; display:flex; flex-direction:column; gap:8px; z-index:2000;}
-.toast{background:var(--text); color:var(--bg); padding:10px 16px; border-radius:8px; font-size:13px; box-shadow:var(--shadow-lg); max-width:320px;}
+.toast{background:var(--text); color:var(--bg); padding:10px 16px; border-radius:8px; font-size:13px; box-shadow:var(--shadow-lg); max-width:320px; display:flex; align-items:center; gap:10px; justify-content:space-between;}
+.toast .toast-action{background:rgba(128,128,128,.3); border:none; color:inherit; flex-shrink:0; padding:5px 10px; font-size:12px;}
+.toast .toast-action:hover{background:rgba(128,128,128,.5);}
 :root[data-theme="dark"] .toast{background:var(--surface); color:var(--text); border:1px solid var(--border);}
 #statusbar{display:flex; align-items:center; gap:14px; padding:5px 14px; font-size:11.5px; color:var(--text-faint); border-top:1px solid var(--border); background:var(--surface);}
 #statusbar .spacer{flex:1;}
@@ -543,6 +545,9 @@ function defaultState(){
       taskTemplates: [],
       pinCode: '',
       hourlyRate: null,
+      targetHoursPerDay: null,
+      dyceRoundingMinutes: 0,
+      resumeCandidateTaskId: null,
       backgroundImage: '',
       language: 'de',
       soundEnabled: false,
@@ -894,6 +899,7 @@ function fmtHM(totalSec){
 function startTimer(taskId){
   var prevId = state.settings.activeTaskId;
   if(prevId && prevId !== taskId){
+    state.settings.resumeCandidateTaskId = prevId;
     stopTimer(prevId, true);
   }
   var t = getTask(taskId);
@@ -916,6 +922,15 @@ function stopTimer(taskId, skipRender){
   if(state.settings.activeTaskId === taskId) state.settings.activeTaskId = null;
   t.updatedAt = nowIso();
   save();
+  var resumeId = state.settings.resumeCandidateTaskId;
+  if(resumeId && resumeId !== taskId){
+    var rt = getTask(resumeId);
+    state.settings.resumeCandidateTaskId = null;
+    if(rt && !rt.archived && !isRunning(rt)){
+      var rtId = rt.id;
+      toast('⏸ Timer gestoppt. Weiter mit "' + rt.title + '"?', 8000, '▶ Fortsetzen', function(){ startTimer(rtId); });
+    }
+  }
   if(!skipRender) renderAll();
 }
 function isRunning(task){ return task.timeSessions.some(function(s){ return !s.end; }); }
@@ -923,11 +938,20 @@ function isRunning(task){ return task.timeSessions.some(function(s){ return !s.e
 /* =========================================================
    TOASTS
    ========================================================= */
-function toast(msg, ms){
+function toast(msg, ms, actionLabel, actionFn){
   var host = document.getElementById('toastHost');
   var el = document.createElement('div');
   el.className = 'toast';
-  el.textContent = msg;
+  var msgSpan = document.createElement('span');
+  msgSpan.textContent = msg;
+  el.appendChild(msgSpan);
+  if(actionLabel && actionFn){
+    var btn = document.createElement('button');
+    btn.className = 'btn toast-action';
+    btn.textContent = actionLabel;
+    btn.addEventListener('click', function(){ actionFn(); el.remove(); });
+    el.appendChild(btn);
+  }
   host.appendChild(el);
   setTimeout(function(){ el.remove(); }, ms || 4200);
 }
@@ -3257,27 +3281,41 @@ function openDyceExport(){
   var dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   renderDyceModal(dateStr);
 }
+function roundSeconds(sec, roundingMinutes){
+  if(!roundingMinutes) return sec;
+  var chunk = roundingMinutes * 60;
+  return Math.round(sec / chunk) * chunk;
+}
 function renderDyceModal(dateStr){
+  var roundingMinutes = state.settings.dyceRoundingMinutes || 0;
   var rows = state.tasks.map(function(t){
     var sec = secondsOnDate(t, dateStr);
-    return {t:t, sec:sec};
+    return {t:t, sec:sec, roundedSec: roundSeconds(sec, roundingMinutes)};
   }).filter(function(r){ return r.sec > 0; }).sort(function(a,b){ return b.sec - a.sec; });
 
   var total = rows.reduce(function(s,r){ return s+r.sec; }, 0);
+  var roundedTotal = rows.reduce(function(s,r){ return s+r.roundedSec; }, 0);
 
   var bodyRows = rows.map(function(r){
     return '<tr><td>'+(TYPES[r.t.type]||TYPES.adhoc).icon+' '+escapeHtml(r.t.jiraKey || r.t.title)+'</td>' +
       '<td>'+escapeHtml(r.t.title)+'</td>' +
-      '<td>'+fmtHM(r.sec)+'</td></tr>';
+      '<td>'+fmtHM(r.roundedSec)+'</td></tr>';
   }).join('') || '<tr><td colspan="3" class="empty-state">Keine erfasste Zeit an diesem Tag.</td></tr>';
 
   var html =
     '<div class="modal-header"><h2>🧾 Tagesabschluss für Dyce</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
-      '<div class="form-row" style="max-width:200px;"><label>Datum</label><input type="date" id="dyceDate" value="'+dateStr+'"></div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row" style="max-width:200px;"><label>Datum</label><input type="date" id="dyceDate" value="'+dateStr+'"></div>' +
+        '<div class="form-row" style="max-width:200px;"><label>Rundung</label><select id="dyceRounding">' +
+          '<option value="0"'+(roundingMinutes===0?' selected':'')+'>Keine</option>' +
+          '<option value="5"'+(roundingMinutes===5?' selected':'')+'>Auf 5 Minuten</option>' +
+          '<option value="15"'+(roundingMinutes===15?' selected':'')+'>Auf 15 Minuten</option>' +
+        '</select></div>' +
+      '</div>' +
       '<table class="dyce-table"><thead><tr><th>Ticket/Task</th><th>Titel</th><th>Zeit</th></tr></thead>' +
       '<tbody>'+bodyRows+'</tbody>' +
-      '<tfoot><tr><td></td><td>Total</td><td>'+fmtHM(total)+'</td></tr></tfoot></table>' +
+      '<tfoot><tr><td></td><td>Total</td><td>'+fmtHM(roundedTotal)+'</td></tr></tfoot></table>' +
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn" id="copyDyceTsvBtn">📋 Als Tabelle kopieren (Excel/Dyce)</button>' +
@@ -3287,12 +3325,17 @@ function renderDyceModal(dateStr){
   document.getElementById('dyceDate').addEventListener('change', function(e){
     renderDyceModal(e.target.value);
   });
+  document.getElementById('dyceRounding').addEventListener('change', function(e){
+    state.settings.dyceRoundingMinutes = parseInt(e.target.value, 10) || 0;
+    save();
+    renderDyceModal(dateStr);
+  });
   document.getElementById('copyDyceTsvBtn').addEventListener('click', function(){
     var lines = ['Ticket\tTitel\tStunden'];
     rows.forEach(function(r){
-      lines.push((r.t.jiraKey||r.t.title) + '\t' + r.t.title + '\t' + (Math.round(r.sec/360)/10));
+      lines.push((r.t.jiraKey||r.t.title) + '\t' + r.t.title + '\t' + (Math.round(r.roundedSec/360)/10));
     });
-    lines.push('Total\t\t' + (Math.round(total/360)/10));
+    lines.push('Total\t\t' + (Math.round(roundedTotal/360)/10));
     copyToClipboard(lines.join('\n'));
     toast('Tabelle kopiert – bereit zum Einfügen in Dyce/Excel.');
   });
@@ -3302,6 +3345,46 @@ function renderDyceModal(dateStr){
    STATISTIK (Zeit nach Typ)
    ========================================================= */
 function openStats(){ renderStatsModal('week'); }
+function countWeekdays(startMs, endMsInclusive){
+  var d = new Date(startMs); d.setHours(0,0,0,0);
+  var end = new Date(endMsInclusive); end.setHours(0,0,0,0);
+  var count = 0;
+  while(d.getTime() <= end.getTime()){
+    var day = d.getDay();
+    if(day !== 0 && day !== 6) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+var DONUT_COLORS = ['#0052cc','#ff8b00','#de350b','#00875a','#6554c0','#8993a4'];
+function buildDonutChart(totals, grand){
+  var size = 140, r = 52, cx = size/2, cy = size/2, circumference = 2*Math.PI*r;
+  var offset = 0;
+  var keys = Object.keys(totals).filter(function(k){ return totals[k] > 0; });
+  var segments = keys.map(function(k, i){
+    var frac = grand > 0 ? totals[k]/grand : 0;
+    var dash = frac*circumference;
+    var seg = '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+DONUT_COLORS[i%DONUT_COLORS.length]+'" stroke-width="20" ' +
+      'stroke-dasharray="'+dash.toFixed(1)+' '+(circumference-dash).toFixed(1)+'" stroke-dashoffset="'+(-offset).toFixed(1)+'" transform="rotate(-90 '+cx+' '+cy+')"></circle>';
+    offset += dash;
+    return seg;
+  }).join('');
+  var svg = '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--surface-2)" stroke-width="20"></circle>' +
+    segments +
+    '</svg>';
+  var legend = keys.map(function(k, i){
+    var pct = grand > 0 ? Math.round(totals[k]/grand*100) : 0;
+    return '<div style="display:flex; align-items:center; gap:6px; font-size:12px;">' +
+      '<span style="width:10px; height:10px; border-radius:3px; background:'+DONUT_COLORS[i%DONUT_COLORS.length]+'; flex-shrink:0;"></span>' +
+      '<span>'+TYPES[k].icon+' '+TYPES[k].label+' · '+pct+'%</span>' +
+    '</div>';
+  }).join('');
+  return '<div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">' +
+    '<div>'+svg+'</div>' +
+    '<div style="display:flex; flex-direction:column; gap:6px;">'+(legend || '<span class="hint">Keine Daten.</span>')+'</div>' +
+  '</div>';
+}
 function renderStatsModal(range){
   var now = new Date();
   var startMs, label;
@@ -3317,6 +3400,27 @@ function renderStatsModal(range){
   });
   var grand = Object.keys(totals).reduce(function(s,k){ return s + totals[k]; }, 0);
   var maxVal = Math.max.apply(null, Object.keys(totals).map(function(k){ return totals[k]; })) || 1;
+  var donutHtml = buildDonutChart(totals, grand);
+
+  var targetHtml = '';
+  var dailyTargetHours = state.settings.targetHoursPerDay;
+  if(dailyTargetHours){
+    var targetSeconds;
+    if(range === 'today'){
+      var todayDow = now.getDay();
+      targetSeconds = (todayDow!==0 && todayDow!==6) ? dailyTargetHours*3600 : 0;
+    } else {
+      targetSeconds = dailyTargetHours*3600*countWeekdays(startMs, Math.min(endMs, now.getTime()));
+    }
+    var diff = grand - targetSeconds;
+    var diffColor = diff >= 0 ? 'var(--ok)' : 'var(--danger)';
+    var diffLabel = (diff >= 0 ? '+' : '−') + fmtHM(Math.abs(diff));
+    targetHtml = '<div style="display:flex; gap:16px; align-items:baseline; margin-bottom:14px; font-size:13px;">' +
+      '<span>🎯 Soll: <strong>'+fmtHM(targetSeconds)+'</strong></span>' +
+      '<span>Ist: <strong>'+fmtHM(grand)+'</strong></span>' +
+      '<span style="color:'+diffColor+'; font-weight:700;">'+diffLabel+'</span>' +
+    '</div>';
+  }
 
   var rows = Object.keys(TYPES).map(function(k){
     var sec = totals[k];
@@ -3411,6 +3515,9 @@ function renderStatsModal(range){
       '<div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">'+label+' · Total: <strong style="color:var(--text);">'+fmtHM(grand)+'</strong> · ✅ '+completedCount+' erledigt (Durchsatz)' +
         (state.settings.hourlyRate ? ' · 💰 <strong style="color:var(--text);">'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong> erarbeitet' : '') +
       '</div>' +
+      targetHtml +
+      '<div class="section-title">Zeitverteilung</div>' +
+      donutHtml +
       rows +
       '<div class="section-title">Letzte 7 Tage</div>' +
       sparkHtml +
@@ -3826,6 +3933,10 @@ function openSettings(){
       '<div class="hint" style="margin-bottom:8px;">Optionaler Stundensatz – zeigt in der Statistik den erarbeiteten Wert für den gewählten Zeitraum.</div>' +
       '<div class="form-row"><label>Stundensatz (CHF)</label><input type="number" id="sHourlyRate" value="'+(state.settings.hourlyRate||'')+'" min="0" style="max-width:120px;" placeholder="z.B. 95"></div>' +
 
+      '<div class="section-title">Soll-/Ist-Zeitvergleich</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Optionale Ziel-Arbeitszeit pro Tag – die Statistik zeigt dann Soll vs. Ist für Heute/Woche/Monat (Wochenenden werden nicht mitgezählt).</div>' +
+      '<div class="form-row"><label>Zielarbeitszeit (Std./Tag)</label><input type="number" id="sTargetHours" value="'+(state.settings.targetHoursPerDay||'')+'" min="0" step="0.1" style="max-width:120px;" placeholder="z.B. 8.4"></div>' +
+
       '<div class="section-title">Sichtschutz (PIN)</div>' +
       '<div class="hint" style="margin-bottom:8px;">Blendet beim Start eine PIN-Abfrage ein, damit vorbeigehende Kolleg:innen nicht sofort alles sehen. <strong>Kein echter Schutz</strong> – die Daten liegen weiterhin unverschlüsselt in der Datei.</div>' +
       '<div class="form-row-inline">' +
@@ -4076,6 +4187,10 @@ function openSettings(){
   });
   document.getElementById('sHourlyRate').addEventListener('change', function(e){
     state.settings.hourlyRate = e.target.value ? parseFloat(e.target.value) : null;
+    save();
+  });
+  document.getElementById('sTargetHours').addEventListener('change', function(e){
+    state.settings.targetHoursPerDay = e.target.value ? parseFloat(e.target.value) : null;
     save();
   });
   document.getElementById('savePinBtn').addEventListener('click', function(){
