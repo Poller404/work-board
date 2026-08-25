@@ -161,6 +161,7 @@ button.icon-btn:hover{background:var(--surface-2); color:var(--text);}
 .card .due{font-size:11px; color:var(--text-faint);}
 .card .due.overdue{color:var(--danger); font-weight:700;}
 .card.pinned{outline:2px solid var(--accent); outline-offset:-1px;}
+.card.today-focus{box-shadow:0 0 0 2px var(--ok) inset, var(--shadow);}
 .card.selected{outline:2px solid var(--ok); outline-offset:-1px; background:var(--ok-bg);}
 .card .select-check{position:absolute; top:6px; left:6px; width:18px; height:18px;}
 .card .pin-badge{position:absolute; top:6px; right:6px; font-size:11px; opacity:.8;}
@@ -535,6 +536,8 @@ function defaultState(){
       {id:'col-done', name:'Erledigt'}
     ],
     tasks: [],
+    journal: [],
+    reminders: [],
     settings: {
       theme: 'system',
       activeTaskId: null,
@@ -547,6 +550,10 @@ function defaultState(){
       snippets: [],
       recentMeetingTitles: [],
       focusModeMinutes: 25,
+      pomodoroEnabled: false,
+      pomodoroBreakMinutes: 5,
+      pomodoroLongBreakMinutes: 15,
+      pomodoroCyclesUntilLongBreak: 4,
       clipboardWatchEnabled: false,
       lastBreakAt: now,
       cumulativeBreakReminderMinutes: 180,
@@ -563,6 +570,8 @@ function defaultState(){
       dyceRoundingMinutes: 0,
       resumeCandidateTaskId: null,
       compactView: false,
+      todayFocusIds: [],
+      todayFocusDate: '',
       backgroundImage: '',
       language: 'de',
       soundEnabled: false,
@@ -578,6 +587,8 @@ function migrateState(data){
   if(!data || typeof data !== 'object') return d;
   d.columns = Array.isArray(data.columns) && data.columns.length ? data.columns : d.columns;
   d.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+  d.journal = Array.isArray(data.journal) ? data.journal : [];
+  d.reminders = Array.isArray(data.reminders) ? data.reminders : [];
   d.settings = Object.assign({}, d.settings, data.settings || {});
   d.boards = Array.isArray(data.boards) ? data.boards : [];
   d.meta = Object.assign({}, d.meta, data.meta || {});
@@ -2092,7 +2103,8 @@ function slaLevel(t){
 function renderCard(t){
   var card = document.createElement('div');
   var isSelected = selectedTaskIds.indexOf(t.id) >= 0;
-  card.className = 'card priority-' + t.priority + (t.pinned ? ' pinned' : '') + (isSelected ? ' selected' : '');
+  var isTodayFocus = state.settings.todayFocusDate === toDateInputValue(new Date()) && (state.settings.todayFocusIds||[]).indexOf(t.id) >= 0;
+  card.className = 'card priority-' + t.priority + (t.pinned ? ' pinned' : '') + (isSelected ? ' selected' : '') + (isTodayFocus ? ' today-focus' : '');
   card.draggable = !showArchive && !selectMode;
   card.dataset.taskId = t.id;
   card.tabIndex = 0;
@@ -2247,13 +2259,16 @@ document.getElementById('lockPinInput').addEventListener('keydown', function(e){
 var focusInterval = null;
 var focusSecondsLeft = 0;
 var focusPaused = false;
-function enterFocusMode(){
-  var id = state.settings.activeTaskId;
+var pomodoroCycleCount = 0;
+function enterFocusMode(explicitTaskId){
+  var id = explicitTaskId || state.settings.activeTaskId;
   if(!id){
     var t = pickWhatNowTask();
     if(!t){ toast('Kein offener Task für den Fokus-Modus gefunden.'); return; }
     startTimer(t.id);
     id = t.id;
+  } else if(!isRunning(getTask(id))){
+    startTimer(id);
   }
   var task = getTask(id);
   focusSecondsLeft = (state.settings.focusModeMinutes || 25) * 60;
@@ -2269,11 +2284,41 @@ function enterFocusMode(){
     renderFocusTime();
     if(focusSecondsLeft <= 0){
       clearInterval(focusInterval);
-      toast('🎯 Fokus-Block fertig! Zeit für eine kurze Pause.', 8000);
+      playSound('complete');
       if('Notification' in window && Notification.permission === 'granted'){
         try{ new Notification('Fokus-Block fertig', {body: task.title}); }catch(e){}
       }
+      if(state.settings.pomodoroEnabled){
+        stopTimer(id, true);
+        pomodoroCycleCount++;
+        var cyclesUntilLong = state.settings.pomodoroCyclesUntilLongBreak || 4;
+        var isLong = pomodoroCycleCount % cyclesUntilLong === 0;
+        var breakMin = isLong ? (state.settings.pomodoroLongBreakMinutes || 15) : (state.settings.pomodoroBreakMinutes || 5);
+        startPomodoroBreak(breakMin, isLong, id);
+      } else {
+        toast('🎯 Fokus-Block fertig! Zeit für eine kurze Pause.', 8000);
+        exitFocusMode();
+      }
+    }
+  }, 1000);
+}
+function startPomodoroBreak(minutes, isLong, taskId){
+  focusSecondsLeft = minutes * 60;
+  focusPaused = false;
+  document.getElementById('focusTitle').textContent = isLong ? '🌴 Lange Pause' : '☕ Kurze Pause';
+  document.getElementById('focusOverlay').classList.remove('hidden');
+  document.getElementById('focusPauseBtn').textContent = '⏸ Pause';
+  renderFocusTime();
+  if(focusInterval) clearInterval(focusInterval);
+  focusInterval = setInterval(function(){
+    if(focusPaused) return;
+    focusSecondsLeft--;
+    renderFocusTime();
+    if(focusSecondsLeft <= 0){
+      clearInterval(focusInterval);
       exitFocusMode();
+      playSound('complete');
+      toast('☕ Pause vorbei!', 15000, '🎯 Nächster Block', function(){ enterFocusMode(taskId); });
     }
   }, 1000);
 }
@@ -2290,6 +2335,133 @@ document.getElementById('focusPauseBtn').addEventListener('click', function(){
   document.getElementById('focusPauseBtn').textContent = focusPaused ? '▶ Weiter' : '⏸ Pause';
 });
 document.getElementById('focusExitBtn').addEventListener('click', exitFocusMode);
+
+/* =========================================================
+   JOURNAL (persönliche Notizen, getrennt von Tasks)
+   ========================================================= */
+function openJournal(){
+  var entries = state.journal.slice().sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+  var html =
+    '<div class="modal-header"><h2>📓 Journal</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:8px;">Freie Gedanken, kein Task-Zwang – nur für dich, nirgends verknüpft.</div>' +
+      '<textarea id="journalNewText" rows="4" placeholder="Was beschäftigt dich gerade?" style="width:100%; margin-bottom:8px;"></textarea>' +
+      '<button class="btn primary" id="journalAddBtn" style="margin-bottom:16px;">➕ Eintrag hinzufügen</button>' +
+      '<div class="notes-log" style="max-height:360px;">' +
+        (entries.length ? entries.map(function(en){
+          return '<div class="note-item" data-journal-id="'+en.id+'">' +
+            '<div class="ts" style="display:flex; justify-content:space-between;"><span>'+new Date(en.ts).toLocaleString('de-CH',{dateStyle:'medium',timeStyle:'short'})+'</span>' +
+            '<span class="icon-btn" data-del-journal="'+en.id+'" style="cursor:pointer;" title="Löschen">✕</span></div>' +
+            '<div style="white-space:pre-wrap;">'+escapeHtml(en.text)+'</div>' +
+          '</div>';
+        }).join('') : '<div class="empty-state">Noch keine Einträge.</div>') +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+  document.getElementById('journalAddBtn').addEventListener('click', function(){
+    var txt = document.getElementById('journalNewText').value.trim();
+    if(!txt) return;
+    state.journal.push({id: uid(), ts: nowIso(), text: txt});
+    save();
+    openJournal();
+  });
+  document.querySelectorAll('[data-del-journal]').forEach(function(el){
+    el.addEventListener('click', function(){
+      state.journal = state.journal.filter(function(en){ return en.id !== el.dataset.delJournal; });
+      save();
+      openJournal();
+    });
+  });
+}
+
+/* =========================================================
+   FREISTEHENDE ERINNERUNGEN (unabhängig von Tasks)
+   ========================================================= */
+function checkDueReminders(){
+  var due = state.reminders.filter(function(r){ return !r.fired && new Date(r.ts).getTime() <= Date.now(); });
+  if(!due.length) return;
+  due.forEach(function(r){
+    r.fired = true;
+    toast('⏰ ' + r.text, 12000);
+    if('Notification' in window && Notification.permission === 'granted'){
+      try{ new Notification('⏰ Erinnerung', {body: r.text}); }catch(e){}
+    }
+  });
+  save();
+}
+function openReminders(){
+  var upcoming = state.reminders.filter(function(r){ return !r.fired; }).sort(function(a,b){ return new Date(a.ts) - new Date(b.ts); });
+  var now = new Date();
+  var defaultDt = new Date(now.getTime() + 30*60000);
+  var defaultVal = toDateInputValue(defaultDt) + 'T' + String(defaultDt.getHours()).padStart(2,'0') + ':' + String(defaultDt.getMinutes()).padStart(2,'0');
+  var html =
+    '<div class="modal-header"><h2>⏰ Erinnerungen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:8px;">Unabhängig von Tasks – z.B. "in 30 Min. Kaffeemaschine entkalken nicht vergessen".</div>' +
+      '<div class="form-row"><label>Wann</label><input type="datetime-local" id="reminderWhen" value="'+defaultVal+'"></div>' +
+      '<div class="form-row"><label>Text</label><input id="reminderText" placeholder="Woran erinnern?"></div>' +
+      '<button class="btn primary" id="reminderAddBtn" style="margin-bottom:16px;">➕ Erinnerung setzen</button>' +
+      (upcoming.length ?
+        upcoming.map(function(r){
+          return '<div class="session-row"><span>⏰ '+new Date(r.ts).toLocaleString('de-CH',{dateStyle:'medium',timeStyle:'short'})+' – '+escapeHtml(r.text)+'</span>' +
+            '<span class="icon-btn" data-del-reminder="'+r.id+'" style="cursor:pointer;">✕</span></div>';
+        }).join('')
+        : '<div class="empty-state">Keine anstehenden Erinnerungen.</div>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html);
+  document.getElementById('reminderAddBtn').addEventListener('click', function(){
+    var when = document.getElementById('reminderWhen').value;
+    var txt = document.getElementById('reminderText').value.trim();
+    if(!when || !txt){ toast('Bitte Zeitpunkt und Text ausfüllen.'); return; }
+    state.reminders.push({id: uid(), ts: new Date(when).toISOString(), text: txt, fired: false});
+    save();
+    if('Notification' in window && Notification.permission === 'default'){ try{ Notification.requestPermission(); }catch(e){} }
+    toast('⏰ Erinnerung gesetzt.');
+    openReminders();
+  });
+  document.querySelectorAll('[data-del-reminder]').forEach(function(el){
+    el.addEventListener('click', function(){
+      state.reminders = state.reminders.filter(function(r){ return r.id !== el.dataset.delReminder; });
+      save();
+      openReminders();
+    });
+  });
+}
+
+/* =========================================================
+   MORGEN-RITUAL (Tagesprioritäten aus dem Backlog auswählen)
+   ========================================================= */
+function openMorningRitual(){
+  var today = toDateInputValue(new Date());
+  if(state.settings.todayFocusDate !== today) state.settings.todayFocusIds = [];
+  var candidates = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && !isSnoozed(t); })
+    .sort(function(a,b){ return PRIORITIES[a.priority].order - PRIORITIES[b.priority].order; });
+  var selected = state.settings.todayFocusIds || [];
+  var html =
+    '<div class="modal-header"><h2>🌅 Morgen-Ritual</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:10px;">Welche Tasks sind heute deine Priorität? Ausgewählte werden im Board hervorgehoben.</div>' +
+      (candidates.length ? candidates.map(function(t){
+        return '<label style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;">' +
+          '<input type="checkbox" class="morning-check" value="'+t.id+'" '+(selected.indexOf(t.id)>=0?'checked':'')+'>' +
+          '<span>'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.title)+'</span>' +
+        '</label>';
+      }).join('') : '<div class="empty-state">Keine offenen Tasks.</div>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="morningConfirmBtn">Los geht\'s</button></div>';
+  openModal(html, {wide:true});
+  document.getElementById('morningConfirmBtn').addEventListener('click', function(){
+    var picked = Array.from(document.querySelectorAll('.morning-check:checked')).map(function(cb){ return cb.value; });
+    state.settings.todayFocusIds = picked;
+    state.settings.todayFocusDate = today;
+    save();
+    renderAll();
+    closeModal();
+    toast(picked.length ? '🌅 ' + picked.length + ' Priorität(en) für heute gesetzt.' : 'Keine Priorität ausgewählt.');
+  });
+}
 
 /* =========================================================
    IDLE-ERKENNUNG
@@ -3991,6 +4163,12 @@ function openSettings(){
       '<div class="form-row"><label>Erinnerung nach ununterbrochener Laufzeit (Minuten)</label><input type="number" id="sIdle" value="'+state.settings.idleReminderMinutes+'" min="10" style="max-width:120px;"></div>' +
       '<div class="form-row"><label>Pausen-Erinnerung nach (Minuten)</label><input type="number" id="sBreakMinutes" value="'+state.settings.cumulativeBreakReminderMinutes+'" min="30" style="max-width:120px;"></div>' +
       '<div class="form-row"><label>Fokus-Block-Dauer (Minuten)</label><input type="number" id="sFocusMinutes" value="'+state.settings.focusModeMinutes+'" min="5" style="max-width:120px;"></div>' +
+      '<label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px;"><input type="checkbox" id="sPomodoroEnabled" '+(state.settings.pomodoroEnabled?'checked':'')+'> 🍅 Pomodoro-Modus (Fokus-Modus reiht automatisch Pausen zwischen den Blöcken ein)</label>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row"><label>Kurze Pause (Min.)</label><input type="number" id="sPomodoroBreak" value="'+state.settings.pomodoroBreakMinutes+'" min="1" style="max-width:100px;"></div>' +
+        '<div class="form-row"><label>Lange Pause (Min.)</label><input type="number" id="sPomodoroLongBreak" value="'+state.settings.pomodoroLongBreakMinutes+'" min="1" style="max-width:100px;"></div>' +
+        '<div class="form-row"><label>Blöcke bis lange Pause</label><input type="number" id="sPomodoroCycles" value="'+state.settings.pomodoroCyclesUntilLongBreak+'" min="2" style="max-width:100px;"></div>' +
+      '</div>' +
       '<div class="form-row-inline">' +
         '<div class="form-row"><label>Hotline-SLA: Warnung ab (Std.)</label><input type="number" id="sSlaWarn" value="'+state.settings.slaWarnHours+'" min="1" style="max-width:120px;"></div>' +
         '<div class="form-row"><label>Hotline-SLA: kritisch ab (Std.)</label><input type="number" id="sSlaCritical" value="'+state.settings.slaCriticalHours+'" min="1" style="max-width:120px;"></div>' +
@@ -4237,6 +4415,22 @@ function openSettings(){
     save();
   });
   document.getElementById('btnMarkBreak').addEventListener('click', markBreakTaken);
+  document.getElementById('sPomodoroEnabled').addEventListener('change', function(e){
+    state.settings.pomodoroEnabled = e.target.checked;
+    save();
+  });
+  document.getElementById('sPomodoroBreak').addEventListener('change', function(e){
+    state.settings.pomodoroBreakMinutes = parseInt(e.target.value,10) || 5;
+    save();
+  });
+  document.getElementById('sPomodoroLongBreak').addEventListener('change', function(e){
+    state.settings.pomodoroLongBreakMinutes = parseInt(e.target.value,10) || 15;
+    save();
+  });
+  document.getElementById('sPomodoroCycles').addEventListener('change', function(e){
+    state.settings.pomodoroCyclesUntilLongBreak = parseInt(e.target.value,10) || 4;
+    save();
+  });
   document.getElementById('sSlaWarn').addEventListener('change', function(e){
     state.settings.slaWarnHours = parseInt(e.target.value,10) || 4;
     save(); renderBoard();
@@ -4621,6 +4815,9 @@ function cmdActionsList(){
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
+    {icon:'📓', label:'Journal öffnen', run: openJournal},
+    {icon:'⏰', label:'Erinnerungen', run: openReminders},
+    {icon:'🌅', label:'Morgen-Ritual (Tagesprioritäten wählen)', run: openMorningRitual},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
     {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
@@ -4920,7 +5117,7 @@ document.getElementById('btnQuickCapture').addEventListener('click', function(){
 document.getElementById('btnClipboardImport').addEventListener('click', importFromClipboard);
 document.getElementById('btnWhatNow').addEventListener('click', openWhatNow);
 document.getElementById('btnSnoozed').addEventListener('click', openSnoozedList);
-document.getElementById('btnFocus').addEventListener('click', enterFocusMode);
+document.getElementById('btnFocus').addEventListener('click', function(){ enterFocusMode(); });
 document.getElementById('btnSelectMode').addEventListener('click', toggleSelectMode);
 document.getElementById('boardViewSelect').addEventListener('change', function(e){ setBoardViewMode(e.target.value); });
 document.getElementById('btnCompactToggle').addEventListener('click', function(){
@@ -5182,6 +5379,7 @@ function init(){
     }, 20*60*1000);
     setInterval(checkCumulativeBreak, 60000);
     setInterval(checkWakeSnoozed, 60000);
+    setInterval(checkDueReminders, 30000);
     runAutoArchive();
     setTimeout(checkOvernightTimers, 1200);
     captureDailySnapshotIfNeeded();
