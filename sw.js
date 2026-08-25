@@ -1,4 +1,4 @@
-var CACHE_NAME = 'work-board-v1';
+var CACHE_NAME = 'work-board-v2';
 var ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', function(event){
@@ -17,15 +17,20 @@ self.addEventListener('activate', function(event){
   self.clients.claim();
 });
 
+/* Network-first statt Cache-first: liefert bei aktiver Internetverbindung
+   immer den aktuell deployten Stand und aktualisiert den Cache nebenbei;
+   nur offline greift der zuletzt zwischengespeicherte Stand. Verhindert,
+   dass Nutzer:innen bei häufigen Deploys dauerhaft einen Stand hinterher-
+   hängen (was die vorherige Cache-first-Strategie verursachen konnte). */
 self.addEventListener('fetch', function(event){
   if(event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      var fetchPromise = fetch(event.request).then(function(networkResponse){
-        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, networkResponse.clone()); });
-        return networkResponse;
-      }).catch(function(){ return cached; });
-      return cached || fetchPromise;
+    fetch(event.request).then(function(networkResponse){
+      var copy = networkResponse.clone();
+      caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+      return networkResponse;
+    }).catch(function(){
+      return caches.match(event.request);
     })
   );
 });
