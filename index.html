@@ -292,6 +292,11 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
   #printArea .print-col{margin-bottom:14px; break-inside:avoid;}
   #printArea .print-col h2{font-size:13px; text-transform:uppercase; border-bottom:1px solid #999; padding-bottom:2px; margin-bottom:6px;}
   #printArea .print-task{font-size:12px; padding:3px 0; border-bottom:1px dotted #ccc;}
+  #printArea .print-report h2{font-size:14px; margin:18px 0 8px; border-bottom:1px solid #999; padding-bottom:3px;}
+  #printArea .print-report .report-summary{font-size:13px; margin-bottom:10px;}
+  #printArea .print-report table{width:100%; border-collapse:collapse; font-size:11.5px;}
+  #printArea .print-report th, #printArea .print-report td{text-align:left; padding:4px 6px; border-bottom:1px solid #ddd;}
+  #printArea .print-report th{border-bottom:2px solid #333;}
 }
 
 /* ---- Responsive / mobile ---- */
@@ -572,6 +577,7 @@ function defaultState(){
       compactView: false,
       todayFocusIds: [],
       todayFocusDate: '',
+      dayTemplates: [],
       backgroundImage: '',
       language: 'de',
       soundEnabled: false,
@@ -616,6 +622,7 @@ function normalizeTask(t){
   if(t.completedAt === undefined) t.completedAt = null;
   if(!Array.isArray(t.checklist)) t.checklist = [];
   if(typeof t.assignee !== 'string') t.assignee = '';
+  if(typeof t.followUp !== 'string') t.followUp = '';
   return t;
 }
 
@@ -1793,6 +1800,46 @@ function printBoard(){
   window.print();
 }
 
+/* PDF-Export = formatierter Wochenbericht über den nativen "Als PDF
+   speichern"-Druckdialog des Browsers (keine externe PDF-Library nötig,
+   funktioniert überall gleich gut). */
+function printWeeklyReportPdf(){
+  var start = startOfWeek(new Date()).getTime();
+  var end = Date.now();
+  var totals = {};
+  Object.keys(TYPES).forEach(function(k){ totals[k] = 0; });
+  var withTime = state.tasks.filter(function(t){ return secondsInRange(t,start,end) > 0; });
+  withTime.forEach(function(t){ totals[t.type] = (totals[t.type]||0) + secondsInRange(t,start,end); });
+  var grand = Object.keys(totals).reduce(function(s,k){ return s+totals[k]; }, 0);
+  var completedCount = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= start; }).length;
+
+  var typeRows = Object.keys(TYPES).filter(function(k){ return totals[k]>0; }).map(function(k){
+    return '<tr><td>'+TYPES[k].icon+' '+TYPES[k].label+'</td><td>'+fmtHM(totals[k])+'</td></tr>';
+  }).join('');
+
+  var taskRows = withTime.sort(function(a,b){ return secondsInRange(b,start,end)-secondsInRange(a,start,end); }).map(function(t){
+    return '<tr><td>'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.title)+(t.jiraKey?' ('+escapeHtml(t.jiraKey)+')':'')+'</td>' +
+      '<td>'+PRIORITIES[t.priority].label+'</td>' +
+      '<td>'+fmtHM(secondsInRange(t,start,end))+'</td>' +
+      '<td>'+(t.completedAt && new Date(t.completedAt).getTime()>=start ? '✅' : '')+'</td></tr>';
+  }).join('');
+
+  var area = document.getElementById('printArea');
+  area.innerHTML =
+    '<div class="print-report">' +
+      '<h1>📄 Wochenbericht</h1>' +
+      '<div class="print-meta">KW-Start ' + new Date(start).toLocaleDateString('de-CH') + ' – erstellt am ' + new Date().toLocaleString('de-CH') + '</div>' +
+      '<div class="report-summary">Gesamtzeit: <strong>'+fmtHM(grand)+'</strong> &nbsp;·&nbsp; Erledigt: <strong>'+completedCount+'</strong>' +
+        (state.settings.hourlyRate ? ' &nbsp;·&nbsp; Wert: <strong>'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong>' : '') +
+      '</div>' +
+      '<h2>Zeit nach Typ</h2>' +
+      '<table><thead><tr><th>Typ</th><th>Zeit</th></tr></thead><tbody>'+(typeRows||'<tr><td colspan="2">–</td></tr>')+'</tbody></table>' +
+      '<h2>Tasks dieser Woche</h2>' +
+      '<table><thead><tr><th>Task</th><th>Priorität</th><th>Zeit</th><th>Erledigt</th></tr></thead><tbody>'+(taskRows||'<tr><td colspan="4">–</td></tr>')+'</tbody></table>' +
+    '</div>';
+  window.print();
+}
+
 /* =========================================================
    TASTATUR-CHEATSHEET
    ========================================================= */
@@ -1932,16 +1979,37 @@ function openSnippetMenu(anchorBtn, targetEl){
 /* =========================================================
    "WAS JETZT?" – NÄCHSTEN TASK VORSCHLAGEN
    ========================================================= */
+/* Leichtgewichtiger "Lernalgorithmus": schaut, welcher Task-Typ zu dieser
+   Tageszeit historisch am häufigsten bearbeitet wurde (aus timeSessions),
+   und bevorzugt bei gleicher Priorität Tasks von diesem Typ. Kein echtes
+   ML, aber macht "Was jetzt?" mit der Zeit passender zum eigenen Rhythmus. */
+function typeAffinityForHour(hour){
+  var counts = {};
+  state.tasks.forEach(function(t){
+    t.timeSessions.forEach(function(s){
+      if(new Date(s.start).getHours() === hour) counts[t.type] = (counts[t.type]||0) + 1;
+    });
+  });
+  var best = null, bestCount = 0;
+  Object.keys(counts).forEach(function(k){ if(counts[k] > bestCount){ best = k; bestCount = counts[k]; } });
+  return best;
+}
 function pickWhatNowTask(){
   var doneColIds = state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; });
   var candidates = state.tasks.filter(function(t){
     return !t.archived && doneColIds.indexOf(t.columnId) < 0 && !isSnoozed(t);
   });
   if(!candidates.length) return null;
+  var preferredType = typeAffinityForHour(new Date().getHours());
   candidates.sort(function(a,b){
     if(a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     var pd = PRIORITIES[a.priority].order - PRIORITIES[b.priority].order;
     if(pd !== 0) return pd;
+    if(preferredType){
+      var ap = a.type === preferredType ? 0 : 1;
+      var bp = b.type === preferredType ? 0 : 1;
+      if(ap !== bp) return ap - bp;
+    }
     return new Date(a.createdAt) - new Date(b.createdAt);
   });
   return candidates[0];
@@ -2099,6 +2167,79 @@ function slaLevel(t){
   if(ageHours >= (state.settings.slaCriticalHours||24)) return 'critical';
   if(ageHours >= (state.settings.slaWarnHours||4)) return 'warn';
   return null;
+}
+function openKnowledgeBase(query){
+  query = (query||'').toLowerCase();
+  var results = [];
+  if(query){
+    results = state.tasks.filter(function(t){
+      if(!(t.completedAt || t.archived)) return false;
+      var haystack = (t.title+' '+t.description+' '+(t.jiraKey||'')+' '+t.notes.map(function(n){return n.text;}).join(' ')).toLowerCase();
+      return haystack.indexOf(query) >= 0;
+    }).sort(function(a,b){ return new Date(b.updatedAt) - new Date(a.updatedAt); }).slice(0,30);
+  }
+  var html =
+    '<div class="modal-header"><h2>🔍 Lösungs-Wissensdatenbank</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:8px;">Durchsucht erledigte/archivierte Tasks (Titel, Beschreibung, Notizen) – "das hatten wir schon mal".</div>' +
+      '<input id="kbSearchInput" value="'+escapeAttr(query)+'" placeholder="z.B. VPN, Drucker, Passwort-Reset…" style="width:100%; margin-bottom:12px;">' +
+      '<div id="kbResults">' +
+        (!query ? '<div class="empty-state">Suchbegriff eingeben…</div>' :
+          (results.length ? results.map(function(t){
+            var lastNote = t.notes.length ? t.notes[t.notes.length-1].text : '';
+            return '<div class="note-item" data-open-task="'+t.id+'" style="cursor:pointer; margin-bottom:6px;">' +
+              '<div class="ts">'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.jiraKey||'')+' · '+new Date(t.updatedAt).toLocaleDateString('de-CH')+'</div>' +
+              '<div style="font-weight:600;">'+escapeHtml(t.title)+'</div>' +
+              (lastNote ? '<div class="hint" style="margin-top:3px;">💬 '+escapeHtml(lastNote.slice(0,150))+'</div>' : '') +
+            '</div>';
+          }).join('') : '<div class="empty-state">Keine Treffer in erledigten/archivierten Tasks.</div>')
+        ) +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+  document.querySelectorAll('[data-open-task]').forEach(function(el){
+    el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); });
+  });
+  var input = document.getElementById('kbSearchInput');
+  input.focus();
+  var kbDebounce = null;
+  input.addEventListener('input', function(){
+    clearTimeout(kbDebounce);
+    kbDebounce = setTimeout(function(){ openKnowledgeBase(input.value); }, 300);
+  });
+}
+function openSlaDashboard(){
+  var slaTasks = state.tasks.filter(function(t){ return !t.archived && slaLevel(t); })
+    .map(function(t){ return {t:t, level: slaLevel(t), ageHours: (Date.now()-new Date(t.createdAt).getTime())/3600000}; })
+    .sort(function(a,b){ return b.ageHours - a.ageHours; });
+  var overdueTasks = state.tasks.filter(function(t){
+    return !t.archived && !t.completedAt && t.dueDate && new Date(t.dueDate) < new Date(new Date().toDateString());
+  }).sort(function(a,b){ return new Date(a.dueDate) - new Date(b.dueDate); });
+
+  var html =
+    '<div class="modal-header"><h2>🚨 SLA-/Fälligkeits-Dashboard</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="section-title">📞 Hotline-SLA-Risiko ('+slaTasks.length+')</div>' +
+      (slaTasks.length ? slaTasks.map(function(r){
+        return '<div class="session-row" data-open-task="'+r.t.id+'" style="cursor:pointer;">' +
+          '<span><span class="sla-dot '+r.level+'"></span> '+escapeHtml(r.t.title)+'</span>' +
+          '<span style="color:'+(r.level==='critical'?'var(--danger)':'var(--warn)')+'; font-weight:700;">'+Math.round(r.ageHours)+'h alt</span>' +
+        '</div>';
+      }).join('') : '<div class="empty-state">Keine Hotline-Tickets im SLA-Risiko.</div>') +
+      '<div class="section-title">📆 Überfällige Fälligkeitstermine ('+overdueTasks.length+')</div>' +
+      (overdueTasks.length ? overdueTasks.map(function(t){
+        return '<div class="session-row" data-open-task="'+t.id+'" style="cursor:pointer;">' +
+          '<span>'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.title)+'</span>' +
+          '<span class="due overdue">📆 '+t.dueDate+'</span>' +
+        '</div>';
+      }).join('') : '<div class="empty-state">Keine überfälligen Termine.</div>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+  document.querySelectorAll('[data-open-task]').forEach(function(el){
+    el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); });
+  });
 }
 function renderCard(t){
   var card = document.createElement('div');
@@ -2426,6 +2567,61 @@ function openReminders(){
       state.reminders = state.reminders.filter(function(r){ return r.id !== el.dataset.delReminder; });
       save();
       openReminders();
+    });
+  });
+}
+
+/* =========================================================
+   TAGES-VORLAGEN (mehrere Tasks auf einmal für wiederkehrende
+   Routinen anlegen, z.B. "Montags-Setup": Standup, Mail-Check, …)
+   ========================================================= */
+function openDayTemplates(){
+  var templates = state.settings.dayTemplates || [];
+  var html =
+    '<div class="modal-header"><h2>🗓️ Tages-Vorlagen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:10px;">Für wiederkehrende Routinen (z.B. "Montags-Setup") – legt mehrere Tasks auf einmal an.</div>' +
+      (templates.length ? templates.map(function(tpl, idx){
+        return '<div class="link-chip" style="align-items:flex-start;">' +
+          '<span style="flex:1;"><strong>'+escapeHtml(tpl.name)+'</strong><br><span class="hint">'+tpl.items.length+' Task(s): '+tpl.items.map(function(it){return escapeHtml(it.title);}).join(', ')+'</span></span>' +
+          '<button class="btn" data-apply-tpl="'+idx+'">▶ Anwenden</button>' +
+          '<button class="icon-btn" data-del-tpl="'+idx+'" title="Löschen">✕</button>' +
+        '</div>';
+      }).join('') : '<div class="empty-state">Noch keine Vorlagen.</div>') +
+      '<div class="section-title">Neue Vorlage</div>' +
+      '<div class="form-row"><label>Name</label><input id="newTplName" placeholder="z.B. Montags-Setup"></div>' +
+      '<div class="form-row"><label>Ein Task-Titel pro Zeile</label><textarea id="newTplItems" rows="4" placeholder="Standup&#10;Mail-Check&#10;Ticket-Queue durchsehen"></textarea></div>' +
+      '<button class="btn primary" id="addTplBtn">➕ Vorlage speichern</button>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide:true});
+  document.getElementById('addTplBtn').addEventListener('click', function(){
+    var name = document.getElementById('newTplName').value.trim();
+    var lines = document.getElementById('newTplItems').value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    if(!name || !lines.length){ toast('Bitte Namen und mindestens einen Task-Titel angeben.'); return; }
+    state.settings.dayTemplates = state.settings.dayTemplates || [];
+    state.settings.dayTemplates.push({name: name, items: lines.map(function(title){ return {title: title, type:'adhoc', priority:'medium'}; })});
+    save();
+    openDayTemplates();
+  });
+  document.querySelectorAll('[data-apply-tpl]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tpl = templates[parseInt(btn.dataset.applyTpl, 10)];
+      if(!tpl) return;
+      var col = state.columns.find(function(c){ return /to.?do|backlog/i.test(c.name); }) || state.columns[0];
+      tpl.items.forEach(function(it){
+        createTask({title: it.title, type: it.type||'adhoc', priority: it.priority||'medium', columnId: col.id});
+      });
+      renderAll();
+      closeModal();
+      toast('🗓️ ' + tpl.items.length + ' Task(s) aus Vorlage "' + tpl.name + '" angelegt.');
+    });
+  });
+  document.querySelectorAll('[data-del-tpl]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      state.settings.dayTemplates.splice(parseInt(btn.dataset.delTpl, 10), 1);
+      save();
+      openDayTemplates();
     });
   });
 }
@@ -2843,6 +3039,10 @@ function openTaskModal(taskId){
       '</div>' +
       (t.notes.length ? '<button class="btn" id="copyNotesBtn">📋 Notizen + Dauer für Jira-Kommentar kopieren</button>' : '') +
 
+      '<div class="section-title">Rückfragen (später klären)</div>' +
+      '<div class="hint" style="margin-bottom:6px;">Getrennt vom Notizen-Log – für offene Punkte, die du noch abklären musst.</div>' +
+      '<textarea id="fFollowUp" rows="2" placeholder="z.B. Rückfrage an Kollege X, ob…" style="width:100%;">'+escapeHtml(t.followUp||'')+'</textarea>' +
+
       '<div class="section-title">Zeiterfassung – Sitzungen</div>' +
       '<div class="notes-log">'+sessionsHtml+'</div>' +
 
@@ -2854,6 +3054,7 @@ function openTaskModal(taskId){
       '<button class="btn" id="pinToggleBtn">'+(t.pinned?'📌 Losgelöst':'📌 Anpinnen')+'</button>' +
       (t.type==='meeting' ? '<button class="btn" id="icsExportBtn">📅 Zum Kalender (.ics)</button>' : '') +
       '<button class="btn" id="saveAsTemplateBtn">💾 Als Vorlage</button>' +
+      '<button class="btn" id="mailReplyBtn">✉️ E-Mail-Antwort</button>' +
       '<button class="btn" id="qrShareBtn">📱 QR-Code</button>' +
       (!t.archived ? '<button class="btn" id="archiveTaskBtn">🗄️ Archivieren</button>' : '<button class="btn" id="unarchiveTaskBtn">↩️ Wiederherstellen</button>') +
       '<button class="btn primary" data-close-modal>Fertig</button>' +
@@ -2910,6 +3111,16 @@ function openTaskModal(taskId){
   var icsBtn = document.getElementById('icsExportBtn');
   if(icsBtn) icsBtn.addEventListener('click', function(){ exportMeetingIcs(t); });
   document.getElementById('qrShareBtn').addEventListener('click', function(){ openQrShare(t); });
+  var followUpEl = document.getElementById('fFollowUp');
+  if(followUpEl) followUpEl.addEventListener('change', function(e){
+    updateTask(t.id, {followUp: e.target.value});
+  });
+  var mailReplyBtn = document.getElementById('mailReplyBtn');
+  if(mailReplyBtn) mailReplyBtn.addEventListener('click', function(){
+    var subject = (t.jiraKey ? '['+t.jiraKey+'] ' : '') + t.title;
+    var body = 'Hallo\n\n\n\nFreundliche Grüsse\n\n---\n' + (t.description ? t.description.slice(0,300) : '');
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  });
   document.getElementById('saveAsTemplateBtn').addEventListener('click', function(){
     state.settings.taskTemplates.push({
       name: t.title, type: t.type, priority: t.priority,
@@ -3493,6 +3704,20 @@ function handleCloudPairPayload(text){
   if(!token || !gistId){ toast('Ungültiger Kopplungs-Code.'); return; }
   promptPassphraseAndJoin(token, gistId);
 }
+function handleJiraBulkImport(items){
+  if(!items || !items.length){ toast('Keine Tickets im Import gefunden.'); return; }
+  var col = state.columns[0];
+  var created = 0, skipped = 0;
+  items.forEach(function(it){
+    if(!it.key) return;
+    var exists = state.tasks.some(function(t){ return t.jiraKey === it.key; });
+    if(exists){ skipped++; return; }
+    createTask({title: it.title || it.key, type:'jira', jiraKey: it.key, columnId: col.id});
+    created++;
+  });
+  renderAll();
+  toast('✅ ' + created + ' Ticket(s) importiert' + (skipped ? ' (' + skipped + ' bereits vorhanden, übersprungen)' : '') + '.');
+}
 function importFromClipboard(){
   if(!navigator.clipboard || !navigator.clipboard.readText){
     openQuickCapture('');
@@ -3504,6 +3729,13 @@ function importFromClipboard(){
       handleCloudPairPayload(text);
       return;
     }
+    try{
+      var maybeBulk = JSON.parse(text);
+      if(maybeBulk && maybeBulk.source === 'jira-bulk' && Array.isArray(maybeBulk.items)){
+        handleJiraBulkImport(maybeBulk.items);
+        return;
+      }
+    }catch(e){}
     var payload = tryParseImportPayload(text);
     if(payload){
       openDraftPreview(payload, text);
@@ -3523,6 +3755,8 @@ function importFromClipboard(){
    ========================================================= */
 var BOOKMARKLET_SRC = "(function(){try{var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:'';var titleEl=document.querySelector('[data-testid=\"issue.views.issue-base.foundation.summary.heading\"]')||document.querySelector('#summary-val')||document.querySelector('h1');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].replace(/^\\[.*?\\]\\s*/,'').trim();if(!key){var km=(title+' '+document.title).match(/([A-Z][A-Z0-9]+-\\d+)/);key=km?km[1]:'';}var descEl=document.querySelector('[data-testid=\"issue.views.field.rich-text.description\"]')||document.querySelector('#description-val');var desc=descEl?descEl.textContent.trim().slice(0,2000):'';var prEl=document.querySelector('[data-testid*=\"priority\"]');var pr=prEl?prEl.textContent.trim():'';var payload={source:'jira',key:key,title:title||('Ticket '+key),url:url,description:desc,priorityHint:pr};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+(key||'Ticket')+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Ticket-Daten nicht auslesen: '+e.message);}})();";
 var BOOKMARKLET_CONFLUENCE_SRC = "(function(){try{var url=window.location.href;var titleEl=document.querySelector('#title-text')||document.querySelector('h1')||document.querySelector('[data-testid=\"content-title\"]');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].trim();var spaceEl=document.querySelector('[data-testid=\"space-breadcrumb\"]')||document.querySelector('#breadcrumbs');var space=spaceEl?spaceEl.textContent.trim().slice(0,80):'';var payload={source:'confluence',title:title,url:url,space:space};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+title+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Seiten-Daten nicht auslesen: '+e.message);}})();";
+var BOOKMARKLET_STATUS_SRC = "(function(){try{var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:prompt('Ticket-Key (z.B. PROJ-123):');if(!key)return;var base=window.location.origin;fetch(base+'/rest/api/2/issue/'+key+'/transitions',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){var tr=data.transitions||[];if(!tr.length){alert('Keine verfügbaren Status-Übergänge gefunden (evtl. keine Berechtigung oder falsche Jira-Version).');return;}var listText=tr.map(function(t,i){return (i+1)+': '+t.name;}).join('\\n');var choice=prompt('Neuen Status wählen für '+key+':\\n'+listText,'1');var idx=parseInt(choice,10)-1;if(isNaN(idx)||!tr[idx])return;return fetch(base+'/rest/api/2/issue/'+key+'/transitions',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({transition:{id:tr[idx].id}})}).then(function(r2){if(r2.ok||r2.status===204)alert('✅ Status geändert zu: '+tr[idx].name);else alert('Fehler beim Ändern: HTTP '+r2.status);});}).catch(function(e){alert('Fehler: '+e.message);});}catch(e){alert('Fehler: '+e.message);}})();";
+var BOOKMARKLET_BULK_SRC = "(function(){try{var items=[];document.querySelectorAll('tr[data-issuekey], tr.issuerow').forEach(function(row){var key=row.getAttribute('data-issuekey')||(row.querySelector('.issuekey')?row.querySelector('.issuekey').textContent.trim():'');var summary=row.querySelector('.summary')?row.querySelector('.summary').textContent.trim():'';if(key)items.push({key:key,title:summary||key});});if(!items.length){var seen={};document.querySelectorAll('a[href*=\"/browse/\"]').forEach(function(a){var m=a.getAttribute('href').match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);if(m&&!seen[m[1]]){seen[m[1]]=true;items.push({key:m[1],title:a.textContent.trim()||m[1]});}});}if(!items.length){alert('Keine Tickets auf dieser Seite gefunden. Funktioniert am besten auf der Jira-Suchergebnisliste.');return;}items=items.slice(0,50);var payload={source:'jira-bulk',items:items};var txt=JSON.stringify(payload);function done(){alert('✅ '+items.length+' Ticket(s) kopiert.\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Fehler: '+e.message);}})();";
 
 /* =========================================================
    DYCE EXPORT
@@ -3831,11 +4065,11 @@ var cloudSyncBusy = false;
 function getCloudSyncConfig(){
   try{
     var raw = localStorage.getItem(CLOUD_SYNC_KEY);
-    if(!raw) return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''};
+    if(!raw) return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
     var cfg = JSON.parse(raw);
-    return Object.assign({enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''}, cfg);
+    return Object.assign({enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''}, cfg);
   }catch(e){
-    return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:''};
+    return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
   }
 }
 function setCloudSyncConfig(cfg){
@@ -3934,16 +4168,43 @@ function cloudCreateGist(){
     throw err;
   });
 }
+var CLOUD_SNAPSHOT_RETENTION_DAYS = 7;
+/* Einmal pro Tag zusätzlich zur laufenden Sync-Datei einen datierten
+   Snapshot im selben Gist ablegen (eigene Datei pro Tag) und Snapshots
+   älter als CLOUD_SNAPSHOT_RETENTION_DAYS wieder entfernen. Gibt die
+   zusätzlichen Dateien zurück, die im selben PATCH-Request mitgeschickt
+   werden (kein zusätzlicher API-Call/Gist nötig). */
+function cloudMaybeSnapshot(encrypted, cfg){
+  var today = toDateInputValue(new Date());
+  if(cfg.lastSnapshotDate === today) return Promise.resolve({});
+  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+    .then(function(r){ return r.ok ? r.json() : {files:{}}; })
+    .catch(function(){ return {files:{}}; })
+    .then(function(json){
+      var files = {};
+      files['snapshot-' + today + '.json.txt'] = {content: encrypted};
+      var cutoff = Date.now() - CLOUD_SNAPSHOT_RETENTION_DAYS*86400000;
+      Object.keys(json.files || {}).forEach(function(fname){
+        var m = fname.match(/^snapshot-(\d{4}-\d{2}-\d{2})\.json\.txt$/);
+        if(m && new Date(m[1]).getTime() < cutoff) files[fname] = null;
+      });
+      cfg.lastSnapshotDate = today;
+      return files;
+    });
+}
 function cloudPushNow(){
   var cfg = getCloudSyncConfig();
   if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
   return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-    return fetch('https://api.github.com/gists/' + cfg.gistId, {
-      method:'PATCH',
-      headers: cloudGistHeaders(cfg.token),
-      body: JSON.stringify({files: (function(){ var o={}; o[CLOUD_SYNC_FILE] = {content: encrypted}; return o; })()})
+    return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
+      extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
+      return fetch('https://api.github.com/gists/' + cfg.gistId, {
+        method:'PATCH',
+        headers: cloudGistHeaders(cfg.token),
+        body: JSON.stringify({files: extraFiles})
+      });
     });
   }).then(function(res){
     if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
@@ -4102,7 +4363,7 @@ function openSettings(){
       '</div>' +
 
       '<div class="section-title">☁️ Cloud-Sync (Ende-zu-Ende-verschlüsselt)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt).</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich automatisch ein datierter Snapshot im selben Gist abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
       '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
       '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
       '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
@@ -4152,6 +4413,15 @@ function openSettings(){
       '</div>' +
       '<div class="bookmarklet-box">' +
         '<a class="bkm" id="bkmConfluenceLink" href="#">📘 Confluence → Board</a>' +
+        '<span class="hint">Ziehen statt klicken!</span>' +
+      '</div>' +
+      '<div class="hint" style="margin-top:10px;">Zusätzlich: Status direkt zurückschreiben, bzw. mehrere Tickets von einer Jira-Suchergebnisliste auf einmal importieren. Beides ist Best-Effort und hängt von deiner Jira-Version/-Berechtigung ab.</div>' +
+      '<div class="bookmarklet-box">' +
+        '<a class="bkm" id="bkmStatusLink" href="#">🔄 Jira-Status setzen</a>' +
+        '<span class="hint">Ziehen statt klicken!</span>' +
+      '</div>' +
+      '<div class="bookmarklet-box">' +
+        '<a class="bkm" id="bkmBulkLink" href="#">📦 Jira-Suchliste → Board (Bulk)</a>' +
         '<span class="hint">Ziehen statt klicken!</span>' +
       '</div>' +
 
@@ -4263,6 +4533,12 @@ function openSettings(){
   var bkmConfluenceLink = document.getElementById('bkmConfluenceLink');
   bkmConfluenceLink.href = 'javascript:' + BOOKMARKLET_CONFLUENCE_SRC;
   bkmConfluenceLink.addEventListener('click', function(e){ e.preventDefault(); toast('Bitte den Link in die Lesezeichenleiste ziehen, nicht anklicken.'); });
+  var bkmStatusLink = document.getElementById('bkmStatusLink');
+  bkmStatusLink.href = 'javascript:' + BOOKMARKLET_STATUS_SRC;
+  bkmStatusLink.addEventListener('click', function(e){ e.preventDefault(); toast('Bitte den Link in die Lesezeichenleiste ziehen, nicht anklicken.'); });
+  var bkmBulkLink = document.getElementById('bkmBulkLink');
+  bkmBulkLink.href = 'javascript:' + BOOKMARKLET_BULK_SRC;
+  bkmBulkLink.addEventListener('click', function(e){ e.preventDefault(); toast('Bitte den Link in die Lesezeichenleiste ziehen, nicht anklicken.'); });
 
   if(FS_SUPPORTED){
     document.getElementById('btnPickNewFile').addEventListener('click', function(){
@@ -4597,6 +4873,49 @@ function buildRecapText(startMs, endMs, heading){
   }
   return lines.join('\n');
 }
+var PRIORITY_DOT = {critical:'🔴', high:'🟠', medium:'🔵', low:'⚪'};
+function buildHandoffText(){
+  var lines = ['# Schichtübergabe – ' + new Date().toLocaleString('de-CH',{dateStyle:'medium',timeStyle:'short'}), ''];
+  var openTasks = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; })
+    .sort(function(a,b){ return PRIORITIES[a.priority].order - PRIORITIES[b.priority].order; });
+  var blocked = openTasks.filter(function(t){ return t.blockedBy && t.blockedBy.length; });
+  var inProgress = openTasks.filter(function(t){ return isRunning(t) || totalSeconds(t) > 0; });
+  var waiting = openTasks.filter(function(t){
+    var col = state.columns.find(function(c){ return c.id===t.columnId; });
+    return col && /warte/i.test(col.name);
+  });
+
+  lines.push('## In Bearbeitung / bereits begonnen (' + inProgress.length + ')');
+  if(!inProgress.length) lines.push('– keine –');
+  inProgress.forEach(function(t){
+    lines.push('- ' + PRIORITY_DOT[t.priority] + ' ' + t.title + (t.jiraKey ? ' ('+t.jiraKey+')' : '') + ' – bisher ' + fmtHM(totalSeconds(t)));
+  });
+  lines.push('');
+
+  if(waiting.length){
+    lines.push('## Wartet auf Rückmeldung (' + waiting.length + ')');
+    waiting.forEach(function(t){ lines.push('- ' + PRIORITY_DOT[t.priority] + ' ' + t.title + (t.jiraKey ? ' ('+t.jiraKey+')' : '')); });
+    lines.push('');
+  }
+  if(blocked.length){
+    lines.push('## Blockiert (' + blocked.length + ')');
+    blocked.forEach(function(t){ lines.push('- ' + PRIORITY_DOT[t.priority] + ' ' + t.title + (t.jiraKey ? ' ('+t.jiraKey+')' : '') + ' – blockiert durch ' + t.blockedBy.length + ' Task(s)'); });
+    lines.push('');
+  }
+  var recentNotes = [];
+  state.tasks.forEach(function(t){
+    t.notes.slice(-2).forEach(function(n){ recentNotes.push({ts:n.ts, text:'['+t.title+'] '+n.text}); });
+  });
+  recentNotes.sort(function(a,b){ return new Date(b.ts) - new Date(a.ts); });
+  if(recentNotes.length){
+    lines.push('## Letzte Notizen');
+    recentNotes.slice(0,10).forEach(function(n){ lines.push('- ' + n.text); });
+  }
+  return lines.join('\n');
+}
+function openHandoffReport(){
+  showRecapModal('🤝 Schichtübergabe', buildHandoffText());
+}
 function openDailyRecap(){
   var start = startOfDay(new Date()).getTime();
   var end = Date.now();
@@ -4615,12 +4934,21 @@ function showRecapModal(title, text){
     '<div class="modal-body"><textarea id="recapText" rows="16" style="width:100%; font-family:monospace; font-size:12.5px;">'+escapeHtml(text)+'</textarea></div>' +
     '<div class="modal-footer">' +
       '<button class="btn primary" id="copyRecapBtn">📋 Kopieren</button>' +
+      '<button class="btn" id="mailRecapBtn">✉️ Als E-Mail-Entwurf öffnen</button>' +
       '<button class="btn" data-close-modal>Fertig</button>' +
     '</div>';
   openModal(html, {wide:true});
   document.getElementById('copyRecapBtn').addEventListener('click', function(){
     copyToClipboard(document.getElementById('recapText').value);
     toast('In Zwischenablage kopiert.');
+  });
+  document.getElementById('mailRecapBtn').addEventListener('click', function(){
+    var body = document.getElementById('recapText').value;
+    if(body.length > 1500){
+      toast('Text ist lang für einen mailto-Link – dein Mailprogramm könnte ihn kürzen. Notfalls "📋 Kopieren" nutzen.', 6000);
+    }
+    var subject = title.replace(/[📝📄]/g,'').trim();
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   });
 }
 
@@ -4815,9 +5143,13 @@ function cmdActionsList(){
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
+    {icon:'🚨', label:'SLA-/Fälligkeits-Dashboard', run: openSlaDashboard},
+    {icon:'🔗', label:'Read-only-Link teilen', run: openShareLinkModal},
+    {icon:'🔍', label:'Lösungs-Wissensdatenbank durchsuchen', run: function(){ openKnowledgeBase(''); }},
     {icon:'📓', label:'Journal öffnen', run: openJournal},
     {icon:'⏰', label:'Erinnerungen', run: openReminders},
     {icon:'🌅', label:'Morgen-Ritual (Tagesprioritäten wählen)', run: openMorningRitual},
+    {icon:'🗓️', label:'Tages-Vorlagen', run: openDayTemplates},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
     {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
@@ -4828,6 +5160,8 @@ function cmdActionsList(){
     }},
     {icon:'📝', label:'Tages-Recap erstellen', run: openDailyRecap},
     {icon:'📄', label:'Wochenbericht erstellen', run: openWeeklyReport},
+    {icon:'🖨️', label:'Wochenbericht als PDF (Druckdialog)', run: printWeeklyReportPdf},
+    {icon:'🤝', label:'Schichtübergabe-Report', run: openHandoffReport},
     {icon:'🎡', label:'Entscheidungs-Glücksrad', run: openDecisionWheel},
     {icon:'🗺️', label:'Timeline anzeigen', run: openTimeline},
     {icon:'🕰️', label:'Zeitreise', run: openTimeTravel},
@@ -5354,6 +5688,38 @@ function showOnboardingIfNeeded(){
   });
 }
 
+/* =========================================================
+   KURZBEFEHLE / SIRI-INTEGRATION (iOS Shortcuts öffnen die App
+   mit einem "action"-URL-Parameter, z.B. index.html?action=hotline)
+   ========================================================= */
+function handleUrlShortcutAction(){
+  var params = new URLSearchParams(window.location.search);
+  var action = params.get('action');
+  if(!action) return;
+  if(action === 'hotline'){
+    quickStart('hotline', '📞 Hotline-Anruf');
+  } else if(action === 'meeting'){
+    quickStart('meeting', '📅 Meeting');
+  } else if(action === 'timeentry'){
+    var title = params.get('title');
+    if(title){
+      var col = state.columns.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); }) || state.columns[0];
+      var t = createTask({title: title, type:'adhoc', priority:'medium', columnId: col.id});
+      startTimer(t.id);
+      renderAll();
+    } else {
+      openQuickTimeEntry();
+    }
+  } else if(action === 'pause'){
+    var activeId = state.settings.activeTaskId;
+    if(activeId) stopTimer(activeId);
+  } else if(action === 'whatnow'){
+    openWhatNow();
+  }
+  if(window.history && window.history.replaceState){
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }
+}
 function init(){
   applyTheme();
   var localBackup = null;
@@ -5366,6 +5732,7 @@ function init(){
   tryReconnect().then(function(reconnected){
     renderAll();
     applyLanguage();
+    handleUrlShortcutAction();
     if(!reconnected) showOnboardingIfNeeded();
     tickInterval = setInterval(function(){
       tick();
@@ -5391,7 +5758,108 @@ function init(){
   });
 }
 
-init();
+function openShareLinkModal(){
+  var cfg = getCloudSyncConfig();
+  if(!cfg.token){
+    toast('Dafür wird ein GitHub Personal Access Token benötigt – unter ⚙️ Einstellungen → Cloud-Sync eintragen (auch ohne aktiven Cloud-Sync nutzbar).');
+    return;
+  }
+  var openTasks = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
+  var html =
+    '<div class="modal-header"><h2>🔗 Read-only-Link teilen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin-bottom:10px;">Erstellt einen <strong>unverschlüsselten</strong>, separaten Snapshot (nicht das Cloud-Sync-Gist) mit '+openTasks.length+' offenen Task(s): Titel, Typ, Priorität, Spalte, Jira-Key, Fälligkeitsdatum. <strong>Keine</strong> Notizen/Beschreibungen/Zeiterfassung. Wer den Link kennt, kann das lesen – wie ein unlisted Google-Doc-Link. Kein Live-Sync: jede Änderung braucht einen neuen Snapshot.</div>' +
+      '<button class="btn primary" id="genShareLinkBtn" style="width:100%;">🔗 Snapshot erstellen & Link generieren</button>' +
+      '<div id="shareLinkResult" style="margin-top:14px;"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html);
+  document.getElementById('genShareLinkBtn').addEventListener('click', function(){
+    var btn = document.getElementById('genShareLinkBtn');
+    btn.disabled = true; btn.textContent = 'Erstelle…';
+    var snapshot = {
+      boardName: state.settings.activeBoardName,
+      generatedAt: nowIso(),
+      columns: state.columns.map(function(c){ return {id:c.id, name:c.name}; }),
+      tasks: openTasks.map(function(t){
+        return {title:t.title, type:t.type, priority:t.priority, columnId:t.columnId, jiraKey:t.jiraKey||'', dueDate:t.dueDate||''};
+      })
+    };
+    fetch('https://api.github.com/gists', {
+      method:'POST',
+      headers: cloudGistHeaders(cfg.token),
+      body: JSON.stringify({description:'Work Board – Read-only Snapshot (unverschlüsselt, bewusst zum Teilen)', public:false,
+        files:{'workboard-view.json.txt':{content: JSON.stringify(snapshot)}}})
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t.slice(0,150)); });
+      return r.json();
+    }).then(function(json){
+      var url = window.location.origin + window.location.pathname + '?view=' + json.id;
+      document.getElementById('shareLinkResult').innerHTML =
+        '<div class="form-row"><label>Link (kopieren & teilen)</label><input readonly value="'+escapeAttr(url)+'" id="shareLinkOutput"></div>' +
+        '<button class="btn" id="copyShareLinkBtn">📋 Link kopieren</button>';
+      document.getElementById('copyShareLinkBtn').addEventListener('click', function(){
+        copyToClipboard(url);
+        toast('📋 Link kopiert.');
+      });
+      btn.style.display = 'none';
+    }).catch(function(err){
+      toast('Fehler: ' + err.message);
+      btn.disabled = false; btn.textContent = '🔗 Snapshot erstellen & Link generieren';
+    });
+  });
+}
+
+/* =========================================================
+   READ-ONLY TEILEN-LINK (?view=<gistId>)
+   Komplett getrennt vom normalen App-Start: läuft NIE mit den
+   lokalen (verschlüsselten) Daten, sondern lädt einen bewusst
+   unverschlüsselten, separaten Snapshot-Gist (siehe openShareLinkModal).
+   ========================================================= */
+function renderViewerMode(gistId){
+  document.body.innerHTML =
+    '<div style="min-height:100vh; background:var(--bg); color:var(--text); padding:20px;">' +
+      '<div id="viewerRoot" style="max-width:900px; margin:0 auto;">⏳ Lade geteiltes Board…</div>' +
+    '</div>';
+  fetch('https://api.github.com/gists/' + gistId)
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(json){
+      var fname = Object.keys(json.files || {})[0];
+      if(!fname) throw new Error('Keine Datei im Gist gefunden.');
+      var data = JSON.parse(json.files[fname].content);
+      var byCol = {};
+      (data.columns||[]).forEach(function(c){ byCol[c.id] = []; });
+      (data.tasks||[]).forEach(function(t){ if(byCol[t.columnId]) byCol[t.columnId].push(t); });
+      var colsHtml = (data.columns||[]).map(function(c){
+        var tasks = byCol[c.id] || [];
+        return '<div class="column" style="display:inline-block; vertical-align:top; margin-right:12px; width:260px;">' +
+          '<div class="column-header"><span style="flex:1;">'+escapeHtml(c.name)+'</span><span class="count">'+tasks.length+'</span></div>' +
+          '<div class="column-body" style="max-height:none;">' +
+            (tasks.map(function(t){
+              return '<div class="card priority-'+(t.priority||'medium')+'" style="cursor:default;">' +
+                '<div class="card-top"><span class="type-badge">'+((TYPES[t.type]||TYPES.adhoc||{}).icon||'📌')+'</span><span class="card-title">'+escapeHtml(t.title)+'</span></div>' +
+                (t.jiraKey ? '<span class="jira-key">'+escapeHtml(t.jiraKey)+'</span>' : '') +
+                (t.dueDate ? '<div class="due" style="margin-top:6px;">📆 '+escapeHtml(t.dueDate)+'</div>' : '') +
+              '</div>';
+            }).join('') || '<div class="empty-state">Keine Tasks.</div>') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      document.getElementById('viewerRoot').innerHTML =
+        '<h1 style="display:flex; align-items:center; gap:8px;">👁️ '+escapeHtml(data.boardName||'Work Board')+' <span style="font-size:12px; font-weight:400; color:var(--text-faint);">(Nur-Lesen-Ansicht)</span></h1>' +
+        '<div class="hint" style="margin-bottom:16px;">Statischer Snapshot vom '+new Date(data.generatedAt).toLocaleString('de-CH')+' – keine Live-Synchronisation. Für einen aktuellen Stand muss der Link-Ersteller einen neuen Snapshot teilen.</div>' +
+        '<div style="overflow-x:auto; white-space:nowrap; padding-bottom:10px;">' + colsHtml + '</div>';
+    })
+    .catch(function(err){
+      document.getElementById('viewerRoot').innerHTML = '<h1>👁️ Geteiltes Board</h1><div class="hint">Konnte nicht geladen werden: '+escapeHtml(err.message)+' – evtl. wurde der Link zurückgezogen.</div>';
+    });
+}
+var viewerGistId = new URLSearchParams(window.location.search).get('view');
+if(viewerGistId){
+  renderViewerMode(viewerGistId);
+} else {
+  init();
+}
 
 if('serviceWorker' in navigator && location.protocol !== 'file:'){
   window.addEventListener('load', function(){

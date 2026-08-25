@@ -267,12 +267,61 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 - **🖼️ Eigenes Hintergrundbild** fürs Board (⚙️ Einstellungen).
 - **🌐 Deutsch/Englisch**: übersetzt die Hauptnavigation (Menüs/Formulare bleiben Deutsch).
 
+## Weitere Erweiterungen (Batch-Update)
+
+**Zeiterfassung**
+- **Timer-Unterbrechung**: startest du während eines laufenden Timers einen neuen (z.B. Hotline-
+  Anruf), merkt sich die App den unterbrochenen Task und bietet nach Ende der Unterbrechung per
+  Toast "▶ Fortsetzen" an.
+- **Dyce-Rundung**: im Tagesabschluss auf 5/15 Minuten rundbar.
+- **Soll-/Ist-Vergleich**: optionale Ziel-Arbeitszeit/Tag (⚙️ Einstellungen), Statistik zeigt Soll
+  vs. Ist für Heute/Woche/Monat.
+- **Zeitverteilung als Kreisdiagramm** in der Statistik.
+- **🍅 Pomodoro-Modus**: Fokus-Modus reiht optional automatisch Pausen zwischen den Blöcken ein
+  (kurze/lange Pause, konfigurierbar), mit "Nächster Block"-Erinnerung danach.
+
+**Board & Darstellung**
+- **Undo** (`Strg+Z`): letzte Aktion rückgängig (Löschen, Archivieren, Bulk-Aktionen, Verschieben).
+- **🗜️ Kompaktansicht**: schmalere Spalten, reduzierte Karten – Umschalter im Topbar.
+- **WIP-Limits & eigenes Icon/Farbe pro Spalte** (Spalten-Menü ⋯).
+
+**Persönliche Produktivität** (`Strg+K` durchsuchbar)
+- **📓 Journal**: freie Notizen, getrennt von Tasks.
+- **⏰ Erinnerungen**: freistehend, unabhängig von Tasks, per Toast/Notification fällig.
+- **🌅 Morgen-Ritual**: Tagesprioritäten aus dem Backlog wählen, hervorgehoben im Board.
+- **🗓️ Tages-Vorlagen**: wiederkehrende Routinen (z.B. "Montags-Setup") als Vorlage mit mehreren
+  Tasks auf einmal anlegen.
+- **Rückfragen-Feld** im Task (getrennt vom Notizen-Log, für später zu klärende Punkte).
+
+**Jira & Wissen**
+- **🔄 Jira-Status setzen** (Bookmarklet): schreibt den Status direkt im Ticket zurück (Best-Effort,
+  abhängig von Jira-Version/-Berechtigung).
+- **📦 Jira-Suchliste → Board** (Bookmarklet): mehrere Tickets von einer Suchergebnisliste auf
+  einmal importieren.
+- **🔍 Lösungs-Wissensdatenbank**: durchsucht erledigte/archivierte Tasks nach Titel/Notizen.
+- **🚨 SLA-/Fälligkeits-Dashboard**: alle Hotline-SLA-Risiken und überfälligen Termine auf einen Blick.
+- **🤝 Schichtübergabe-Report** & **✉️ E-Mail-Antwort** direkt aus dem Task, sowie Tages-/
+  Wochenberichte als E-Mail-Entwurf statt nur Kopieren.
+
+**Daten & Zugriff**
+- Cloud-Sync legt automatisch täglich einen **Snapshot** im selben Gist ab (letzte 7 Tage) –
+  zusätzliche Absicherung gegen einen fehlerhaft hochgeladenen Stand.
+- **🖨️ Wochenbericht als PDF**: formatierter Report über den nativen "Als PDF speichern"-Druckdialog.
+- **🔗 Read-only-Link teilen**: erstellt einen separaten, unverschlüsselten Snapshot-Link (offene
+  Tasks, ohne Notizen) zum reinen Ansehen – z.B. für den Chef. Kein Live-Sync, jede Änderung
+  braucht einen neuen Snapshot; wer den Link kennt, kann ihn lesen (wie ein unlisted Link).
+- **📱 Kurzbefehle (iOS Shortcuts)**: die App reagiert auf `?action=hotline`, `?action=meeting`,
+  `?action=timeentry&title=…`, `?action=pause`, `?action=whatnow` in der URL. In der
+  Kurzbefehle-App: Aktion "URL öffnen" mit z.B. `https://DEINE-PAGES-URL/index.html?action=hotline`,
+  optional per Siri-Phrase auslösbar.
+
 ## Tastenkürzel
 
 - `N` – neuen Task erstellen
 - `Leertaste` – laufenden Timer pausieren
 - `Strg+S` – Cloud-Backup herunterladen
 - `Strg+K` – Command Palette öffnen
+- `Strg+Z` – letzte Aktion rückgängig
 - Pfeiltasten (bei fokussierter Karte) – navigieren; `Shift`+Pfeil – Karte verschieben
 - `Rechtsklick` auf Karte – Schnellmenü
 - `?` – Tastaturkürzel-Übersicht
