@@ -4322,7 +4322,25 @@ function cloudPullNow(showToastIfUpToDate){
     setCloudSyncConfig(cfg);
     var remoteTime = new Date(result.updatedAt).getTime();
     var localTime = new Date(state.meta.updatedAt).getTime();
-    if(remoteTime > localTime + 2000){
+    var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
+    if(state.tasks.length === 0 && remoteHasTasks){
+      /* Lokal liegt nichts vor, das verloren gehen könnte (z.B. frischer
+         Browser/Neuinstallation/geleerter Cache) - hier IMMER übernehmen,
+         unabhängig vom Zeitstempel-Vergleich unten. Ein frisch
+         initialisierter lokaler Stand bekommt sein updatedAt auf "jetzt"
+         gesetzt (siehe defaultState()) und wirkt dadurch fast immer
+         "neuer" als der zuletzt gepushte Cloud-Stand, obwohl er inhaltlich
+         leer ist - genau das gleiche Problem, das cloudJoinExisting beim
+         expliziten Verbinden schon umgeht. Ausserdem: nicht nur den
+         cloudChangeBanner einblenden (der im normalen Dokumentfluss liegt
+         und z.B. vom volldeckenden Willkommens-Dialog komplett verdeckt
+         werden kann, sodass Nutzer:innen ihn nie sehen), sondern direkt
+         laden. */
+      state = migrateState(result.state);
+      renderAll();
+      save();
+      toast('☁️ Cloud-Stand automatisch geladen.');
+    } else if(remoteTime > localTime + 2000){
       window.__pendingCloudState = result.state;
       document.getElementById('cloudChangeBanner').classList.add('show');
     } else if(showToastIfUpToDate){
