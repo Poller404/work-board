@@ -284,6 +284,8 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 - **Undo** (`Strg+Z`): letzte Aktion rückgängig (Löschen, Archivieren, Bulk-Aktionen, Verschieben).
 - **🗜️ Kompaktansicht**: schmalere Spalten, reduzierte Karten – Umschalter im Topbar.
 - **WIP-Limits & eigenes Icon/Farbe pro Spalte** (Spalten-Menü ⋯).
+- **🏠 Dashboard-Ansicht** (Board-Ansicht-Auswahl): Widget-Übersicht statt Spalten – heutige
+  Prioritäten, SLA-Risiko, nächste Erinnerungen, Wochenzeit, "Was jetzt?" auf einen Blick.
 
 **Persönliche Produktivität** (`Strg+K` durchsuchbar)
 - **📓 Journal**: freie Notizen, getrennt von Tasks.

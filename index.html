@@ -380,6 +380,7 @@ button.mobile-only{display:none;}
     <button class="btn topbar-more" id="btnSelectMode" title="Mehrere Tasks auswählen">☑️ Auswahl</button>
     <select id="boardViewSelect" class="topbar-more" title="Board-Ansicht">
       <option value="status">📋 Status</option>
+      <option value="dashboard">🏠 Dashboard</option>
       <option value="priority">🎯 Nach Priorität</option>
       <option value="eisenhower">🧭 Eisenhower-Matrix</option>
       <option value="team">👥 Nach Person</option>
@@ -2067,8 +2068,57 @@ function computeLanes(){
       match:function(t){ return t.columnId===c.id; }, patch:{columnId:c.id}};
   });
 }
+function renderDashboardWidgets(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+
+  var today = toDateInputValue(new Date());
+  var focusIds = state.settings.todayFocusDate === today ? (state.settings.todayFocusIds||[]) : [];
+  var focusTasks = focusIds.map(getTask).filter(function(t){ return t && !t.archived && !t.completedAt; });
+
+  var slaTasks = state.tasks.filter(function(t){ return !t.archived && slaLevel(t); });
+  var weekStart = startOfWeek(new Date()).getTime();
+  var weekSec = state.tasks.reduce(function(s,t){ return s + secondsInRange(t, weekStart, Date.now()); }, 0);
+  var doneThisWeek = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= weekStart; }).length;
+  var nextReminders = state.reminders.filter(function(r){ return !r.fired; }).sort(function(a,b){ return new Date(a.ts)-new Date(b.ts); }).slice(0,3);
+  var whatNow = pickWhatNowTask();
+
+  function widget(title, bodyHtml, actionLabel, actionFn){
+    var id = 'w-' + uid();
+    setTimeout(function(){
+      var btn = document.getElementById(id);
+      if(btn) btn.addEventListener('click', actionFn);
+    }, 0);
+    return '<div class="column" style="width:280px; min-width:280px; max-height:none;">' +
+      '<div class="column-header"><span style="flex:1;">'+title+'</span></div>' +
+      '<div class="column-body" style="max-height:none; overflow:visible;">'+bodyHtml+'</div>' +
+      (actionLabel ? '<div style="padding:6px 10px 10px;"><button class="btn" id="'+id+'" style="width:100%;">'+actionLabel+'</button></div>' : '') +
+    '</div>';
+  }
+
+  var html =
+    widget('🌅 Heutige Prioritäten (' + focusTasks.length + ')',
+      focusTasks.length ? focusTasks.map(function(t){ return '<div class="session-row">'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.title)+'</div>'; }).join('') : '<div class="empty-state">Noch keine gewählt.</div>',
+      '🌅 Morgen-Ritual öffnen', openMorningRitual) +
+    widget('🚨 SLA-Risiko (' + slaTasks.length + ')',
+      slaTasks.length ? slaTasks.slice(0,5).map(function(t){ return '<div class="session-row"><span class="sla-dot '+slaLevel(t)+'"></span> '+escapeHtml(t.title)+'</div>'; }).join('') : '<div class="empty-state">Alles im grünen Bereich.</div>',
+      '🚨 Dashboard öffnen', openSlaDashboard) +
+    widget('⏰ Nächste Erinnerungen',
+      nextReminders.length ? nextReminders.map(function(r){ return '<div class="session-row"><span>'+new Date(r.ts).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})+'</span><span>'+escapeHtml(r.text)+'</span></div>'; }).join('') : '<div class="empty-state">Keine anstehend.</div>',
+      '⏰ Erinnerungen verwalten', openReminders) +
+    widget('📊 Diese Woche',
+      '<div class="total-time-display" style="font-size:20px;">'+fmtHM(weekSec)+'</div><div class="hint">✅ '+doneThisWeek+' erledigt diese Woche</div>',
+      '📊 Statistik öffnen', openStats) +
+    widget('🧭 Was jetzt?',
+      whatNow ? '<div class="session-row">'+(TYPES[whatNow.type]||TYPES.adhoc).icon+' '+escapeHtml(whatNow.title)+'</div>' : '<div class="empty-state">🎉 Alles erledigt!</div>',
+      whatNow ? '🎯 Öffnen' : null, whatNow ? function(){ openTaskModal(whatNow.id); } : null);
+
+  board.innerHTML = html;
+}
 function renderBoard(){
   var board = document.getElementById('board');
+  if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   board.innerHTML = '';
   board.classList.toggle('compact', !!state.settings.compactView);
   var lanes = computeLanes();
@@ -5150,6 +5200,7 @@ function cmdActionsList(){
     {icon:'⏰', label:'Erinnerungen', run: openReminders},
     {icon:'🌅', label:'Morgen-Ritual (Tagesprioritäten wählen)', run: openMorningRitual},
     {icon:'🗓️', label:'Tages-Vorlagen', run: openDayTemplates},
+    {icon:'🏠', label:'Dashboard-Ansicht', run: function(){ setBoardViewMode('dashboard'); document.getElementById('boardViewSelect').value='dashboard'; }},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
     {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
