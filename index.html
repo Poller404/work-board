@@ -122,6 +122,7 @@ button.icon-btn:hover{background:var(--surface-2); color:var(--text);}
   text-transform:uppercase; letter-spacing:.03em; color:var(--text-dim);
 }
 .column-header .count{background:var(--border); color:var(--text-dim); border-radius:10px; padding:1px 8px; font-size:12px; font-weight:600;}
+.column-header .count.over-wip{background:var(--danger-bg); color:var(--danger);}
 .column-header input.rename{flex:1; font-weight:700; text-transform:none; letter-spacing:0; font-size:13px; padding:3px 5px; background:transparent; border:1px solid transparent;}
 .column-header input.rename:hover, .column-header input.rename:focus{border-color:var(--border); background:var(--surface);}
 .column-body{flex:1; overflow-y:auto; padding:2px 8px 8px; display:flex; flex-direction:column; gap:8px; min-height:40px;}
@@ -171,6 +172,18 @@ button.icon-btn:hover{background:var(--surface-2); color:var(--text);}
 .card .budget-bar-fill{height:100%; background:var(--accent);}
 .card .budget-bar-fill.over{background:var(--danger);}
 .card .blocked-badge{font-size:10.5px; color:var(--danger); font-weight:700;}
+
+/* ---- Kompaktansicht ---- */
+#board.compact .column{width:230px; min-width:230px;}
+#board.compact .card{padding:6px 8px 5px;}
+#board.compact .card .card-desc,
+#board.compact .card .tags,
+#board.compact .card .budget-bar,
+#board.compact .card .blocked-badge,
+#board.compact .card .hint{display:none;}
+#board.compact .card .card-title{font-size:12.5px; line-height:1.25;}
+#board.compact .card .card-bottom{margin-top:4px;}
+#board.compact .column-body{gap:5px;}
 
 /* ---- Confetti ---- */
 #confettiHost{position:fixed; inset:0; pointer-events:none; z-index:3000; overflow:hidden;}
@@ -365,6 +378,7 @@ button.mobile-only{display:none;}
       <option value="eisenhower">🧭 Eisenhower-Matrix</option>
       <option value="team">👥 Nach Person</option>
     </select>
+    <button class="btn icon-btn topbar-more" id="btnCompactToggle" title="Kompaktansicht umschalten">🗜️</button>
     <div class="spacer"></div>
     <span id="xpBadge" class="pill medium" style="cursor:default;"></span>
     <span id="liveClock" style="font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:13px; margin-right:4px;"></span>
@@ -548,6 +562,7 @@ function defaultState(){
       targetHoursPerDay: null,
       dyceRoundingMinutes: 0,
       resumeCandidateTaskId: null,
+      compactView: false,
       backgroundImage: '',
       language: 'de',
       soundEnabled: false,
@@ -843,7 +858,30 @@ function spawnRecurrenceIfDue(t){
   toast('🔁 Wiederkehrender Task neu angelegt: ' + t.title);
 }
 
+/* =========================================================
+   UNDO (Strg+Z) — Snapshot-basiert statt einzelner Inverse-Aktionen,
+   da Mutationen über die ganze Datei verteilt sind. Nur an bewusst
+   "riskanten" Stellen aufgerufen (Löschen, Archivieren, Verschieben),
+   NICHT bei jedem updateTask() (sonst würde jede Feldänderung im
+   Task-Formular den Stack fluten).
+   ========================================================= */
+var undoStack = [];
+function pushUndoSnapshot(){
+  undoStack.push(JSON.stringify({tasks: state.tasks, columns: state.columns}));
+  if(undoStack.length > 20) undoStack.shift();
+}
+function undoLastAction(){
+  if(!undoStack.length){ toast('Nichts zum Rückgängigmachen.'); return; }
+  var snap = JSON.parse(undoStack.pop());
+  state.tasks = snap.tasks.map(normalizeTask);
+  state.columns = snap.columns;
+  save();
+  renderAll();
+  toast('↩️ Rückgängig gemacht.');
+}
+
 function deleteTask(id){
+  pushUndoSnapshot();
   state.tasks = state.tasks.filter(function(t){ return t.id !== id; });
   state.tasks.forEach(function(t){ t.blockedBy = t.blockedBy.filter(function(bid){ return bid !== id; }); });
   if(state.settings.activeTaskId === id) state.settings.activeTaskId = null;
@@ -1753,6 +1791,7 @@ function openShortcutsCheatsheet(){
     ['Leertaste', 'Laufenden Timer pausieren'],
     ['Strg + S', 'Cloud-Backup herunterladen'],
     ['Strg + K', 'Command Palette öffnen'],
+    ['Strg + Z', 'Letzte Aktion rückgängig (Löschen/Archivieren/Verschieben)'],
     ['Pfeiltasten', 'Zwischen Karten navigieren (bei fokussierter Karte)'],
     ['Shift + Pfeil', 'Fokussierte Karte in Nachbarspalte verschieben'],
     ['Rechtsklick auf Karte', 'Schnellmenü (Archivieren, Duplizieren, Priorität, …)'],
@@ -1833,7 +1872,7 @@ function openCardContextMenu(t, x, y){
       createTask(copy);
       renderAll();
     }
-    else if(item.dataset.ctx === 'archive'){ updateTask(t.id, {archived:true}); renderAll(); }
+    else if(item.dataset.ctx === 'archive'){ pushUndoSnapshot(); updateTask(t.id, {archived:true}); renderAll(); }
     else if(item.dataset.ctx === 'delete'){
       confirmDialog('Task "'+t.title+'" wirklich löschen?', '🗑 Löschen', function(){ deleteTask(t.id); closeModal(); renderAll(); });
     }
@@ -1945,13 +1984,14 @@ function computeLanes(){
     return quads;
   }
   return state.columns.map(function(c){
-    return {id:c.id, name:c.name, virtual:false,
+    return {id:c.id, name:c.name, virtual:false, icon:c.icon, color:c.color, wipLimit:c.wipLimit,
       match:function(t){ return t.columnId===c.id; }, patch:{columnId:c.id}};
   });
 }
 function renderBoard(){
   var board = document.getElementById('board');
   board.innerHTML = '';
+  board.classList.toggle('compact', !!state.settings.compactView);
   var lanes = computeLanes();
 
   lanes.forEach(function(col){
@@ -1960,12 +2000,15 @@ function renderBoard(){
     var colEl = document.createElement('div');
     colEl.className = 'column';
     colEl.dataset.colId = col.id;
+    if(col.color) colEl.style.borderTop = '3px solid ' + col.color;
+    var overWip = col.wipLimit && colTasks.length > col.wipLimit;
 
     var header = document.createElement('div');
     header.className = 'column-header';
     header.innerHTML =
+      (col.icon ? '<span>'+escapeHtml(col.icon)+'</span>' : '') +
       (col.virtual ? '<span style="flex:1;">'+escapeHtml(col.name)+'</span>' : '<input class="rename" value="'+escapeAttr(col.name)+'" data-col-id="'+col.id+'">') +
-      '<span class="count">'+colTasks.length+'</span>' +
+      '<span class="count'+(overWip?' over-wip':'')+'" title="'+(col.wipLimit?('WIP-Limit: '+col.wipLimit):'')+'">'+colTasks.length+(col.wipLimit?' / '+col.wipLimit:'')+'</span>' +
       (col.virtual ? '' : '<button class="icon-btn" data-action="col-menu" data-col-id="'+col.id+'" title="Optionen">⋯</button>');
     colEl.appendChild(header);
 
@@ -2006,6 +2049,7 @@ function renderBoard(){
       body.classList.remove('dragover');
       var taskId = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
       if(taskId){
+        pushUndoSnapshot();
         updateTask(taskId, col.patch);
         renderAll();
       }
@@ -2872,12 +2916,14 @@ function openTaskModal(taskId){
   });
   var archBtn = document.getElementById('archiveTaskBtn');
   if(archBtn) archBtn.addEventListener('click', function(){
+    pushUndoSnapshot();
     updateTask(t.id, {archived:true});
     closeModal();
     renderAll();
   });
   var unarchBtn = document.getElementById('unarchiveTaskBtn');
   if(unarchBtn) unarchBtn.addEventListener('click', function(){
+    pushUndoSnapshot();
     updateTask(t.id, {archived:false});
     closeModal();
     renderAll();
@@ -2924,9 +2970,41 @@ function openColumnMenu(colId, anchorEl){
       '<button class="btn" id="moveLeftBtn" style="width:100%; margin-bottom:8px;" '+(idx===0?'disabled':'')+'>⬅ Nach links verschieben</button>' +
       '<button class="btn" id="moveRightBtn" style="width:100%; margin-bottom:8px;" '+(idx===state.columns.length-1?'disabled':'')+'>➡ Nach rechts verschieben</button>' +
       '<button class="btn" id="sortPrioBtn" style="width:100%; margin-bottom:8px;">↕ Nach Priorität sortieren</button>' +
+      '<div class="section-title">Darstellung</div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row" style="max-width:110px;"><label>Icon</label><input id="colIconInput" value="'+escapeAttr(col.icon||'')+'" maxlength="4" placeholder="z.B. 🔥"></div>' +
+        '<div class="form-row"><label>Akzentfarbe</label><div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">' +
+          ACCENT_PRESETS.map(function(c){
+            return '<button type="button" class="accent-swatch col-color-swatch" data-color="'+c+'" style="width:22px; height:22px; border-radius:50%; background:'+c+'; border:2px solid '+(col.color===c?'var(--text)':'transparent')+'; cursor:pointer;"></button>';
+          }).join('') +
+          '<button type="button" class="btn ghost" id="colColorResetBtn" style="padding:4px 8px; font-size:11px;">Standard</button>' +
+        '</div></div>' +
+      '</div>' +
+      '<div class="section-title">WIP-Limit</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Warnt visuell, wenn mehr Tasks in dieser Spalte liegen als das Limit (0 = kein Limit).</div>' +
+      '<div class="form-row" style="max-width:120px;"><label>Max. Tasks</label><input type="number" id="colWipInput" value="'+(col.wipLimit||'')+'" min="0" placeholder="kein Limit"></div>' +
+      '<div class="section-title">Gefahrenzone</div>' +
       '<button class="btn danger" id="deleteColBtn" style="width:100%;">🗑 Spalte löschen (Tasks bleiben im Archiv)</button>' +
     '</div>';
   openModal(html);
+  document.getElementById('colIconInput').addEventListener('change', function(e){
+    col.icon = e.target.value.trim();
+    save(); renderBoard();
+  });
+  document.querySelectorAll('.col-color-swatch').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      col.color = btn.dataset.color;
+      save(); renderBoard(); openColumnMenu(colId);
+    });
+  });
+  document.getElementById('colColorResetBtn').addEventListener('click', function(){
+    col.color = null;
+    save(); renderBoard(); openColumnMenu(colId);
+  });
+  document.getElementById('colWipInput').addEventListener('change', function(e){
+    col.wipLimit = e.target.value ? parseInt(e.target.value, 10) : null;
+    save(); renderBoard();
+  });
   document.getElementById('moveLeftBtn').addEventListener('click', function(){
     if(idx>0){ state.columns.splice(idx,1); state.columns.splice(idx-1,0,col); save(); renderAll(); closeModal(); }
   });
@@ -2943,6 +3021,7 @@ function openColumnMenu(colId, anchorEl){
   document.getElementById('deleteColBtn').addEventListener('click', function(){
     if(state.columns.length <= 1){ toast('Mindestens eine Spalte muss bestehen bleiben.'); return; }
     confirmDialog('Spalte "'+col.name+'" löschen? Enthaltene Tasks werden archiviert.', '🗑 Löschen', function(){
+      pushUndoSnapshot();
       state.tasks.forEach(function(t){ if(t.columnId===colId) t.archived = true; });
       state.columns = state.columns.filter(function(c){ return c.id!==colId; });
       save(); renderAll(); closeModal();
@@ -4544,6 +4623,7 @@ function cmdActionsList(){
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
+    {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
     {icon:'☁️', label:'Cloud-Sync jetzt ausführen', run: function(){
       if(!getCloudSyncConfig().enabled){ toast('Cloud-Sync ist nicht eingerichtet (⚙️ Einstellungen).'); return; }
       toast('☁️ Synchronisiere…');
@@ -4843,20 +4923,29 @@ document.getElementById('btnSnoozed').addEventListener('click', openSnoozedList)
 document.getElementById('btnFocus').addEventListener('click', enterFocusMode);
 document.getElementById('btnSelectMode').addEventListener('click', toggleSelectMode);
 document.getElementById('boardViewSelect').addEventListener('change', function(e){ setBoardViewMode(e.target.value); });
+document.getElementById('btnCompactToggle').addEventListener('click', function(){
+  state.settings.compactView = !state.settings.compactView;
+  save();
+  renderBoard();
+  toast(state.settings.compactView ? '🗜️ Kompaktansicht aktiv.' : 'Normale Ansicht.');
+});
 populateBulkColumnSelect();
 document.getElementById('bulkMoveBtn').addEventListener('click', function(){
+  pushUndoSnapshot();
   var colId = document.getElementById('bulkColumnSelect').value;
   selectedTaskIds.forEach(function(id){ updateTask(id, {columnId: colId}); });
   toast(selectedTaskIds.length + ' Task(s) verschoben.');
   toggleSelectMode();
 });
 document.getElementById('bulkPriorityBtn').addEventListener('click', function(){
+  pushUndoSnapshot();
   var prio = document.getElementById('bulkPrioritySelect').value;
   selectedTaskIds.forEach(function(id){ updateTask(id, {priority: prio}); });
   toast('Priorität gesetzt.');
   toggleSelectMode();
 });
 document.getElementById('bulkArchiveBtn').addEventListener('click', function(){
+  pushUndoSnapshot();
   selectedTaskIds.forEach(function(id){ updateTask(id, {archived:true}); });
   toast(selectedTaskIds.length + ' Task(s) archiviert.');
   toggleSelectMode();
@@ -4948,6 +5037,14 @@ document.addEventListener('keydown', function(e){
   if((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')){
     e.preventDefault();
     exportBackup();
+    return;
+  }
+  if((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')){
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    var overlayEl = document.getElementById('modalOverlay');
+    if(!overlayEl.classList.contains('hidden')) return;
+    e.preventDefault();
+    undoLastAction();
     return;
   }
   var overlay = document.getElementById('modalOverlay');
