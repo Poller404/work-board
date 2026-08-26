@@ -4,18 +4,36 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
-## 🟡 PROBLEM VERMUTLICH GELÖST (Stand 2026-08-25, 3 Fixes gepusht, Nutzer-Bestätigung steht noch aus)
+## ✅ ROOT CAUSE GEFUNDEN UND BEHOBEN (Stand 2026-08-26, Commit `f726caa`)
 
-**Update:** Nach den unten beschriebenen zwei Fixes kam noch ein dritter, wahrscheinlich
-entscheidender Fund dazu: GitHub Pages selbst sendet `Cache-Control: max-age=600` (per `curl -I`
-bestätigt) – der Browser cached jede Datei bis zu 10 Minuten lang, **unabhängig vom Service
-Worker**. Live reproduziert: ein Tab, der die Seite früher in der Session besucht hatte, zeigte
-auch nach Service-Worker-Neuinstallation noch alten Code; erst mit `{cache:'no-store'}` im
-Service-Worker-Fetch (Commit `e241bd3`) + einer Cache-Bust-URL kam zuverlässig der aktuelle Stand
-an. Drei Fixes jetzt gepusht: SW Network-first (`d709afa`), Cloud-Pull-Autoload (`030e639`),
-Push-Sicherheitscheck (`a1828df`), HTTP-Cache-Bypass (`e241bd3`). **Nutzer muss noch bestätigen,
-dass nach diesen Fixes + etwas Wartezeit (GitHub-Pages-CDN kann bis zu 10 Min brauchen) alles
-wieder passt.** Falls nicht: die Debugging-Schritte unten weiter abarbeiten.
+Der Nutzer hat nach den vier Cache/Sync-Fixes vom 2026-08-25 einen Screenshot geschickt: der
+Willkommens-Dialog erschien weiterhin bei jedem Laden, obwohl Cloud-Sync laut Dialog-Text selbst
+("☁️ Cloud-Sync ist bereits eingerichtet") korrekt erkannt wurde. Ursache war ein reines
+Timing-Problem in `init()` ([index.html](index.html), Funktion `init`, siehe unten): `showOnboardingIfNeeded()`
+wurde synchron direkt nach dem ersten Render aufgerufen, **bevor** der asynchrone initiale
+Cloud-Pull (`cloudPullNow()`, ganz am Ende von `init()`) überhaupt eine Chance hatte zu laden.
+`state.tasks.length` war zu diesem Zeitpunkt also immer 0 → Dialog erschien jedes Mal, unabhängig
+vom eigentlichen Cloud-Zustand.
+
+**Fix (Commit `f726caa`):** `showOnboardingIfNeeded()` wird jetzt erst innerhalb von
+`cloudPullNow().then(...)` aufgerufen, also erst nachdem der initiale Pull-Versuch abgeschlossen
+ist (egal ob erfolgreich, leer oder fehlgeschlagen – `cloudPullNow()` resolved in jedem Fall, nie
+reject). Ist Cloud-Sync nicht aktiv, läuft der Dialog wie bisher sofort. Im Browser gegengeprüft:
+No-Cloud-Pfad (leeres Board, kein Cloud-Sync) zeigt den Dialog weiterhin korrekt, keine neuen
+Konsolenfehler. Der Cloud-Pfad selbst liess sich wegen der IIFE-Kapselung des gesamten Scripts
+(alles ab Zeile ~523 in einer `(function(){ ... })()`-Closure, `state`/`cloudPullNow`/etc. sind
+nicht auf `window` sichtbar) nicht per Browser-Konsole voll end-to-end simulieren – die
+Codeänderung ist aber eine reine Verschiebung eines Funktionsaufrufs von "vor" nach "nach" einem
+`.then()`, keine neue Logik.
+
+**Offen:** Nutzer-Bestätigung, dass der Dialog nach diesem Fix (+ übliche GitHub-Pages-CDN-Wartezeit
+bis 10 Min) nicht mehr bei jedem Laden erscheint und die Tasks aus der Cloud sichtbar sind.
+
+Zusätzlich vorher schon gepusht (2026-08-25, alle bereits live): SW Network-first (`d709afa`),
+Cloud-Pull-Autoload bei leerem lokalem Board (`030e639`), Push-Sicherheitscheck gegen Überschreiben
+echter Cloud-Daten (`a1828df`), HTTP-Cache-Bypass via `{cache:'no-store'}` (`e241bd3`). Falls der
+Nutzer nach dem neuen Fix immer noch Probleme meldet: die Debugging-Schritte unten weiter
+abarbeiten.
 
 ## 🔴 URSPRÜNGLICHES PROBLEM (Beschreibung, für Kontext)
 
