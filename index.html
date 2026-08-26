@@ -444,6 +444,7 @@ button.mobile-only{display:none;}
     <span>⏱</span>
     <span class="tb-title" id="tbTitle"></span>
     <span class="tb-time" id="tbTime">00:00:00</span>
+    <button class="btn icon-btn" id="tbPip" title="Schwebendes Timer-Fenster">🖼️</button>
     <button class="btn" id="tbPause">⏸ Pause</button>
   </div>
 
@@ -459,6 +460,7 @@ button.mobile-only{display:none;}
     </select>
     <button class="btn" id="bulkPriorityBtn">Priorität setzen</button>
     <button class="btn" id="bulkArchiveBtn">🗄️ Archivieren</button>
+    <button class="btn danger" id="bulkDeleteBtn">🗑️ Löschen</button>
     <button class="btn ghost" id="bulkClearBtn">Auswahl aufheben</button>
   </div>
 
@@ -669,6 +671,7 @@ var changesSinceBackup = 0;
 var lastBackupAt = null;
 var selectMode = false;
 var selectedTaskIds = [];
+var lastSelectedTaskId = null;
 var swimlaneMode = false;
 var boardViewMode = 'status';
 var openTaskModalId = null;
@@ -2167,6 +2170,21 @@ function renderBoard(){
       '<span class="count'+(overWip?' over-wip':'')+'" title="'+(col.wipLimit?('WIP-Limit: '+col.wipLimit):'')+'">'+colTasks.length+(col.wipLimit?' / '+col.wipLimit:'')+'</span>' +
       (col.virtual ? '' : '<button class="icon-btn" data-action="col-menu" data-col-id="'+col.id+'" title="Optionen">⋯</button>');
     colEl.appendChild(header);
+    if(selectMode && colTasks.length){
+      var selectAllBtn = document.createElement('button');
+      selectAllBtn.className = 'icon-btn';
+      selectAllBtn.title = 'Alle Tasks dieser Spalte auswählen';
+      selectAllBtn.textContent = '☑️';
+      selectAllBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        colTasks.forEach(function(t){
+          if(selectedTaskIds.indexOf(t.id) < 0) selectedTaskIds.push(t.id);
+        });
+        document.getElementById('bulkCount').textContent = selectedTaskIds.length + ' ausgewählt';
+        renderBoard();
+      });
+      header.appendChild(selectAllBtn);
+    }
 
     var body = document.createElement('div');
     body.className = 'column-body';
@@ -2368,7 +2386,14 @@ function renderCard(t){
   card.addEventListener('click', function(e){
     if(e.target.closest('[data-action="toggle-timer"]')) return;
     if(selectMode){
-      toggleTaskSelection(t.id);
+      var body = card.closest('.column-body');
+      if(e.shiftKey && lastSelectedTaskId && body && selectTaskRange(lastSelectedTaskId, t.id, body)){
+        document.getElementById('bulkCount').textContent = selectedTaskIds.length + ' ausgewählt';
+        renderBoard();
+      } else {
+        toggleTaskSelection(t.id);
+      }
+      lastSelectedTaskId = t.id;
       return;
     }
     openTaskModal(t.id);
@@ -2413,10 +2438,52 @@ function renderTimerBanner(){
   var banner = document.getElementById('timerBanner');
   var id = state.settings.activeTaskId;
   var t = id ? getTask(id) : null;
-  if(!t){ banner.classList.remove('active'); return; }
+  if(!t){ banner.classList.remove('active'); if(pipWindow) pipWindow.close(); return; }
   banner.classList.add('active');
   document.getElementById('tbTitle').textContent = (TYPES[t.type]||TYPES.adhoc).icon + ' ' + t.title;
   document.getElementById('tbTime').textContent = fmtHMS(totalSeconds(t));
+  updateTimerPip();
+}
+
+/* =========================================================
+   SCHWEBENDES TIMER-FENSTER (Picture-in-Picture)
+   Bleibt als kleines Always-on-Top-Fenster sichtbar, auch wenn das
+   Board-Tab im Hintergrund ist (z.B. während der Arbeit in Jira/Outlook).
+   Nutzt die Document-PiP-API (Chrome/Edge); ohne Unterstützung schlägt
+   requestWindow() fehl und wir zeigen einen Hinweis statt eines Fehlers.
+   ========================================================= */
+var pipWindow = null;
+function toggleTimerPip(){
+  if(pipWindow){ pipWindow.close(); return; }
+  if(!('documentPictureInPicture' in window)){ toast('Schwebendes Fenster wird von diesem Browser nicht unterstützt (Chrome/Edge ab v116).'); return; }
+  documentPictureInPicture.requestWindow({width:260, height:110}).then(function(win){
+    pipWindow = win;
+    win.document.title = 'Work Board Timer';
+    var style = win.document.createElement('style');
+    style.textContent = 'body{margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; background:#14171c; color:#f2f2f2; font-family:system-ui,-apple-system,Segoe UI,sans-serif;} ' +
+      '#pipTitle{font-size:13px; opacity:.75; text-align:center; padding:0 12px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} ' +
+      '#pipTime{font-size:34px; font-weight:700; font-variant-numeric:tabular-nums;} ' +
+      '#pipPause{padding:5px 16px; border-radius:7px; border:none; background:#3b82f6; color:#fff; font-size:13px; cursor:pointer;} ' +
+      '#pipPause:hover{background:#2563eb;}';
+    win.document.head.appendChild(style);
+    win.document.body.innerHTML = '<div id="pipTitle"></div><div id="pipTime">00:00:00</div><button id="pipPause">⏸ Pause</button>';
+    win.document.getElementById('pipPause').addEventListener('click', function(){
+      var id = state.settings.activeTaskId;
+      if(id) stopTimer(id);
+    });
+    win.addEventListener('pagehide', function(){ pipWindow = null; });
+    updateTimerPip();
+  }).catch(function(err){ toast('Konnte schwebendes Fenster nicht öffnen: ' + err.message); });
+}
+function updateTimerPip(){
+  if(!pipWindow) return;
+  var id = state.settings.activeTaskId;
+  var t = id ? getTask(id) : null;
+  var titleEl = pipWindow.document.getElementById('pipTitle');
+  var timeEl = pipWindow.document.getElementById('pipTime');
+  if(!t){ pipWindow.close(); return; }
+  if(titleEl) titleEl.textContent = (TYPES[t.type]||TYPES.adhoc).icon + ' ' + t.title;
+  if(timeEl) timeEl.textContent = fmtHMS(totalSeconds(t));
 }
 function tick(){
   updateClockAndTitle();
@@ -2428,6 +2495,7 @@ function tick(){
   if(timeEl) timeEl.textContent = fmtHMS(totalSeconds(t));
   var cardTimeEl = document.querySelector('[data-time-for="'+id+'"]');
   if(cardTimeEl) cardTimeEl.textContent = '⏱ ' + fmtHMS(totalSeconds(t));
+  updateTimerPip();
 
   // idle reminder
   var openSession = t.timeSessions.find(function(s){ return !s.end; });
@@ -2859,9 +2927,22 @@ function checkWakeSnoozed(){
 function toggleSelectMode(){
   selectMode = !selectMode;
   selectedTaskIds = [];
+  lastSelectedTaskId = null;
   document.getElementById('btnSelectMode').className = 'btn' + (selectMode ? ' primary' : '');
   document.getElementById('bulkBar').style.display = selectMode ? 'flex' : 'none';
   renderBoard();
+}
+function selectTaskRange(fromId, toId, containerEl){
+  var cards = Array.prototype.slice.call(containerEl.querySelectorAll('.card'));
+  var i1 = cards.findIndex(function(c){ return c.dataset.taskId === fromId; });
+  var i2 = cards.findIndex(function(c){ return c.dataset.taskId === toId; });
+  if(i1 < 0 || i2 < 0) return false;
+  var lo = Math.min(i1,i2), hi = Math.max(i1,i2);
+  for(var i=lo; i<=hi; i++){
+    var id = cards[i].dataset.taskId;
+    if(selectedTaskIds.indexOf(id) < 0) selectedTaskIds.push(id);
+  }
+  return true;
 }
 function toggleTaskSelection(id){
   var idx = selectedTaskIds.indexOf(id);
@@ -3830,10 +3911,10 @@ function importFromClipboard(){
 /* =========================================================
    BOOKMARKLETS
    ========================================================= */
-var BOOKMARKLET_SRC = "(function(){try{var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:'';var titleEl=document.querySelector('[data-testid=\"issue.views.issue-base.foundation.summary.heading\"]')||document.querySelector('#summary-val')||document.querySelector('h1');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].replace(/^\\[.*?\\]\\s*/,'').trim();if(!key){var km=(title+' '+document.title).match(/([A-Z][A-Z0-9]+-\\d+)/);key=km?km[1]:'';}var descEl=document.querySelector('[data-testid=\"issue.views.field.rich-text.description\"]')||document.querySelector('#description-val');var desc=descEl?descEl.textContent.trim().slice(0,2000):'';var prEl=document.querySelector('[data-testid*=\"priority\"]');var pr=prEl?prEl.textContent.trim():'';var payload={source:'jira',key:key,title:title||('Ticket '+key),url:url,description:desc,priorityHint:pr};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+(key||'Ticket')+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Ticket-Daten nicht auslesen: '+e.message);}})();";
-var BOOKMARKLET_CONFLUENCE_SRC = "(function(){try{var url=window.location.href;var titleEl=document.querySelector('#title-text')||document.querySelector('h1')||document.querySelector('[data-testid=\"content-title\"]');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].trim();var spaceEl=document.querySelector('[data-testid=\"space-breadcrumb\"]')||document.querySelector('#breadcrumbs');var space=spaceEl?spaceEl.textContent.trim().slice(0,80):'';var payload={source:'confluence',title:title,url:url,space:space};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+title+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Seiten-Daten nicht auslesen: '+e.message);}})();";
-var BOOKMARKLET_STATUS_SRC = "(function(){try{var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:prompt('Ticket-Key (z.B. PROJ-123):');if(!key)return;var base=window.location.origin;fetch(base+'/rest/api/2/issue/'+key+'/transitions',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){var tr=data.transitions||[];if(!tr.length){alert('Keine verfügbaren Status-Übergänge gefunden (evtl. keine Berechtigung oder falsche Jira-Version).');return;}var listText=tr.map(function(t,i){return (i+1)+': '+t.name;}).join('\\n');var choice=prompt('Neuen Status wählen für '+key+':\\n'+listText,'1');var idx=parseInt(choice,10)-1;if(isNaN(idx)||!tr[idx])return;return fetch(base+'/rest/api/2/issue/'+key+'/transitions',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({transition:{id:tr[idx].id}})}).then(function(r2){if(r2.ok||r2.status===204)alert('✅ Status geändert zu: '+tr[idx].name);else alert('Fehler beim Ändern: HTTP '+r2.status);});}).catch(function(e){alert('Fehler: '+e.message);});}catch(e){alert('Fehler: '+e.message);}})();";
-var BOOKMARKLET_BULK_SRC = "(function(){try{var items=[];document.querySelectorAll('tr[data-issuekey], tr.issuerow').forEach(function(row){var key=row.getAttribute('data-issuekey')||(row.querySelector('.issuekey')?row.querySelector('.issuekey').textContent.trim():'');var summary=row.querySelector('.summary')?row.querySelector('.summary').textContent.trim():'';if(key)items.push({key:key,title:summary||key});});if(!items.length){var seen={};document.querySelectorAll('a[href*=\"/browse/\"]').forEach(function(a){var m=a.getAttribute('href').match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);if(m&&!seen[m[1]]){seen[m[1]]=true;items.push({key:m[1],title:a.textContent.trim()||m[1]});}});}if(!items.length){alert('Keine Tickets auf dieser Seite gefunden. Funktioniert am besten auf der Jira-Suchergebnisliste.');return;}items=items.slice(0,50);var payload={source:'jira-bulk',items:items};var txt=JSON.stringify(payload);function done(){alert('✅ '+items.length+' Ticket(s) kopiert.\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Fehler: '+e.message);}})();";
+var BOOKMARKLET_SRC = "(function(){try{if(document.querySelector('#login-form,#username,input[name=\"os_username\"]')||/\\/login/i.test(location.pathname)){alert('⚠️ Nicht eingeloggt oder Sitzung abgelaufen. Bitte in diesem Tab neu einloggen und das Bookmarklet erneut anklicken.');return;}var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:'';var titleEl=document.querySelector('[data-testid=\"issue.views.issue-base.foundation.summary.heading\"]')||document.querySelector('#summary-val')||document.querySelector('h1');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].replace(/^\\[.*?\\]\\s*/,'').trim();if(!key){var km=(title+' '+document.title).match(/([A-Z][A-Z0-9]+-\\d+)/);key=km?km[1]:'';}var descEl=document.querySelector('[data-testid=\"issue.views.field.rich-text.description\"]')||document.querySelector('#description-val');var desc=descEl?descEl.textContent.trim().slice(0,2000):'';var prEl=document.querySelector('[data-testid*=\"priority\"]');var pr=prEl?prEl.textContent.trim():'';var payload={source:'jira',key:key,title:title||('Ticket '+key),url:url,description:desc,priorityHint:pr};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+(key||'Ticket')+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Ticket-Daten nicht auslesen: '+e.message);}})();";
+var BOOKMARKLET_CONFLUENCE_SRC = "(function(){try{if(document.querySelector('#login-form,#username,input[name=\"os_username\"]')||/\\/login/i.test(location.pathname)){alert('⚠️ Nicht eingeloggt oder Sitzung abgelaufen. Bitte in diesem Tab neu einloggen und das Bookmarklet erneut anklicken.');return;}var url=window.location.href;var titleEl=document.querySelector('#title-text')||document.querySelector('h1')||document.querySelector('[data-testid=\"content-title\"]');var title=titleEl?titleEl.textContent.trim():document.title.split(' - ')[0].trim();var spaceEl=document.querySelector('[data-testid=\"space-breadcrumb\"]')||document.querySelector('#breadcrumbs');var space=spaceEl?spaceEl.textContent.trim().slice(0,80):'';var payload={source:'confluence',title:title,url:url,space:space};var txt=JSON.stringify(payload);function done(){alert('Kopiert: '+title+'\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Konnte Seiten-Daten nicht auslesen: '+e.message);}})();";
+var BOOKMARKLET_STATUS_SRC = "(function(){try{if(document.querySelector('#login-form,#username,input[name=\"os_username\"]')||/\\/login/i.test(location.pathname)){alert('⚠️ Nicht eingeloggt oder Sitzung abgelaufen. Bitte in diesem Tab neu einloggen und das Bookmarklet erneut anklicken.');return;}var url=window.location.href;var m=url.match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);var key=m?m[1]:prompt('Ticket-Key (z.B. PROJ-123):');if(!key)return;var base=window.location.origin;fetch(base+'/rest/api/2/issue/'+key+'/transitions',{credentials:'same-origin'}).then(function(r){if(r.status===401||r.status===403)throw new Error('SESSION_EXPIRED');if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){var tr=data.transitions||[];if(!tr.length){alert('Keine verfügbaren Status-Übergänge gefunden (evtl. keine Berechtigung oder falsche Jira-Version).');return;}var listText=tr.map(function(t,i){return (i+1)+': '+t.name;}).join('\\n');var choice=prompt('Neuen Status wählen für '+key+':\\n'+listText,'1');var idx=parseInt(choice,10)-1;if(isNaN(idx)||!tr[idx])return;return fetch(base+'/rest/api/2/issue/'+key+'/transitions',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({transition:{id:tr[idx].id}})}).then(function(r2){if(r2.ok||r2.status===204)alert('✅ Status geändert zu: '+tr[idx].name);else if(r2.status===401||r2.status===403)alert('⚠️ Jira-Sitzung ist zwischenzeitlich abgelaufen. Bitte neu einloggen und erneut versuchen.');else alert('Fehler beim Ändern: HTTP '+r2.status);});}).catch(function(e){if(e.message==='SESSION_EXPIRED')alert('⚠️ Jira-Sitzung abgelaufen (nicht mehr eingeloggt). Bitte in diesem Tab neu einloggen und danach das Bookmarklet erneut anklicken.');else alert('Fehler: '+e.message);});}catch(e){alert('Fehler: '+e.message);}})();";
+var BOOKMARKLET_BULK_SRC = "(function(){try{if(document.querySelector('#login-form,#username,input[name=\"os_username\"]')||/\\/login/i.test(location.pathname)){alert('⚠️ Nicht eingeloggt oder Sitzung abgelaufen. Bitte in diesem Tab neu einloggen und das Bookmarklet erneut anklicken.');return;}var items=[];document.querySelectorAll('tr[data-issuekey], tr.issuerow').forEach(function(row){var key=row.getAttribute('data-issuekey')||(row.querySelector('.issuekey')?row.querySelector('.issuekey').textContent.trim():'');var summary=row.querySelector('.summary')?row.querySelector('.summary').textContent.trim():'';if(key)items.push({key:key,title:summary||key});});if(!items.length){var seen={};document.querySelectorAll('a[href*=\"/browse/\"]').forEach(function(a){var m=a.getAttribute('href').match(/\\/browse\\/([A-Z][A-Z0-9]+-\\d+)/);if(m&&!seen[m[1]]){seen[m[1]]=true;items.push({key:m[1],title:a.textContent.trim()||m[1]});}});}if(!items.length){alert('Keine Tickets auf dieser Seite gefunden. Funktioniert am besten auf der Jira-Suchergebnisliste.');return;}items=items.slice(0,50);var payload={source:'jira-bulk',items:items};var txt=JSON.stringify(payload);function done(){alert('✅ '+items.length+' Ticket(s) kopiert.\\nWechsle zum Work Board und klicke \"Aus Zwischenablage\".');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){prompt('Bitte manuell kopieren:',txt);});}else{prompt('Bitte manuell kopieren:',txt);}}catch(e){alert('Fehler: '+e.message);}})();";
 
 /* =========================================================
    DYCE EXPORT
@@ -3997,6 +4078,24 @@ function renderStatsModal(range){
     return t.completedAt && new Date(t.completedAt).getTime() >= startMs && new Date(t.completedAt).getTime() <= endMs;
   }).length;
 
+  // Zeit pro Jira-Projekt/Kunde (Projekt-Präfix vor dem "-" im Jira-Key, z.B. "PROJ-123" -> "PROJ")
+  var projectTotals = {};
+  state.tasks.forEach(function(t){
+    var sec = secondsInRange(t, startMs, endMs);
+    if(!sec) return;
+    var proj = t.jiraKey ? t.jiraKey.split('-')[0] : '– ohne Jira-Key –';
+    projectTotals[proj] = (projectTotals[proj]||0) + sec;
+  });
+  var projectEntries = Object.keys(projectTotals).map(function(k){ return {key:k, sec:projectTotals[k]}; }).sort(function(a,b){ return b.sec - a.sec; });
+  var projectMax = projectEntries.length ? projectEntries[0].sec : 1;
+  var projectRows = projectEntries.length ? projectEntries.map(function(p){
+    var pct = Math.round(p.sec/projectMax*100);
+    return '<div style="margin-bottom:12px;">' +
+      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>🏷️ '+escapeHtml(p.key)+'</span><span style="font-weight:700;">'+fmtHM(p.sec)+'</span></div>' +
+      '<div style="background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; border:1px solid var(--border);"><div style="width:'+pct+'%; background:var(--accent); height:100%;"></div></div>' +
+    '</div>';
+  }).join('') : '<div class="empty-state">Keine erfasste Zeit mit Jira-Ticket in diesem Zeitraum.</div>';
+
   // 7-Tage-Sparkline
   var dayLabels = ['So','Mo','Di','Mi','Do','Fr','Sa'];
   var sparkDays = [];
@@ -4081,6 +4180,8 @@ function renderStatsModal(range){
       '<div class="section-title">Zeitverteilung</div>' +
       donutHtml +
       rows +
+      '<div class="section-title">🏷️ Zeit pro Projekt/Kunde</div>' +
+      projectRows +
       '<div class="section-title">Letzte 7 Tage</div>' +
       sparkHtml +
       '<div class="section-title">Verlauf (12 Wochen)</div>' +
@@ -4384,6 +4485,18 @@ function cloudPullNow(showToastIfUpToDate){
     renderCloudSyncStatus();
   }).finally(function(){ cloudSyncBusy = false; });
 }
+/* Sofortiger Sync-Versuch, sobald der Browser die Verbindung zurückmeldet
+   (z.B. nach VPN-Wechsel, Meetingraum ohne WLAN, Tunnel im Zug) - statt bis
+   zu 45s auf das nächste Poll-Intervall zu warten. Push zuerst (damit
+   lokale Änderungen, die während der Unterbrechung passiert sind, nicht
+   verloren gehen), danach Pull; cloudPushNow()'s eigener Sicherheits-Check
+   verhindert dabei weiterhin, dass ein leeres lokales Board echte
+   Cloud-Daten überschreibt. */
+window.addEventListener('online', function(){
+  if(getCloudSyncConfig().enabled){
+    cloudPushNow().then(function(){ return cloudPullNow(); });
+  }
+});
 /* Explizites "Mit bestehender Sync verbinden" (z.B. auf einem zweiten Gerät):
    hier NICHT nach Zeitstempel entscheiden — ein frisch geöffnetes, leeres Board
    hat immer einen ganz aktuellen Zeitstempel und würde den echten Cloud-Stand
@@ -5139,6 +5252,7 @@ function openIcsImport(){
     '<div class="modal-body">' +
       '<p class="hint" style="margin-bottom:10px;">Aus Outlook exportierte Kalenderdatei (.ics) auswählen – Termine werden als Meeting-Tasks mit Fälligkeitsdatum angelegt.</p>' +
       '<input type="file" id="icsFileInput" accept=".ics,text/calendar">' +
+      '<div class="form-row" style="margin-top:12px;"><label>⏰ Erinnerung vor Meeting-Start (Min., 0 = keine)</label><input type="number" id="icsReminderMinutes" min="0" step="1" value="10" style="width:80px;"></div>' +
       '<div id="icsPreview" style="margin-top:12px;"></div>' +
     '</div>' +
     '<div class="modal-footer">' +
@@ -5167,6 +5281,8 @@ function openIcsImport(){
   });
   document.getElementById('icsImportBtn').addEventListener('click', function(){
     var col = state.columns[0];
+    var reminderMinutes = parseInt(document.getElementById('icsReminderMinutes').value, 10) || 0;
+    var remindersSet = 0;
     parsedEvents.forEach(function(ev){
       createTask({
         title: ev.title,
@@ -5176,8 +5292,19 @@ function openIcsImport(){
         dueDate: ev.date || '',
         description: ev.description || ''
       });
+      if(reminderMinutes > 0 && ev.startDate){
+        var reminderTs = new Date(ev.startDate.getTime() - reminderMinutes*60000);
+        if(reminderTs.getTime() > Date.now()){
+          state.reminders.push({id: uid(), ts: reminderTs.toISOString(), text: '📅 Gleich: ' + ev.title, fired:false});
+          remindersSet++;
+        }
+      }
     });
-    toast(parsedEvents.length + ' Termin(e) importiert.');
+    if(remindersSet){
+      save();
+      if('Notification' in window && Notification.permission === 'default'){ try{ Notification.requestPermission(); }catch(e){} }
+    }
+    toast(parsedEvents.length + ' Termin(e) importiert' + (remindersSet ? ', ' + remindersSet + ' Erinnerung(en) gesetzt' : '') + '.');
     closeModal();
     renderAll();
   });
@@ -5197,6 +5324,19 @@ function icsDateToInputValue(raw){
   if(!m) return '';
   return m[1] + '-' + m[2] + '-' + m[3];
 }
+/* Voller Start-Zeitpunkt (Datum+Uhrzeit) fürs Vor-Meeting-Erinnerungsfeature.
+   VALUE=DATE (ganztägig) liefert absichtlich null - dafür macht "X Minuten
+   vorher" keinen Sinn. Bei "Z"-Suffix UTC interpretieren, sonst als lokale
+   Wandzeit (TZID wird ignoriert - für Termine im eigenen Zeitzonen-Alltag
+   eine vertretbare Vereinfachung). */
+function icsDateToStartDate(raw){
+  var m = raw.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+  if(!m) return null;
+  if(/Z\s*$/.test(raw)){
+    return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+  }
+  return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+}
 function parseIcs(text){
   var lines = unfoldIcsLines(text);
   var events = [];
@@ -5205,7 +5345,7 @@ function parseIcs(text){
     if(line.indexOf('BEGIN:VEVENT') === 0){ current = {}; return; }
     if(line.indexOf('END:VEVENT') === 0){
       if(current && current.title){
-        events.push({title: current.title, date: current.date, description: current.description || ''});
+        events.push({title: current.title, date: current.date, startDate: current.startDate || null, description: current.description || ''});
       }
       current = null;
       return;
@@ -5214,7 +5354,9 @@ function parseIcs(text){
     if(line.indexOf('SUMMARY') === 0){
       current.title = line.substring(line.indexOf(':')+1).trim();
     } else if(line.indexOf('DTSTART') === 0){
-      current.date = icsDateToInputValue(line.substring(line.indexOf(':')+1));
+      var dtVal = line.substring(line.indexOf(':')+1);
+      current.date = icsDateToInputValue(dtVal);
+      current.startDate = icsDateToStartDate(dtVal);
     } else if(line.indexOf('DESCRIPTION') === 0){
       current.description = line.substring(line.indexOf(':')+1).trim().replace(/\\n/g,'\n');
     }
@@ -5608,6 +5750,20 @@ document.getElementById('bulkArchiveBtn').addEventListener('click', function(){
   toast(selectedTaskIds.length + ' Task(s) archiviert.');
   toggleSelectMode();
 });
+document.getElementById('bulkDeleteBtn').addEventListener('click', function(){
+  var ids = selectedTaskIds.slice();
+  if(!ids.length) return;
+  confirmDialog(ids.length + ' Task(s) endgültig löschen? Das kann nicht rückgängig gemacht werden (ausser mit Strg+Z direkt danach).', '🗑️ ' + ids.length + ' löschen', function(){
+    pushUndoSnapshot();
+    state.tasks = state.tasks.filter(function(t){ return ids.indexOf(t.id) < 0; });
+    state.tasks.forEach(function(t){ t.blockedBy = t.blockedBy.filter(function(bid){ return ids.indexOf(bid) < 0; }); });
+    if(ids.indexOf(state.settings.activeTaskId) >= 0) state.settings.activeTaskId = null;
+    save();
+    closeModal();
+    toast(ids.length + ' Task(s) gelöscht.');
+    toggleSelectMode();
+  });
+});
 document.getElementById('bulkClearBtn').addEventListener('click', function(){
   selectedTaskIds = [];
   document.getElementById('bulkCount').textContent = '0 ausgewählt';
@@ -5635,6 +5791,7 @@ document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
 });
+document.getElementById('tbPip').addEventListener('click', toggleTimerPip);
 document.getElementById('btnReloadExternal').addEventListener('click', function(){
   if(!fileHandle) return;
   fileHandle.getFile().then(function(file){ return file.text(); }).then(function(text){
