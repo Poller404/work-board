@@ -151,9 +151,10 @@ einfügen.
 
 ## Statistik
 
-**📊 Statistik** zeigt für Heute/Woche/Monat: Zeit pro Typ, Durchsatz (erledigte Tasks), eine
-7-Tage-Sparkline, eine 12-Wochen-Verlaufs-Heatmap, offen-vs-erledigt sowie ein paar
-Wochen-Kennzahlen (Anrufe, Meetings, längste Sitzung).
+**📊 Statistik** zeigt für Heute/Woche/Monat: Zeit pro Typ, **Zeit pro Projekt/Kunde** (gruppiert
+nach Jira-Projekt-Präfix, z.B. "PROJ-123" → "PROJ" – praktisch fürs Rapportieren an mehrere
+Kunden), Durchsatz (erledigte Tasks), eine 7-Tage-Sparkline, eine 12-Wochen-Verlaufs-Heatmap,
+offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste Sitzung).
 
 ## Fokus, Priorität & Tempo
 
@@ -164,7 +165,10 @@ Wochen-Kennzahlen (Anrufe, Meetings, längste Sitzung).
 - **🎯 Nach Priorität**: Board umschalten von Status-Spalten auf Prioritäts-Swimlanes; Karten
   zwischen Spalten ziehen ändert dann die Priorität statt den Status.
 - **📌 Anpinnen**: wichtige Tasks bleiben immer oben in ihrer Spalte.
-- **☑️ Auswahl**: Mehrfachauswahl von Karten für Bulk-Verschieben/-Priorisieren/-Archivieren.
+- **☑️ Auswahl**: Mehrfachauswahl von Karten für Bulk-Verschieben/-Priorisieren/-Archivieren/
+  **-Löschen** (mit Bestätigung). Einzelne Karten anklicken, **Umschalt+Klick** wählt einen
+  ganzen Bereich innerhalb einer Spalte, und ☑️ im Spalten-Header wählt alle Tasks dieser
+  Spalte auf einmal.
 - Titel/Beschreibung werden beim Verlassen des Feldes automatisch nach Dringlichkeits-Wörtern
   ("dringend", "ASAP" …), passenden Tags (z.B. "VPN" → #vpn) und relativen Datumsangaben
   ("morgen", "Freitag", "in 3 Tagen") durchsucht – Priorität/Tags/Fälligkeitsdatum werden
@@ -238,7 +242,8 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 - **🕰️ Zeitreise** (`Strg+K`): Board-Zustand von einem früheren Tag ansehen (Snapshots werden
   automatisch einmal täglich erstellt).
 - **📥 .ics-Import** (`Strg+K`): Outlook-Kalenderexport als Meeting-Tasks mit Fälligkeitsdatum
-  einlesen.
+  einlesen, optional mit einer Erinnerung X Minuten vor Meeting-Start (nutzt die Uhrzeit aus der
+  .ics-Datei, nicht nur das Datum).
 
 ## Bedienkomfort & Vorlagen
 
@@ -279,6 +284,9 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 - **Zeitverteilung als Kreisdiagramm** in der Statistik.
 - **🍅 Pomodoro-Modus**: Fokus-Modus reiht optional automatisch Pausen zwischen den Blöcken ein
   (kurze/lange Pause, konfigurierbar), mit "Nächster Block"-Erinnerung danach.
+- **🖼️ Schwebendes Timer-Fenster**: Button im Timer-Banner öffnet den laufenden Timer als kleines
+  Always-on-Top-Fenster (Picture-in-Picture) – bleibt sichtbar, auch während in Jira/Outlook
+  gearbeitet wird und der Board-Tab im Hintergrund ist. Benötigt Chrome/Edge ab v116.
 
 **Board & Darstellung**
 - **Undo** (`Strg+Z`): letzte Aktion rückgängig (Löschen, Archivieren, Bulk-Aktionen, Verschieben).
@@ -297,7 +305,9 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 
 **Jira & Wissen**
 - **🔄 Jira-Status setzen** (Bookmarklet): schreibt den Status direkt im Ticket zurück (Best-Effort,
-  abhängig von Jira-Version/-Berechtigung).
+  abhängig von Jira-Version/-Berechtigung). Alle Jira-/Confluence-Bookmarklets erkennen jetzt eine
+  abgelaufene oder fehlende Jira-Session (Login-Seite bzw. HTTP 401/403) und melden das klar,
+  statt stillschweigend mit falschen/leeren Daten weiterzumachen.
 - **📦 Jira-Suchliste → Board** (Bookmarklet): mehrere Tickets von einer Suchergebnisliste auf
   einmal importieren.
 - **🔍 Lösungs-Wissensdatenbank**: durchsucht erledigte/archivierte Tasks nach Titel/Notizen.
@@ -308,6 +318,9 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 **Daten & Zugriff**
 - Cloud-Sync legt automatisch täglich einen **Snapshot** im selben Gist ab (letzte 7 Tage) –
   zusätzliche Absicherung gegen einen fehlerhaft hochgeladenen Stand.
+- **Automatischer Sync-Retry**: meldet der Browser die Internetverbindung zurück (z.B. nach
+  VPN-Wechsel oder WLAN-Aussetzer), synchronisiert Cloud-Sync sofort statt bis zu 45s auf das
+  nächste Poll-Intervall zu warten.
 - **🖨️ Wochenbericht als PDF**: formatierter Report über den nativen "Als PDF speichern"-Druckdialog.
 - **🔗 Read-only-Link teilen**: erstellt einen separaten, unverschlüsselten Snapshot-Link (offene
   Tasks, ohne Notizen) zum reinen Ansehen – z.B. für den Chef. Kein Live-Sync, jede Änderung
