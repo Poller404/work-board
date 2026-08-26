@@ -205,6 +205,8 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 - **📎 Textbausteine**: wiederkehrende Notizen/Antworten in den Einstellungen anlegen, per
   📎-Button in Notizen und Schnellerfassung einfügen.
 - **🎙️ Diktieren**: Notizen per Spracheingabe eintippen (sofern der Browser das unterstützt).
+- **Tag-Autocomplete**: beim Tippen im Tags-Feld werden passende, bereits verwendete Tags
+  vorgeschlagen (pro Komma-Segment, nicht nur für das ganze Feld).
 - **Screenshot einfügen**: Bild aus der Zwischenablage direkt mit `Strg+V` im Task-Fenster
   einfügen – landet automatisch als Notiz.
 - **Automatische Zwischenablage-Erkennung** (optional, ⚙️ Einstellungen): erinnert von selbst,
@@ -242,7 +244,9 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
   bei "gleiches Thema, ein Task pro Kunde"), mit Autocomplete über bereits vergebene Gruppen. Im
   normalen Status-Board klappen 2+ Tasks derselben Gruppe innerhalb einer Spalte automatisch zu
   einem einklappbaren Block zusammen (Anzahl + Gesamtzeit); dazu eine eigene **📦 Nach
-  Gruppe**-Board-Ansicht mit einer Spalte pro Gruppe.
+  Gruppe**-Board-Ansicht mit einer Spalte pro Gruppe. Der ganze Block lässt sich per Drag & Drop
+  in eine andere Spalte ziehen (bewegt alle Tasks der Gruppe auf einmal), und eine einzelne Karte
+  auf einen bestehenden Gruppen-Block ziehen ordnet sie dieser Gruppe zu.
 - **🗺️ Timeline** (`Strg+K`): Tasks mit Fälligkeitsdatum als Balken über die nächsten 30 Tage.
 - **🕰️ Zeitreise** (`Strg+K`): Board-Zustand von einem früheren Tag ansehen (Snapshots werden
   automatisch einmal täglich erstellt).
