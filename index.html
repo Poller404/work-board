@@ -2185,6 +2185,15 @@ function renderDashboardWidgets(){
 function renderBoard(){
   var board = document.getElementById('board');
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
+  /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
+     eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
+     scrollTop 0 zurücksetzen, sodass ein bearbeiteter Task weiter unten in
+     einer langen Spalte optisch "nach oben springt", obwohl sich seine
+     Position in der Liste gar nicht geändert hat. */
+  var scrollPositions = {};
+  board.querySelectorAll('.column-body').forEach(function(b){
+    if(b.dataset.colId) scrollPositions[b.dataset.colId] = b.scrollTop;
+  });
   board.innerHTML = '';
   board.classList.toggle('compact', !!state.settings.compactView);
   var lanes = computeLanes();
@@ -2302,6 +2311,9 @@ function renderBoard(){
   });
   board.querySelectorAll('[data-action="col-menu"]').forEach(function(btn){
     btn.addEventListener('click', function(e){ openColumnMenu(btn.dataset.colId, e.currentTarget); });
+  });
+  board.querySelectorAll('.column-body').forEach(function(b){
+    if(b.dataset.colId && scrollPositions[b.dataset.colId] != null) b.scrollTop = scrollPositions[b.dataset.colId];
   });
   populateBulkColumnSelect();
 }
