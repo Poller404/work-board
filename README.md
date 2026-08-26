@@ -238,6 +238,11 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 - **Board-Ansicht umschalten** (oben): Status (klassisches Kanban), Priorität, **Eisenhower-Matrix**
   (Wichtig×Dringend, basierend auf Anpinnen + Priorität) oder **nach Person** (Teammitglieder in
   ⚙️ Einstellungen anlegen, Tasks per Drag&Drop zuweisen).
+- **📦 Task-Gruppierung**: im Task-Fenster ein Gruppenname vergeben (z.B. "VPN-Rollout" – praktisch
+  bei "gleiches Thema, ein Task pro Kunde"), mit Autocomplete über bereits vergebene Gruppen. Im
+  normalen Status-Board klappen 2+ Tasks derselben Gruppe innerhalb einer Spalte automatisch zu
+  einem einklappbaren Block zusammen (Anzahl + Gesamtzeit); dazu eine eigene **📦 Nach
+  Gruppe**-Board-Ansicht mit einer Spalte pro Gruppe.
 - **🗺️ Timeline** (`Strg+K`): Tasks mit Fälligkeitsdatum als Balken über die nächsten 30 Tage.
 - **🕰️ Zeitreise** (`Strg+K`): Board-Zustand von einem früheren Tag ansehen (Snapshots werden
   automatisch einmal täglich erstellt).
