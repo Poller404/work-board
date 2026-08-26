@@ -5860,7 +5860,6 @@ function init(){
     renderAll();
     applyLanguage();
     handleUrlShortcutAction();
-    if(!reconnected) showOnboardingIfNeeded();
     tickInterval = setInterval(function(){
       tick();
       checkExternalChange();
@@ -5878,9 +5877,17 @@ function init(){
     setTimeout(checkOvernightTimers, 1200);
     captureDailySnapshotIfNeeded();
     if(state.settings.clipboardWatchEnabled) startClipboardWatch();
+    /* Erst den initialen Cloud-Pull abwarten, dann erst ggf. den Willkommens-
+       Dialog zeigen - sonst poppt er bei jedem Start kurz auf, bevor die
+       (asynchron geladenen) Cloud-Daten überhaupt eintreffen, obwohl Cloud-
+       Sync korrekt eingerichtet ist und state.tasks gleich befüllt wird. */
     if(getCloudSyncConfig().enabled){
-      cloudPullNow();
+      cloudPullNow().then(function(){
+        if(!reconnected) showOnboardingIfNeeded();
+      });
       setInterval(cloudPullNow, 45000);
+    } else if(!reconnected){
+      showOnboardingIfNeeded();
     }
   });
 }
