@@ -5771,7 +5771,14 @@ function handleCardKeyNav(e){
    INIT
    ========================================================= */
 function showOnboardingIfNeeded(){
-  if(state.tasks.length > 0 || state.settings.storageMode === 'file') return;
+  /* Der Dialog soll nur beim allerersten Mal erscheinen, nicht jedes Mal wenn
+     das Board zufällig 0 Tasks hat (z.B. nachdem eine bestehende Nutzerin
+     ihren letzten Task erledigt/gelöscht hat) - sonst poppt "Willkommen"
+     wiederholt für Leute auf, die die App längst eingerichtet haben. */
+  var alreadyOnboarded = false;
+  try{ alreadyOnboarded = localStorage.getItem('wb-onboarding-shown') === '1'; }catch(e){}
+  if(alreadyOnboarded || state.tasks.length > 0 || state.settings.storageMode === 'file' || getCloudSyncConfig().enabled) return;
+  try{ localStorage.setItem('wb-onboarding-shown', '1'); }catch(e){}
   var html =
     '<div class="modal-header"><h2>👋 Willkommen bei Work Board</h2></div>' +
     '<div class="modal-body">' +
