@@ -4,7 +4,44 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
-## ✅ Stand 2026-08-26 (Abend): Team-Backend (Repo-Sync) + Push-Notifications (ntfy.sh) gepusht
+## ✅ Stand 2026-08-26 (spät abends): Repo-Team-Backend wieder entfernt, Settings-Tabs, Fixes
+
+Nach dem Bau des Repo-Team-Backends (siehe Abschnitt unten für den Hintergrund) ist der Nutzer
+beim ersten echten Testlauf auf einen `HTTP 404` bei "Neues Team-Repo erstellen" gestossen
+(vermutlich Token ohne `repo`-Scope oder Fine-grained-Token, siehe Diagnose weiter unten). Danach
+äusserte er, der ganze Prozess bis mehrere Personen Zugriff haben sei "sehr komplex". Auf
+Rückfrage (AskUserQuestion) klar entschieden: **zurück auf den einfachen geteilten-Gist-Weg**,
+Team-Repo-Backend **komplett entfernen** statt nur ausblenden.
+
+**Was rückgebaut wurde** (Commit folgt in dieser Session): `cloudSyncConfigDefaults()` wieder ohne
+`backend`/`repoOwner`/`repoName`; `cloudRepoHeaders/-ContentsUrl/-GetFile/-PutFile`,
+`cloudCreateRepo()`, `cloudInviteCollaborator()`, `cloudFetchGistFile()`/`cloudFetchRemoteFile()`/
+`cloudBackendReady()` komplett gelöscht; `cloudPushNow`/`cloudPullNow`/`cloudJoinExisting` zurück
+auf die ursprüngliche reine Gist-Logik (kein Backend-Branching mehr); Settings-UI: Speicherart-
+Radio, Repo-Felder, "Neues Team-Repo erstellen"-/"Einladen"-Buttons entfernt, ursprünglicher
+Snapshot-Hinweistext in der Cloud-Sync-Einleitung wiederhergestellt (war beim Repo-Umbau versehentlich
+generisch umformuliert worden und dabei verlorengegangen). README-Abschnitt "Team-Modus" entfernt,
+durch einen kurzen Hinweis ersetzt: Zugriff für eine zweite Person = Token/Passphrase/Gist-ID
+teilen (am einfachsten per bereits vorhandenem QR-Pairing).
+
+**Lektion für die Zukunft:** Bei der nächsten Anfrage nach "mehreren Personen Zugriff geben" oder
+"Team-Feature" zuerst den einfachen geteilten-Token-Weg vorschlagen (ist quasi ohne Zusatzaufwand
+sofort nutzbar, da die App eh schon Multi-Geräte-Sync kann) und nur bei explizitem Wunsch nach
+getrennten Identitäten pro Person den aufwändigeren Repo/Collaborator-Weg anbieten – nicht
+standardmässig den komplexeren Weg vorschlagen, auch wenn er "sauberer" ist.
+
+**Zusätzlich in dieser Session behoben:**
+- Settings-Modal-Tab-Leiste (`position:sticky` + negative Margins) verursachte je nach
+  Fensterbreite/Zoom eine sichtbare Text-Überlappung (Screenshot vom Nutzer bestätigt: Hint-Text
+  über der Tab-Leiste sichtbar). Behoben durch simples `position:static` statt sticky - entfernt
+  die ganze Fehlerklasse, statt den exakten Repro-Fall zu jagen (liess sich in der Test-Sandbox
+  nur bei bestimmten Scroll-Positionen reproduzieren, nicht 1:1 wie im Nutzer-Screenshot).
+- `HTTP 404` bei "Neues Team-Repo erstellen" diagnostiziert (bevor die Team-Funktion wieder entfernt
+  wurde): wahrscheinlichste Ursache war ein wiederverwendeter Gist-Scope-Token oder ein
+  Fine-grained-Token statt eines klassischen PAT mit `repo`-Scope – für den Fall, dass Repo-Sync
+  o.ä. in Zukunft nochmal gebraucht wird, ist das die erste Diagnose-Richtung.
+
+## ✅ Stand 2026-08-26 (Abend, historisch – Feature seither wieder entfernt): Team-Backend (Repo-Sync) + Push-Notifications (ntfy.sh) gepusht
 
 Nutzer wünschte geteilten Board-Zugriff für zwei Management-Personen + Push-Benachrichtigungen
 aufs Handy. Nach Rückfrage (AskUserQuestion) entschieden: **Repo-basiertes Team-Backend** (nicht
