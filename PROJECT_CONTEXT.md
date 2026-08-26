@@ -4,6 +4,53 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-08-26 (Abend): Team-Backend (Repo-Sync) + Push-Notifications (ntfy.sh) gepusht
+
+Nutzer wünschte geteilten Board-Zugriff für zwei Management-Personen + Push-Benachrichtigungen
+aufs Handy. Nach Rückfrage (AskUserQuestion) entschieden: **Repo-basiertes Team-Backend** (nicht
+der einfachere geteilte-Token-Weg) und **ntfy.sh** für Push, ausgelöst bei: Task zugewiesen, neues
+Hotline-Ticket, SLA kritisch, Task erledigt.
+
+**Was gebaut wurde** (Commits `56c9a0f`, `d9debb8`):
+- Cloud-Sync-Konfiguration bekam ein `backend`-Feld (`'gist'` Standard/unverändert, `'repo'` neu).
+  Grund fürs Repo-Backend statt geteiltem Gist-Token: die GitHub-Gist-API lässt nur den
+  *Besitzer*-Token schreiben; ein privates Repo unterstützt echte Collaborator-Einladungen, jede
+  Person nutzt ihren eigenen Token. Neue Funktionen `cloudRepoGetFile`/`cloudRepoPutFile`
+  (Contents API mit SHA-Handling), `cloudCreateRepo()` (POST /user/repos + Erstbefüllung),
+  `cloudInviteCollaborator()` (PUT .../collaborators/{user}). `cloudPushNow`/`cloudPullNow`/
+  `cloudJoinExisting` branchen jetzt über `cloudFetchRemoteFile()`/`cloudBackendReady()` statt
+  Code zu duplizieren. Snapshots gibt's nur bei Gist – beim Repo übernimmt die Git-Historie das.
+  Settings-UI: Radio-Umschalter "Persönlich (Gist)" / "Team (Repo)", bedingt sichtbare Felder.
+- **ntfy.sh-Push**: `sendNtfyPush(title, message)` postet JSON an `https://ntfy.sh`. Bewusst
+  generische Texte (kein Task-Titel/Kundenname), da der Text unverschlüsselt über ntfys Server
+  läuft – anders als der Cloud-Sync-Inhalt selbst. Trigger: `createTask()` bei `type==='hotline'`,
+  `updateTask()` bei Zuweisung (`patch.assignee` ändert sich) und bei Erledigt-Setzen, plus
+  periodischer `checkSlaCriticalPush()` (alle 60s, dedupliziert über
+  `state.settings.notifiedSlaCriticalIds`).
+- Neue Settings-Sektion "🔔 Push-Benachrichtigungen" mit Thema-Feld, Aktiviert-Toggle, Testbutton.
+
+**Bug gefunden und gefixt während der Arbeit:** klassischer JS-ASI-Fallstrick – eine IIFE mit
+`return` direkt gefolgt von Zeilenumbruch vor dem eigentlichen Rückgabewert gab automatisch
+`undefined` zurück (Automatic Semicolon Insertion), wodurch der komplette Radio-Button-Block für
+die Speicherart-Auswahl im Settings-Modal fehlte (durch `"undefined<div id=..."` im gerenderten
+HTML sichtbar geworden). Behoben, indem die IIFE durch eine normale, vorher berechnete Variable
+ersetzt wurde. **Lektion:** `return` und der zurückgegebene Ausdruck müssen in derselben Zeile
+stehen (oder in Klammern gesetzt werden), sonst greift ASI und man bekommt `undefined` zurück –
+gilt für jede zukünftige mehrzeilige Return-Anweisung in diesem Code.
+
+**Getestet** (lokaler `python -m http.server`, gemocktes `fetch`, siehe Test-Methodik unten):
+Repo-Backend-Push→Pull-Zyklus komplett end-to-end mit echter Web-Crypto-Verschlüsselung
+verifiziert (Base64-Payload nach Push korrekt entschlüsselbar). Alle drei ereignisbasierten
+ntfy-Trigger (Hotline, Zuweisung, Erledigt) live im Browser ausgelöst und die gesendeten
+JSON-Payloads geprüft. SLA-kritisch-Trigger nur per Code-Review verifiziert (periodischer
+60s-Timer, zu lange fürs Testfenster; nutzt die bereits bestehende, getestete `slaLevel()`-Logik).
+
+**Offen für die nächste Session:** Nutzer hat das Repo-Team-Backend und ntfy-Push noch nicht mit
+echten GitHub-Accounts/Handys durchgetestet – reine Simulation mit gemocktem `fetch` bisher.
+Insbesondere die Collaborator-Einladung (`cloudInviteCollaborator`) und der komplette
+Zwei-Personen-Setup-Flow (zweite Person nimmt Einladung an, trägt eigenen Token ein, "Mit
+bestehendem Speicher verbinden") sind gegen die echte GitHub-API noch nicht verifiziert worden.
+
 ## ✅ Stand 2026-08-26: Welcome-Dialog-Bug behoben + 6 neue Features gepusht
 
 Nutzer hat den Welcome-Dialog-Fix bestätigt ("Funktioniert nun"). Danach in derselben Session auf
