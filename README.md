@@ -104,6 +104,55 @@ Einstellungen dafür).
 - Cloud-Sync ist optional und komplett unabhängig vom manuellen Sichern/Laden – du kannst
   jederzeit beides parallel nutzen oder Cloud-Sync über "⏸ Sync deaktivieren" wieder ausschalten.
 
+### 👥 Team-Modus: zwei (oder mehr) Personen am selben Board
+
+Ein Gist gehört technisch immer nur einer Person – nur ihr eigener Token darf ihn beschreiben.
+Für ein gemeinsames Board mit mehreren echten Personen gibt es deshalb eine zweite Speicherart:
+ein **privates GitHub-Repository**, bei dem jede Person als Mitarbeiter:in (Collaborator) mit
+ihrem **eigenen** GitHub-Account und Token schreiben darf. Verschlüsselung/Passphrase
+funktionieren identisch zum Gist – nur der Transportweg ist ein anderer.
+
+**Einrichtung (einmalig, durch eine Person):**
+1. ⚙️ Einstellungen → Cloud-Sync → Speicherart **"👥 Team (Repo)"** wählen.
+2. Einen GitHub **Personal Access Token** mit der Berechtigung **`repo`** erstellen (nicht `gist` –
+   Repos brauchen mehr Rechte), Passphrase wählen, gewünschten Repo-Namen eintragen (Vorschlag:
+   `work-board-team`) → **"📁 Neues Team-Repo erstellen"**. Legt ein neues, privates Repo an.
+3. Direkt daneben: GitHub-**Benutzername der zweiten Person** eintragen → **"👤 Einladen"**. GitHub
+   verschickt eine Einladung, die die zweite Person auf github.com annehmen muss (E-Mail oder
+   Benachrichtigungsglocke oben rechts auf GitHub).
+
+**Auf dem Gerät der zweiten Person** (nach Annehmen der Einladung): ebenfalls Speicherart "Team
+(Repo)" wählen, **eigenen** Personal Access Token (Berechtigung `repo`) eintragen, dieselbe
+Passphrase, Repo-Besitzer (GitHub-Benutzername der ersten Person) und Repo-Name eintragen →
+**"🔗 Mit bestehendem Speicher verbinden"**.
+
+Danach läuft alles wie beim persönlichen Gist automatisch weiter (Push ~8s nach Änderung, Pull
+beim Start + alle 45s). Kein Snapshot-Mechanismus nötig – jede Synchronisierung ist bereits ein
+eigener Git-Commit, die komplette Historie ist direkt im Repo auf GitHub einsehbar (Commits-Tab).
+Für weitere eigene Geräte im Team-Modus (kein QR-Pairing dafür) einfach denselben eigenen Token
+erneut eintragen.
+
+## 🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)
+
+Für Momente, in denen zwei Personen als Management schnell mitbekommen sollen, dass sich etwas
+tut (z.B. eine Aufgabe zugewiesen wurde) – ganz ohne eigenen Server über den kostenlosen,
+quelloffenen Relay-Dienst **[ntfy.sh](https://ntfy.sh)**.
+
+**Einrichtung:**
+1. Die kostenlose **ntfy-App** aus dem App Store / Play Store installieren (auf beiden Handys).
+2. Einen **privaten, geheimen Themennamen** ausdenken (z.B. eine lange zufällige Zeichenfolge –
+   wer den Namen kennt, kann mitlesen, ntfy-Themen sind nicht per Passwort geschützt) und in der
+   App abonnieren – beide Personen abonnieren **denselben** Namen.
+3. In Work Board: ⚙️ Einstellungen → Abschnitt "🔔 Push-Benachrichtigungen" → denselben
+   Themennamen eintragen, "Aktiviert" anhaken, mit **"🔔 Test senden"** prüfen.
+
+**Löst aus bei:** Task wird jemandem zugewiesen, neues Hotline-Ticket erstellt, ein Hotline-Ticket
+wird SLA-kritisch, Task wird als erledigt markiert.
+
+⚠️ Die Benachrichtigungstexte sind bewusst **generisch** gehalten (kein Task-Titel, kein
+Kundenname) – anders als der Cloud-Sync-Inhalt läuft der Text kurz über ntfys Server und ist
+**nicht** Ende-zu-Ende-verschlüsselt. Für Details muss man das Board selbst öffnen.
+
 ## Jira- & Confluence-Inhalte automatisch übernehmen (Bookmarklets)
 
 Da eine echte API-Anbindung auf dem Arbeitsgerät nicht möglich ist, gibt es stattdessen zwei
