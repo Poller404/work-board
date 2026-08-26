@@ -4,6 +4,38 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-08-26: Welcome-Dialog-Bug behoben + 6 neue Features gepusht
+
+Nutzer hat den Welcome-Dialog-Fix bestätigt ("Funktioniert nun"). Danach in derselben Session auf
+Nachfrage "was gibt es noch für Features" fünf Vorschläge gemacht, die der Nutzer alle umsetzen
+liess, plus drei explizit gewünschte Verbesserungen an der Mehrfachauswahl. Alles implementiert,
+im Browser getestet (lokaler `python -m http.server`, siehe Test-Methodik unten) und gepusht:
+
+- **Mehrfachauswahl**: Umschalt+Klick wählt einen Bereich innerhalb einer Spalte, Spalten-Header
+  hat einen "Alle auswählen"-Button, Bulk-Leiste kann jetzt auch endgültig löschen (mit
+  Bestätigung). Commit `e95b12a`.
+- **Statistik**: neue Auswertung "Zeit pro Projekt/Kunde" (gruppiert nach Jira-Projekt-Präfix).
+- **Schwebendes Timer-Fenster** (Document Picture-in-Picture) über neuen Button im Timer-Banner.
+  Im Test-Sandbox mit `NotAllowedError`/"Internal error: no window" abgelehnt (kein echtes
+  User-Gesture bzw. keine PiP-Fensterverwaltung in der Sandbox) – das ist eine Einschränkung der
+  Test-Umgebung, kein Code-Fehler; Fallback-Toast greift sauber. Auf echten Chrome/Edge-Geräten
+  (ab v116) sollte es normal funktionieren – vom Nutzer noch nicht auf dem echten Gerät bestätigt.
+- **Cloud-Sync-Retry bei Wiederverbindung**: `window.addEventListener('online', ...)` stösst
+  sofort Push+Pull an, statt bis zu 45s zu warten.
+- **.ics-Import mit Vor-Meeting-Erinnerung**: neues Feld "Erinnerung X Minuten vorher" im
+  Import-Dialog, nutzt die volle Startzeit aus der .ics-Datei (bisher wurde nur das Datum
+  geparst) und die bestehende `state.reminders`-Infrastruktur.
+- **Jira-Bookmarklet Session-Ablauf-Erkennung**: alle vier Bookmarklets (Ticket-Erfassung,
+  Confluence, Status setzen, Bulk-Import) erkennen jetzt Login-Seiten und (im Status-Bookmarklet
+  zusätzlich) HTTP 401/403, statt mit leeren/falschen Daten weiterzumachen. Verifiziert per
+  `eval()`-Testharness gegen eine gemockte Login-Seite und eine normale Nicht-Jira-Seite
+  (Regressionscheck) – siehe Test-Methodik unten, gleiches Vorgehen wie in früheren Sessions.
+
+README.md wurde für alle sechs Features synchron aktualisiert (Commit `26b0a9e`).
+
+**Offen für die nächste Session:** Nutzer-Bestätigung, ob das schwebende Timer-Fenster auf dem
+echten Gerät (Chrome/Edge) tatsächlich öffnet.
+
 ## ✅ ROOT CAUSE GEFUNDEN UND BEHOBEN (Stand 2026-08-26, Commit `f726caa`)
 
 Der Nutzer hat nach den vier Cache/Sync-Fixes vom 2026-08-25 einen Screenshot geschickt: der
