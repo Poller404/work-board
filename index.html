@@ -1772,7 +1772,7 @@ function promptPassphraseAndJoin(token, gistId){
     if(!passphrase){ toast('Bitte Passphrase eingeben.'); return; }
     closeModal();
     var cfg = getCloudSyncConfig();
-    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId; cfg.backend = 'gist';
+    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
     setCloudSyncConfig(cfg);
     toast('☁️ Verbinde und lade Cloud-Stand…');
     cloudJoinExisting().catch(function(){});
@@ -4484,8 +4484,7 @@ var cloudSyncPushTimer = null;
 var cloudSyncBusy = false;
 
 function cloudSyncConfigDefaults(){
-  return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:'',
-    backend:'gist', repoOwner:'', repoName:''};
+  return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
 }
 function getCloudSyncConfig(){
   try{
@@ -4593,87 +4592,6 @@ function cloudCreateGist(){
     throw err;
   });
 }
-/* ---- GitHub Repo API (Team-Backend: mehrere Personen, jede mit eigenem
-   Account/Token als Collaborator - im Unterschied zum Gist-Backend, das
-   nur vom Besitzer-Token beschreibbar ist). Nutzt dieselbe Verschlüsselung
-   wie das Gist-Backend, nur der Transport ist anders (Contents API statt
-   Gist API). Snapshots gibt es hier nicht extra - jeder Push ist bereits
-   ein eigener Git-Commit, die Historie ist direkt auf GitHub einsehbar. */
-function cloudRepoHeaders(token){ return cloudGistHeaders(token); }
-function cloudRepoContentsUrl(cfg){
-  return 'https://api.github.com/repos/' + encodeURIComponent(cfg.repoOwner) + '/' + encodeURIComponent(cfg.repoName) + '/contents/' + CLOUD_SYNC_FILE;
-}
-function cloudRepoGetFile(cfg){
-  return fetch(cloudRepoContentsUrl(cfg), {headers: cloudRepoHeaders(cfg.token)}).then(function(r){
-    if(r.status === 404) return null;
-    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t.slice(0,150)); });
-    return r.json();
-  }).then(function(json){
-    if(!json) return null;
-    return {sha: json.sha, content: atob(json.content.replace(/\n/g,''))};
-  });
-}
-function cloudRepoPutFile(cfg, content, sha){
-  var body = {message: 'Work Board Sync ' + nowIso(), content: btoa(content)};
-  if(sha) body.sha = sha;
-  return fetch(cloudRepoContentsUrl(cfg), {method:'PUT', headers: cloudRepoHeaders(cfg.token), body: JSON.stringify(body)})
-    .then(function(r){
-      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t.slice(0,150)); });
-      return r.json();
-    });
-}
-function cloudCreateRepo(){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.token || !cfg.passphrase){ toast('Bitte zuerst Token und Passphrase eingeben.'); return Promise.reject(); }
-  if(!cfg.repoName){ toast('Bitte einen Namen fürs Team-Repo eingeben.'); return Promise.reject(); }
-  return fetch('https://api.github.com/user/repos', {
-    method:'POST',
-    headers: cloudRepoHeaders(cfg.token),
-    body: JSON.stringify({name: cfg.repoName, private:true, description:'Work Board Team-Sync (verschlüsselt – nicht lesbar ohne Passphrase)', auto_init:true})
-  }).then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    return res.json();
-  }).then(function(json){
-    cfg.repoOwner = json.owner.login;
-    cfg.repoName = json.name;
-    setCloudSyncConfig(cfg);
-    return cloudEncryptState(cfg.passphrase);
-  }).then(function(encrypted){
-    return cloudRepoGetFile(cfg).then(function(existing){
-      return cloudRepoPutFile(cfg, encrypted, existing ? existing.sha : null);
-    });
-  }).then(function(){
-    cfg.enabled = true;
-    cfg.backend = 'repo';
-    cfg.lastSyncedAt = nowIso();
-    cfg.lastError = '';
-    setCloudSyncConfig(cfg);
-    toast('📁 Neues Team-Repo erstellt und verbunden.');
-    renderCloudSyncStatus();
-    return cfg;
-  }).catch(function(err){
-    cfg.lastError = err.message || String(err);
-    setCloudSyncConfig(cfg);
-    toast('Fehler beim Erstellen: ' + cfg.lastError);
-    renderCloudSyncStatus();
-    throw err;
-  });
-}
-function cloudInviteCollaborator(username){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.token || !cfg.repoOwner || !cfg.repoName){ toast('Bitte zuerst das Team-Repo einrichten.'); return Promise.reject(); }
-  return fetch('https://api.github.com/repos/'+encodeURIComponent(cfg.repoOwner)+'/'+encodeURIComponent(cfg.repoName)+'/collaborators/'+encodeURIComponent(username), {
-    method:'PUT',
-    headers: cloudRepoHeaders(cfg.token),
-    body: JSON.stringify({permission:'push'})
-  }).then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    toast('👤 Einladung an "'+username+'" verschickt (GitHub schickt eine E-Mail/Benachrichtigung zum Annehmen).');
-  }).catch(function(err){
-    toast('Fehler beim Einladen: ' + (err.message||String(err)));
-  });
-}
-
 var CLOUD_SNAPSHOT_RETENTION_DAYS = 7;
 /* Einmal pro Tag zusätzlich zur laufenden Sync-Datei einen datierten
    Snapshot im selben Gist ablegen (eigene Datei pro Tag) und Snapshots
@@ -4702,81 +4620,63 @@ function cloudMaybeSnapshot(encrypted, cfg){
    {payloadText, sha} auf (sha nur beim Repo-Backend gesetzt/benötigt, für
    den PUT), zu null wenn die Datei (noch) nicht existiert, oder rejected
    bei einem echten HTTP-Fehler (Auth, falsche ID, Netzwerk). */
-function cloudFetchGistFile(cfg){
-  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
-    .then(function(r){
-      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t.slice(0,150)); });
-      return r.json();
-    }).then(function(json){
-      var file = json.files && json.files[CLOUD_SYNC_FILE];
-      return file ? {payloadText: file.content, sha: null} : null;
-    });
-}
-function cloudFetchRemoteFile(cfg){
-  return cfg.backend === 'repo' ? cloudRepoGetFile(cfg).then(function(f){ return f ? {payloadText: f.content, sha: f.sha} : null; }) : cloudFetchGistFile(cfg);
-}
-function cloudBackendReady(cfg){
-  return cfg.backend === 'repo' ? !!(cfg.repoOwner && cfg.repoName) : !!cfg.gistId;
-}
 function cloudPushNow(){
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cloudBackendReady(cfg)) return Promise.resolve();
+  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
 
-  return cloudFetchRemoteFile(cfg).then(function(remoteFile){
+  var safetyCheck = Promise.resolve(true);
+  if(state.tasks.length === 0){
     /* Sicherheits-Check: nie ein leeres lokales Board pushen, wenn die Cloud
        noch echte Tasks enthalten könnte (z.B. lokal gerade erst
        zurückgesetzt/neu installiert, automatischer Pull noch nicht
        gelaufen oder fehlgeschlagen). Ohne diesen Check würde ein Push von
        einem frischen, leeren Gerät aus den echten Cloud-Stand mit "nichts"
-       überschreiben. */
-    var safetyCheck = Promise.resolve(true);
-    if(state.tasks.length === 0 && remoteFile){
-      safetyCheck = cloudDecryptPayload(remoteFile.payloadText, cfg.passphrase).then(function(result){
-        var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
-        return !remoteHasTasks;
-      });
-    }
-    return safetyCheck.then(function(safeToPush){
-      if(!safeToPush){
-        cfg.lastError = 'Push übersprungen: lokal keine Tasks, Cloud enthält noch welche. "🔄 Jetzt synchronisieren" nutzen, um sie zuerst zu laden.';
-        setCloudSyncConfig(cfg);
-        renderCloudSyncStatus();
-        cloudSyncBusy = false;
-        return;
-      }
-      return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-        if(cfg.backend === 'repo'){
-          return cloudRepoPutFile(cfg, encrypted, remoteFile ? remoteFile.sha : null);
-        }
-        return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
-          extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
-          return fetch('https://api.github.com/gists/' + cfg.gistId, {
-            method:'PATCH',
-            headers: cloudGistHeaders(cfg.token),
-            body: JSON.stringify({files: extraFiles})
-          }).then(function(res){
-            if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-            return res.json();
-          });
+       überschreiben. Im Zweifel (Netzwerkfehler bei der Prüfung selbst)
+       lieber NICHT pushen. */
+    safetyCheck = fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(json){
+        var file = json && json.files && json.files[CLOUD_SYNC_FILE];
+        if(!file) return true;
+        return cloudDecryptPayload(file.content, cfg.passphrase).then(function(result){
+          var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
+          return !remoteHasTasks;
         });
-      }).then(function(){
-        cfg.lastSyncedAt = nowIso();
-        cfg.lastError = '';
-        setCloudSyncConfig(cfg);
-        renderCloudSyncStatus();
-      }).catch(function(err){
-        cfg.lastError = err.message || String(err);
-        setCloudSyncConfig(cfg);
-        renderCloudSyncStatus();
-      }).finally(function(){ cloudSyncBusy = false; });
-    });
-  }).catch(function(err){
-    cfg.lastError = err.message || String(err);
-    setCloudSyncConfig(cfg);
-    renderCloudSyncStatus();
-    cloudSyncBusy = false;
+      }).catch(function(){ return false; });
+  }
+
+  return safetyCheck.then(function(safeToPush){
+    if(!safeToPush){
+      cfg.lastError = 'Push übersprungen: lokal keine Tasks, Cloud enthält noch welche. "🔄 Jetzt synchronisieren" nutzen, um sie zuerst zu laden.';
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+      cloudSyncBusy = false;
+      return;
+    }
+    return cloudEncryptState(cfg.passphrase).then(function(encrypted){
+      return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
+        extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
+        return fetch('https://api.github.com/gists/' + cfg.gistId, {
+          method:'PATCH',
+          headers: cloudGistHeaders(cfg.token),
+          body: JSON.stringify({files: extraFiles})
+        });
+      });
+    }).then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+      return res.json();
+    }).then(function(){
+      cfg.lastSyncedAt = nowIso();
+      cfg.lastError = '';
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+    }).catch(function(err){
+      cfg.lastError = err.message || String(err);
+      setCloudSyncConfig(cfg);
+      renderCloudSyncStatus();
+    }).finally(function(){ cloudSyncBusy = false; });
   });
 }
 function scheduleCloudPush(){
@@ -4787,12 +4687,17 @@ function scheduleCloudPush(){
 }
 function cloudPullNow(showToastIfUpToDate){
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cloudBackendReady(cfg)) return Promise.resolve();
+  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
-  return cloudFetchRemoteFile(cfg).then(function(file){
-    if(!file){ throw new Error(cfg.backend==='repo' ? 'Sync-Datei im Repo nicht gefunden.' : 'Sync-Datei im Gist nicht gefunden.'); }
-    return cloudDecryptPayload(file.payloadText, cfg.passphrase);
+  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+  .then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(json){
+    var file = json.files && json.files[CLOUD_SYNC_FILE];
+    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden.'); }
+    return cloudDecryptPayload(file.content, cfg.passphrase);
   }).then(function(result){
     cfg.lastSyncedAt = nowIso();
     cfg.lastError = '';
@@ -4849,14 +4754,16 @@ window.addEventListener('online', function(){
    die Absicht klar: den vorhandenen Cloud-Stand übernehmen. */
 function cloudJoinExisting(){
   var cfg = getCloudSyncConfig();
-  if(!cfg.token || !cfg.passphrase || !cloudBackendReady(cfg)){
-    toast(cfg.backend==='repo' ? 'Bitte Token, Passphrase, Repo-Besitzer und Repo-Name ausfüllen.' : 'Bitte Token, Passphrase und Gist-ID ausfüllen.');
-    return Promise.reject();
-  }
+  if(!cfg.token || !cfg.passphrase || !cfg.gistId){ toast('Bitte Token, Passphrase und Gist-ID ausfüllen.'); return Promise.reject(); }
   cloudSyncBusy = true;
-  return cloudFetchRemoteFile(cfg).then(function(file){
-    if(!file){ throw new Error(cfg.backend==='repo' ? 'Sync-Datei im Repo nicht gefunden. Stimmen Besitzer/Name?' : 'Sync-Datei im Gist nicht gefunden. Stimmt die Gist-ID?'); }
-    return cloudDecryptPayload(file.payloadText, cfg.passphrase);
+  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
+  .then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
+    return res.json();
+  }).then(function(json){
+    var file = json.files && json.files[CLOUD_SYNC_FILE];
+    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden. Stimmt die Gist-ID?'); }
+    return cloudDecryptPayload(file.content, cfg.passphrase);
   }).then(function(result){
     cfg.enabled = true;
     cfg.lastSyncedAt = nowIso();
@@ -4983,7 +4890,6 @@ var SETTINGS_TABS = [
 ];
 var settingsActiveTab = 'storage';
 function openSettings(){
-  var cloudCfgForSettings = getCloudSyncConfig();
   var html =
     '<div class="modal-header"><h2>⚙️ Einstellungen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
@@ -5009,36 +4915,19 @@ function openSettings(){
       '</div>' +
 
       '<div class="section-title">☁️ Cloud-Sync (Ende-zu-Ende-verschlüsselt)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt).</div>' +
-      '<div class="form-row"><label>Speicherart</label><div style="display:flex; gap:16px; font-size:13px;">' +
-        '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="radio" name="sCloudBackend" value="gist" '+(cloudCfgForSettings.backend!=='repo'?'checked':'')+'> 👤 Persönlich (Gist, ein Nutzer, beliebig viele eigene Geräte)</label>' +
-        '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="radio" name="sCloudBackend" value="repo" '+(cloudCfgForSettings.backend==='repo'?'checked':'')+'> 👥 Team (Repo, mehrere Personen mit eigenem GitHub-Account)</label>' +
-      '</div></div>' +
+      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich automatisch ein datierter Snapshot im selben Gist abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
       '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
-      '<div class="form-row"><label>GitHub Personal Access Token (Scope: "gist" bzw. "repo" je nach Speicherart oben – <strong>jede Person nutzt ihren eigenen Token</strong> beim Team-Modus)</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
-      '<div class="form-row"><label>Passphrase (bei allen Beteiligten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Gemeinsame, sichere Passphrase"></div>' +
-      '<div id="cloudGistFields">' +
-        '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
-          (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
-        '</div></div>' +
-        '<div class="hint" style="margin-bottom:10px;">Zusätzlich wird hier einmal täglich automatisch ein datierter Snapshot im selben Gist abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da. ⚠️ <strong>Wichtig bei mehreren eigenen Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken, auf jedem weiteren die Gist-ID eintragen und "Mit bestehendem Speicher verbinden", oder <strong>📷 Mit QR-Code verbinden</strong>. Sonst entstehen zwei getrennte Speicher. Der Gist gehört immer nur einer Person – für mehrere unterschiedliche Personen die Speicherart "Team" oben wählen.</div>' +
-      '</div>' +
-      '<div id="cloudRepoFields" style="display:none;">' +
-        '<div class="form-row-inline">' +
-          '<div class="form-row"><label>Repo-Besitzer' + (getCloudSyncConfig().repoOwner ? '' : ' (GitHub-Benutzername)') + '</label><input id="sCloudRepoOwner" value="'+escapeAttr(getCloudSyncConfig().repoOwner)+'" placeholder="z.B. mmuster"></div>' +
-          '<div class="form-row"><label>Repo-Name</label><input id="sCloudRepoName" value="'+escapeAttr(getCloudSyncConfig().repoName || 'work-board-team')+'" placeholder="work-board-team"></div>' +
-        '</div>' +
-        '<div class="hint" style="margin-bottom:8px;">Eine Person erstellt einmalig das private Team-Repo (Button unten) und lädt die zweite Person als Mitarbeiter:in ein (auch unten) – GitHub schickt ihr dafür eine Einladung, die sie annehmen muss. Danach trägt jede Person <strong>ihren eigenen</strong> Personal Access Token (Scope "repo") sowie Besitzer/Name des Repos und die gemeinsame Passphrase ein und klickt "Mit bestehendem Speicher verbinden". Vorteil gegenüber dem persönlichen Gist: jede Person hat ihre eigene, einzeln widerrufbare Identität statt eines geteilten Tokens. Snapshots gibt es hier nicht extra – jeder Sync ist bereits ein eigener Commit, die Historie ist direkt im Repo auf GitHub einsehbar.</div>' +
-        '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
-          '<button class="btn" id="btnCloudCreateRepo">📁 Neues Team-Repo erstellen</button>' +
-          '<div style="display:flex; gap:6px; align-items:center;"><input id="sCloudInviteUser" placeholder="GitHub-Benutzername der 2. Person" style="width:220px;"><button class="btn" id="btnCloudInvite">👤 Einladen</button></div>' +
-        '</div>' +
-      '</div>' +
+      '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
+      '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
+      '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
+        (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
+      '</div></div>' +
+      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📷 Mit QR-Code verbinden</strong> verwenden (auf dem bereits eingerichteten Gerät dafür <strong>📱 Gerät per QR-Code koppeln</strong> antippen, um den Code anzuzeigen). Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher. Das funktioniert genauso, um einer <strong>zweiten Person</strong> Zugriff zu geben – einfach Token/Gist-ID/Passphrase mit ihr teilen.</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
         '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
-        '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden</button>' +
+        '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
         '<button class="btn" id="btnCloudScanQr">📷 Mit QR-Code verbinden</button>' +
-        (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId && getCloudSyncConfig().backend!=='repo' ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
+        (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
         '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
         (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
       '</div>' +
@@ -5258,33 +5147,13 @@ function openSettings(){
   });
 
   renderCloudSyncStatus();
-
-  var gistFieldsEl = document.getElementById('cloudGistFields');
-  var repoFieldsEl = document.getElementById('cloudRepoFields');
-  var createNewBtn = document.getElementById('btnCloudCreateNew');
-  function applyCloudBackendVisibility(backend){
-    var isRepo = backend === 'repo';
-    gistFieldsEl.style.display = isRepo ? 'none' : '';
-    repoFieldsEl.style.display = isRepo ? '' : 'none';
-    createNewBtn.style.display = isRepo ? 'none' : '';
-  }
-  applyCloudBackendVisibility(getCloudSyncConfig().backend);
-  document.querySelectorAll('input[name="sCloudBackend"]').forEach(function(radio){
-    radio.addEventListener('change', function(){
-      var cfg = getCloudSyncConfig();
-      cfg.backend = radio.value;
-      setCloudSyncConfig(cfg);
-      applyCloudBackendVisibility(radio.value);
-    });
-  });
-
   document.getElementById('btnCloudCreateNew').addEventListener('click', function(){
     var token = document.getElementById('sCloudToken').value.trim();
     var passphrase = document.getElementById('sCloudPassphrase').value;
     if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
     var cfg = getCloudSyncConfig();
     function doCreate(){
-      cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = ''; cfg.backend = 'gist';
+      cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = '';
       setCloudSyncConfig(cfg);
       toast('☁️ Erstelle neuen Sync-Speicher…');
       cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
@@ -5300,40 +5169,14 @@ function openSettings(){
       doCreate();
     }
   });
-  document.getElementById('btnCloudCreateRepo').addEventListener('click', function(){
-    var token = document.getElementById('sCloudToken').value.trim();
-    var passphrase = document.getElementById('sCloudPassphrase').value;
-    var repoName = document.getElementById('sCloudRepoName').value.trim();
-    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
-    if(!repoName){ toast('Bitte einen Repo-Namen eintragen.'); return; }
-    var cfg = getCloudSyncConfig();
-    cfg.token = token; cfg.passphrase = passphrase; cfg.repoName = repoName; cfg.backend = 'repo';
-    setCloudSyncConfig(cfg);
-    toast('📁 Erstelle neues Team-Repo…');
-    cloudCreateRepo().then(function(){ openSettings(); }).catch(function(){});
-  });
-  document.getElementById('btnCloudInvite').addEventListener('click', function(){
-    var username = document.getElementById('sCloudInviteUser').value.trim();
-    if(!username){ toast('Bitte GitHub-Benutzername eingeben.'); return; }
-    cloudInviteCollaborator(username);
-  });
   document.getElementById('btnCloudJoin').addEventListener('click', function(){
     var token = document.getElementById('sCloudToken').value.trim();
     var passphrase = document.getElementById('sCloudPassphrase').value;
-    var backend = document.querySelector('input[name="sCloudBackend"]:checked').value;
+    var gistId = document.getElementById('sCloudGistId').value.trim();
     if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+    if(!gistId){ toast('Bitte zuerst die Gist-ID des ersten Geräts eintragen (siehe Hinweis oben).'); return; }
     var cfg = getCloudSyncConfig();
-    cfg.token = token; cfg.passphrase = passphrase; cfg.backend = backend;
-    if(backend === 'repo'){
-      var repoOwner = document.getElementById('sCloudRepoOwner').value.trim();
-      var repoName = document.getElementById('sCloudRepoName').value.trim();
-      if(!repoOwner || !repoName){ toast('Bitte Repo-Besitzer und Repo-Name eintragen.'); return; }
-      cfg.repoOwner = repoOwner; cfg.repoName = repoName;
-    } else {
-      var gistId = document.getElementById('sCloudGistId').value.trim();
-      if(!gistId){ toast('Bitte zuerst die Gist-ID des ersten Geräts eintragen (siehe Hinweis oben).'); return; }
-      cfg.gistId = gistId;
-    }
+    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
     setCloudSyncConfig(cfg);
     toast('☁️ Verbinde und lade Cloud-Stand…');
     cloudJoinExisting().catch(function(){});

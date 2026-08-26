@@ -103,34 +103,10 @@ Einstellungen dafür).
 - Der Token braucht wirklich nur die Berechtigung `gist`, sonst nichts.
 - Cloud-Sync ist optional und komplett unabhängig vom manuellen Sichern/Laden – du kannst
   jederzeit beides parallel nutzen oder Cloud-Sync über "⏸ Sync deaktivieren" wieder ausschalten.
-
-### 👥 Team-Modus: zwei (oder mehr) Personen am selben Board
-
-Ein Gist gehört technisch immer nur einer Person – nur ihr eigener Token darf ihn beschreiben.
-Für ein gemeinsames Board mit mehreren echten Personen gibt es deshalb eine zweite Speicherart:
-ein **privates GitHub-Repository**, bei dem jede Person als Mitarbeiter:in (Collaborator) mit
-ihrem **eigenen** GitHub-Account und Token schreiben darf. Verschlüsselung/Passphrase
-funktionieren identisch zum Gist – nur der Transportweg ist ein anderer.
-
-**Einrichtung (einmalig, durch eine Person):**
-1. ⚙️ Einstellungen → Cloud-Sync → Speicherart **"👥 Team (Repo)"** wählen.
-2. Einen GitHub **Personal Access Token** mit der Berechtigung **`repo`** erstellen (nicht `gist` –
-   Repos brauchen mehr Rechte), Passphrase wählen, gewünschten Repo-Namen eintragen (Vorschlag:
-   `work-board-team`) → **"📁 Neues Team-Repo erstellen"**. Legt ein neues, privates Repo an.
-3. Direkt daneben: GitHub-**Benutzername der zweiten Person** eintragen → **"👤 Einladen"**. GitHub
-   verschickt eine Einladung, die die zweite Person auf github.com annehmen muss (E-Mail oder
-   Benachrichtigungsglocke oben rechts auf GitHub).
-
-**Auf dem Gerät der zweiten Person** (nach Annehmen der Einladung): ebenfalls Speicherart "Team
-(Repo)" wählen, **eigenen** Personal Access Token (Berechtigung `repo`) eintragen, dieselbe
-Passphrase, Repo-Besitzer (GitHub-Benutzername der ersten Person) und Repo-Name eintragen →
-**"🔗 Mit bestehendem Speicher verbinden"**.
-
-Danach läuft alles wie beim persönlichen Gist automatisch weiter (Push ~8s nach Änderung, Pull
-beim Start + alle 45s). Kein Snapshot-Mechanismus nötig – jede Synchronisierung ist bereits ein
-eigener Git-Commit, die komplette Historie ist direkt im Repo auf GitHub einsehbar (Commits-Tab).
-Für weitere eigene Geräte im Team-Modus (kein QR-Pairing dafür) einfach denselben eigenen Token
-erneut eintragen.
+- **Zugriff für eine zweite Person** funktioniert genauso wie ein zweites eigenes Gerät: Token,
+  Passphrase und Gist-ID mit ihr teilen (am einfachsten per **📷 QR-Code**, siehe oben – Passphrase
+  aus Sicherheitsgründen separat mitteilen). Beide nutzen dann denselben Zugang; das ist für zwei
+  vertraute Personen der mit Abstand einfachste Weg, ganz ohne zusätzliche Einrichtung.
 
 ## 🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)
 
