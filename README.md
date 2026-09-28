@@ -272,6 +272,13 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
   Gruppe**-Board-Ansicht mit einer Spalte pro Gruppe. Der ganze Block lässt sich per Drag & Drop
   in eine andere Spalte ziehen (bewegt alle Tasks der Gruppe auf einmal), und eine einzelne Karte
   auf einen bestehenden Gruppen-Block ziehen ordnet sie dieser Gruppe zu.
+- **📅 Kalender** (Board-Ansicht-Auswahl): die nächsten 7 Tage als Spalten, pro Tag chronologisch
+  gemischt geplante Tasks und tatsächlich erfasste Zeitsitzungen – zeigt auf einen Blick Planung
+  *und* wo bereits wirklich Zeit rapportiert wurde. Eine Spalte "Nicht geplant" sammelt offene
+  Tasks ohne Zeit; per Drag & Drop auf einen Tag ziehen plant sie ein (Uhrzeit direkt in der
+  Ansicht per Zeit-Feld anpassbar, ohne den Task zu öffnen). Im Task-Fenster selbst legt das Feld
+  "📅 Geplant für" die Zeit fest; danach lässt sich der Termin per **📤 Outlook-Termin (.ics)**
+  herunterladen und direkt in Outlook eintragen.
 - **🗺️ Timeline** (`Strg+K`): Tasks mit Fälligkeitsdatum als Balken über die nächsten 30 Tage.
 - **🕰️ Zeitreise** (`Strg+K`): Board-Zustand von einem früheren Tag ansehen (Snapshots werden
   automatisch einmal täglich erstellt).
