@@ -5091,8 +5091,8 @@ function openSettings(){
       '<div class="section-title">☁️ Cloud-Sync (Ende-zu-Ende-verschlüsselt)</div>' +
       '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich automatisch ein datierter Snapshot im selben Gist abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
       '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
-      '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><input type="password" id="sCloudToken" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"></div>' +
-      '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><input type="password" id="sCloudPassphrase" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"></div>' +
+      '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudToken" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div></div>' +
+      '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudPassphrase" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"><button type="button" class="btn icon-btn" id="btnTogglePassphraseVisible" title="Anzeigen/Verbergen – hilfreich um z.B. ein versehentlich mitkopiertes Leerzeichen zu erkennen">👁</button></div></div>' +
       '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
         (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
       '</div></div>' +
@@ -5321,6 +5321,17 @@ function openSettings(){
   });
 
   renderCloudSyncStatus();
+  function wireVisibilityToggle(btnId, inputId){
+    var btn = document.getElementById(btnId);
+    var input = document.getElementById(inputId);
+    btn.addEventListener('click', function(){
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? '👁' : '🙈';
+    });
+  }
+  wireVisibilityToggle('btnToggleTokenVisible', 'sCloudToken');
+  wireVisibilityToggle('btnTogglePassphraseVisible', 'sCloudPassphrase');
   document.getElementById('btnCloudCreateNew').addEventListener('click', function(){
     var token = document.getElementById('sCloudToken').value.trim();
     var passphrase = document.getElementById('sCloudPassphrase').value;
