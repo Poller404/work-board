@@ -77,7 +77,8 @@ button.btn:hover{background:var(--border);}
 button.btn:active{transform:scale(.97);}
 button.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 1px 2px var(--accent-glow);}
 button.btn.primary:hover{background:var(--accent-hover); border-color:var(--accent-hover); box-shadow:0 2px 8px var(--accent-glow);}
-button.btn.danger{background:var(--danger-bg); border-color:var(--danger-bg); color:var(--danger);}
+button.btn.danger{background:transparent; border-color:var(--danger); color:var(--danger);}
+button.btn.danger:hover{background:var(--danger-bg);}
 button.btn.ghost{background:transparent; border-color:transparent;}
 button.btn.ghost:hover{background:var(--surface-2);}
 button.btn:disabled{opacity:.5; cursor:not-allowed; transform:none;}
@@ -169,6 +170,11 @@ button.icon-btn:active{transform:scale(.92);}
 .group-block[draggable="true"]:active{cursor:grabbing;}
 .group-block.dragging{opacity:.4;}
 .group-block.dragover{background:var(--accent-glow); border-color:var(--accent); border-style:solid;}
+.column.calendar-today{border-top:3px solid var(--accent);}
+.calendar-entry .calendar-time-input{border:1px solid var(--border); background:var(--surface-2); color:var(--text); border-radius:4px; font-size:11px; padding:1px 3px; width:64px;}
+.calendar-entry .time-badge.running{color:var(--ok);}
+.calendar-entry-title{cursor:pointer;}
+.calendar-entry-title:hover{text-decoration:underline;}
 .autocomplete-wrap{position:relative;}
 .autocomplete-list{position:absolute; top:100%; left:0; right:0; margin-top:2px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); z-index:50; max-height:180px; overflow-y:auto; display:none;}
 .autocomplete-list.show{display:block;}
@@ -435,6 +441,7 @@ button.mobile-only{display:none;}
       <option value="eisenhower">🧭 Eisenhower-Matrix</option>
       <option value="team">👥 Nach Person</option>
       <option value="group">📦 Nach Gruppe</option>
+      <option value="calendar">📅 Kalender</option>
     </select>
     <button class="btn icon-btn topbar-more" id="btnCompactToggle" title="Kompaktansicht umschalten">🗜️</button>
     <div class="spacer"></div>
@@ -681,6 +688,7 @@ function normalizeTask(t){
   if(typeof t.assignee !== 'string') t.assignee = '';
   if(typeof t.followUp !== 'string') t.followUp = '';
   if(typeof t.taskGroup !== 'string') t.taskGroup = '';
+  if(typeof t.scheduledAt !== 'string') t.scheduledAt = '';
   return t;
 }
 
@@ -884,7 +892,8 @@ function createTask(partial){
     completedAt: null,
     checklist: [],
     assignee: '',
-    taskGroup: ''
+    taskGroup: '',
+    scheduledAt: ''
   }, partial || {});
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
@@ -1301,6 +1310,9 @@ function parseRelativeDate(text){
 }
 function toDateInputValue(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function toDateTimeInputValue(d){
+  return toDateInputValue(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
 /* =========================================================
@@ -2146,6 +2158,153 @@ function computeLanes(){
       match:function(t){ return t.columnId===c.id; }, patch:{columnId:c.id}};
   });
 }
+/* =========================================================
+   KALENDER-ANSICHT
+   Zeigt die nächsten 7 Tage als Spalten. Pro Tag chronologisch gemischt:
+   📅 geplante Tasks (scheduledAt) und 🕒 tatsächlich erfasste Zeitsitzungen
+   an diesem Tag - so sieht man auf einen Blick Planung UND wo bereits
+   wirklich Zeit rapportiert wurde. Eine "Nicht geplant"-Spalte links
+   sammelt offene Tasks ohne Zeit; per Drag&Drop auf einen Tag ziehen
+   setzt scheduledAt (Standard 09:00, oder die bisherige Uhrzeit falls der
+   Task schon mal geplant war). Die Uhrzeit lässt sich direkt in der
+   Kalender-Ansicht per Zeit-Eingabefeld anpassen, ohne den Task zu öffnen.
+   ========================================================= */
+function renderCalendarView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+
+  var backlogTasks = state.tasks.filter(function(t){
+    return !t.archived && !t.completedAt && !t.scheduledAt;
+  }).sort(function(a,b){ return (b.pinned?1:0) - (a.pinned?1:0); });
+
+  var backlogCol = document.createElement('div');
+  backlogCol.className = 'column';
+  backlogCol.innerHTML = '<div class="column-header"><span style="flex:1;">📋 Nicht geplant</span><span class="count">'+backlogTasks.length+'</span></div>';
+  var backlogBody = document.createElement('div');
+  backlogBody.className = 'column-body';
+  if(!backlogTasks.length){
+    var backlogEmpty = document.createElement('div');
+    backlogEmpty.className = 'empty-state';
+    backlogEmpty.textContent = 'Alles geplant.';
+    backlogBody.appendChild(backlogEmpty);
+  }
+  backlogTasks.forEach(function(t){ backlogBody.appendChild(renderCard(t)); });
+  backlogCol.appendChild(backlogBody);
+  board.appendChild(backlogCol);
+
+  var todayStr = toDateInputValue(new Date());
+  for(var i=0; i<7; i++){
+    var d = new Date(); d.setDate(d.getDate()+i);
+    var dateStr = toDateInputValue(d);
+    var dayLoggedSec = state.tasks.reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
+
+    var entries = [];
+    state.tasks.forEach(function(t){
+      if(!t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === dateStr){
+        entries.push({kind:'planned', time: new Date(t.scheduledAt), task: t});
+      }
+      t.timeSessions.forEach(function(s){
+        var sd = new Date(s.start);
+        if(toDateInputValue(sd) === dateStr){
+          entries.push({kind:'logged', time: sd, task: t, session: s});
+        }
+      });
+    });
+    entries.sort(function(a,b){ return a.time - b.time; });
+
+    var col = document.createElement('div');
+    col.className = 'column' + (dateStr === todayStr ? ' calendar-today' : '');
+    var dayLabel = d.toLocaleDateString('de-CH', {weekday:'short', day:'2-digit', month:'2-digit'});
+    var header = document.createElement('div');
+    header.className = 'column-header';
+    header.innerHTML = '<span style="flex:1;">'+dayLabel+'</span>' + (dayLoggedSec ? '<span class="hint" title="Erfasste Zeit an diesem Tag">🕒 '+fmtHM(dayLoggedSec)+'</span>' : '');
+    col.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'column-body';
+    if(!entries.length){
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Keine Einträge.';
+      body.appendChild(empty);
+    }
+    entries.forEach(function(entry){ body.appendChild(renderCalendarEntry(entry, dateStr)); });
+    col.appendChild(body);
+
+    (function(targetDate, targetBody){
+      targetBody.addEventListener('dragover', function(e){
+        e.preventDefault();
+        if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        targetBody.classList.add('dragover');
+      });
+      targetBody.addEventListener('dragleave', function(){ targetBody.classList.remove('dragover'); });
+      targetBody.addEventListener('drop', function(e){
+        e.preventDefault();
+        targetBody.classList.remove('dragover');
+        var taskId = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+        if(!taskId) return;
+        var dt = getTask(taskId);
+        if(!dt) return;
+        var existing = dt.scheduledAt ? new Date(dt.scheduledAt) : null;
+        var newDt = new Date(targetDate);
+        newDt.setHours(existing ? existing.getHours() : 9, existing ? existing.getMinutes() : 0, 0, 0);
+        pushUndoSnapshot();
+        updateTask(taskId, {scheduledAt: newDt.toISOString()});
+        renderAll();
+      });
+    })(d, body);
+
+    board.appendChild(col);
+  }
+}
+function renderCalendarEntry(entry, dateStr){
+  var t = entry.task;
+  var typeInfo = TYPES[t.type] || TYPES.adhoc;
+  var el = document.createElement('div');
+  el.className = 'card priority-' + t.priority + ' calendar-entry';
+  if(entry.kind === 'planned'){
+    var timeVal = String(entry.time.getHours()).padStart(2,'0')+':'+String(entry.time.getMinutes()).padStart(2,'0');
+    el.innerHTML =
+      '<div class="card-top">' +
+        '<input type="time" class="calendar-time-input" value="'+timeVal+'" title="Geplante Uhrzeit ändern">' +
+        '<span class="type-badge">'+typeInfo.icon+'</span>' +
+        '<span class="card-title calendar-entry-title">'+escapeHtml(t.title)+'</span>' +
+      '</div>';
+    el.draggable = true;
+    el.dataset.taskId = t.id;
+    el.addEventListener('dragstart', function(e){
+      draggedTaskId = t.id;
+      el.classList.add('dragging');
+      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', t.id); }catch(err){} }
+    });
+    el.addEventListener('dragend', function(){ draggedTaskId = null; el.classList.remove('dragging'); });
+    el.querySelector('.calendar-time-input').addEventListener('click', function(e){ e.stopPropagation(); });
+    el.querySelector('.calendar-time-input').addEventListener('change', function(e){
+      var parts = e.target.value.split(':');
+      if(parts.length !== 2) return;
+      var newDt = new Date(dateStr + 'T00:00:00');
+      newDt.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+      updateTask(t.id, {scheduledAt: newDt.toISOString()});
+      renderAll();
+    });
+  } else {
+    var startStr = String(entry.time.getHours()).padStart(2,'0')+':'+String(entry.time.getMinutes()).padStart(2,'0');
+    var endStr = 'läuft…';
+    if(entry.session.end){
+      var e2 = new Date(entry.session.end);
+      endStr = String(e2.getHours()).padStart(2,'0')+':'+String(e2.getMinutes()).padStart(2,'0');
+    }
+    el.innerHTML =
+      '<div class="card-top">' +
+        '<span class="time-badge'+(!entry.session.end?' running':'')+'">🕒 '+startStr+'–'+endStr+'</span>' +
+        '<span class="type-badge">'+typeInfo.icon+'</span>' +
+        '<span class="card-title calendar-entry-title">'+escapeHtml(t.title)+'</span>' +
+      '</div>';
+  }
+  el.querySelector('.calendar-entry-title').addEventListener('click', function(){ openTaskModal(t.id); });
+  return el;
+}
 function renderDashboardWidgets(){
   var board = document.getElementById('board');
   board.innerHTML = '';
@@ -2197,6 +2356,7 @@ function renderDashboardWidgets(){
 function renderBoard(){
   var board = document.getElementById('board');
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
+  if(boardViewMode === 'calendar'){ renderCalendarView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
      scrollTop 0 zurücksetzen, sodass ein bearbeiteter Task weiter unten in
@@ -2722,6 +2882,10 @@ function tick(){
   if(timeEl) timeEl.textContent = fmtHMS(totalSeconds(t));
   var cardTimeEl = document.querySelector('[data-time-for="'+id+'"]');
   if(cardTimeEl) cardTimeEl.textContent = '⏱ ' + fmtHMS(totalSeconds(t));
+  if(openTaskModalId === id){
+    var modalTimeEl = document.getElementById('modalTotalTime');
+    if(modalTimeEl) modalTimeEl.textContent = fmtHMS(totalSeconds(t));
+  }
   updateTimerPip();
 
   // idle reminder
@@ -3346,7 +3510,7 @@ function openTaskModal(taskId){
     '<div class="modal-header"><h2>'+(TYPES[t.type]||TYPES.adhoc).icon+' Task bearbeiten</h2>' +
       '<button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
-      '<div class="total-time-display">'+fmtHMS(totalSeconds(t))+' <button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn" style="font-size:13px; vertical-align:middle; margin-left:10px;">'+(running?'⏸ Pause':'▶ Start')+'</button></div>' +
+      '<div class="total-time-display"><span id="modalTotalTime">'+fmtHMS(totalSeconds(t))+'</span> <button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn" style="font-size:13px; vertical-align:middle; margin-left:10px;">'+(running?'⏸ Pause':'▶ Start')+'</button></div>' +
       (t.type==='meeting' && state.settings.recentMeetingTitles.length ?
         '<div class="meeting-chip-row">' + state.settings.recentMeetingTitles.map(function(mt){
           return '<span class="meeting-chip" data-meeting-title="'+escapeAttr(mt)+'">'+escapeHtml(mt)+'</span>';
@@ -3363,6 +3527,10 @@ function openTaskModal(taskId){
       '<div class="form-row-inline">' +
         '<div class="form-row"><label>Jira-Key</label><input id="fJiraKey" value="'+escapeAttr(t.jiraKey||'')+'" placeholder="z.B. PROJ-1234"></div>' +
         '<div class="form-row"><label>Zeit-Budget (Min.)</label><input type="number" id="fBudget" min="0" value="'+(t.estimatedMinutes||'')+'" placeholder="z.B. 120"></div>' +
+      '</div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row"><label>📅 Geplant für (Kalender-Ansicht)</label><input type="datetime-local" id="fScheduledAt" value="'+(t.scheduledAt ? toDateTimeInputValue(new Date(t.scheduledAt)) : '')+'"></div>' +
+        '<div class="form-row"><label>&nbsp;</label><button type="button" class="btn" id="btnExportScheduledIcs" '+(t.scheduledAt?'':'disabled')+'>📤 Outlook-Termin (.ics)</button></div>' +
       '</div>' +
       '<div class="form-row"><label>Beschreibung</label><textarea id="fDesc" rows="4">'+escapeHtml(t.description)+'</textarea></div>' +
       '<div class="form-row"><label>📦 Gruppe (optional – z.B. gleiches Thema, ein Task pro Kunde)</label>' +
@@ -3474,9 +3642,12 @@ function openTaskModal(taskId){
       description: document.getElementById('fDesc').value,
       tags: document.getElementById('fTags').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
       taskGroup: document.getElementById('fGroup').value.trim(),
+      scheduledAt: document.getElementById('fScheduledAt').value ? new Date(document.getElementById('fScheduledAt').value).toISOString() : '',
       assignee: document.getElementById('fAssignee') ? document.getElementById('fAssignee').value : t.assignee,
       recurrence: document.getElementById('fRecurrence').value ? {freq: document.getElementById('fRecurrence').value, active:true} : null
     });
+    var exportBtn = document.getElementById('btnExportScheduledIcs');
+    if(exportBtn) exportBtn.disabled = !document.getElementById('fScheduledAt').value;
     if(document.getElementById('fType').value === 'meeting'){
       var cleanTitle = document.getElementById('fTitle').value.trim().replace(/\s+\d{1,2}[:.]\d{2}\s*$/, '');
       if(cleanTitle.length >= 3){
@@ -3488,7 +3659,7 @@ function openTaskModal(taskId){
     renderBoard();
     renderStatusbar();
   }
-  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fRecurrence','fAssignee'].forEach(function(id){
+  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fRecurrence','fAssignee'].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener('change', persist);
   });
@@ -3496,6 +3667,9 @@ function openTaskModal(taskId){
   document.getElementById('modalTimerBtn').addEventListener('click', function(){
     if(isRunning(t)) stopTimer(t.id); else startTimer(t.id);
     openTaskModal(t.id);
+  });
+  document.getElementById('btnExportScheduledIcs').addEventListener('click', function(){
+    exportTaskIcs(getTask(t.id));
   });
   document.getElementById('pinToggleBtn').addEventListener('click', function(){
     updateTask(t.id, {pinned: !t.pinned});
@@ -5761,6 +5935,33 @@ function exportMeetingIcs(t){
   a.download = (t.title||'meeting').replace(/[^\w\-]+/g,'_') + '.ics';
   document.body.appendChild(a); a.click(); a.remove();
   toast('📅 .ics-Datei heruntergeladen – öffnen, um sie in Outlook zu importieren.');
+}
+/* Für einen Task mit gesetztem "Geplant für" (scheduledAt, Kalender-Ansicht)
+   - im Unterschied zu exportMeetingIcs() oben, das die erste erfasste
+   Zeitsitzung eines Meeting-Tasks nimmt, nutzt dies die geplante Zeit und
+   funktioniert für jeden Task-Typ. */
+function exportTaskIcs(t){
+  if(!t.scheduledAt){ toast('Bitte zuerst eine geplante Zeit setzen.'); return; }
+  var start = new Date(t.scheduledAt);
+  var durationMin = t.estimatedMinutes || 30;
+  var end = new Date(start.getTime() + durationMin*60000);
+  var lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Work Board//DE',
+    'BEGIN:VEVENT',
+    'UID:' + t.id + '-scheduled@work-board',
+    'DTSTAMP:' + icsDate(new Date()),
+    'DTSTART:' + icsDate(start),
+    'DTEND:' + icsDate(end),
+    'SUMMARY:' + (t.title||'Task').replace(/\n/g,' '),
+    'DESCRIPTION:' + (t.description||'').replace(/\n/g,'\\n'),
+    'END:VEVENT','END:VCALENDAR'
+  ];
+  var blob = new Blob([lines.join('\r\n')], {type:'text/calendar'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (t.title||'task').replace(/[^\w\-]+/g,'_') + '.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('📤 .ics-Datei heruntergeladen – öffnen, um sie als Termin in Outlook einzutragen.');
 }
 
 /* =========================================================
