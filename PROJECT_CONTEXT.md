@@ -4,6 +4,47 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-01 (Fortsetzung): Admin-Bereich für Benutzerverwaltung
+
+Direkt im Anschluss an den Pflicht-Login (siehe Eintrag unten) gewünscht: "Admin Login, mit welchem
+ich User verwalten kann (PW-Zurücksetzen, Benutzer erstellen, etc.)". Wichtige Design-Entscheidung
+dabei, dem Nutzer klar erklärt statt stillschweigend umgesetzt: **echtes Benutzer-Anlegen/-Löschen/
+-Sperren ist clientseitig grundsätzlich NICHT sicher machbar** – das bräuchte Supabase's geheimen
+`service_role`-Key, der niemals im öffentlich gehosteten GitHub-Pages-Code stehen darf (jede Person
+könnte ihn über "Seitenquelltext anzeigen" auslesen → voller Zugriff aufs ganze Supabase-Projekt).
+Deshalb bewusst nur den sicheren Teil gebaut (Commit `a788b26`):
+- Neue `admins`-Tabelle, RLS nur mit SELECT-Policy (lesbar für alle Angemeldeten), **bewusst ohne
+  insert/update/delete-Policy** – Admin-Rechte vergeben geht nur manuell im Supabase Table Editor,
+  nie über die App (verhindert jede Form von Selbst-Ernennung zum Admin über die REST-API).
+- `isCurrentUserAdmin` (einmal beim Login gegen diese Tabelle geprüft) schaltet einen neuen
+  "🛡️ Admin"-Tab in den Einstellungen frei – reine UI-Bequemlichkeit, die eigentliche Absicherung
+  läuft über RLS in der Datenbank, nicht über diese Variable.
+- Admin-Tab zeigt alle registrierten Profile (Name, E-Mail, Admin-Badge) mit Button
+  "🔑 Passwort-Reset" pro Person – ruft einfach `resetPasswordForEmail()` auf (dieselbe Funktion wie
+  "Passwort vergessen" beim Login), kein Kenntnis des aktuellen Passworts nötig.
+- "Neue Benutzer anlegen" bewusst NICHT als Button gebaut, da nicht sicher möglich – Registrierung
+  bleibt offen (jede Person registriert sich selbst über den App-Link), das deckt denselben Bedarf
+  bereits ab.
+- README ergänzt um SQL für die `admins`-Tabelle, Schritt-für-Schritt "dich selbst zum ersten Admin
+  machen", und eine explizite Erklärung, warum Benutzer-Anlegen/-Löschen fehlt.
+
+**Nebenbei behoben:** Nutzer testete mit einem echten Supabase-Projekt und bekam
+Bestätigungs-E-Mails mit Links auf `localhost:3000` (Supabase-Standard-Platzhalter für "Site URL").
+Kein Code-Bug, sondern fehlende Dashboard-Konfiguration – Anleitung dafür direkt in die README
+eingebaut (Authentication → URL Configuration → Site URL auf die echte GitHub-Pages-Adresse).
+
+**Getestet** (gemockter Supabase-Client, zwei separate registrierte Test-Nutzer): Admin-Tab
+erscheint korrekt NUR für die in `__mockAdmins` vorab eingetragene Person, bleibt für eine zweite,
+normal registrierte Person unsichtbar; Passwort-Reset-Button ruft korrekt die richtige E-Mail auf
+und zeigt eine Bestätigung. Kein echtes Supabase-Projekt für den Test verfügbar.
+
+**Wiederkehrendes Muster, drittes Mal in dieser Session:** Beim Pushen kam wiederholt ein leerer
+"Add files via upload"-Commit auf GitHub dazwischen (inhaltlich jedes Mal identisch zum vorherigen
+Stand – alle drei Male sauber gemerged, kein Datenverlust). Das ist dem Nutzer aufgefallen gemeldet
+worden, Ursache noch ungeklärt (evtl. ein Automatismus oder wiederholtes Klicken im GitHub-
+Webinterface) – falls es nochmal auftaucht, lohnt sich eine gezielte Rückfrage beim Nutzer, was das
+auslöst, statt es nur stillschweigend wegzumergen.
+
 ## ✅ Stand 2026-10-01: Pflicht-Login via Supabase Auth eingebaut
 
 Neue Claude-Instanz nach Kontext-Reset (altes Fenster voll) – Session ging nahtlos weiter, da der
