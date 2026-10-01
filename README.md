@@ -42,16 +42,52 @@ Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
      for insert to authenticated with check (auth.uid() = id);
    create policy "Eigenes Profil aktualisierbar" on profiles
      for update to authenticated using (auth.uid() = id);
+
+   create table admins (
+     id uuid primary key references auth.users(id) on delete cascade
+   );
+   alter table admins enable row level security;
+   create policy "Admin-Status fuer alle sichtbar" on admins
+     for select to authenticated using (true);
+   -- Bewusst KEINE insert/update/delete-Policy auf "admins": Admin-Rechte
+   -- lassen sich dadurch nur manuell im Table Editor vergeben, nie über
+   -- die App selbst (siehe Abschnitt "🛡️ Admin-Bereich" weiter unten).
    ```
-4. Optional: **Authentication → Settings** – falls E-Mail-Bestätigung gewünscht ist, ist sie
+4. **Authentication → URL Configuration**: **Site URL** auf deine echte Adresse setzen, z.B.
+   `https://poller404.github.io/work-board/` (steht standardmässig auf `localhost:3000` – lässt man
+   das stehen, zeigen Bestätigungs-/Passwort-Reset-E-Mails ins Leere). Bei Bedarf dieselbe Adresse
+   auch unter **Redirect URLs** eintragen.
+5. Optional: **Authentication → Settings** – falls E-Mail-Bestätigung gewünscht ist, ist sie
    standardmässig aktiviert (neu Registrierte bekommen eine Bestätigungs-E-Mail); zum Testen im
    kleinen Team lässt sie sich dort auch deaktivieren, dann ist man sofort nach der Registrierung
    angemeldet.
+6. **Dich selbst zum ersten Admin machen**: Supabase-Dashboard → **Table Editor** → Tabelle
+   `admins` → neue Zeile → als `id` deine eigene User-ID eintragen (zu finden unter
+   **Authentication → Users**, Spalte "UID", nachdem du dich einmal im Work Board registriert hast)
+   → speichern. Danach siehst du in der App unter ⚙️ Einstellungen einen neuen Tab "🛡️ Admin".
 
 **Im Work Board:** beim ersten Öffnen Project URL und anon-Key eintragen → "Verbinden". Danach kann
 sich jede Person selbst mit E-Mail/Passwort registrieren (Name wird dabei einmalig festgelegt und
 taucht danach bei Zuweisungen sowie im Aktivitäts-Verlauf jedes Tasks auf). Abmelden geht über
 ⚙️ Einstellungen → 👤 Konto.
+
+### 🛡️ Admin-Bereich
+
+Nur für Personen, deren User-ID manuell in der `admins`-Tabelle eingetragen wurde (Schritt 6 oben)
+erscheint in ⚙️ Einstellungen ein zusätzlicher Tab **"🛡️ Admin"** mit einer Liste aller
+registrierten Personen und einem Button **"🔑 Passwort-Reset"** pro Person (schickt denselben
+E-Mail-Link wie "Passwort vergessen" beim Login, ohne das aktuelle Passwort zu kennen).
+
+**Bewusste Einschränkung, technisch bedingt:** Es gibt in diesem Admin-Bereich absichtlich **keine**
+Buttons zum direkten Anlegen, Löschen oder Sperren von Konten. Das würde den geheimen
+`service_role`-Schlüssel von Supabase voraussetzen – der darf aus Sicherheitsgründen **niemals** im
+Browser-Code einer öffentlich gehosteten Seite wie GitHub Pages landen, da ihn dann jede Person
+über "Seitenquelltext anzeigen" auslesen und damit vollen Zugriff auf das gesamte Supabase-Projekt
+bekommen könnte (nicht nur auf Work Board, auf *alles* in diesem Projekt). Neue Personen müssen sich
+deshalb weiterhin selbst registrieren (die Registrierung ist absichtlich offen – einfach den
+App-Link weitergeben); Admin-Rechte vergeben/entziehen bleibt ein manueller Schritt im
+Supabase-Dashboard (Schritt 6 oben, dieselbe Zeile für eine andere Person entfernen entzieht sie
+wieder).
 
 ## Wie werden meine Daten gespeichert?
 

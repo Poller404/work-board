@@ -711,6 +711,9 @@ function normalizeTask(t){
 var state = defaultState();
 var currentUser = null; // {id, email, displayName} - gesetzt nach erfolgreichem Supabase-Login
 var registeredProfiles = []; // Anzeigenamen aller registrierten Personen (aus Supabase "profiles"-Tabelle), für die Zuweisen-Auswahl
+var registeredProfileRows = []; // volle Zeilen ({id, display_name, email}) für den Admin-Bereich
+var isCurrentUserAdmin = false;
+var adminUserIds = [];
 var supabaseClient = null;
 var appStarted = false;
 var fileHandle = null;
@@ -5088,12 +5091,13 @@ var SETTINGS_TABS = [
 ];
 var settingsActiveTab = 'storage';
 function openSettings(){
+  var visibleSettingsTabs = SETTINGS_TABS.concat(isCurrentUserAdmin ? [{id:'admin', label:'🛡️ Admin'}] : []);
   var html =
     '<div class="modal-header"><h2>⚙️ Einstellungen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
 
       '<div class="settings-tabs">' +
-        SETTINGS_TABS.map(function(tb){ return '<button type="button" class="settings-tab-btn" data-settings-tab="'+tb.id+'">'+tb.label+'</button>'; }).join('') +
+        visibleSettingsTabs.map(function(tb){ return '<button type="button" class="settings-tab-btn" data-settings-tab="'+tb.id+'">'+tb.label+'</button>'; }).join('') +
       '</div>' +
 
       '<div class="settings-section" data-tab="storage">' +
@@ -5298,6 +5302,20 @@ function openSettings(){
       '</div>' +
       '</div>' +
 
+      (isCurrentUserAdmin ?
+      '<div class="settings-section" data-tab="admin">' +
+      '<div class="section-title">🛡️ Benutzerverwaltung</div>' +
+      '<div class="hint" style="margin-bottom:10px;">Zeigt alle registrierten Personen. <strong>Passwort-Reset</strong> schickt denselben E-Mail-Link wie "Passwort vergessen" beim Login – funktioniert ohne das Passwort der Person zu kennen. <strong>Neue Personen</strong> brauchen keinen Admin: die Registrierung ist offen, einfach den App-Link weitergeben. <strong>Admin-Rechte vergeben/entziehen</strong> geht aus Sicherheitsgründen bewusst nicht über die App, sondern nur manuell im Supabase-Dashboard (Table Editor → Tabelle "admins" → Zeile mit der User-ID hinzufügen/löschen; die User-ID findest du unter Authentication → Users).</div>' +
+      '<div class="columns-list" id="adminUserList">' +
+        (registeredProfileRows.length ? registeredProfileRows.map(function(p){
+          var isAdmin = adminUserIds.indexOf(p.id) >= 0;
+          return '<div class="col-row"><span style="flex:1;">'+(isAdmin?'🛡️ ':'')+escapeHtml(p.display_name)+' <span class="hint">('+escapeHtml(p.email||'–')+')</span></span>' +
+            '<button class="btn" data-admin-reset-email="'+escapeAttr(p.email||'')+'">🔑 Passwort-Reset</button></div>';
+        }).join('') : '<div class="hint">Noch keine registrierten Profile geladen.</div>') +
+      '</div>' +
+      '<button class="btn" id="btnAdminRefreshUsers" style="margin-top:8px;">🔄 Liste aktualisieren</button>' +
+      '</div>' : '') +
+
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn primary" data-close-modal>Fertig</button>' +
@@ -5350,6 +5368,19 @@ function openSettings(){
   document.getElementById('btnAuthSignOut').addEventListener('click', function(){
     confirmDialog('Wirklich abmelden?', 'Abmelden', function(){ closeModal(); signOutCurrentUser(); });
   });
+  if(isCurrentUserAdmin){
+    document.querySelectorAll('[data-admin-reset-email]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var email = btn.dataset.adminResetEmail;
+        if(!email){ toast('Keine E-Mail-Adresse hinterlegt.'); return; }
+        confirmDialog('Passwort-Reset-E-Mail an "'+email+'" senden?', 'Senden', function(){ closeModal(); adminSendPasswordReset(email); });
+      });
+    });
+    var refreshBtn = document.getElementById('btnAdminRefreshUsers');
+    if(refreshBtn) refreshBtn.addEventListener('click', function(){
+      fetchProfiles().then(function(){ openSettings(); });
+    });
+  }
   renderCloudSyncStatus();
   function wireVisibilityToggle(btnId, inputId){
     var btn = document.getElementById(btnId);
@@ -6676,6 +6707,7 @@ function startAuthGate(){
       document.getElementById('authOverlay').classList.add('hidden');
       upsertProfile();
       fetchProfiles();
+      checkIsAdmin();
       if(!appStarted){ appStarted = true; init(); }
     } else {
       currentUser = null;
@@ -6783,12 +6815,39 @@ function upsertProfile(){
 }
 function fetchProfiles(){
   var client = getSupabaseClient();
-  if(!client) return;
-  client.from('profiles').select('display_name').then(function(res){
+  if(!client) return Promise.resolve();
+  return client.from('profiles').select('id, display_name, email').then(function(res){
     if(res.data && res.data.length){
+      registeredProfileRows = res.data;
       registeredProfiles = res.data.map(function(r){ return r.display_name; }).filter(Boolean);
     }
   }).catch(function(){});
+}
+/* "admins"-Tabelle (SQL-Setup siehe README): enthält genau eine Zeile pro
+   Person mit Admin-Rechten, nichts weiter. Bewusst OHNE insert/update/
+   delete-RLS-Policy für den Client - Admin-Rechte vergeben/entziehen geht
+   deshalb ausschliesslich manuell über den Supabase-Tabellen-Editor, nie
+   über die App. Das ist eine bewusste Sicherheits-Entscheidung: eine
+   client-seitig beschreibbare "bin ich Admin"-Tabelle liesse sich sonst
+   trivial per direktem API-Aufruf umgehen (Selbst-Ernennung zum Admin).
+   isCurrentUserAdmin steuert nur, ob der Admin-Tab in den Einstellungen
+   *angezeigt* wird - die eigentliche Absicherung läuft über RLS in der
+   Datenbank, nicht über diese Variable. */
+function checkIsAdmin(){
+  var client = getSupabaseClient();
+  if(!client || !currentUser){ isCurrentUserAdmin = false; adminUserIds = []; return Promise.resolve(); }
+  return client.from('admins').select('id').then(function(res){
+    adminUserIds = res.data ? res.data.map(function(r){ return r.id; }) : [];
+    isCurrentUserAdmin = adminUserIds.indexOf(currentUser.id) >= 0;
+  }).catch(function(){ isCurrentUserAdmin = false; adminUserIds = []; });
+}
+function adminSendPasswordReset(email){
+  var client = getSupabaseClient();
+  if(!client) return;
+  client.auth.resetPasswordForEmail(email).then(function(res){
+    if(res.error){ toast('Fehler: ' + translateAuthError(res.error.message)); }
+    else { toast('📧 Passwort-Reset-E-Mail an ' + email + ' gesendet.'); }
+  });
 }
 
 function init(){
