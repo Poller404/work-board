@@ -4,6 +4,59 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-01: Pflicht-Login via Supabase Auth eingebaut
+
+Neue Claude-Instanz nach Kontext-Reset (altes Fenster voll) – Session ging nahtlos weiter, da der
+Nutzer mitten in einer Rückfrage ("Login Pflicht oder optional?") mit "Echte ID ist notwendig"
+geantwortet hatte. Interpretiert als **Pflicht-Login**, dem Nutzer das kurz gespiegelt, dann
+umgesetzt ohne weitere Rückfrage (Auto-Mode).
+
+**Hintergrund:** Nutzer fragte nach einem "normalen Login/Registrierungs-Mechanismus, z.B. mit
+Supabase". Per AskUserQuestion geklärt, DASS es nicht um strengere Zugriffskontrolle ging, sondern
+um echte Identität pro Person + Erweiterbarkeit auf mehr Nutzer + "fühlt sich richtiger an". Daraus
+bewusst die LEICHTGEWICHTIGE Variante gebaut statt einer vollen Backend-Migration: Supabase macht
+NUR Login/Identität, die Board-Daten laufen unverändert über den bestehenden Ende-zu-Ende-
+verschlüsselten Gist-Cloud-Sync weiter. Das ist die erste externe Script-Abhängigkeit im ganzen
+Projekt (`@supabase/supabase-js` per CDN) – bewusste Abweichung von der bisherigen "alles
+selbstgebaut"-Regel, aber technisch weiterhin ohne Build-Schritt/Installation kompatibel mit dem
+gesperrten Firmengerät (reiner `<script src=https://cdn.jsdelivr.net/...>`-Tag).
+
+**Was gebaut wurde** (Commit `2e5879d`):
+- `#authOverlay`: Vollbild-Gate (höherer z-index als `#lockOverlay`), blockiert `init()` komplett
+  bis eine echte Anmeldung vorliegt. Zustände: Setup (Supabase Project URL + anon-Key eintragen,
+  einmalig) → Login/Registrieren/Passwort-vergessen (alles über `supabase.auth`). Einzige
+  Quelle der Wahrheit ist `onAuthStateChange` (nicht zusätzlich `getSession()` separat abfragen –
+  vermeidet Race Conditions); `appStarted`-Guard verhindert Doppel-Init bei mehrfachen Auth-Events.
+- `profiles`-Tabelle (SQL-Setup in README) hält Anzeigenamen pro registrierter Person, wird beim
+  Login upserted; die "Zugewiesen an"-Auswahl im Task-Modal nutzt jetzt echte registrierte Namen
+  (`registeredProfiles`) statt nur der alten freien `teamMembers`-Liste, mit Fallback falls die
+  Tabelle (noch) nicht eingerichtet ist.
+- `logActivity()` hängt jetzt automatisch "(von <Name>)" an, wenn `currentUser` gesetzt ist; drei
+  ntfy-Push-Nachrichten (Hotline-Ticket, Task erledigt, zuvor schon Zuweisung) ebenfalls.
+- Settings: neuer "👤 Konto"-Block oben im Speicher&Team-Tab (aktueller Nutzer + Abmelden-Button).
+- README: neuer Abschnitt "👤 Login & Registrierung (Supabase)" mit kompletter Einrichtung
+  (Supabase-Projekt anlegen, Project URL/anon-Key finden, SQL für `profiles`-Tabelle + RLS-Policies
+  zum Copy-Paste in den Supabase SQL Editor).
+
+**Getestet** (gemockter `supabase.createClient`, da kein echtes Supabase-Projekt verfügbar):
+kompletter Zyklus Setup → Registrierung → `SIGNED_IN`-Event → `init()` startet automatisch →
+Board rendert → Profil korrekt upserted → Zuweisen-Dropdown zeigt echten Namen → Aktivitäts-Log-
+Attribution korrekt ("Verschoben: ... (von Timo Schmid)") → Abmelden lädt neu und zeigt wieder den
+Login-Bildschirm (Konfiguration bleibt erhalten, nur die Session wird gelöscht). Die echte
+Supabase-JS-Bibliothek lädt nachweislich übers CDN (nicht blockiert) – nur die Projekt-Zugangsdaten
+selbst waren in diesem Test gefaked.
+
+**Offen für die nächste Session:** Nutzer hat das noch nicht mit einem echten Supabase-Projekt
+durchgetestet. Insbesondere prüfen: (1) klappt Registrierung inkl. evtl. E-Mail-Bestätigung wie in
+der README beschrieben, (2) landen die `profiles`-Zeilen wirklich korrekt in der Datenbank (RLS-
+Policies könnten bei echtem Testen noch Feinschliff brauchen, z.B. falls `anon`-Key allein nicht
+reicht), (3) funktioniert die Zuweisen-Auswahl mit mehreren echten registrierten Personen.
+
+**Nebenbei aufgefallen:** Zum zweiten Mal ist ein leerer "Add files via upload"-Commit auf GitHub
+aufgetaucht (zwischen Session-Pushes), inhaltlich jedes Mal identisch zum vorherigen Stand – beide
+Male sauber gemerged, kein Datenverlust. Falls das kein bewusstes Nutzer-Verhalten ist, lohnt sich
+ein Nachfragen, was das verursacht (z.B. versehentliches Klicken im GitHub-Webinterface).
+
 ## ✅ Stand 2026-08-26 (spät abends): Repo-Team-Backend wieder entfernt, Settings-Tabs, Fixes
 
 Nach dem Bau des Repo-Team-Backends (siehe Abschnitt unten für den Hintergrund) ist der Nutzer
