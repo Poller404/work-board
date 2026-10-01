@@ -10,6 +10,49 @@ Doppelklick auf `index.html` (öffnet sich im Standardbrowser, idealerweise Edge
 Am besten die Datei selbst gleich in deinen OneDrive- oder iCloud-Drive-Ordner legen, dann hast du
 sie automatisch auf allen Geräten verfügbar.
 
+**Login ist Pflicht** – beim ersten Öffnen erscheint ein Anmelde-Bildschirm statt des Boards, siehe
+nächster Abschnitt zur Einrichtung.
+
+## 👤 Login & Registrierung (Supabase) – einmalige Einrichtung
+
+Damit jede Person mit einer echten, eigenen Identität arbeitet (statt eines geteilten Passworts),
+läuft die Anmeldung über **[Supabase](https://supabase.com)** – einen kostenlosen Dienst, der nur
+Login/Registrierung übernimmt. Die eigentlichen Board-Daten laufen weiterhin unverändert über den
+Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
+
+**Einrichtung (einmalig, durch eine Person):**
+1. Kostenloses Konto auf [supabase.com](https://supabase.com) anlegen, neues Projekt erstellen
+   (Name/Passwort/Region frei wählbar – das DB-Passwort wird hier nicht weiter gebraucht).
+2. Im Projekt-Dashboard: **Project Settings → API** öffnen, dort **Project URL** und den
+   **`anon` `public`-Key** kopieren (nicht den `service_role`-Key – der ist geheim und wird hier
+   nicht gebraucht).
+3. **SQL Editor** im Supabase-Dashboard öffnen, neue Query, folgendes einfügen und ausführen – legt
+   die Tabelle an, in der sich registrierte Personen mit ihrem Namen eintragen (für die
+   "Zugewiesen an"-Auswahl im Board):
+   ```sql
+   create table profiles (
+     id uuid primary key references auth.users(id) on delete cascade,
+     display_name text not null,
+     email text
+   );
+   alter table profiles enable row level security;
+   create policy "Profile lesbar für alle Angemeldeten" on profiles
+     for select to authenticated using (true);
+   create policy "Eigenes Profil bearbeitbar" on profiles
+     for insert to authenticated with check (auth.uid() = id);
+   create policy "Eigenes Profil aktualisierbar" on profiles
+     for update to authenticated using (auth.uid() = id);
+   ```
+4. Optional: **Authentication → Settings** – falls E-Mail-Bestätigung gewünscht ist, ist sie
+   standardmässig aktiviert (neu Registrierte bekommen eine Bestätigungs-E-Mail); zum Testen im
+   kleinen Team lässt sie sich dort auch deaktivieren, dann ist man sofort nach der Registrierung
+   angemeldet.
+
+**Im Work Board:** beim ersten Öffnen Project URL und anon-Key eintragen → "Verbinden". Danach kann
+sich jede Person selbst mit E-Mail/Passwort registrieren (Name wird dabei einmalig festgelegt und
+taucht danach bei Zuweisungen sowie im Aktivitäts-Verlauf jedes Tasks auf). Abmelden geht über
+⚙️ Einstellungen → 👤 Konto.
+
 ## Wie werden meine Daten gespeichert?
 
 Da die Datei per Doppelklick (`file://`) geöffnet wird, kann sie aus Sicherheitsgründen nicht

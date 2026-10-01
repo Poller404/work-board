@@ -247,6 +247,11 @@ button.icon-btn:active{transform:scale(.92);}
 
 /* ---- PIN lock ---- */
 #lockOverlay{position:fixed; inset:0; background:var(--bg); z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+#authOverlay{position:fixed; inset:0; background:var(--bg); z-index:6000; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto;}
+#authBox{width:100%; max-width:360px;}
+#authBox input{width:100%;}
+#authBox a{color:var(--accent); font-size:12.5px; text-decoration:none;}
+#authBox a:hover{text-decoration:underline;}
 #lockOverlay.hidden{display:none;}
 #focusOverlay .focus-title{font-size:22px; font-weight:700; max-width:640px; text-align:center; padding:0 20px;}
 #focusOverlay .focus-time{font-size:64px; font-weight:800; font-variant-numeric:tabular-nums;}
@@ -419,6 +424,7 @@ button.mobile-only{display:none;}
   }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="app">
@@ -527,6 +533,16 @@ button.mobile-only{display:none;}
   <div id="cmdPaletteBox">
     <input id="cmdPaletteInput" placeholder="Task suchen oder Aktion ausführen…">
     <div id="cmdPaletteResults"></div>
+  </div>
+</div>
+
+<div id="authOverlay" class="hidden">
+  <div id="authBox">
+    <div style="text-align:center; margin-bottom:18px;">
+      <div style="font-size:40px;">🗂️</div>
+      <div style="font-weight:800; font-size:18px;">Work Board</div>
+    </div>
+    <div id="authContent"></div>
   </div>
 </div>
 
@@ -693,6 +709,10 @@ function normalizeTask(t){
 }
 
 var state = defaultState();
+var currentUser = null; // {id, email, displayName} - gesetzt nach erfolgreichem Supabase-Login
+var registeredProfiles = []; // Anzeigenamen aller registrierten Personen (aus Supabase "profiles"-Tabelle), für die Zuweisen-Auswahl
+var supabaseClient = null;
+var appStarted = false;
 var fileHandle = null;
 var lastWriteAt = 0;
 var saveTimer = null;
@@ -898,14 +918,14 @@ function createTask(partial){
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
   save();
-  if(t.type === 'hotline') sendNtfyPush('📞 Neues Hotline-Ticket', 'Ein neues Hotline-Ticket wurde erstellt – im Board ansehen.');
+  if(t.type === 'hotline') sendNtfyPush('📞 Neues Hotline-Ticket', 'Ein neues Hotline-Ticket wurde erstellt' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + ' – im Board ansehen.');
   return t;
 }
 
 var DONE_COLUMN_RE = /erledigt|done/i;
 function isSnoozed(t){ return !!(t.snoozeUntil && new Date(t.snoozeUntil).getTime() > Date.now()); }
 function logActivity(t, text){
-  t.activityLog.push({ts: nowIso(), text: text});
+  t.activityLog.push({ts: nowIso(), text: currentUser ? text + ' (von ' + currentUser.displayName + ')' : text});
   if(t.activityLog.length > 100) t.activityLog.shift();
 }
 function updateTask(id, patch){
@@ -921,7 +941,7 @@ function updateTask(id, patch){
       playSound('complete');
       awardXp(t);
       spawnRecurrenceIfDue(t);
-      sendNtfyPush('✅ Task erledigt', 'Ein Task wurde als erledigt markiert.');
+      sendNtfyPush('✅ Task erledigt', 'Ein Task wurde als erledigt markiert' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + '.');
     } else if(toCol && !DONE_COLUMN_RE.test(toCol.name) && t.completedAt){
       patch.completedAt = null;
     }
@@ -3539,9 +3559,13 @@ function openTaskModal(taskId){
       '</div>' +
       '<div class="form-row-inline">' +
         '<div class="form-row autocomplete-wrap" style="flex:1"><label>Tags (Komma-getrennt)</label><input id="fTags" autocomplete="off" value="'+escapeAttr(t.tags.join(', '))+'"><div class="autocomplete-list" id="tagSuggestions"></div></div>' +
-        (state.settings.teamMembers.length ? '<div class="form-row"><label>Zugewiesen an</label><select id="fAssignee"><option value="">– Ich –</option>' +
-          state.settings.teamMembers.map(function(m){ return '<option value="'+escapeAttr(m)+'"'+(t.assignee===m?' selected':'')+'>'+escapeHtml(m)+'</option>'; }).join('') +
-        '</select></div>' : '') +
+        (function(){
+          var assigneeOptions = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
+          if(!assigneeOptions.length) return '';
+          return '<div class="form-row"><label>Zugewiesen an</label><select id="fAssignee"><option value="">– Ich –</option>' +
+            assigneeOptions.map(function(m){ return '<option value="'+escapeAttr(m)+'"'+(t.assignee===m?' selected':'')+'>'+escapeHtml(m)+'</option>'; }).join('') +
+          '</select></div>';
+        })() +
       '</div>' +
 
       '<div class="section-title">Checkliste'+(t.checklist.length?' ('+t.checklist.filter(function(c){return c.done;}).length+'/'+t.checklist.length+')':'')+'</div>' +
@@ -5073,6 +5097,9 @@ function openSettings(){
       '</div>' +
 
       '<div class="settings-section" data-tab="storage">' +
+      '<div class="section-title">👤 Konto</div>' +
+      '<div class="hint" style="margin-bottom:10px;">Angemeldet als <strong>'+escapeHtml(currentUser ? (currentUser.displayName + ' (' + currentUser.email + ')') : '–')+'</strong>. Dieser Name wird bei Zuweisungen und im Aktivitäts-Verlauf verwendet.</div>' +
+      '<button class="btn ghost" id="btnAuthSignOut" style="margin-bottom:10px;">🚪 Abmelden</button>' +
       '<div class="section-title">Speicherort</div>' +
       renderStorageStatusHtml() +
       '<div class="hint" style="margin-bottom:10px;">Deine Tasks werden laufend automatisch im Browser gespeichert (bleiben erhalten, solange du Browser-Daten nicht löschst). Für eine Sicherung in OneDrive/iCloud Drive – und damit Zugriff von einem zweiten Gerät – klicke oben rechts jederzeit auf <strong>💾 Sichern</strong> (oder Strg+S). Das lädt eine Datei <code>work-board-daten.json</code> herunter.</div>' +
@@ -5320,6 +5347,9 @@ function openSettings(){
     importBackupFile(file);
   });
 
+  document.getElementById('btnAuthSignOut').addEventListener('click', function(){
+    confirmDialog('Wirklich abmelden?', 'Abmelden', function(){ closeModal(); signOutCurrentUser(); });
+  });
   renderCloudSyncStatus();
   function wireVisibilityToggle(btnId, inputId){
     var btn = document.getElementById(btnId);
@@ -6592,6 +6622,175 @@ function handleUrlShortcutAction(){
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 }
+/* =========================================================
+   LOGIN / REGISTRIERUNG (Supabase Auth)
+   Reines Identitäts-Gate vor der App - WER benutzt das Board, nicht WAS
+   gespeichert wird. Die eigentlichen Board-Daten laufen weiterhin über den
+   bestehenden Ende-zu-Ende-verschlüsselten Cloud-Sync (Gist); Supabase
+   sieht sie nie. Pflicht-Login: ohne gültige Anmeldung wird init() (und
+   damit das Board) gar nicht erst gestartet. Der Supabase "anon public
+   key" ist laut Supabase-Design für den Client gedacht (kein Geheimnis -
+   Zugriffsschutz läuft über Row-Level-Security in der Datenbank), darf
+   also wie der Gist-Token einfach in localStorage liegen.
+   ========================================================= */
+var AUTH_CONFIG_KEY = 'wb-auth-config';
+function getAuthConfig(){
+  try{
+    var raw = localStorage.getItem(AUTH_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : {supabaseUrl:'', supabaseAnonKey:''};
+  }catch(e){ return {supabaseUrl:'', supabaseAnonKey:''}; }
+}
+function setAuthConfig(cfg){ try{ localStorage.setItem(AUTH_CONFIG_KEY, JSON.stringify(cfg)); }catch(e){} }
+function getSupabaseClient(){
+  if(supabaseClient) return supabaseClient;
+  var cfg = getAuthConfig();
+  if(!cfg.supabaseUrl || !cfg.supabaseAnonKey) return null;
+  if(typeof supabase === 'undefined') return null;
+  supabaseClient = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  return supabaseClient;
+}
+function translateAuthError(msg){
+  if(/Invalid login credentials/i.test(msg)) return 'E-Mail oder Passwort falsch.';
+  if(/User already registered/i.test(msg)) return 'Für diese E-Mail existiert schon ein Konto – bitte anmelden.';
+  if(/Password should be at least/i.test(msg)) return 'Passwort zu kurz (mind. 6 Zeichen).';
+  if(/Unable to validate email address/i.test(msg)) return 'Ungültige E-Mail-Adresse.';
+  return msg;
+}
+function startAuthGate(){
+  document.getElementById('authOverlay').classList.remove('hidden');
+  var cfg = getAuthConfig();
+  if(!cfg.supabaseUrl || !cfg.supabaseAnonKey){ renderAuthSetup(); return; }
+  if(typeof supabase === 'undefined'){
+    document.getElementById('authContent').innerHTML = '<p class="hint">⚠️ Login-Baustein konnte nicht geladen werden (keine Internetverbindung?). Bitte Seite neu laden, sobald wieder online.</p>';
+    return;
+  }
+  renderAuthLoading();
+  var client = getSupabaseClient();
+  client.auth.onAuthStateChange(function(event, session){
+    if(session && session.user){
+      currentUser = {
+        id: session.user.id,
+        email: session.user.email,
+        displayName: (session.user.user_metadata && session.user.user_metadata.display_name) || session.user.email.split('@')[0]
+      };
+      document.getElementById('authOverlay').classList.add('hidden');
+      upsertProfile();
+      fetchProfiles();
+      if(!appStarted){ appStarted = true; init(); }
+    } else {
+      currentUser = null;
+      document.getElementById('authOverlay').classList.remove('hidden');
+      renderAuthLogin();
+    }
+  });
+}
+function renderAuthSetup(){
+  var cfg = getAuthConfig();
+  document.getElementById('authContent').innerHTML =
+    '<p class="hint" style="margin-bottom:12px;">Einmalige Einrichtung: Supabase-Projekt-URL und den öffentlichen "anon"-Key eintragen (Supabase-Dashboard → Project Settings → API). Danach kann sich hier jede Person mit E-Mail/Passwort registrieren.</p>' +
+    '<div class="form-row"><label>Supabase Project URL</label><input id="authSupaUrl" value="'+escapeAttr(cfg.supabaseUrl)+'" placeholder="https://xxxx.supabase.co"></div>' +
+    '<div class="form-row"><label>Supabase anon public key</label><input id="authSupaKey" value="'+escapeAttr(cfg.supabaseAnonKey)+'" placeholder="eyJhbGci…"></div>' +
+    '<button class="btn primary" id="authSetupSave" style="width:100%;">Verbinden</button>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>';
+  document.getElementById('authSetupSave').addEventListener('click', function(){
+    var url = document.getElementById('authSupaUrl').value.trim();
+    var key = document.getElementById('authSupaKey').value.trim();
+    if(!url || !key){ document.getElementById('authErrorMsg').textContent = 'Bitte beide Felder ausfüllen.'; return; }
+    setAuthConfig({supabaseUrl:url, supabaseAnonKey:key});
+    supabaseClient = null;
+    startAuthGate();
+  });
+}
+function renderAuthLoading(){
+  document.getElementById('authContent').innerHTML = '<p class="hint" style="text-align:center;">Lade…</p>';
+}
+function renderAuthLogin(){
+  document.getElementById('authContent').innerHTML =
+    '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username"></div>' +
+    '<div class="form-row"><label>Passwort</label><input type="password" id="authPassword" autocomplete="current-password"></div>' +
+    '<button class="btn primary" id="authLoginBtn" style="width:100%; margin-bottom:10px;">Anmelden</button>' +
+    '<div style="display:flex; justify-content:space-between;">' +
+      '<a href="#" id="authGoRegister">Registrieren</a>' +
+      '<a href="#" id="authForgotPw">Passwort vergessen?</a>' +
+    '</div>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
+    '<div style="margin-top:18px; text-align:center;"><a href="#" id="authChangeSupabase">Andere Supabase-Instanz verwenden</a></div>';
+  function submit(){
+    var email = document.getElementById('authEmail').value.trim();
+    var password = document.getElementById('authPassword').value;
+    if(!email || !password){ document.getElementById('authErrorMsg').textContent = 'Bitte E-Mail und Passwort eingeben.'; return; }
+    document.getElementById('authErrorMsg').textContent = '';
+    getSupabaseClient().auth.signInWithPassword({email:email, password:password}).then(function(res){
+      if(res.error) document.getElementById('authErrorMsg').textContent = translateAuthError(res.error.message);
+    });
+  }
+  document.getElementById('authLoginBtn').addEventListener('click', submit);
+  document.getElementById('authEmail').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  document.getElementById('authPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  document.getElementById('authGoRegister').addEventListener('click', function(e){ e.preventDefault(); renderAuthRegister(); });
+  document.getElementById('authForgotPw').addEventListener('click', function(e){
+    e.preventDefault();
+    var email = document.getElementById('authEmail').value.trim();
+    var msgEl = document.getElementById('authErrorMsg');
+    if(!email){ msgEl.style.color = 'var(--danger)'; msgEl.textContent = 'Bitte zuerst E-Mail eintragen, dann nochmal klicken.'; return; }
+    getSupabaseClient().auth.resetPasswordForEmail(email).then(function(res){
+      if(res.error){ msgEl.style.color = 'var(--danger)'; msgEl.textContent = translateAuthError(res.error.message); }
+      else { msgEl.style.color = 'var(--ok)'; msgEl.textContent = '📧 E-Mail zum Zurücksetzen gesendet (falls ein Konto existiert).'; }
+    });
+  });
+  document.getElementById('authChangeSupabase').addEventListener('click', function(e){ e.preventDefault(); renderAuthSetup(); });
+}
+function renderAuthRegister(){
+  document.getElementById('authContent').innerHTML =
+    '<div class="form-row"><label>Name (sichtbar bei Zuweisungen)</label><input id="authDisplayName" autocomplete="name"></div>' +
+    '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username"></div>' +
+    '<div class="form-row"><label>Passwort (mind. 6 Zeichen)</label><input type="password" id="authPassword" autocomplete="new-password"></div>' +
+    '<button class="btn primary" id="authRegisterBtn" style="width:100%; margin-bottom:10px;">Registrieren</button>' +
+    '<a href="#" id="authGoLogin">Schon ein Konto? Anmelden</a>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>';
+  document.getElementById('authRegisterBtn').addEventListener('click', function(){
+    var name = document.getElementById('authDisplayName').value.trim();
+    var email = document.getElementById('authEmail').value.trim();
+    var password = document.getElementById('authPassword').value;
+    var msgEl = document.getElementById('authErrorMsg');
+    if(!name || !email || !password){ msgEl.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+    msgEl.textContent = '';
+    getSupabaseClient().auth.signUp({email:email, password:password, options:{data:{display_name:name}}}).then(function(res){
+      if(res.error){ msgEl.textContent = translateAuthError(res.error.message); return; }
+      if(!res.data.session){
+        document.getElementById('authContent').innerHTML = '<p class="hint">📧 Bestätigungs-E-Mail gesendet. Link darin anklicken, danach hier anmelden.</p><button class="btn" id="authBackToLogin" style="width:100%; margin-top:10px;">Zurück zum Login</button>';
+        document.getElementById('authBackToLogin').addEventListener('click', renderAuthLogin);
+      }
+    });
+  });
+  document.getElementById('authGoLogin').addEventListener('click', function(e){ e.preventDefault(); renderAuthLogin(); });
+}
+function signOutCurrentUser(){
+  var client = getSupabaseClient();
+  if(!client) return;
+  client.auth.signOut().then(function(){ location.reload(); });
+}
+/* "profiles"-Tabelle: ein Zeile pro registrierter Person (id, display_name,
+   email), per Row-Level-Security so eingerichtet, dass jede Person nur
+   ihre eigene Zeile schreiben, aber alle Zeilen lesen darf - liefert die
+   echten Namen für die "Zugewiesen an"-Auswahl. SQL-Setup siehe README.
+   Fehlt die Tabelle (noch nicht eingerichtet), schlägt das lautlos fehl
+   und die App fällt auf die alte freie Team-Mitglieder-Liste zurück. */
+function upsertProfile(){
+  var client = getSupabaseClient();
+  if(!client || !currentUser) return;
+  client.from('profiles').upsert({id: currentUser.id, display_name: currentUser.displayName, email: currentUser.email}).then(function(){});
+}
+function fetchProfiles(){
+  var client = getSupabaseClient();
+  if(!client) return;
+  client.from('profiles').select('display_name').then(function(res){
+    if(res.data && res.data.length){
+      registeredProfiles = res.data.map(function(r){ return r.display_name; }).filter(Boolean);
+    }
+  }).catch(function(){});
+}
+
 function init(){
   applyTheme();
   var localBackup = null;
@@ -6738,7 +6937,7 @@ var viewerGistId = new URLSearchParams(window.location.search).get('view');
 if(viewerGistId){
   renderViewerMode(viewerGistId);
 } else {
-  init();
+  startAuthGate();
 }
 
 if('serviceWorker' in navigator && location.protocol !== 'file:'){
