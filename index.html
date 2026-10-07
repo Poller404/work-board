@@ -6665,11 +6665,20 @@ function handleUrlShortcutAction(){
    also wie der Gist-Token einfach in localStorage liegen.
    ========================================================= */
 var AUTH_CONFIG_KEY = 'wb-auth-config';
+/* Standard-Verbindung, damit sie nicht auf jedem Gerät neu eingetippt werden
+   muss. Beides ist öffentlich gedacht (anon key, kein service_role key!).
+   Eine in localStorage gespeicherte Konfiguration ("Andere Supabase-Instanz
+   verwenden") hat Vorrang vor diesen Defaults. */
+var DEFAULT_SUPABASE_URL = 'https://kxrnwdzxypfepnaafdfn.supabase.co';
+var DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_MnMq0DnmXk35gplnmPMhYA_7UJ1YE-8';
 function getAuthConfig(){
+  var fallback = {supabaseUrl:DEFAULT_SUPABASE_URL, supabaseAnonKey:DEFAULT_SUPABASE_ANON_KEY};
   try{
     var raw = localStorage.getItem(AUTH_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : {supabaseUrl:'', supabaseAnonKey:''};
-  }catch(e){ return {supabaseUrl:'', supabaseAnonKey:''}; }
+    if(!raw) return fallback;
+    var cfg = JSON.parse(raw);
+    return (cfg && cfg.supabaseUrl && cfg.supabaseAnonKey) ? cfg : fallback;
+  }catch(e){ return fallback; }
 }
 function setAuthConfig(cfg){ try{ localStorage.setItem(AUTH_CONFIG_KEY, JSON.stringify(cfg)); }catch(e){} }
 function getSupabaseClient(){
