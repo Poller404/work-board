@@ -4,6 +4,26 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Gesamtdesign "Variante A – modern und clean"
+
+Nutzer wählte nach zwei Mockups Variante A. Umbau (Funktionen unverändert, alle Element-IDs erhalten):
+- **Layout:** linke Seitenleiste `#sidebar` (Board, Kalender, Statistik, Archiv, Tagesabschluss, Ansichten
+  Dashboard/Priorität/Eisenhower/Person/Gruppe, unten XP + Uhr + Benutzer-Chip = `#btnSettings`),
+  Hauptspalte `#mainCol` mit Kopfzeile. Das alte `<select id="boardViewSelect">` bleibt versteckt im DOM
+  (Command-Palette setzt `.value`); `renderSidebarActive()` (in `renderBoard()`) hält die Markierung aktuell.
+- **Kopfzeile:** Suche, Filter, "Was jetzt?", "Fokus", Timer-Pille (`#timerBanner` jetzt IN der Kopfzeile),
+  Sync, geteilter Button "Neuer Task" (+ Menü `#newMenu`: Hotline, Meeting, Zeit erfassen, Schnellerfassung,
+  Zwischenablage) und "⋯"-Menü `#moreMenu` (Auswahl, Kompaktansicht, Sichern). Menüs über `closeAllMenus()`.
+- **Karten:** Typ als getöntes Symbol (`typeIconHtml`, SVG-Sprite `#i-*` am Anfang von `<body>`), Ticket-Key
+  oder Typ-Name, Priorität als 3 Balken statt linkem Rand, laufende Karte `.is-running`. Zeit-Anzeige:
+  `[data-time-for] .tv` (tick() aktualisiert nur `.tv`). Spalten sind transparent, Spaltenfarbe als Punkt.
+- **Tokens:** neue Palette in `:root` (hell) + dunkel (`data-theme` und `prefers-color-scheme`), Schrift
+  Instrument Sans (Google Fonts, Fallback System), `--hover`, `--side`, `--ty-*`.
+- **Sprache:** `data-i18n` auf `.lbl`-Spans statt `textContent` auf Buttons (I18N-Wörterbuch ohne Emoji).
+- **Mobil (<680px):** Seitenleiste als Schublade (`body.sb-open`, ☰-Button `#btnMoreToggle`), zweite
+  Kopfzeile mit Filtern/Was jetzt/Fokus scrollbar.
+- Getestet gegen gemocktes Supabase im Browser (Hell/Dunkel, Navigation, Menüs, Dialoge, Auswahl, Kompakt).
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Einstellungsmenü neu aufgebaut
 
 Nutzer fand das Menü "schrecklich". Neu: Seitenleiste (auf dem Handy horizontale Tab-Leiste) mit
