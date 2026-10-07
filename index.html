@@ -911,6 +911,11 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 .mention.me{background:var(--warn-bg); color:var(--warn);}
 .cm-actions{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:6px;}
 .cm-badge{font-size:11px; color:var(--text-dim);}
+/* ---- Mail-Import ---- */
+#mailDrop{position:fixed; inset:0; z-index:5000; display:none; align-items:center; justify-content:center; background:rgba(47,91,234,.14); backdrop-filter:blur(2px); border:3px dashed var(--accent); text-align:center; color:var(--accent); font-size:18px; pointer-events:none;}
+#mailDrop.show{display:flex;}
+.mail-meta{display:flex; flex-direction:column; gap:2px; font-size:13px; margin-bottom:8px;}
+.mail-att{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1048,6 +1053,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
         <div class="sep"></div>
         <button class="btn" id="btnQuickCapture"><svg class="i"><use href="#i-spark"/></svg><span class="lbl" data-i18n="btnQuickCapture">Schnellerfassung</span></button>
         <button class="btn" id="btnClipboardImport"><svg class="i"><use href="#i-clipboard"/></svg><span class="lbl" data-i18n="btnClipboardImport">Aus Zwischenablage</span></button>
+        <button class="btn" id="btnMailImport" title="E-Mail (.eml oder .msg) einlesen – oder direkt aus Outlook ins Fenster ziehen"><svg class="i"><use href="#i-mail"/></svg><span class="lbl">Mail importieren…</span></button>
       </div>
     </div>
     <div class="menu-wrap">
@@ -1096,6 +1102,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
   </div>
 </div>
 
+<input type="file" id="mailFileInput" accept=".eml,.msg,message/rfc822" multiple hidden>
 <div id="toastHost"></div>
 <div id="confettiHost"></div>
 <div id="printArea"></div>
@@ -4296,6 +4303,7 @@ function openTaskModal(taskId){
       '<div class="task-layout">' +
 
         '<div class="task-main">' +
+          mailBlockHtml(t) +
           '<div class="task-block"><div class="task-block-title">Beschreibung</div>' +
             '<textarea id="fDesc" rows="4" placeholder="Worum geht es?">'+escapeHtml(t.description)+'</textarea>' +
             '<div class="ai-row"><button type="button" class="btn ghost" data-ai="improve">✨ Verbessern</button><button type="button" class="btn ghost" data-ai="summary">✨ Zusammenfassen</button><button type="button" class="btn ghost" data-ai="checklist">✨ Checkliste vorschlagen</button><button type="button" class="btn ghost" data-ai="reply">✨ Antwort entwerfen</button></div>' +
@@ -4552,11 +4560,9 @@ function openTaskModal(taskId){
     }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✨ Aus dem Fall formulieren'; });
   });
   var mailReplyBtn = document.getElementById('mailReplyBtn');
-  if(mailReplyBtn) mailReplyBtn.addEventListener('click', function(){
-    var subject = (t.jiraKey ? '['+t.jiraKey+'] ' : '') + t.title;
-    var body = 'Hallo\n\n\n\nFreundliche Grüsse\n\n---\n' + (t.description ? t.description.slice(0,300) : '');
-    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  });
+  if(mailReplyBtn) mailReplyBtn.addEventListener('click', function(){ openMailto(taskMailtoUrl(t)); });
+  var mailReplyTop = document.getElementById('mailReplyTop');
+  if(mailReplyTop) mailReplyTop.addEventListener('click', function(){ openMailto(taskMailtoUrl(t)); });
   document.getElementById('saveAsTemplateBtn').addEventListener('click', function(){
     state.settings.taskTemplates.push({
       name: t.title, type: t.type, priority: t.priority,
@@ -5240,7 +5246,8 @@ function normalizeDraft(d){
     dueDate: /^\d{4}-\d{2}-\d{2}$/.test(String(d.dueDate || '')) ? d.dueDate : '',
     estimatedMinutes: (typeof d.estimatedMinutes === 'number' && d.estimatedMinutes > 0) ? Math.round(d.estimatedMinutes) : null,
     checklist: Array.isArray(d.checklist) ? d.checklist.map(function(s){ return String(s).trim(); }).filter(Boolean).slice(0, 8) : [],
-    links: cleanLinks(d.links)
+    links: cleanLinks(d.links),
+    mail: d.mail ? normalizeMail(d.mail) : null
   };
 }
 /* Einfache Erfassung ohne KI: erkennt Jira-Key, #Tags, Frist, Telefonnummer, Absender und Dringlichkeit. */
@@ -5267,7 +5274,7 @@ function heuristicDueDate(text){
 function heuristicParse(text){
   var allLines = text.trim().split('\n').filter(function(l){ return l.trim(); });
   var subjMatch = text.match(/^(?:betreff|subject)\s*:\s*(.+)$/im);
-  var bodyLines = allLines.filter(function(l){ return !/^\s*(von|from|an|to|cc|bcc|datum|date|gesendet|sent|betreff|subject|absender)\s*:/i.test(l); });
+  var bodyLines = allLines.filter(function(l){ return !/^\s*(von|from|an|to|cc|bcc|datum|date|gesendet|sent|betreff|subject|absender|anhänge|anhaenge)\s*:/i.test(l); });
   var titleLine = subjMatch ? subjMatch[1] : (bodyLines[0] || allLines[0] || 'Neuer Task');
   var title = titleLine.replace(/^((re|aw|fwd|wg)\s*:\s*)+/i, '').trim().slice(0, 120) || 'Neuer Task';
   var description = (subjMatch ? bodyLines : bodyLines.slice(1)).join('\n');
@@ -5401,6 +5408,8 @@ function openDraftPreview(input, sourceText){
         '<label class="draft-use"><input type="checkbox" class="d-use" checked> <span>'+(drafts.length > 1 ? 'Task '+(i+1) : 'Task')+'</span></label>' +
         (existing ? '<span class="sim-status offen">aktualisiert '+escapeHtml(d.jiraKey)+'</span>' : '') +
       '</div>' +
+      (d.mail && state.tasks.some(function(t){ return t.mail && t.mail.subject === d.mail.subject && t.mail.date === d.mail.date && t.mail.fromEmail === d.mail.fromEmail; }) ? '<div class="hint" style="color:var(--warn); margin:0 0 8px;">⚠️ Diese Mail wurde bereits importiert – es gibt schon einen Task dazu.</div>' : '') +
+      (d.mail ? '<div class="hint" style="margin:0 0 8px;">✉️ ' + escapeHtml(d.mail.from || '') + (d.mail.attachments.length ? ' · ' + d.mail.attachments.length + ' Anhang/Anhänge' : '') + '</div>' : '') +
       (existing ? '<div class="hint" style="color:var(--warn); margin:0 0 8px;">Es gibt bereits einen Task mit Ticket '+escapeHtml(d.jiraKey)+' ("'+escapeHtml(existing.title)+'"). Er wird aktualisiert statt dupliziert.</div>' : '') +
       (d.links.length ? '<div class="hint" style="margin:0 0 8px;">Link wird hinzugefügt: '+d.links.map(function(l){ return escapeHtml(l.label || l.url); }).join(', ')+'</div>' : '') +
       '<div class="form-row"><label>Titel</label><input class="d-title" value="'+escapeAttr(d.title)+'"></div>' +
@@ -5455,6 +5464,10 @@ function openDraftPreview(input, sourceText){
       };
       var checklist = card.querySelector('.d-check').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean).map(function(s){ return {text: s, done: false}; });
       var existing = payload.jiraKey ? state.tasks.find(function(t){ return t.jiraKey === payload.jiraKey && !t.archived; }) : null;
+      if(d.mail){
+        payload.mail = d.mail;
+        if(!existing && d.mail.attachments && d.mail.attachments.length) payload.notes = [{ts: nowIso(), text: '📎 Anhänge der Mail (nicht gespeichert): ' + d.mail.attachments.join(', ')}];
+      }
       if(existing){
         (d.links || []).forEach(function(l){
           if(!existing.links.some(function(el){ return el.url === l.url; })) existing.links.push(l);
@@ -5481,6 +5494,7 @@ function openDraftPreview(input, sourceText){
 function taskAiContext(t){
   var lines = ['Titel: ' + t.title, 'Typ: ' + (TYPES[t.type] || TYPES.adhoc).label];
   if(t.reporter) lines.push('Reporter: ' + t.reporter);
+  if(t.mail) lines.push('Ursprüngliche Mail von ' + t.mail.from + (t.mail.fromEmail ? ' <' + t.mail.fromEmail + '>' : '') + ', Betreff: ' + t.mail.subject);
   if(t.jiraKey) lines.push('Ticket: ' + t.jiraKey);
   if(t.description) lines.push('Beschreibung:\n' + t.description);
   if(t.notes.length) lines.push('Notizen:\n' + t.notes.map(function(n){ return '- ' + n.text; }).join('\n'));
@@ -5543,7 +5557,7 @@ function runTaskAi(kind, taskId){
     } else {
       showAiResult(box, text, [
         {label:'Kopieren', primary:true, fn:function(){ copyToClipboard(text); toast('Antwort kopiert.'); }},
-        {label:'Mail öffnen', fn:function(){ window.location.href = 'mailto:?subject=' + encodeURIComponent((t.jiraKey ? '[' + t.jiraKey + '] ' : '') + t.title) + '&body=' + encodeURIComponent(text); }},
+        {label:'Mail öffnen', fn:function(){ openMailto(taskMailtoUrl(t, text)); }},
         {label:'Verwerfen', fn:done}
       ]);
     }
@@ -8690,6 +8704,7 @@ function cmdActionsList(){
     {icon:'🗓️', label:'Planer (Wochenansicht)', run: function(){ switchToView('calendar'); }},
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'👥', label:'Team-Ansicht', run: function(){ switchToView('teamdash'); }},
+    {icon:'✉️', label:'Mail importieren (.eml / .msg)', run: openMailFilePicker},
     {icon:'🤖', label:'Automatisierung (Regeln)', run: function(){ settingsActiveTab = 'automation'; openSettings(); }},
     {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
     {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
@@ -9060,6 +9075,7 @@ document.getElementById('bulkClearBtn').addEventListener('click', function(){
 });
 document.getElementById('btnArchive').addEventListener('click', toggleArchiveView);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
+document.getElementById('btnMailImport').addEventListener('click', openMailFilePicker);
 document.getElementById('btnQuickSave').addEventListener('click', exportBackup);
 function renderSidebarActive(){
   document.querySelectorAll('#sidebar [data-view]').forEach(function(el){
@@ -11081,6 +11097,364 @@ function renderTeamView(){
   board.innerHTML = html;
   board.querySelectorAll('[data-trange]').forEach(function(btn){ btn.addEventListener('click', function(){ teamRange = btn.dataset.trange; renderTeamView(); }); });
   board.querySelectorAll('[data-open-task]').forEach(function(el){ el.addEventListener('click', function(e){ e.preventDefault(); openTaskModal(el.dataset.openTask); }); });
+}
+
+/* =========================================================
+   MAIL-IMPORT (.eml und Outlook-.msg per Drag & Drop)
+   E-Mails werden lokal im Browser gelesen (nichts wird hochgeladen) und über die
+   Schnellerfassung (KI oder einfache Erkennung) zu Tasks. Der Task merkt sich Absender,
+   Betreff, Datum und die Namen der Anhänge (die Dateien selbst werden nicht gespeichert).
+   Die Antwort öffnet das Mailprogramm mit Empfänger, "AW:"-Betreff und zitiertem Original.
+   ========================================================= */
+function mailBinToBytes(bin){
+  var u = new Uint8Array(bin.length);
+  for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i) & 255;
+  return u;
+}
+function mailBufToBin(buf){
+  var u = new Uint8Array(buf), out = '';
+  for(var i = 0; i < u.length; i += 8192) out += String.fromCharCode.apply(null, u.subarray(i, i + 8192));
+  return out;
+}
+function mailCharset(cs){
+  cs = String(cs || 'utf-8').toLowerCase().replace(/^["']|["']$/g, '').trim();
+  if(cs === 'us-ascii' || cs === 'ascii' || cs === '') return 'utf-8';
+  if(cs === 'iso-8859-1' || cs === 'latin1' || cs === 'iso8859-1') return 'windows-1252';
+  try{ new TextDecoder(cs); return cs; }catch(e){ return 'windows-1252'; }
+}
+function mailDecodeBytes(bytes, cs){
+  try{ return new TextDecoder(mailCharset(cs)).decode(bytes); }catch(e){ return new TextDecoder('windows-1252').decode(bytes); }
+}
+function mailQpBytes(str){
+  var out = [];
+  for(var i = 0; i < str.length; i++){
+    var ch = str.charAt(i);
+    if(ch === '='){
+      var hex = str.substr(i + 1, 2);
+      if(/^[0-9A-Fa-f]{2}$/.test(hex)){ out.push(parseInt(hex, 16)); i += 2; continue; }
+      if(/^\r?\n/.test(str.substr(i + 1, 2))){ i += (str.charAt(i + 1) === '\r' ? 2 : 1); continue; }
+    }
+    out.push(str.charCodeAt(i) & 255);
+  }
+  return new Uint8Array(out);
+}
+function mailDecodeWords(s){
+  s = String(s || '').replace(/(\?=)\s+(=\?)/g, '$1$2');
+  var out = s.replace(/=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g, function(m, cs, enc, txt){
+    try{
+      var bytes = enc.toLowerCase() === 'b' ? b64ToBuf(txt.replace(/\s+/g, '')) : mailQpBytes(txt.replace(/_/g, ' '));
+      return mailDecodeBytes(bytes, cs);
+    }catch(e){ return txt; }
+  });
+  if(/[\u0080-\u00ff]/.test(out) && !/[^\u0000-\u00ff]/.test(out)){
+    try{ out = new TextDecoder('utf-8', {fatal: true}).decode(mailBinToBytes(out)); }catch(e){}
+  }
+  return out;
+}
+function mailHeaders(raw){
+  var h = {};
+  raw.replace(/\r?\n[ \t]+/g, ' ').split(/\r?\n/).forEach(function(line){
+    var i = line.indexOf(':');
+    if(i < 1) return;
+    var k = line.slice(0, i).trim().toLowerCase();
+    if(h[k] === undefined) h[k] = line.slice(i + 1).trim();
+  });
+  return h;
+}
+function mailParam(value, name){
+  var v = String(value || '');
+  var star = v.match(new RegExp(name + '\\*\\s*=\\s*([^\']*)\'[^\']*\'([^;\\s]+)', 'i'));
+  if(star){ try{ return decodeURIComponent(star[2]); }catch(e){} }
+  var m = v.match(new RegExp('(?:^|[;\\s])' + name + '\\s*=\\s*(?:"([^"]*)"|([^;\\s]+))', 'i'));
+  return m ? mailDecodeWords(m[1] != null ? m[1] : m[2]) : '';
+}
+function mailPartBytes(body, enc){
+  enc = String(enc || '').toLowerCase();
+  if(enc === 'base64') return b64ToBuf(body.replace(/[^A-Za-z0-9+\/=]/g, ''));
+  if(enc === 'quoted-printable') return mailQpBytes(body);
+  return mailBinToBytes(body);
+}
+function mailHtmlToText(html){
+  var t = String(html || '').replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|tr|li|h[1-6]|table)>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<[^>]+>/g, '');
+  var ents = {nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ss', euro: '€'};
+  t = t.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, function(m, e){
+    if(e.charAt(0) === '#'){ var n = e.charAt(1).toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); return n ? String.fromCodePoint(n) : ''; }
+    return ents[e] !== undefined ? ents[e] : m;
+  });
+  return t.replace(/[ \t\u00a0]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function mailWalk(entityBin, out){
+  var m = entityBin.search(/\r?\n\r?\n/);
+  var rawHead = m < 0 ? entityBin : entityBin.slice(0, m);
+  var body = m < 0 ? '' : entityBin.slice(m).replace(/^\r?\n\r?\n/, '');
+  var h = mailHeaders(rawHead);
+  if(out.top === undefined) out.top = h;
+  var ct = h['content-type'] || 'text/plain';
+  var mime = ct.split(';')[0].trim().toLowerCase();
+  var disp = h['content-disposition'] || '';
+  var fname = mailParam(disp, 'filename') || mailParam(ct, 'name');
+  if(mime.indexOf('multipart/') === 0){
+    var boundary = mailParam(ct, 'boundary');
+    if(!boundary) return;
+    var parts = body.split('--' + boundary);
+    for(var i = 1; i < parts.length; i++){
+      if(/^--/.test(parts[i])) break;
+      mailWalk(parts[i].replace(/^\r?\n/, ''), out);
+    }
+    return;
+  }
+  var enc = h['content-transfer-encoding'];
+  if(fname || /^\s*attachment/i.test(disp) || mime === 'message/rfc822'){
+    if(out.attachments.length < 30){
+      var est = enc && /base64/i.test(enc) ? Math.round(body.replace(/\s/g, '').length * 0.75) : body.length;
+      out.attachments.push({name: fname || (mime === 'message/rfc822' ? 'Weitergeleitete Nachricht.eml' : 'Anhang'), size: est});
+    }
+    return;
+  }
+  if(mime === 'text/plain' || mime === 'text/html'){
+    var txt = mailDecodeBytes(mailPartBytes(body, enc), mailParam(ct, 'charset'));
+    if(mime === 'text/html') out.html += txt; else out.text += txt + '\n';
+  }
+}
+function mailAddress(v){
+  v = mailDecodeWords(String(v || '')).trim();
+  var m = v.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>/);
+  if(m) return {name: m[1].trim(), email: m[2].trim()};
+  if(/^[^\s@]+@[^\s@]+$/.test(v)) return {name: '', email: v};
+  return {name: v, email: ''};
+}
+function mailFinish(m){
+  var text = (m.text || '').trim();
+  if(!text && m.html) text = mailHtmlToText(m.html);
+  text = text.replace(/\r\n/g, '\n');
+  /* zitierte Vorgänger-Mails abschneiden */
+  var cut = text.search(/\n\s*(?:-{3,}\s*(?:Ursprüngliche Nachricht|Original Message|Urspr)[^\n]*|_{10,}|Von:\s[^\n]+\n\s*(?:Gesendet|Datum|Sent|An):|From:\s[^\n]+\n\s*(?:Sent|Date|To):|Am [^\n]{5,80} schrieb [^\n]{0,80}:|On [^\n]{5,80} wrote:)/i);
+  if(cut > 60) text = text.slice(0, cut).trim();
+  m.text = text.slice(0, 8000);
+  m.subject = String(m.subject || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+  return m;
+}
+function parseEml(buf){
+  var bin = mailBufToBin(buf);
+  var out = {text: '', html: '', attachments: []};
+  mailWalk(bin, out);
+  var h = out.top || {};
+  var from = mailAddress(h['from']);
+  var dt = h['date'] ? new Date(h['date']) : null;
+  return mailFinish({
+    subject: mailDecodeWords(h['subject']), fromName: from.name, fromEmail: from.email, to: mailDecodeWords(h['to'] || ''),
+    date: dt && !isNaN(dt.getTime()) ? dt.toISOString() : '', text: out.text, html: out.html,
+    attachments: out.attachments.map(function(a){ return a.name; })
+  });
+}
+/* ---- Outlook .msg (OLE/CFB-Container) ---- */
+function parseMsg(buf){
+  var u8 = new Uint8Array(buf), dv = new DataView(buf);
+  if(u8.length < 512 || dv.getUint32(0, true) !== 0xE011CFD0 || dv.getUint32(4, true) !== 0xE11AB1A1) throw new Error('Keine Outlook-Nachricht (.msg).');
+  var ss = 1 << dv.getUint16(30, true), mss = 1 << dv.getUint16(32, true);
+  var dirStart = dv.getUint32(48, true), cutoff = dv.getUint32(56, true), miniStart = dv.getUint32(60, true), difStart = dv.getUint32(68, true), nDif = dv.getUint32(72, true);
+  var MAXREG = 0xFFFFFFFA;
+  function secOff(id){ return (id + 1) * ss; }
+  var fatSecs = [];
+  for(var i = 0; i < 109; i++){ var s0 = dv.getUint32(76 + i * 4, true); if(s0 < MAXREG) fatSecs.push(s0); }
+  var d = difStart, guard = 0;
+  while(d < MAXREG && nDif-- > 0 && guard++ < 2000){
+    var off = secOff(d);
+    for(var j = 0; j < ss / 4 - 1; j++){ var sj = dv.getUint32(off + j * 4, true); if(sj < MAXREG) fatSecs.push(sj); }
+    d = dv.getUint32(off + ss - 4, true);
+  }
+  var fat = [];
+  fatSecs.forEach(function(fs){ var o = secOff(fs); for(var k = 0; k < ss / 4; k++) fat.push(dv.getUint32(o + k * 4, true)); });
+  function fatChain(start){
+    var parts = [], id = start, g = 0, total = 0;
+    while(id < MAXREG && g++ < 200000){
+      var o = secOff(id);
+      if(o + ss > u8.length) break;
+      parts.push(u8.subarray(o, o + ss)); total += ss;
+      id = fat[id];
+      if(id === undefined) break;
+    }
+    var out = new Uint8Array(total), p = 0;
+    parts.forEach(function(x){ out.set(x, p); p += x.length; });
+    return out;
+  }
+  var dirBytes = fatChain(dirStart), ddv = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+  var entries = [];
+  for(var e = 0; e + 128 <= dirBytes.length; e += 128){
+    var nlen = ddv.getUint16(e + 64, true), name = '';
+    for(var c = 0; c + 2 <= Math.max(0, nlen - 2); c += 2) name += String.fromCharCode(ddv.getUint16(e + c, true));
+    entries.push({name: name, type: dirBytes[e + 66], left: ddv.getUint32(e + 68, true), right: ddv.getUint32(e + 72, true), child: ddv.getUint32(e + 76, true), start: ddv.getUint32(e + 116, true), size: ddv.getUint32(e + 120, true)});
+  }
+  if(!entries.length) throw new Error('Leeres .msg.');
+  var root = entries[0];
+  var mini = fatChain(root.start);
+  var miniFatBytes = fatChain(miniStart), miniFat = [];
+  var mdv = new DataView(miniFatBytes.buffer, miniFatBytes.byteOffset, miniFatBytes.byteLength);
+  for(var q = 0; q + 4 <= miniFatBytes.length; q += 4) miniFat.push(mdv.getUint32(q, true));
+  function readStream(en){
+    if(en.size < cutoff){
+      var parts = [], id = en.start, g = 0;
+      while(id < MAXREG && g++ < 100000){ var o = id * mss; parts.push(mini.subarray(o, o + mss)); id = miniFat[id]; if(id === undefined) break; }
+      var out = new Uint8Array(parts.length * mss), p = 0;
+      parts.forEach(function(x){ out.set(x, p); p += x.length; });
+      return out.subarray(0, en.size);
+    }
+    return fatChain(en.start).subarray(0, en.size);
+  }
+  function kids(en){
+    var out = [], seen = {};
+    (function walk(id){
+      if(id >= MAXREG || seen[id] || id >= entries.length || out.length > 3000) return;
+      seen[id] = 1;
+      var x = entries[id];
+      walk(x.left); out.push(x); walk(x.right);
+    })(en.child);
+    return out;
+  }
+  function propsOf(en){
+    var map = {};
+    kids(en).forEach(function(x){
+      var m = x.name.match(/^__substg1\.0_([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})$/);
+      if(m && x.type === 2) map[m[1].toUpperCase()] = {type: m[2].toUpperCase(), entry: x};
+    });
+    return map;
+  }
+  function str(p){
+    if(!p) return '';
+    var bytes = readStream(p.entry);
+    var t = p.type === '001F' ? new TextDecoder('utf-16le').decode(bytes) : (p.type === '001E' ? new TextDecoder('windows-1252').decode(bytes) : mailDecodeBytes(bytes, 'utf-8'));
+    return t.replace(/\u0000+$/, '');
+  }
+  var props = propsOf(root);
+  var hdr = props['007D'] ? mailHeaders(str(props['007D'])) : {};
+  var fromAddr = hdr['from'] ? mailAddress(hdr['from']) : {name: '', email: ''};
+  var email = str(props['5D01']) || str(props['0C1F']) || fromAddr.email;
+  if(/^\/o=/i.test(email)) email = fromAddr.email || str(props['5D01']) || '';
+  var name = str(props['0C1A']) || str(props['0042']) || fromAddr.name;
+  var date = '';
+  var pe = kids(root).find(function(x){ return x.name === '__properties_version1.0'; });
+  if(pe){
+    var pb = readStream(pe), pdv = new DataView(pb.buffer, pb.byteOffset, pb.byteLength);
+    for(var o = 32; o + 16 <= pb.length; o += 16){
+      var ptype = pdv.getUint16(o, true), pid = pdv.getUint16(o + 2, true);
+      if(ptype === 0x0040 && (pid === 0x0039 || pid === 0x0E06)){
+        var ms = pdv.getUint32(o + 12, true) * 429496.7296 + pdv.getUint32(o + 8, true) / 10000 - 11644473600000;
+        if(ms > 0){ date = new Date(ms).toISOString(); if(pid === 0x0039) break; }
+      }
+    }
+  }
+  if(!date && hdr['date']){ var hd = new Date(hdr['date']); if(!isNaN(hd.getTime())) date = hd.toISOString(); }
+  var atts = [];
+  kids(root).forEach(function(x){
+    if(x.type === 1 && /^__attach_version1\.0_/.test(x.name)){
+      var ap = propsOf(x);
+      var an = str(ap['3707']) || str(ap['3704']) || str(ap['3001']);
+      if(an && atts.length < 30) atts.push(an);
+    }
+  });
+  var html = '';
+  if(props['1013']){ var hb = readStream(props['1013'].entry); html = props['1013'].type === '001F' ? new TextDecoder('utf-16le').decode(hb) : mailDecodeBytes(hb, 'utf-8'); }
+  return mailFinish({
+    subject: str(props['0037']), fromName: name, fromEmail: email, to: str(props['0E04']), date: date,
+    text: str(props['1000']), html: html, attachments: atts
+  });
+}
+function parseMailFile(file, buf){
+  var u = new Uint8Array(buf.slice(0, 8));
+  var isOle = u[0] === 0xD0 && u[1] === 0xCF && u[2] === 0x11 && u[3] === 0xE0;
+  return isOle ? parseMsg(buf) : parseEml(buf);
+}
+function mailCaptureText(m){
+  return 'Von: ' + (m.fromName ? m.fromName + (m.fromEmail ? ' <' + m.fromEmail + '>' : '') : m.fromEmail) + '\n' +
+    'Betreff: ' + m.subject + '\n' + (m.date ? 'Datum: ' + new Date(m.date).toLocaleString('de-CH') + '\n' : '') +
+    (m.attachments.length ? 'Anhänge: ' + m.attachments.join(', ') + '\n' : '') + '\n' + m.text;
+}
+function mailMeta(m){
+  return normalizeMail({from: m.fromName || m.fromEmail, fromEmail: m.fromEmail, subject: m.subject, date: m.date, to: m.to, attachments: m.attachments});
+}
+function importMailFiles(files){
+  files = [].slice.call(files).filter(function(f){ return /\.(eml|msg)$/i.test(f.name) || f.type === 'message/rfc822'; }).slice(0, 8);
+  if(!files.length){ toast('Bitte Mails als .eml oder .msg ablegen (aus Outlook in dieses Fenster ziehen).'); return; }
+  toast('✉️ Lese ' + files.length + ' Mail' + (files.length === 1 ? '' : 's') + '…');
+  var jobs = files.map(function(f){
+    if(f.size > 25 * 1024 * 1024) return Promise.resolve({error: f.name + ': Datei ist zu gross (über 25 MB).'});
+    return f.arrayBuffer().then(function(buf){
+      var m = parseMailFile(f, buf);
+      if(!m.subject && !m.text) throw new Error('keine lesbaren Inhalte');
+      return processQuickCapture(mailCaptureText(m)).catch(function(){ return [normalizeDraft(heuristicParse(mailCaptureText(m)))]; }).then(function(drafts){
+        var meta = mailMeta(m);
+        drafts.forEach(function(d){ d.mail = meta; d.type = 'mail'; if(!d.reporter) d.reporter = m.fromName || ''; });
+        return {drafts: drafts, mail: m};
+      });
+    }).catch(function(err){ return {error: f.name + ': ' + err.message}; });
+  });
+  Promise.all(jobs).then(function(results){
+    var drafts = [], errors = [];
+    results.forEach(function(r){ if(r.error) errors.push(r.error); else drafts = drafts.concat(r.drafts); });
+    if(errors.length) toast('⚠️ ' + errors.join(' · ') + ' – alternativ den Mailtext mit Strg+V einfügen.', 9000);
+    if(drafts.length) openDraftPreview(drafts.slice(0, 12), '');
+  });
+}
+/* Drag & Drop auf das ganze Fenster */
+(function(){
+  var overlay = null, depth = 0;
+  function hasFiles(e){ return e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
+  function show(){
+    if(!overlay){
+      overlay = document.createElement('div');
+      overlay.id = 'mailDrop';
+      overlay.innerHTML = '<div><div style="font-size:44px;">✉️</div><b>Mail hier ablegen</b><div class="hint">.eml oder .msg aus Outlook – daraus wird ein Task</div></div>';
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add('show');
+  }
+  function hide(){ depth = 0; if(overlay) overlay.classList.remove('show'); }
+  document.addEventListener('dragenter', function(e){
+    if(!hasFiles(e) || draggedTaskId || !document.getElementById('authOverlay').classList.contains('hidden')) return;
+    depth++; show();
+  });
+  document.addEventListener('dragover', function(e){ if(hasFiles(e)){ e.preventDefault(); } });
+  document.addEventListener('dragleave', function(e){ if(!hasFiles(e)) return; depth = Math.max(0, depth - 1); if(!depth) hide(); });
+  document.addEventListener('drop', function(e){
+    if(!hasFiles(e)) return;
+    e.preventDefault(); hide();
+    if(!document.getElementById('authOverlay').classList.contains('hidden')) return;
+    var files = e.dataTransfer.files;
+    if(files && files.length) importMailFiles(files);
+  });
+})();
+function openMailFilePicker(){
+  var inp = document.getElementById('mailFileInput');
+  if(inp) inp.click();
+}
+document.getElementById('mailFileInput').addEventListener('change', function(e){
+  if(e.target.files && e.target.files.length) importMailFiles(e.target.files);
+  e.target.value = '';
+});
+/* Mail-Antwort: Empfänger, AW:-Betreff und zitiertes Original */
+function openMailto(url){ window.__lastMailto = url; window.location.href = url; }
+function taskMailtoUrl(t, body){
+  var m = t.mail;
+  var subj = m && m.subject ? (/^(aw|re|wg|fwd)\s*:/i.test(m.subject) ? m.subject : 'AW: ' + m.subject) : ((t.jiraKey ? '[' + t.jiraKey + '] ' : '') + t.title);
+  var greet = m && (m.from || t.reporter) ? 'Guten Tag ' + String(m.from || t.reporter).split(/[ ,]/)[0].replace(/^(herr|frau)$/i, '') : 'Guten Tag';
+  var text = body != null ? body : (greet.trim() + '\n\n\n\nFreundliche Grüsse\n' + (currentUser ? currentUser.displayName : ''));
+  var quote = '';
+  if(m){
+    quote = '\n\n---- Ursprüngliche Nachricht ----\nVon: ' + (m.from || '') + (m.fromEmail ? ' <' + m.fromEmail + '>' : '') + '\n' + (m.date ? 'Datum: ' + new Date(m.date).toLocaleString('de-CH') + '\n' : '') + 'Betreff: ' + m.subject + '\n\n' + String(t.description || '').slice(0, 700);
+  } else if(t.description){ quote = '\n\n---\n' + t.description.slice(0, 300); }
+  var url = 'mailto:' + (m && m.fromEmail ? encodeURIComponent(m.fromEmail) : '') + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent((text + quote).slice(0, 1700));
+  return url;
+}
+function mailBlockHtml(t){
+  var m = t.mail;
+  if(!m) return '';
+  return '<div class="task-block mail-block"><div class="task-block-title">E-Mail<span class="task-block-sub">importiert</span></div>' +
+    '<div class="mail-meta"><div><b>' + escapeHtml(m.from || '–') + '</b>' + (m.fromEmail ? ' &lt;' + escapeHtml(m.fromEmail) + '&gt;' : '') + '</div>' +
+    '<div>' + escapeHtml(m.subject || '(ohne Betreff)') + '</div>' +
+    '<div class="hint">' + (m.date ? new Date(m.date).toLocaleString('de-CH') : '') + (m.to ? ' · an ' + escapeHtml(m.to.slice(0, 80)) : '') + '</div>' +
+    (m.attachments && m.attachments.length ? '<div class="mail-att">' + m.attachments.map(function(a){ return '<span class="chip">📎 ' + escapeHtml(a) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
+    '<div class="ai-row"><button type="button" class="btn primary" id="mailReplyTop">✉️ Antworten</button><button type="button" class="btn ghost" data-ai="reply">✨ Antwort mit KI entwerfen</button></div></div>';
 }
 
 /*@@EXTRA-JS@@*/
