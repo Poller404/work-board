@@ -201,6 +201,107 @@ In ⚙️ Einstellungen → **☁️ Cloud-Speicher** siehst du den Status und k
 - Der optionale **GitHub-Token** in den Einstellungen (Scope `gist`) wird nur noch für
   "🔗 Read-only-Link teilen" gebraucht.
 
+## 👥 Geteilte Boards (Zusammenarbeit)
+
+Mehrere Personen können am selben Board arbeiten, Tasks zuweisen und Zeit erfassen – weiterhin
+**Ende-zu-Ende-verschlüsselt** (Supabase und Admins sehen nur Chiffretext).
+
+**Benutzung:**
+- Oben links auf den Boardnamen klicken: **Meine Boards**, **Geteilte Boards**, "Neues Board…" (persönlich oder geteilt)
+  und "Dieses Board teilen…" (legt eine geteilte Kopie des aktuellen persönlichen Boards an).
+- Im geteilten Board: **Mitglieder verwalten…** (Person hinzufügen oder entfernen, Board umbenennen, verlassen oder löschen).
+- Tasks lassen sich im Task-Fenster oder per Rechtsklick **zuweisen**. Die Zuweisung erscheint als Namens-Chip auf der Karte,
+  es gibt den Filter **"Mir zugewiesen"** und die Ansicht **"Nach Person"**. Wer eine Zuweisung bekommt, sieht einen Hinweis.
+- Zeiterfassung ist **pro Person**: Du siehst die Gesamtzeit eines Tasks, deine Tages- und Wochenzeiten zählen nur deine eigenen Sitzungen.
+- Der **Name**, der bei Zuweisungen erscheint, wird bei der Registrierung abgefragt und lässt sich unter ⚙️ Einstellungen → Konto ändern.
+
+**Einrichtung (einmalig, im Supabase SQL-Editor):**
+
+```sql
+-- Öffentlicher Schlüssel im Profil
+alter table profiles add column if not exists public_key text;
+
+-- Privater Schlüssel, mit der eigenen Passphrase verschlüsselt (nur die eigene Zeile)
+create table user_keys (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  private_key_enc text not null,
+  updated_at timestamptz not null default now()
+);
+alter table user_keys enable row level security;
+create policy "Eigenen Schluessel lesen" on user_keys for select to authenticated using (auth.uid() = user_id);
+create policy "Eigenen Schluessel anlegen" on user_keys for insert to authenticated with check (auth.uid() = user_id);
+create policy "Eigenen Schluessel aendern" on user_keys for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Eigenen Schluessel loeschen" on user_keys for delete to authenticated using (auth.uid() = user_id);
+
+-- Geteilte Boards und ihre Mitglieder
+create table shared_boards (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  payload text not null,
+  version integer not null default 1,
+  updated_at timestamptz not null default now()
+);
+create table board_members (
+  board_id uuid not null references shared_boards(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'editor' check (role in ('owner','editor')),
+  wrapped_key text not null,
+  wrapper_id uuid not null references auth.users(id),
+  created_at timestamptz not null default now(),
+  primary key (board_id, user_id)
+);
+alter table shared_boards enable row level security;
+alter table board_members enable row level security;
+
+create function is_board_member(b uuid) returns boolean
+  language sql security definer stable set search_path = public
+  as $$ select exists (select 1 from board_members where board_id = b and user_id = auth.uid()) $$;
+create function is_board_owner(b uuid) returns boolean
+  language sql security definer stable set search_path = public
+  as $$ select exists (select 1 from board_members where board_id = b and user_id = auth.uid() and role = 'owner') $$;
+
+create policy "Board lesen" on shared_boards for select to authenticated
+  using (is_board_member(id) or owner_id = auth.uid());
+create policy "Board anlegen" on shared_boards for insert to authenticated
+  with check (owner_id = auth.uid());
+create policy "Board aendern" on shared_boards for update to authenticated
+  using (is_board_member(id)) with check (is_board_member(id));
+create policy "Board loeschen" on shared_boards for delete to authenticated
+  using (owner_id = auth.uid());
+
+create policy "Mitglieder sehen" on board_members for select to authenticated
+  using (user_id = auth.uid() or is_board_member(board_id));
+create policy "Mitglieder hinzufuegen" on board_members for insert to authenticated
+  with check (is_board_owner(board_id) or (user_id = auth.uid() and role = 'owner'
+    and exists (select 1 from shared_boards b where b.id = board_id and b.owner_id = auth.uid())));
+create policy "Mitglieder aendern" on board_members for update to authenticated
+  using (is_board_owner(board_id)) with check (is_board_owner(board_id));
+create policy "Entfernen oder verlassen" on board_members for delete to authenticated
+  using (is_board_owner(board_id) or user_id = auth.uid());
+
+-- Rechte (neue Supabase-Projekte vergeben sie nicht mehr automatisch).
+-- Bei shared_boards sind nur Inhalt, Version und Zeitstempel änderbar, nicht der Eigentümer.
+grant select, insert, delete on shared_boards to authenticated;
+grant update (payload, version, updated_at) on shared_boards to authenticated;
+grant select, insert, update, delete on board_members to authenticated;
+grant select, insert, update, delete on user_keys to authenticated;
+```
+
+**So ist es abgesichert:**
+- Jedes Board hat einen zufälligen AES-256-Schlüssel. Pro Mitglied wird er per ECDH (P-256) für dessen öffentlichen
+  Schlüssel verpackt; nur diese Person kann ihn öffnen. Der private Schlüssel liegt nur mit der eigenen Passphrase
+  verschlüsselt in Supabase (`user_keys`).
+- Wird jemand entfernt, bekommt das Board einen **neuen Schlüssel** (für die Verbleibenden neu verpackt).
+- **Gleichzeitiges Arbeiten:** Änderungen werden Task für Task zusammengeführt (Drei-Wege-Abgleich mit Versionsprüfung).
+  Bearbeiten zwei Personen verschiedene Tasks, bleiben beide Änderungen. Am selben Task gewinnt der neuere Stand,
+  Notizen, Verlauf und Zeitsitzungen werden vereinigt. Löschen gewinnt nur, wenn niemand den Task inzwischen geändert hat.
+- **Einschränkung:** Welcher öffentliche Schlüssel zu welcher Person gehört, liefert Supabase selbst. Wer das
+  Supabase-Projekt kontrolliert, könnte theoretisch einen falschen Schlüssel unterschieben. Für ein Team im selben
+  Unternehmen ist das ein vertretbarer Kompromiss.
+- **Passphrase vergessen:** Dann gehen auch die Schlüssel für geteilte Boards verloren; andere Mitglieder behalten ihren
+  Zugriff und können dich nach dem Neustart erneut hinzufügen.
+- Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
+
 ## 🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)
 
 Für Momente, in denen zwei Personen als Management schnell mitbekommen sollen, dass sich etwas

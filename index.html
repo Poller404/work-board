@@ -653,6 +653,31 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .draft-use{display:flex; align-items:center; gap:8px; cursor:pointer;}
 .draft-card textarea{width:100%;}
 
+/* ---- Board-Umschalter und Zusammenarbeit ---- */
+.sb-brand-wrap{position:relative;}
+.sb-brand{display:flex; align-items:center; gap:10px; width:100%; padding:6px 8px; margin-bottom:10px; border:0; background:transparent; border-radius:var(--radius-sm); text-align:left; color:var(--text); cursor:pointer;}
+.sb-brand:hover{background:var(--hover);}
+.sb-brand-text{display:flex; flex-direction:column; min-width:0; flex:1;}
+.sb-caret{color:var(--text-faint);}
+.sb-brand-wrap.shared .sb-logo{background:var(--accent); color:#fff;}
+#boardMenu{position:fixed; z-index:1100; min-width:260px; max-width:320px;}
+#boardMenu .btn.on{color:var(--accent);}
+.menu-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600; padding:8px 10px 4px;}
+.menu-note{padding:2px 10px 8px; font-size:12.5px; color:var(--text-faint);}
+.menu-note.err{color:var(--danger);}
+.assignee-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); align-self:flex-start;}
+.assignee-chip .sb-avatar{width:20px; height:20px; font-size:10px;}
+.assignee-chip.me{color:var(--accent); font-weight:600;}
+.member-list{display:flex; flex-direction:column; gap:2px;}
+.member-row{display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:8px;}
+.member-row:hover{background:var(--hover);}
+.member-name{flex:1; min-width:0; display:flex; flex-direction:column; font-weight:500;}
+.member-mail{font-size:12px; color:var(--text-faint); font-weight:400;}
+@media (min-width:681px){
+  body.sb-collapsed .sb-brand-text, body.sb-collapsed .sb-caret{display:none;}
+  body.sb-collapsed .sb-brand{justify-content:center; padding:6px 0;}
+}
+
 /* ---- Print view ---- */
 #printArea{display:none;}
 @media print{
@@ -790,7 +815,7 @@ button.mobile-only{display:none;}
 </svg>
 <div id="app">
   <aside id="sidebar" aria-label="Navigation">
-    <div class="sb-brand"><span class="sb-logo">W</span><div><div class="sb-name">Work Board</div><div class="sb-board" id="boardNameLabel"></div></div></div>
+    <div class="menu-wrap sb-brand-wrap"><button class="sb-brand" id="boardSwitchBtn" aria-haspopup="true" title="Board wechseln"><span class="sb-logo">W</span><span class="sb-brand-text"><span class="sb-name">Work Board</span><span class="sb-board" id="boardNameLabel"></span></span><svg class="i sb-caret"><use href="#i-chevron"/></svg></button><div class="menu" id="boardMenu"></div></div>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Kalender</span></button>
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
@@ -1108,6 +1133,7 @@ function normalizeTask(t){
   if(typeof t.taskGroup !== 'string') t.taskGroup = '';
   if(typeof t.scheduledAt !== 'string') t.scheduledAt = '';
   if(typeof t.reporter !== 'string') t.reporter = '';
+  if(typeof t.assigneeId !== 'string') t.assigneeId = '';
   if(typeof t.phone !== 'string') t.phone = '';
   return t;
 }
@@ -1185,7 +1211,7 @@ function ensurePermission(handle){
 }
 function writeStateToHandle(handle){
   return handle.createWritable().then(function(writable){
-    return writable.write(JSON.stringify(state, null, 2)).then(function(){
+    return writable.write(serializePersonalState(2)).then(function(){
       return writable.close();
     });
   }).then(function(){
@@ -1222,8 +1248,7 @@ function pickExistingFile(){
       var data = text ? JSON.parse(text) : null;
       fileHandle = handle;
       return idbSet('fileHandle', handle).then(function(){
-        state = migrateState(data);
-        state.settings.storageMode = 'file';
+        withPersonalState(function(){ state = migrateState(data); state.settings.storageMode = 'file'; });
         lastWriteAt = Date.now();
         renderAll();
         toast('Datei geladen und verbunden.');
@@ -1270,6 +1295,7 @@ function save(){
     doSave();
   }, 600);
   scheduleCloudPush();
+  scheduleSharedPush();
 }
 function doSave(){
   var label = document.getElementById('saveLabel');
@@ -1281,7 +1307,8 @@ function doSave(){
     });
   } else {
     try{
-      localStorage.setItem('kanban-state-backup', JSON.stringify(state));
+      localStorage.setItem('kanban-state-backup', serializePersonalState());
+      if(activeShared) sharedCacheSave();
       if(label) label.textContent = 'Im Browser gespeichert ' + new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
     }catch(e){}
   }
@@ -1322,7 +1349,8 @@ function createTask(partial){
     taskGroup: '',
     scheduledAt: '',
     reporter: '',
-    phone: ''
+    phone: '',
+    assigneeId: ''
   }, partial || {});
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
@@ -1422,6 +1450,7 @@ function totalSeconds(task){
 function secondsInRange(task, startMs, endMs){
   var sum = 0;
   task.timeSessions.forEach(function(s){
+    if(!isMySession(s)) return;
     var sStart = new Date(s.start).getTime();
     var sEnd = s.end ? new Date(s.end).getTime() : Date.now();
     var overlapStart = Math.max(sStart, startMs);
@@ -1465,9 +1494,9 @@ function startTimer(taskId){
   }
   var t = getTask(taskId);
   if(!t) return;
-  var open = t.timeSessions.find(function(s){ return !s.end; });
+  var open = myOpenSession(t);
   if(!open){
-    t.timeSessions.push({start: nowIso(), end: null});
+    t.timeSessions.push(activeShared ? {start: nowIso(), end: null, by: myUserId()} : {start: nowIso(), end: null});
   }
   state.settings.activeTaskId = taskId;
   playSound('start');
@@ -1478,7 +1507,7 @@ function startTimer(taskId){
 function stopTimer(taskId, skipRender){
   var t = getTask(taskId);
   if(!t) return;
-  var open = t.timeSessions.find(function(s){ return !s.end; });
+  var open = myOpenSession(t);
   if(open) open.end = nowIso();
   if(state.settings.activeTaskId === taskId) state.settings.activeTaskId = null;
   t.updatedAt = nowIso();
@@ -1494,7 +1523,7 @@ function stopTimer(taskId, skipRender){
   }
   if(!skipRender) renderAll();
 }
-function isRunning(task){ return task.timeSessions.some(function(s){ return !s.end; }); }
+function isRunning(task){ return task.timeSessions.some(function(s){ return !s.end && isMySession(s); }); }
 
 /* =========================================================
    TOASTS
@@ -2194,7 +2223,7 @@ function printBoard(){
       }).join('') || '<div class="print-task">–</div>') +
     '</div>';
   }).join('');
-  area.innerHTML = '<h1>🗂️ Work Board – ' + escapeHtml(state.settings.activeBoardName) + '</h1>' +
+  area.innerHTML = '<h1>🗂️ Work Board – ' + escapeHtml(currentBoardName()) + '</h1>' +
     '<div class="print-meta">Gedruckt am ' + new Date().toLocaleString('de-CH') + '</div>' +
     colsHtml;
   window.print();
@@ -2323,6 +2352,12 @@ function openCardContextMenu(t, x, y){
     Object.keys(PRIORITIES).map(function(k){
       return '<button type="button" class="ctx-prio prio-'+k+(t.priority===k?' on':'')+'" data-ctx-prio="'+k+'" title="'+escapeAttr(PRIORITIES[k].label)+'"><span class="prio prio-'+k+'"><i></i><i></i><i></i></span>'+escapeHtml(PRIORITIES[k].label)+'</button>';
     }).join('') + '</div>';
+  if(activeShared){
+    html += '<div class="ctx-label">Zuweisen an</div>' +
+      [{id:'', name:'Niemand'}].concat(sharedMembersWithNames()).map(function(m){
+        return item('data-ctx-assign="'+m.id+'"', 'users', escapeHtml(m.name) + (m.id === myUserId() ? ' (ich)' : ''));
+      }).join('');
+  }
   if(!swimlaneMode){
     var targets = state.columns.filter(function(c){ return c.id !== t.columnId; });
     if(targets.length){
@@ -2339,7 +2374,7 @@ function openCardContextMenu(t, x, y){
   menu.style.left = Math.max(8, Math.min(x, window.innerWidth - mw - 8)) + 'px';
   menu.style.top = Math.max(8, Math.min(y, window.innerHeight - mh - 8)) + 'px';
   menu.addEventListener('click', function(e){
-    var item = e.target.closest('[data-ctx], [data-ctx-prio], [data-ctx-move]');
+    var item = e.target.closest('[data-ctx], [data-ctx-prio], [data-ctx-move], [data-ctx-assign]');
     if(!item) return;
     if(item.dataset.ctx === 'open') openTaskModal(t.id);
     else if(item.dataset.ctx === 'timer'){ if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); renderAll(); }
@@ -2355,6 +2390,7 @@ function openCardContextMenu(t, x, y){
       confirmDialog('Task "'+t.title+'" wirklich löschen?', 'Löschen', function(){ deleteTask(t.id); closeModal(); renderAll(); });
     }
     else if(item.dataset.ctxPrio){ updateTask(t.id, {priority: item.dataset.ctxPrio}); renderBoard(); }
+    else if(item.hasAttribute('data-ctx-assign')){ assignTask(t.id, item.dataset.ctxAssign); renderAll(); }
     else if(item.dataset.ctxMove){ pushUndoSnapshot(); updateTask(t.id, {columnId: item.dataset.ctxMove}); renderAll(); }
     menu.remove();
   });
@@ -2457,7 +2493,8 @@ var QUICK_FILTERS = [
   {id:'high',    label:'Hohe Priorität', fn:function(t){ return !t.completedAt && (t.priority === 'critical' || t.priority === 'high'); }},
   {id:'sla',     label:'SLA-Risiko',     fn:function(t){ return !!slaLevel(t); }},
   {id:'pinned',  label:'Angeheftet',     fn:function(t){ return !!t.pinned; }},
-  {id:'running', label:'Läuft',          fn:function(t){ return isRunning(t); }}
+  {id:'running', label:'Läuft',          fn:function(t){ return isRunning(t); }},
+  {id:'mine',    label:'Mir zugewiesen', shared:true, fn:function(t){ return !t.completedAt && !!t.assigneeId && t.assigneeId === myUserId(); }}
 ];
 function anyFilterActive(){
   return !!(searchQuery || filterType || filterPriority || filterTag || Object.keys(quickFilters).length);
@@ -2470,6 +2507,7 @@ function renderFilterBar(){
   if(show){
     var pool = state.tasks.filter(function(t){ return !t.archived && !isSnoozed(t); });
     QUICK_FILTERS.forEach(function(f){
+      if(f.shared && !activeShared) return;
       var n = pool.filter(f.fn).length;
       var on = !!quickFilters[f.id];
       if(!n && !on) return;
@@ -2545,6 +2583,12 @@ function computeLanes(){
     return Object.keys(PRIORITIES).map(function(k){
       return {id:'prio-'+k, name:PRIORITIES[k].label, virtual:true,
         match:function(t){ return t.priority===k; }, patch:{priority:k}};
+    });
+  }
+  if(boardViewMode === 'team' && activeShared){
+    return [{id:'', name:'Nicht zugewiesen'}].concat(sharedMembersWithNames()).map(function(m){
+      return {id:'team-'+(m.id || 'none'), name:m.name, virtual:true,
+        match:function(t){ return (t.assigneeId || '') === m.id; }, patch:{assigneeId:m.id, assignee: m.id ? m.name : ''}};
     });
   }
   if(boardViewMode === 'team'){
@@ -3258,7 +3302,7 @@ function renderCard(t){
     (t.reporter ? '<span class="reporter-badge" title="Reporter">'+svgIcon('users')+escapeHtml(t.reporter)+'</span>' : '') +
     (t.taskGroup ? '<span class="group-badge" title="Gruppe">'+escapeHtml(t.taskGroup)+'</span>' : '') +
     (t.blockedBy && t.blockedBy.length ? '<div class="blocked-badge">🔗 blockiert durch '+t.blockedBy.length+' Task(s)</div>' : '') +
-    (t.assignee ? '<div class="hint">👤 '+escapeHtml(t.assignee)+'</div>' : '') +
+    (assigneeLabel(t) ? '<span class="assignee-chip'+(t.assigneeId && t.assigneeId === myUserId() ? ' me' : '')+'" title="Zugewiesen an '+escapeAttr(assigneeLabel(t))+'"><span class="sb-avatar">'+escapeHtml(personInitials(assigneeLabel(t)))+'</span>'+escapeHtml(assigneeLabel(t))+'</span>' : '') +
     (t.checklist && t.checklist.length ? '<div class="hint">☑️ '+t.checklist.filter(function(c){return c.done;}).length+'/'+t.checklist.length+'</div>' : '') +
     (t.description ? '<div class="card-desc">'+escapeHtml(t.description)+'</div>' : '') +
     (t.tags.length ? '<div class="tags">'+t.tags.map(function(tag){ return '<span class="tag">#'+escapeHtml(tag)+'</span>'; }).join('')+'</div>' : '') +
@@ -3659,7 +3703,7 @@ function tick(){
   ccRefresh(false);
 
   // idle reminder
-  var openSession = t.timeSessions.find(function(s){ return !s.end; });
+  var openSession = myOpenSession(t);
   if(openSession){
     var minutes = (Date.now() - new Date(openSession.start).getTime())/60000;
     var thresh = state.settings.idleReminderMinutes || 90;
@@ -3992,7 +4036,7 @@ function markActivity(){
 function offerIdleSubtract(taskId, idleStart, idleEnd, idleMinutes){
   var t = getTask(taskId);
   if(!t) return;
-  var open = t.timeSessions.find(function(s){ return !s.end; });
+  var open = myOpenSession(t);
   if(!open) return;
   confirmDialog(
     'Du warst ca. ' + idleMinutes + ' Minuten inaktiv, während der Timer für "' + t.title + '" lief. Diese Zeit vom Timer abziehen?',
@@ -4013,14 +4057,14 @@ function offerIdleSubtract(taskId, idleStart, idleEnd, idleMinutes){
    ========================================================= */
 function checkOvernightTimers(){
   var stale = state.tasks.filter(function(t){
-    var open = t.timeSessions.find(function(s){ return !s.end; });
+    var open = myOpenSession(t);
     if(!open) return false;
     var hours = (Date.now() - new Date(open.start).getTime()) / 3600000;
     return hours >= 10;
   });
   if(!stale.length) return;
   var t = stale[0];
-  var open = t.timeSessions.find(function(s){ return !s.end; });
+  var open = myOpenSession(t);
   var hours = Math.round((Date.now() - new Date(open.start).getTime()) / 3600000);
   var html =
     '<div class="modal-header"><h2>🕵️ Vergessener Timer?</h2></div>' +
@@ -4147,7 +4191,7 @@ function renderStatusbar(){
   renderCloudSyncStatus();
   var count = state.tasks.filter(function(t){ return !t.archived; }).length;
   document.getElementById('taskCountLabel').textContent = count + ' aktive Tasks';
-  document.getElementById('boardNameLabel').textContent = state.settings.activeBoardName;
+  renderBoardSwitcher();
 
   var dirtyLabel = document.getElementById('dirtyLabel');
   if(changesSinceBackup > 0){
@@ -4250,7 +4294,7 @@ function openTaskModal(taskId){
   var sessionsHtml = t.timeSessions.slice().reverse().map(function(s){
     var dur = s.end ? fmtHMS((new Date(s.end)-new Date(s.start))/1000) : 'läuft…';
     var dateLabel = new Date(s.start).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    return '<div class="session-row'+(!s.end?' open':'')+'"><span>'+dateLabel+'</span><span>'+dur+'</span></div>';
+    return '<div class="session-row'+(!s.end?' open':'')+'"><span>'+dateLabel+(s.by && activeShared ? ' · '+escapeHtml(personName(s.by)) : '')+'</span><span>'+dur+'</span></div>';
   }).join('') || '<div class="hint">Noch keine Zeit erfasst.</div>';
 
   var activityHtml = t.activityLog.slice().reverse().map(function(a){
@@ -4285,6 +4329,11 @@ function openTaskModal(taskId){
   var typeInfoModal = TYPES[t.type] || TYPES.adhoc;
   var reporterListHtml = uniqueReporters().map(function(r){ return '<option value="'+escapeAttr(r)+'">'; }).join('');
   var assigneeHtml = (function(){
+    if(activeShared){
+      return '<div class="prop"><label for="fAssignee">Zugewiesen an</label><select id="fAssignee"><option value="">– Niemand –</option>' +
+        sharedMembersWithNames().map(function(m){ return '<option value="'+m.id+'"'+(t.assigneeId===m.id?' selected':'')+'>'+escapeHtml(m.name)+(m.id===myUserId()?' (ich)':'')+'</option>'; }).join('') +
+      '</select></div>';
+    }
     var assigneeOptions = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
     if(!assigneeOptions.length) return '';
     return '<div class="prop"><label for="fAssignee">Zugewiesen an</label><select id="fAssignee"><option value="">– Ich –</option>' +
@@ -4454,7 +4503,13 @@ function openTaskModal(taskId){
   })();
 
   function persist(){
-    updateTask(t.id, {
+    var asEl = document.getElementById('fAssignee');
+    var assignPatch = {};
+    if(asEl){
+      if(activeShared){ assignPatch.assigneeId = asEl.value; assignPatch.assignee = asEl.value ? personName(asEl.value) : ''; }
+      else assignPatch.assignee = asEl.value;
+    }
+    updateTask(t.id, Object.assign({
       title: document.getElementById('fTitle').value.trim() || 'Unbenannt',
       type: document.getElementById('fType').value,
       priority: document.getElementById('fPriority').value,
@@ -4468,9 +4523,8 @@ function openTaskModal(taskId){
       reporter: document.getElementById('fReporter').value.trim(),
       phone: document.getElementById('fPhone').value.trim(),
       scheduledAt: document.getElementById('fScheduledAt').value ? new Date(document.getElementById('fScheduledAt').value).toISOString() : '',
-      assignee: document.getElementById('fAssignee') ? document.getElementById('fAssignee').value : t.assignee,
       recurrence: document.getElementById('fRecurrence').value ? {freq: document.getElementById('fRecurrence').value, active:true} : null
-    });
+    }, assignPatch));
     var exportBtn = document.getElementById('btnExportScheduledIcs');
     if(exportBtn) exportBtn.disabled = !document.getElementById('fScheduledAt').value;
     if(document.getElementById('fType').value === 'meeting'){
@@ -5841,7 +5895,7 @@ function renderStatsView(range){
    BACKUP EXPORT / IMPORT (primary sync path for file:// usage)
    ========================================================= */
 function exportBackup(){
-  var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  var blob = new Blob([serializePersonalState(2)], {type:'application/json'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'work-board-daten.json';
@@ -5855,7 +5909,7 @@ function importBackupFile(file){
   var reader = new FileReader();
   reader.onload = function(){
     try{
-      state = migrateState(JSON.parse(reader.result));
+      withPersonalState(function(){ state = migrateState(JSON.parse(reader.result)); });
       changesSinceBackup = 0;
       lastBackupAt = new Date();
       save();
@@ -5904,6 +5958,7 @@ function setCloudSyncConfig(cfg){
 /* Sync läuft nur, wenn die gespeicherte Konfiguration zur aktuell
    angemeldeten Person gehört (verhindert, dass auf einem geteilten Gerät
    die Passphrase/das Board der vorherigen Person verwendet wird). */
+function personalTaskCount(){ return withPersonalState(function(){ return state.tasks.length; }); }
 function cloudIsReady(cfg){
   return !!(cfg.enabled && cfg.passphrase && cfg.backend === 'supabase' && currentUser && cfg.userId === currentUser.id && getSupabaseClient());
 }
@@ -5948,10 +6003,11 @@ function b64ToBuf(b64){
   return bytes;
 }
 function cloudEncryptState(passphrase){
+  var plainJson = serializePersonalState();
   var salt = crypto.getRandomValues(new Uint8Array(16));
   var iv = crypto.getRandomValues(new Uint8Array(12));
   return cloudDeriveKey(passphrase, salt).then(function(key){
-    var plaintext = new TextEncoder().encode(JSON.stringify(state));
+    var plaintext = new TextEncoder().encode(plainJson);
     return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, plaintext);
   }).then(function(ciphertext){
     return JSON.stringify({
@@ -6011,7 +6067,7 @@ function cloudPushNow(skipSafety){
   cloudSyncBusy = true;
 
   var safetyCheck = Promise.resolve(true);
-  if(state.tasks.length === 0 && skipSafety !== true){
+  if(personalTaskCount() === 0 && skipSafety !== true){
     /* Sicherheits-Check: nie ein leeres lokales Board pushen, wenn die Cloud
        noch echte Tasks enthalten könnte (z.B. lokal gerade erst
        zurückgesetzt/neu installiert, automatischer Pull noch nicht
@@ -6075,7 +6131,7 @@ function cloudPullNow(showToastIfUpToDate){
     var remoteTime = new Date(result.updatedAt).getTime();
     var localTime = new Date(state.meta.updatedAt).getTime();
     var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
-    if(state.tasks.length === 0 && remoteHasTasks){
+    if(personalTaskCount() === 0 && remoteHasTasks){
       /* Lokal liegt nichts vor, das verloren gehen könnte (z.B. frischer
          Browser/Neuinstallation/geleerter Cache) - hier IMMER übernehmen,
          unabhängig vom Zeitstempel-Vergleich unten. Ein frisch
@@ -6085,7 +6141,7 @@ function cloudPullNow(showToastIfUpToDate){
          leer ist. Ausserdem: nicht nur den cloudChangeBanner einblenden
          (der im normalen Dokumentfluss liegt und von Dialogen komplett
          verdeckt werden kann), sondern direkt laden. */
-      state = migrateState(result.state);
+      withPersonalState(function(){ state = migrateState(result.state); });
       renderAll();
       save();
       toast('☁️ Cloud-Stand automatisch geladen.');
@@ -6119,6 +6175,925 @@ window.addEventListener('online', function(){
     cloudPushNow().then(function(){ return cloudPullNow(); });
   }
 });
+/* =========================================================
+   GETEILTE BOARDS (Zusammenarbeit mehrerer Personen)
+
+   Aufbau (alles Ende-zu-Ende-verschlüsselt, Supabase sieht nur Chiffretext):
+   - Jedes geteilte Board hat einen zufälligen AES-256-Schlüssel ("Board-Schlüssel").
+     Der Board-Inhalt (Name, Spalten, Tasks) wird damit verschlüsselt in
+     "shared_boards" abgelegt.
+   - Jede Person hat ein ECDH-Schlüsselpaar (P-256). Der öffentliche Schlüssel
+     liegt in "profiles.public_key", der private - mit der eigenen Passphrase
+     verschlüsselt - in "user_keys".
+   - Wer eine Person hinzufügt, verpackt den Board-Schlüssel per ECDH für deren
+     öffentlichen Schlüssel ("board_members.wrapped_key"). Nur sie kann ihn öffnen.
+   - Entfernen einer Person tauscht den Board-Schlüssel aus (Rekey), damit die
+     entfernte Person künftige Änderungen nicht mehr lesen kann.
+   Einschränkung: Die Schlüsselzuordnung (wer hat welchen öffentlichen Schlüssel)
+   liefert Supabase selbst; wer das Projekt kontrolliert, könnte theoretisch einen
+   falschen Schlüssel unterschieben. Für ein Team im selben Unternehmen ist das ein
+   vertretbarer Kompromiss, ein Fingerabdruck-Vergleich wäre die nächste Ausbaustufe.
+   ========================================================= */
+var userKeys = null;
+var userKeysPromise = null;
+var sharedList = [];
+var sharedListLoaded = false;
+var sharedError = '';
+var activeShared = null;
+var personalStash = null;
+
+/* ---- Text-Verschlüsselung mit der Passphrase (für den privaten Schlüssel) ---- */
+function cloudEncryptText(plain, passphrase){
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return cloudDeriveKey(passphrase, salt).then(function(key){
+    return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, new TextEncoder().encode(plain));
+  }).then(function(ct){
+    return JSON.stringify({v:1, salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)});
+  });
+}
+function cloudDecryptText(payloadText, passphrase){
+  var p = JSON.parse(payloadText);
+  return cloudDeriveKey(passphrase, b64ToBuf(p.salt)).then(function(key){
+    return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(p.iv)}, key, b64ToBuf(p.data));
+  }).then(function(buf){ return new TextDecoder().decode(buf); });
+}
+
+/* ---- Board-Schlüssel ---- */
+function newBoardKey(){ return crypto.subtle.generateKey({name:'AES-GCM', length:256}, true, ['encrypt','decrypt']); }
+function boardEncrypt(obj, key){
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, new TextEncoder().encode(JSON.stringify(obj))).then(function(ct){
+    return JSON.stringify({v:2, iv:bufToB64(iv), data:bufToB64(ct)});
+  });
+}
+function boardDecrypt(text, key){
+  var p = JSON.parse(text);
+  return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(p.iv)}, key, b64ToBuf(p.data)).then(function(buf){
+    return JSON.parse(new TextDecoder().decode(buf));
+  });
+}
+function ecdhWrapKey(privKey, pubJwk){
+  return crypto.subtle.importKey('jwk', pubJwk, {name:'ECDH', namedCurve:'P-256'}, false, []).then(function(pub){
+    return crypto.subtle.deriveKey({name:'ECDH', public:pub}, privKey, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+  });
+}
+function wrapBoardKey(boardKey, pubJwk){
+  return ensureUserKeys().then(function(uk){
+    return ecdhWrapKey(uk.priv, pubJwk);
+  }).then(function(wk){
+    return crypto.subtle.exportKey('raw', boardKey).then(function(raw){
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, wk, raw).then(function(ct){
+        return JSON.stringify({iv:bufToB64(iv), data:bufToB64(ct)});
+      });
+    });
+  });
+}
+function unwrapBoardKey(wrappedText, wrapperPubJwk){
+  var w = JSON.parse(wrappedText);
+  return ensureUserKeys().then(function(uk){
+    return ecdhWrapKey(uk.priv, wrapperPubJwk);
+  }).then(function(wk){
+    return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(w.iv)}, wk, b64ToBuf(w.data));
+  }).then(function(raw){
+    return crypto.subtle.importKey('raw', raw, {name:'AES-GCM'}, true, ['encrypt','decrypt']);
+  });
+}
+
+/* ---- Profile und öffentliche Schlüssel ---- */
+function profileById(id){
+  for(var i = 0; i < registeredProfileRows.length; i++){ if(registeredProfileRows[i].id === id) return registeredProfileRows[i]; }
+  return null;
+}
+function personName(id){
+  if(currentUser && id === currentUser.id) return currentUser.displayName;
+  var p = profileById(id);
+  return p ? (p.display_name || p.email || 'Unbekannt') : 'Unbekannt';
+}
+function personInitials(name){
+  var parts = String(name || '?').trim().split(/\s+/);
+  return ((parts[0] || '?').charAt(0) + (parts.length > 1 ? parts[parts.length-1].charAt(0) : '')).toUpperCase();
+}
+function pubKeyOf(userId){
+  if(currentUser && userId === currentUser.id && userKeys) return userKeys.pubJwk;
+  var p = profileById(userId);
+  if(!p || !p.public_key) return null;
+  try{ return JSON.parse(p.public_key); }catch(e){ return null; }
+}
+function pubJwkFromPriv(jwk){ return {kty:jwk.kty, crv:jwk.crv, x:jwk.x, y:jwk.y, ext:true}; }
+
+/* Eigenes Schlüsselpaar laden oder beim ersten Mal erzeugen. Der private Schlüssel
+   liegt nur mit der Passphrase verschlüsselt in Supabase. */
+function ensureUserKeys(){
+  if(userKeys) return Promise.resolve(userKeys);
+  if(userKeysPromise) return userKeysPromise;
+  var cfg = getCloudSyncConfig();
+  if(!cloudIsReady(cfg)) return Promise.reject(new Error('Der Cloud-Speicher ist auf diesem Gerät nicht eingerichtet (Passphrase fehlt).'));
+  var client = getSupabaseClient();
+  var me = currentUser.id;
+  var pass = cfg.passphrase;
+  userKeysPromise = client.from('user_keys').select('private_key_enc').eq('user_id', me).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    if(res.data && res.data.private_key_enc){
+      return cloudDecryptText(res.data.private_key_enc, pass).then(function(plain){ return JSON.parse(plain); }, function(err){
+        if(err && err.name === 'OperationError') throw new Error('Dein Schlüssel für geteilte Boards passt nicht zur eingetragenen Passphrase. Bitte die aktuelle Passphrase in den Einstellungen übernehmen.');
+        throw err;
+      });
+    }
+    return crypto.subtle.generateKey({name:'ECDH', namedCurve:'P-256'}, true, ['deriveKey']).then(function(kp){
+      return crypto.subtle.exportKey('jwk', kp.privateKey);
+    }).then(function(jwk){
+      return cloudEncryptText(JSON.stringify(jwk), pass).then(function(enc){
+        return client.from('user_keys').upsert({user_id: me, private_key_enc: enc, updated_at: nowIso()}).then(function(r){
+          if(r.error) throw new Error(r.error.message);
+          return jwk;
+        });
+      });
+    });
+  }).then(function(privJwk){
+    var pubJwk = pubJwkFromPriv(privJwk);
+    return crypto.subtle.importKey('jwk', privJwk, {name:'ECDH', namedCurve:'P-256'}, false, ['deriveKey']).then(function(priv){
+      userKeys = {priv: priv, pubJwk: pubJwk, privJwk: privJwk};
+      var pubStr = JSON.stringify(pubJwk);
+      var mine = profileById(me);
+      if(mine && mine.public_key === pubStr) return userKeys;
+      return client.from('profiles').update({public_key: pubStr}).eq('id', me).then(function(r){
+        if(!r.error && mine) mine.public_key = pubStr;
+        return userKeys;
+      });
+    });
+  }).catch(function(err){ userKeysPromise = null; throw err; });
+  return userKeysPromise;
+}
+/* Nach einer Passphrase-Änderung den privaten Schlüssel neu verschlüsseln. */
+function reencryptUserKeys(newPassphrase){
+  if(!userKeys) return Promise.resolve();
+  return cloudEncryptText(JSON.stringify(userKeys.privJwk), newPassphrase).then(function(enc){
+    return getSupabaseClient().from('user_keys').upsert({user_id: currentUser.id, private_key_enc: enc, updated_at: nowIso()});
+  });
+}
+
+/* ---- Liste der geteilten Boards ---- */
+function loadSharedBoards(){
+  var client = getSupabaseClient();
+  if(!client || !currentUser) return Promise.resolve([]);
+  return ensureUserKeys().then(function(){ return fetchProfiles(); }).then(function(){
+    return client.from('board_members').select('board_id, role, wrapped_key, wrapper_id, shared_boards(id, owner_id, payload, version)').eq('user_id', currentUser.id);
+  }).then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    return Promise.all((res.data || []).map(function(r){
+      var sb = Array.isArray(r.shared_boards) ? r.shared_boards[0] : r.shared_boards;
+      if(!sb) return null;
+      var wrapperPub = pubKeyOf(r.wrapper_id);
+      if(!wrapperPub) return null;
+      return unwrapBoardKey(r.wrapped_key, wrapperPub).then(function(key){
+        return boardDecrypt(sb.payload, key).then(function(content){
+          return {
+            id: sb.id, role: r.role, ownerId: sb.owner_id, key: key, wrapperId: r.wrapper_id,
+            name: content.name || 'Geteiltes Board', version: sb.version,
+            content: {columns: content.columns || [], tasks: (content.tasks || []).map(normalizeTask)}
+          };
+        });
+      }).catch(function(){ return null; });
+    }));
+  }).then(function(list){
+    sharedList = list.filter(Boolean);
+    sharedListLoaded = true;
+    sharedError = '';
+    if(activeShared){
+      var cur = sharedList.find(function(x){ return x.id === activeShared.id; });
+      if(cur){ activeShared.role = cur.role; activeShared.key = cur.key; activeShared.ownerId = cur.ownerId; }
+    }
+    return sharedList;
+  }).catch(function(err){
+    sharedListLoaded = true;
+    sharedError = err.message || String(err);
+    return [];
+  });
+}
+function loadBoardMembers(sb){
+  var client = getSupabaseClient();
+  return client.from('board_members').select('user_id, role').eq('board_id', sb.id).then(function(res){
+    if(!res.error && res.data) sb.members = res.data.map(function(m){ return {id: m.user_id, role: m.role}; });
+    return sb.members || [];
+  });
+}
+function sharedMembersWithNames(){
+  if(!activeShared || !activeShared.members) return [];
+  return activeShared.members.map(function(m){ return {id: m.id, role: m.role, name: personName(m.id)}; })
+    .sort(function(a, b){ return a.name.localeCompare(b.name); });
+}
+function sharedCheck(res){
+  if(res && res.error) throw new Error(res.error.message);
+  return res;
+}
+
+/* ---- Anlegen, Mitglieder, Löschen ---- */
+function createSharedBoard(name, columns, tasks){
+  var client = getSupabaseClient();
+  var me = currentUser.id;
+  var boardKey, uk;
+  return ensureUserKeys().then(function(k){
+    uk = k;
+    return newBoardKey();
+  }).then(function(key){
+    boardKey = key;
+    return boardEncrypt({v:1, name:name, columns:columns, tasks:tasks}, boardKey);
+  }).then(function(payload){
+    return client.from('shared_boards').insert({owner_id: me, payload: payload, version: 1}).select('id').single();
+  }).then(function(res){
+    sharedCheck(res);
+    var id = res.data.id;
+    return wrapBoardKey(boardKey, uk.pubJwk).then(function(w){
+      return client.from('board_members').insert({board_id: id, user_id: me, role: 'owner', wrapped_key: w, wrapper_id: me});
+    }).then(function(r){ sharedCheck(r); return id; });
+  });
+}
+function addBoardMember(sb, userId){
+  var pub = pubKeyOf(userId);
+  if(!pub) return Promise.reject(new Error('Diese Person hat sich noch nicht mit der aktuellen Version angemeldet und hat deshalb keinen Schlüssel hinterlegt.'));
+  return wrapBoardKey(sb.key, pub).then(function(w){
+    return getSupabaseClient().from('board_members').insert({board_id: sb.id, user_id: userId, role: 'editor', wrapped_key: w, wrapper_id: currentUser.id});
+  }).then(sharedCheck).then(function(){ return loadBoardMembers(sb); });
+}
+/* Person entfernen: Mitglied löschen, neuen Board-Schlüssel erzeugen, für alle Verbleibenden
+   neu verpacken und den Inhalt neu verschlüsseln. */
+function removeBoardMember(sb, userId){
+  var client = getSupabaseClient();
+  var newKey;
+  return sharedSync().then(function(){
+    return client.from('board_members').delete().eq('board_id', sb.id).eq('user_id', userId);
+  }).then(sharedCheck).then(function(){
+    return client.from('board_members').select('user_id').eq('board_id', sb.id);
+  }).then(function(res){
+    sharedCheck(res);
+    var ids = (res.data || []).map(function(r){ return r.user_id; });
+    return newBoardKey().then(function(k){
+      newKey = k;
+      return Promise.all(ids.map(function(id){
+        var pub = pubKeyOf(id);
+        if(!pub) throw new Error('Für ' + personName(id) + ' fehlt der Schlüssel.');
+        return wrapBoardKey(newKey, pub).then(function(w){
+          return client.from('board_members').update({wrapped_key: w, wrapper_id: currentUser.id}).eq('board_id', sb.id).eq('user_id', id);
+        }).then(sharedCheck);
+      }));
+    });
+  }).then(function(){
+    return boardEncrypt({v:1, name:sb.name, columns:state.columns, tasks:state.tasks}, newKey);
+  }).then(function(payload){
+    return client.from('shared_boards').update({payload: payload, version: sb.version + 1, updated_at: nowIso()}).eq('id', sb.id).eq('version', sb.version).select('version');
+  }).then(function(res){
+    sharedCheck(res);
+    if(!res.data || !res.data.length) throw new Error('Das Board wurde gleichzeitig geändert. Bitte erneut versuchen.');
+    sb.key = newKey;
+    sb.version += 1;
+    sb.base = sharedMakeBase({name: sb.name, columns: state.columns, tasks: state.tasks});
+    return loadBoardMembers(sb);
+  });
+}
+function leaveSharedMembership(sb){
+  return getSupabaseClient().from('board_members').delete().eq('board_id', sb.id).eq('user_id', currentUser.id).then(sharedCheck);
+}
+function deleteSharedBoard(sb){
+  return getSupabaseClient().from('shared_boards').delete().eq('id', sb.id).then(sharedCheck);
+}
+
+/* =========================================================
+   Geteiltes Board aktiv: Inhalt in state.columns/state.tasks "ausgecheckt"
+   Solange ein geteiltes Board offen ist, liegen dessen Spalten und Tasks in
+   state.columns/state.tasks (damit der gesamte Rest der App unverändert
+   funktioniert). Das persönliche Board wartet in personalStash. Überall, wo der
+   persönliche Stand gespeichert oder synchronisiert wird, läuft der Zugriff über
+   withPersonalState(): das stellt kurz den persönlichen Stand her und danach
+   wieder den geteilten.
+   ========================================================= */
+var sharedBusy = false;
+var sharedDirty = false;
+var sharedPushTimer = null;
+var sharedPollTimer = null;
+
+function checkinShared(){
+  if(!activeShared || !personalStash || activeShared._checkedIn) return;
+  activeShared.content = {columns: state.columns, tasks: state.tasks};
+  state.columns = personalStash.columns;
+  state.tasks = personalStash.tasks;
+  activeShared._checkedIn = true;
+}
+function checkoutShared(){
+  if(!activeShared || !activeShared._checkedIn) return;
+  personalStash = {columns: state.columns, tasks: state.tasks};
+  state.columns = activeShared.content.columns;
+  state.tasks = activeShared.content.tasks;
+  state.settings.activeSharedBoardId = activeShared.id;
+  activeShared._checkedIn = false;
+}
+function withPersonalState(fn){
+  if(!activeShared) return fn();
+  checkinShared();
+  try{ return fn(); } finally { checkoutShared(); }
+}
+function serializePersonalState(indent){
+  return withPersonalState(function(){ return JSON.stringify(state, null, indent); });
+}
+function currentBoardName(){ return activeShared ? activeShared.name : state.settings.activeBoardName; }
+
+/* ---- Eigene Zeit-Sitzungen (in geteilten Boards tragen Sitzungen eine Personen-ID) ---- */
+function myUserId(){ return currentUser ? currentUser.id : ''; }
+function isMySession(s){ return !s.by || s.by === myUserId(); }
+function myOpenSession(task){
+  return task.timeSessions.find(function(s){ return !s.end && isMySession(s); });
+}
+
+/* ---- Vergleichen und Zusammenführen ---- */
+function canon(v){
+  if(Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if(v && typeof v === 'object'){
+    return '{' + Object.keys(v).filter(function(k){ return k.charAt(0) !== '_'; }).sort().map(function(k){ return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+function sharedMakeBase(content){
+  var b = {tasks: {}, columns: canon(content.columns), name: content.name};
+  content.tasks.forEach(function(t){ b.tasks[t.id] = canon(t); });
+  return b;
+}
+function unionBy(a, b, keyFn){
+  var seen = {}, out = [];
+  (a || []).concat(b || []).forEach(function(x){
+    var k = keyFn(x);
+    if(seen[k] === undefined){ seen[k] = out.length; out.push(x); }
+    else if(x && x.end && out[seen[k]] && !out[seen[k]].end) out[seen[k]] = x;
+  });
+  return out;
+}
+function mergeTask(L, R){
+  var newer = new Date(L.updatedAt || 0) >= new Date(R.updatedAt || 0) ? L : R;
+  var other = newer === L ? R : L;
+  var m = JSON.parse(JSON.stringify(newer));
+  m.timeSessions = unionBy(newer.timeSessions, other.timeSessions, function(s){ return s.start + '|' + (s.by || ''); });
+  m.notes = unionBy(newer.notes, other.notes, function(n){ return n.ts + '|' + n.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
+  m.activityLog = unionBy(newer.activityLog, other.activityLog, function(a){ return a.ts + '|' + a.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
+  m.updatedAt = nowIso();
+  return m;
+}
+function mergeTasks(base, localTasks, remoteTasks){
+  var Lm = {}, Rm = {};
+  localTasks.forEach(function(t){ Lm[t.id] = t; });
+  remoteTasks.forEach(function(t){ Rm[t.id] = t; });
+  var ids = remoteTasks.map(function(t){ return t.id; });
+  localTasks.forEach(function(t){ if(!Rm[t.id]) ids.push(t.id); });
+  var out = [];
+  ids.forEach(function(id){
+    var L = Lm[id], R = Rm[id], B = base.tasks[id];
+    if(L && R){
+      var cl = canon(L), cr = canon(R);
+      if(cl === cr){ out.push(L); }
+      else if(B !== undefined && cl === B){ out.push(R); }
+      else if(B !== undefined && cr === B){ out.push(L); }
+      else { out.push(mergeTask(L, R)); }
+    } else if(L){
+      /* nur lokal vorhanden: neu angelegt (keep) oder remote gelöscht */
+      if(B === undefined || canon(L) !== B) out.push(L);
+    } else if(R){
+      /* nur remote vorhanden: neu (keep) oder lokal gelöscht */
+      if(B === undefined || canon(R) !== B) out.push(R);
+    }
+  });
+  return out;
+}
+function mergeColumns(baseStr, L, R){
+  var lc = canon(L) !== baseStr, rc = canon(R) !== baseStr;
+  if(!lc) return R;
+  if(!rc) return L;
+  var ids = {};
+  R.forEach(function(c){ ids[c.id] = 1; });
+  var out = R.slice();
+  L.forEach(function(c){ if(!ids[c.id]) out.push(c); });
+  return out;
+}
+function mergeContent(base, L, R){
+  return {
+    name: (L.name !== base.name) ? (R.name !== base.name ? R.name : L.name) : R.name,
+    columns: mergeColumns(base.columns, L.columns, R.columns),
+    tasks: mergeTasks(base, L.tasks, R.tasks)
+  };
+}
+
+/* ---- lokaler Cache pro Board (für schnelles Öffnen und Offline-Arbeit) ---- */
+function sharedCacheKey(id){ return 'wb-sb-' + id; }
+function sharedCacheSave(sbParam){
+  var sb = sbParam || activeShared;
+  if(!sb) return;
+  var content = sharedContainer(sb);
+  try{
+    localStorage.setItem(sharedCacheKey(sb.id), JSON.stringify({
+      name: sb.name, columns: content.columns, tasks: content.tasks, base: sb.base, version: sb.version
+    }));
+  }catch(e){}
+}
+function sharedCacheLoad(id){
+  try{ var raw = localStorage.getItem(sharedCacheKey(id)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+
+/* ---- Synchronisieren (holen, zusammenführen, ggf. hochladen) ---- */
+function sharedContainer(sb){ return sb._checkedIn ? sb.content : state; }
+function sharedPrepareLocal(sb){
+  sharedContainer(sb).tasks.forEach(function(t){
+    var b = sb.base.tasks[t.id];
+    if(b !== undefined && canon(t) !== b){
+      var bt = null;
+      try{ bt = JSON.parse(b); }catch(e){}
+      if(bt && t.updatedAt === bt.updatedAt) t.updatedAt = nowIso();
+    }
+  });
+}
+function applyMergedToState(sb, merged){
+  var c = sharedContainer(sb);
+  var byId = {};
+  c.tasks.forEach(function(t){ byId[t.id] = t; });
+  var changed = false;
+  var next = merged.tasks.map(function(m){
+    var cur = byId[m.id];
+    if(cur === m) return cur;
+    if(cur){
+      if(canon(cur) !== canon(m)){
+        changed = true;
+        Object.keys(cur).forEach(function(k){ if(k.charAt(0) !== '_') delete cur[k]; });
+        Object.assign(cur, m);
+      }
+      return cur;
+    }
+    changed = true;
+    return normalizeTask(m);
+  });
+  if(next.length !== c.tasks.length) changed = true;
+  c.tasks = next;
+  if(canon(c.columns) !== canon(merged.columns)){ c.columns = merged.columns; changed = true; }
+  if(sb.name !== merged.name){ sb.name = merged.name; changed = true; }
+  if(activeShared === sb && state.settings.activeTaskId && !getTask(state.settings.activeTaskId)) state.settings.activeTaskId = null;
+  return changed;
+}
+function notifyAssignments(base, remoteTasks){
+  var me = myUserId();
+  remoteTasks.forEach(function(r){
+    if(r.assigneeId !== me) return;
+    var b = base.tasks[r.id];
+    var wasMine = false;
+    if(b !== undefined){ try{ wasMine = JSON.parse(b).assigneeId === me; }catch(e){} }
+    if(!wasMine) toast('Neue Zuweisung: "' + r.title + '"', 9000, 'Öffnen', function(){ openTaskModal(r.id); });
+  });
+}
+function sharedSetStatus(sb, err){
+  sb.lastError = err || '';
+  if(!err) sb.lastSyncedAt = nowIso();
+  if(typeof renderCloudSyncStatus === 'function') renderCloudSyncStatus();
+}
+function sharedSync(attempt, sbParam){
+  attempt = attempt || 0;
+  var sb = sbParam || activeShared;
+  if(!sb) return Promise.resolve();
+  if(sharedBusy){ sharedDirty = true; return Promise.resolve(); }
+  sharedBusy = true;
+  sharedDirty = false;
+  var client = getSupabaseClient();
+  sharedPrepareLocal(sb);
+  var retry = false;
+  return client.from('shared_boards').select('payload, version').eq('id', sb.id).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    if(!res.data){ var gone = new Error('Du hast keinen Zugriff mehr auf dieses Board (gelöscht oder entfernt).'); gone.gone = true; throw gone; }
+    return boardDecrypt(res.data.payload, sb.key).then(function(remote){
+      return {remote: remote, version: res.data.version};
+    }, function(){ var e = new Error('Board konnte nicht entschlüsselt werden (Schlüssel geändert?).'); e.keyProblem = true; throw e; });
+  }).then(function(r){
+    var remote = {name: r.remote.name, columns: r.remote.columns || [], tasks: (r.remote.tasks || []).map(normalizeTask)};
+    var c = sharedContainer(sb);
+    var local = {name: sb.name, columns: c.columns, tasks: c.tasks};
+    var merged = mergeContent(sb.base, local, remote);
+    var changed = applyMergedToState(sb, merged);
+    notifyAssignments(sb.base, remote.tasks);
+    var needsPush = canon({n: merged.name, c: merged.columns, t: merged.tasks}) !== canon({n: remote.name, c: remote.columns, t: remote.tasks});
+    var after = function(){ sharedCacheSave(sb); sharedSetStatus(sb, ''); if(changed && activeShared === sb){ renderAll(); } };
+    if(!needsPush){
+      sb.version = r.version;
+      sb.base = sharedMakeBase(merged);
+      after();
+      return;
+    }
+    return boardEncrypt({v:1, name: merged.name, columns: merged.columns, tasks: merged.tasks}, sb.key).then(function(payload){
+      return client.from('shared_boards').update({payload: payload, version: r.version + 1, updated_at: nowIso()}).eq('id', sb.id).eq('version', r.version).select('version');
+    }).then(function(up){
+      if(up.error) throw new Error(up.error.message);
+      if(!up.data || !up.data.length){ retry = true; return; }
+      sb.version = r.version + 1;
+      sb.base = sharedMakeBase(merged);
+      after();
+    });
+  }).catch(function(err){
+    if(err.gone && activeShared === sb){
+      toast(err.message, 8000);
+      sharedList = sharedList.filter(function(x){ return x.id !== sb.id; });
+      leaveSharedBoard();
+      return;
+    }
+    if(err.keyProblem && !sb._keyRetried){
+      sb._keyRetried = true;
+      return loadSharedBoards().then(function(){ retry = true; });
+    }
+    sharedSetStatus(sb, err.message || String(err));
+  }).then(function(){
+    sharedBusy = false;
+    if(retry && attempt < 3) return sharedSync(attempt + 1, sb);
+    if(sharedDirty && activeShared === sb) scheduleSharedPush();
+  });
+}
+function scheduleSharedPush(){
+  if(!activeShared) return;
+  sharedDirty = true;
+  clearTimeout(sharedPushTimer);
+  sharedPushTimer = setTimeout(function(){ sharedSync(); }, 1500);
+}
+function sharedPoll(){
+  var sb = activeShared;
+  if(!sb || sharedBusy || document.hidden) return;
+  if(sharedDirty){ sharedSync(); return; }
+  getSupabaseClient().from('shared_boards').select('version').eq('id', sb.id).maybeSingle().then(function(res){
+    if(res.error) return;
+    if(!res.data || res.data.version !== sb.version) sharedSync();
+  });
+}
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) sharedPoll(); });
+
+/* ---- Betreten und Verlassen ---- */
+function enterSharedBoard(id){
+  var entry = sharedList.find(function(x){ return x.id === id; });
+  if(!entry){ toast('Dieses Board ist nicht verfügbar.'); return; }
+  if(activeShared && activeShared.id === id) return;
+  if(state.settings.activeTaskId) stopTimer(state.settings.activeTaskId, true);
+  if(activeShared) leaveSharedBoard(true);
+  var cache = sharedCacheLoad(id);
+  var useCache = cache && cache.base && cache.version <= entry.version;
+  var sb = entry;
+  sb.name = useCache ? cache.name : entry.name;
+  sb.base = useCache ? cache.base : sharedMakeBase({name: entry.name, columns: entry.content.columns, tasks: entry.content.tasks});
+  sb.version = useCache ? cache.version : entry.version;
+  sb.content = useCache ? {columns: cache.columns, tasks: cache.tasks.map(normalizeTask)} : {columns: entry.content.columns, tasks: entry.content.tasks};
+  sb.members = sb.members || [];
+  sb._checkedIn = true;
+  sb._keyRetried = false;
+  sb.lastError = '';
+  personalStash = {columns: state.columns, tasks: state.tasks};
+  activeShared = sb;
+  checkoutShared();
+  undoStack = [];
+  showArchive = false;
+  filterTag = ''; quickFilters = {};
+  renderAll();
+  save();
+  loadBoardMembers(sb).then(function(){ renderAll(); });
+  sharedSync();
+  if(!sharedPollTimer) sharedPollTimer = setInterval(sharedPoll, 10000);
+}
+function leaveSharedBoard(silent){
+  var sb = activeShared;
+  if(!sb) return;
+  if(state.settings.activeTaskId) stopTimer(state.settings.activeTaskId, true);
+  checkinShared();
+  sharedCacheSave(sb);
+  sharedSync(0, sb);
+  state.settings.activeSharedBoardId = '';
+  activeShared = null;
+  personalStash = null;
+  undoStack = [];
+  showArchive = false;
+  if(!silent){ save(); renderAll(); }
+}
+function initCollaboration(){
+  var cfg = getCloudSyncConfig();
+  if(!cloudIsReady(cfg)){ renderBoardSwitcher(); return; }
+  loadSharedBoards().then(function(){
+    var wanted = state.settings.activeSharedBoardId;
+    if(wanted && !activeShared){
+      if(sharedList.some(function(x){ return x.id === wanted; })) enterSharedBoard(wanted);
+      else { state.settings.activeSharedBoardId = ''; }
+    }
+    renderBoardSwitcher();
+  });
+  setInterval(function(){ if(!document.hidden) loadSharedBoards().then(renderBoardSwitcher); }, 90000);
+}
+
+/* =========================================================
+   BOARD-UMSCHALTER, DIALOGE FÜR GETEILTE BOARDS
+   ========================================================= */
+function cloudReadyForSharing(){ return cloudIsReady(getCloudSyncConfig()); }
+function renderBoardSwitcher(){
+  var lbl = document.getElementById('boardNameLabel');
+  if(lbl) lbl.textContent = currentBoardName();
+  var wrap = document.querySelector('.sb-brand-wrap');
+  if(wrap) wrap.classList.toggle('shared', !!activeShared);
+  renderBoardMenu();
+}
+function renderBoardMenu(){
+  var menu = document.getElementById('boardMenu');
+  if(!menu) return;
+  var localNames = [state.settings.activeBoardName].concat(state.boards.map(function(b){ return b.name; }));
+  var html = '<div class="menu-label">Meine Boards</div>';
+  localNames.forEach(function(n){
+    var on = !activeShared && n === state.settings.activeBoardName;
+    html += '<button class="btn'+(on?' on':'')+'" data-bm-local="'+escapeAttr(n)+'">'+svgIcon('board')+'<span>'+escapeHtml(n)+'</span>'+(on?'<span class="menu-hint">aktiv</span>':'')+'</button>';
+  });
+  html += '<div class="menu-label">Geteilte Boards</div>';
+  if(!cloudReadyForSharing()) html += '<div class="menu-note">Geteilte Boards brauchen den eingerichteten Cloud-Speicher.</div>';
+  else if(!sharedListLoaded) html += '<div class="menu-note">Lädt…</div>';
+  else if(sharedError) html += '<div class="menu-note err">'+escapeHtml(sharedError)+'</div>';
+  else if(!sharedList.length) html += '<div class="menu-note">Noch keine. Lege eines an oder lass dich einladen.</div>';
+  sharedList.forEach(function(sb){
+    var on = activeShared && activeShared.id === sb.id;
+    html += '<button class="btn'+(on?' on':'')+'" data-bm-shared="'+sb.id+'">'+svgIcon('users')+'<span>'+escapeHtml(sb.name)+'</span>'+(on?'<span class="menu-hint">aktiv</span>':'')+'</button>';
+  });
+  html += '<div class="sep"></div>' +
+    '<button class="btn" data-bm-act="new">'+svgIcon('plus')+'<span>Neues Board…</span></button>' +
+    '<button class="btn" data-bm-act="members">'+svgIcon('users')+'<span>'+(activeShared ? 'Mitglieder verwalten…' : 'Dieses Board teilen…')+'</span></button>' +
+    '<button class="btn" data-bm-act="settings">'+svgIcon('gear')+'<span>Boards verwalten</span></button>';
+  menu.innerHTML = html;
+}
+function activateLocalBoard(name){
+  if(activeShared) leaveSharedBoard(true);
+  if(name !== state.settings.activeBoardName){ switchBoard(name); }
+  else { save(); renderAll(); }
+}
+document.getElementById('boardSwitchBtn').addEventListener('click', function(e){
+  e.stopPropagation();
+  var menu = document.getElementById('boardMenu');
+  var wasOpen = menu.classList.contains('open');
+  closeAllMenus();
+  if(wasOpen) return;
+  renderBoardMenu();
+  var r = this.getBoundingClientRect();
+  menu.style.left = r.left + 'px';
+  menu.style.top = (r.bottom + 4) + 'px';
+  menu.classList.add('open');
+  if(cloudReadyForSharing()) loadSharedBoards().then(function(){ if(menu.classList.contains('open')) renderBoardMenu(); });
+});
+document.getElementById('boardMenu').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if(!b) return;
+  if(b.dataset.bmLocal) activateLocalBoard(b.dataset.bmLocal);
+  else if(b.dataset.bmShared) enterSharedBoard(b.dataset.bmShared);
+  else if(b.dataset.bmAct === 'new') openNewBoardDialog();
+  else if(b.dataset.bmAct === 'members') openBoardMembers();
+  else if(b.dataset.bmAct === 'settings'){ settingsActiveTab = 'board'; openSettings(); }
+});
+
+/* ---- Neues Board ---- */
+function openNewBoardDialog(){
+  var ready = cloudReadyForSharing();
+  var html =
+    '<div class="modal-header"><h2>Neues Board</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><label for="nbName">Name</label><input id="nbName" autocomplete="off" placeholder="z.B. Hotline-Team"></div>' +
+      '<div class="form-row"><label>Art</label><div class="seg" id="nbKind" role="group">' +
+        '<button type="button" class="seg-btn on" data-kind="local">Persönlich</button>' +
+        '<button type="button" class="seg-btn" data-kind="shared"'+(ready?'':' disabled title="Cloud-Speicher nötig"')+'>Geteilt</button>' +
+      '</div></div>' +
+      '<div class="hint" id="nbHint">Nur du siehst dieses Board. Es liegt wie bisher verschlüsselt in deinem Cloud-Speicher.</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="nbCreate">Anlegen</button></div>';
+  openModal(html);
+  var kind = 'local';
+  var hints = {
+    local: 'Nur du siehst dieses Board. Es liegt wie bisher verschlüsselt in deinem Cloud-Speicher.',
+    shared: 'Mehrere Personen arbeiten am selben Board und können sich Tasks zuweisen. Der Inhalt bleibt Ende-zu-Ende-verschlüsselt, nur eingeladene Personen können ihn lesen.'
+  };
+  document.getElementById('nbName').focus();
+  document.getElementById('nbKind').addEventListener('click', function(e){
+    var b = e.target.closest('.seg-btn');
+    if(!b || b.disabled) return;
+    kind = b.dataset.kind;
+    this.querySelectorAll('.seg-btn').forEach(function(x){ x.classList.toggle('on', x === b); });
+    document.getElementById('nbHint').textContent = hints[kind];
+  });
+  function create(){
+    var name = document.getElementById('nbName').value.trim();
+    if(!name){ toast('Bitte einen Namen eingeben.'); return; }
+    if(kind === 'local'){
+      closeModal();
+      if(activeShared) leaveSharedBoard(true);
+      createNewBoard(name);
+      return;
+    }
+    var btn = document.getElementById('nbCreate');
+    btn.disabled = true; btn.textContent = 'Lege an…';
+    createSharedBoard(name, defaultState().columns, []).then(function(id){
+      return loadSharedBoards().then(function(){ closeModal(); enterSharedBoard(id); setTimeout(openBoardMembers, 400); });
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = 'Anlegen';
+      toast('Konnte das Board nicht anlegen: ' + err.message, 8000);
+    });
+  }
+  document.getElementById('nbCreate').addEventListener('click', create);
+  document.getElementById('nbName').addEventListener('keydown', function(e){ if(e.key === 'Enter') create(); });
+}
+
+/* ---- Persönliches Board als geteilte Kopie freigeben ---- */
+function openShareLocalBoardDialog(){
+  var html =
+    '<div class="modal-header"><h2>Board teilen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-top:0;">„'+escapeHtml(state.settings.activeBoardName)+'“ ist ein persönliches Board. Du kannst eine <strong>geteilte Kopie</strong> anlegen und danach Personen einladen. Spalten und Tasks werden verschlüsselt kopiert, dein persönliches Board bleibt unverändert bestehen.</p>' +
+      '<div class="form-row"><label for="slName">Name des geteilten Boards</label><input id="slName" value="'+escapeAttr(state.settings.activeBoardName)+' (geteilt)"></div>' +
+      (cloudReadyForSharing() ? '' : '<div class="hint" style="color:var(--danger);">Dafür muss der Cloud-Speicher eingerichtet sein (Einstellungen → Konto und Daten).</div>') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="slCreate"'+(cloudReadyForSharing()?'':' disabled')+'>Geteilte Kopie anlegen</button></div>';
+  openModal(html);
+  document.getElementById('slCreate').addEventListener('click', function(){
+    var name = document.getElementById('slName').value.trim() || 'Geteiltes Board';
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Lege an…';
+    var tasks = JSON.parse(JSON.stringify(state.tasks.filter(function(t){ return !t.archived; })));
+    tasks.forEach(function(t){ t.timeSessions.forEach(function(s){ if(!s.by) s.by = myUserId(); }); t.assigneeId = ''; });
+    var columns = JSON.parse(JSON.stringify(state.columns));
+    createSharedBoard(name, columns, tasks).then(function(id){
+      return loadSharedBoards().then(function(){ closeModal(); enterSharedBoard(id); setTimeout(openBoardMembers, 400); });
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = 'Geteilte Kopie anlegen';
+      toast('Konnte das Board nicht teilen: ' + err.message, 8000);
+    });
+  });
+}
+
+/* ---- Mitglieder ---- */
+function openBoardMembers(){
+  if(!cloudReadyForSharing()){ toast('Dafür muss der Cloud-Speicher eingerichtet sein (Einstellungen).'); return; }
+  if(!activeShared){ openShareLocalBoardDialog(); return; }
+  var sb = activeShared;
+  loadBoardMembers(sb).then(function(){ return fetchProfiles(); }).then(function(){ renderMembersModal(); });
+}
+function renderMembersModal(){
+  var sb = activeShared;
+  if(!sb){ closeModal(); return; }
+  var isOwner = sb.role === 'owner';
+  var members = sharedMembersWithNames();
+  var memberIds = members.map(function(m){ return m.id; });
+  var candidates = registeredProfileRows.filter(function(p){ return memberIds.indexOf(p.id) < 0; })
+    .sort(function(a, b){ return String(a.display_name).localeCompare(String(b.display_name)); });
+  var html =
+    '<div class="modal-header"><h2>'+svgIcon('users')+' '+escapeHtml(sb.name)+'</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      (isOwner ? '<div class="form-row"><label for="mbName">Name des Boards</label><div class="s-inline"><input id="mbName" value="'+escapeAttr(sb.name)+'" style="flex:1;"><button class="btn" id="mbRename">Umbenennen</button></div></div>' : '') +
+      '<div class="task-block-title">Mitglieder ('+members.length+')</div>' +
+      '<div class="member-list">' + members.map(function(m){
+        var p = profileById(m.id);
+        return '<div class="member-row"><span class="sb-avatar">'+escapeHtml(personInitials(m.name))+'</span>' +
+          '<span class="member-name">'+escapeHtml(m.name)+(m.id===currentUser.id?' (du)':'')+'<span class="member-mail">'+escapeHtml(p && p.email ? p.email : '')+'</span></span>' +
+          '<span class="sim-status '+(m.role==='owner'?'offen':'')+'">'+(m.role==='owner'?'Eigentümer:in':'Mitglied')+'</span>' +
+          (isOwner && m.role !== 'owner' ? '<button class="btn ghost" data-mb-remove="'+m.id+'" title="Aus dem Board entfernen">Entfernen</button>' : '') +
+        '</div>';
+      }).join('') + '</div>' +
+      (isOwner ?
+        '<div class="task-block-title" style="margin-top:16px;">Person hinzufügen</div>' +
+        (candidates.length ?
+          '<div class="s-inline"><select id="mbAdd" style="flex:1;">' + candidates.map(function(p){
+            return '<option value="'+p.id+'"'+(p.public_key?'':' disabled')+'>'+escapeHtml(p.display_name || p.email)+(p.public_key?'':' (noch nicht bereit)')+'</option>';
+          }).join('') + '</select><button class="btn primary" id="mbAddBtn">Hinzufügen</button></div>' +
+          '<div class="hint">Nur registrierte Personen, die sich mit der aktuellen Version angemeldet haben, sind auswählbar. Neue Personen registrieren sich selbst über den App-Link.</div>'
+          : '<div class="hint">Keine weiteren registrierten Personen vorhanden. Gib den App-Link weiter, damit sich andere registrieren.</div>')
+        : '') +
+      '<div class="hint" style="margin-top:14px;">Alle Mitglieder können Tasks anlegen, bearbeiten und zuweisen. Der Inhalt ist Ende-zu-Ende-verschlüsselt; wer entfernt wird, bekommt keinen neuen Schlüssel.</div>' +
+    '</div>' +
+    '<div class="modal-footer">' +
+      '<div class="modal-footer-danger">' + (isOwner ? '<button class="btn danger" id="mbDelete">Board löschen</button>' : '<button class="btn danger" id="mbLeave">Board verlassen</button>') + '</div>' +
+      '<div class="modal-footer-actions"><button class="btn primary" data-close-modal>Fertig</button></div>' +
+    '</div>';
+  openModal(html);
+  function reopen(){ renderMembersModal(); }
+  function fail(err){ toast('Fehler: ' + (err.message || err), 8000); reopen(); }
+  var renameBtn = document.getElementById('mbRename');
+  if(renameBtn) renameBtn.addEventListener('click', function(){
+    var n = document.getElementById('mbName').value.trim();
+    if(!n) return;
+    sb.name = n;
+    scheduleSharedPush();
+    renderBoardSwitcher(); renderAll();
+    toast('Umbenannt.');
+    reopen();
+  });
+  var addBtn = document.getElementById('mbAddBtn');
+  if(addBtn) addBtn.addEventListener('click', function(){
+    var id = document.getElementById('mbAdd').value;
+    if(!id) return;
+    addBtn.disabled = true; addBtn.textContent = 'Füge hinzu…';
+    addBoardMember(sb, id).then(function(){ toast(personName(id) + ' wurde hinzugefügt.'); renderAll(); reopen(); }).catch(fail);
+  });
+  document.querySelectorAll('[data-mb-remove]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id = b.dataset.mbRemove;
+      confirmDialog('„' + personName(id) + '“ aus dem Board entfernen? Der Board-Schlüssel wird dabei erneuert.', 'Entfernen', function(){
+        toast('Entferne…');
+        removeBoardMember(sb, id).then(function(){ toast(personName(id) + ' wurde entfernt.'); renderAll(); reopen(); }).catch(fail);
+      }, reopen);
+    });
+  });
+  var leaveBtn = document.getElementById('mbLeave');
+  if(leaveBtn) leaveBtn.addEventListener('click', function(){
+    confirmDialog('Das Board „' + sb.name + '“ verlassen? Du verlierst den Zugriff.', 'Verlassen', function(){
+      leaveSharedMembership(sb).then(function(){
+        sharedList = sharedList.filter(function(x){ return x.id !== sb.id; });
+        leaveSharedBoard();
+        closeModal();
+        toast('Board verlassen.');
+      }).catch(fail);
+    }, reopen);
+  });
+  var delBtn = document.getElementById('mbDelete');
+  if(delBtn) delBtn.addEventListener('click', function(){
+    confirmDialog('Das Board „' + sb.name + '“ für ALLE Mitglieder endgültig löschen? Das kann nicht rückgängig gemacht werden.', 'Löschen', function(){
+      deleteSharedBoard(sb).then(function(){
+        sharedList = sharedList.filter(function(x){ return x.id !== sb.id; });
+        try{ localStorage.removeItem(sharedCacheKey(sb.id)); }catch(e){}
+        leaveSharedBoard();
+        closeModal();
+        toast('Board gelöscht.');
+      }).catch(fail);
+    }, reopen);
+  });
+}
+
+/* ---- Einstellungen: Boards ---- */
+function settingsBoardsHtml(){
+  var localNames = [state.settings.activeBoardName].concat(state.boards.map(function(b){ return b.name; }));
+  var html = '<p class="s-sub" style="margin:0 0 8px;">Persönliche Boards, z.B. „Arbeit“ und „Privat“. Beim Wechseln bleiben alle Daten erhalten.</p><div class="columns-list">' +
+    localNames.map(function(name){
+      var active = !activeShared && name === state.settings.activeBoardName;
+      var isCurrentLocal = name === state.settings.activeBoardName;
+      return '<div class="col-row"><span style="flex:1; font-weight:'+(active?'700':'400')+';">'+(active?'▶ ':'')+escapeHtml(name)+'</span>' +
+        (active ? '' : '<button class="btn ghost" data-switch-board="'+escapeAttr(name)+'">Wechseln</button>') +
+        (isCurrentLocal ? '' : '<button class="btn ghost" data-delete-local-board="'+escapeAttr(name)+'">Löschen</button>') +
+      '</div>';
+    }).join('') + '</div>' +
+    '<div class="s-inline" style="margin-top:10px;"><input id="newBoardName" placeholder="Name für neues Board" style="flex:1;"><button class="btn" id="addBoardBtn">Neues persönliches Board</button></div>' +
+    '<div class="task-block-title" style="margin-top:18px;">Geteilte Boards</div>';
+  if(!cloudReadyForSharing()) html += '<div class="s-sub">Geteilte Boards brauchen den eingerichteten Cloud-Speicher.</div>';
+  else if(!sharedListLoaded) html += '<div class="s-sub">Lädt…</div>';
+  else if(sharedError) html += '<div class="s-sub" style="color:var(--danger);">'+escapeHtml(sharedError)+'</div>';
+  else if(!sharedList.length) html += '<div class="s-sub">Noch keine geteilten Boards.</div>';
+  else html += '<div class="columns-list">' + sharedList.map(function(sb){
+    var on = activeShared && activeShared.id === sb.id;
+    return '<div class="col-row"><span style="flex:1; font-weight:'+(on?'700':'400')+';">'+svgIcon('users')+' '+escapeHtml(sb.name)+' <span class="s-sub">'+(sb.role==='owner'?'Eigentümer:in':'Mitglied')+'</span></span>' +
+      (on ? '' : '<button class="btn ghost" data-open-shared="'+sb.id+'">Öffnen</button>') +
+      '<button class="btn ghost" data-shared-members="'+sb.id+'">Mitglieder</button></div>';
+  }).join('') + '</div>';
+  html += '<div class="s-actions"><button class="btn" id="btnNewSharedBoard">Neues geteiltes Board…</button></div>';
+  return html;
+}
+function wireSettingsBoards(){
+  document.querySelectorAll('[data-delete-local-board]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var name = b.dataset.deleteLocalBoard;
+      confirmDialog('Das persönliche Board „' + name + '“ mit allen Tasks löschen?', 'Löschen', function(){
+        state.boards = state.boards.filter(function(x){ return x.name !== name; });
+        save(); closeModal(); renderAll(); openSettings();
+      }, function(){ closeModal(); openSettings(); });
+    });
+  });
+  document.querySelectorAll('[data-open-shared]').forEach(function(b){
+    b.addEventListener('click', function(){ closeModal(); enterSharedBoard(b.dataset.openShared); });
+  });
+  document.querySelectorAll('[data-shared-members]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id = b.dataset.sharedMembers;
+      closeModal();
+      if(!activeShared || activeShared.id !== id) enterSharedBoard(id);
+      setTimeout(openBoardMembers, 500);
+    });
+  });
+  var nb = document.getElementById('btnNewSharedBoard');
+  if(nb) nb.addEventListener('click', function(){ closeModal(); openNewBoardDialog(); });
+}
+
+/* ---- Anzeigename ändern ---- */
+function updateOwnDisplayName(name){
+  var client = getSupabaseClient();
+  return client.auth.updateUser({data: {display_name: name}}).then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    currentUser.displayName = name;
+    return client.from('profiles').upsert({id: currentUser.id, display_name: name, email: currentUser.email});
+  }).then(function(){ return fetchProfiles(); }).then(function(){
+    renderAll();
+    toast('Name geändert: ' + name);
+  });
+}
+
+/* ---- Zuweisung ---- */
+function assigneeLabel(t){
+  if(t.assigneeId && activeShared) return personName(t.assigneeId);
+  return t.assignee || '';
+}
+function assignTask(taskId, userId){
+  var patch = userId ? {assigneeId: userId, assignee: personName(userId)} : {assigneeId: '', assignee: ''};
+  updateTask(taskId, patch);
+}
+
 /* =========================================================
    PUSH-BENACHRICHTIGUNGEN AUFS HANDY (via ntfy.sh)
    Eine reine GitHub-Pages-Seite kann selbst keine Push-Nachrichten
@@ -6182,6 +7157,11 @@ function renderCloudSyncStatus(){
     }
   }
   var bar = document.getElementById('cloudStatusLabel');
+  if(bar && activeShared){
+    bar.textContent = activeShared.lastError ? '· 👥 Sync-Fehler (geteiltes Board)' : '· 👥 Geteiltes Board' + (activeShared.lastSyncedAt ? ' (' + new Date(activeShared.lastSyncedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) + ')' : '');
+    if(activeShared.lastError) bar.title = activeShared.lastError; else bar.removeAttribute('title');
+    return;
+  }
   if(bar){
     if(!cfg.enabled){
       bar.textContent = '';
@@ -6240,7 +7220,7 @@ function openSettings(){
   var accountTab =
     sCard('Konto', '',
       sRow(escapeHtml(currentUser ? currentUser.displayName : '–'), '<button class="btn" id="btnAuthSignOut">🚪 Abmelden</button>', escapeHtml(currentUser ? currentUser.email : '')) +
-      '<div class="s-sub" style="margin-top:6px;">Der Name erscheint bei Zuweisungen und im Aktivitäts-Verlauf.</div>'
+      sRow('Anzeigename', '<div class="s-inline"><input id="sDisplayName" maxlength="60" value="'+escapeAttr(currentUser ? currentUser.displayName : '')+'"><button class="btn" id="btnSaveDisplayName">Speichern</button></div>', 'Erscheint bei Zuweisungen, in geteilten Boards und im Aktivitäts-Verlauf.')
     ) +
     sCard('☁️ Cloud-Speicher', 'Dein Board wird automatisch verschlüsselt in Supabase gespeichert – lesen kann es nur, wer deine Passphrase kennt.',
       sRow('Status', '<div id="cloudSyncStatus" class="s-status"></div>') +
@@ -6341,17 +7321,7 @@ function openSettings(){
       '<div class="columns-list">' + state.columns.map(function(c){
         return '<div class="col-row"><input value="'+escapeAttr(c.name)+'" data-col-id="'+c.id+'" class="settingsColName"></div>';
       }).join('') + '</div>', true) +
-    sCollapsible('Boards',
-      '<p class="s-sub" style="margin:0 0 8px;">Getrennte Boards, z.B. „Arbeit“ und „Privat“. Beim Wechseln bleiben alle Daten erhalten.</p>' +
-      '<div class="columns-list">' +
-        ([state.settings.activeBoardName].concat(state.boards.map(function(b){return b.name;}))).map(function(name){
-          var active = name === state.settings.activeBoardName;
-          return '<div class="col-row"><span style="flex:1; font-weight:'+(active?'700':'400')+';">'+(active?'▶ ':'')+escapeHtml(name)+'</span>' +
-            (active ? '' : '<button class="btn ghost" data-switch-board="'+escapeAttr(name)+'">Wechseln</button>') +
-          '</div>';
-        }).join('') +
-      '</div>' +
-      '<div class="s-inline" style="margin-top:10px;"><input id="newBoardName" placeholder="Name für neues Board" style="flex:1;"><button class="btn" id="addBoardBtn">+ Neues Board</button></div>', false) +
+    sCollapsible('Boards', settingsBoardsHtml(), true) +
     sCollapsible('Team',
       '<p class="s-sub" style="margin:0 0 8px;">Namen zum Zuweisen von Tasks und für die Ansicht „👥 Nach Person“.</p>' +
       '<div class="columns-list">' + state.settings.teamMembers.map(function(m, idx){
@@ -6491,6 +7461,11 @@ function openSettings(){
     importBackupFile(file);
   });
 
+  document.getElementById('btnSaveDisplayName').addEventListener('click', function(){
+    var n = document.getElementById('sDisplayName').value.trim();
+    if(n.length < 2){ toast('Bitte einen Namen mit mindestens 2 Zeichen eingeben.'); return; }
+    updateOwnDisplayName(n).catch(function(err){ toast('Fehler: ' + err.message); });
+  });
   document.getElementById('btnAuthSignOut').addEventListener('click', function(){
     confirmDialog('Wirklich abmelden?', 'Abmelden', function(){ closeModal(); signOutCurrentUser(); });
   });
@@ -6558,6 +7533,7 @@ function openSettings(){
         cfg.lastError = '';
         setCloudSyncConfig(cfg);
         cloudPushNow(true).then(function(){
+          reencryptUserKeys(passphrase).catch(function(){});
           var err = getCloudSyncConfig().lastError;
           toast(err ? ('Fehler: ' + err) : '🔐 Neu verschlüsselt und hochgeladen.');
           openSettings();
@@ -6790,7 +7766,7 @@ function openSettings(){
   });
   document.querySelectorAll('[data-switch-board]').forEach(function(btn){
     btn.addEventListener('click', function(){
-      switchBoard(btn.dataset.switchBoard);
+      activateLocalBoard(btn.dataset.switchBoard);
       closeModal();
     });
   });
@@ -6799,6 +7775,7 @@ function openSettings(){
     createNewBoard(name);
     closeModal();
   });
+  wireSettingsBoards();
 }
 function renderStorageStatusHtml(){
   var mode = state.settings.storageMode;
@@ -7263,6 +8240,7 @@ function stashCurrentBoard(){
   if(idx >= 0) state.boards[idx] = snapshot; else state.boards.push(snapshot);
 }
 function switchBoard(name){
+  if(activeShared) leaveSharedBoard(true);
   if(name === state.settings.activeBoardName) return;
   var target = state.boards.find(function(b){ return b.name === name; });
   if(!target) return;
@@ -7277,6 +8255,7 @@ function switchBoard(name){
   toast('📋 Board gewechselt: ' + name);
 }
 function createNewBoard(name){
+  if(activeShared) leaveSharedBoard(true);
   if(!name || !name.trim()) return;
   name = name.trim();
   if(name === state.settings.activeBoardName || state.boards.some(function(b){ return b.name===name; })){
@@ -7309,6 +8288,7 @@ function toggleArchiveView(){
    ZEITREISE – TÄGLICHE SNAPSHOTS
    ========================================================= */
 function captureDailySnapshotIfNeeded(){
+  if(activeShared) return;
   var todayStr = toDateInputValue(new Date());
   var snaps = state.settings.dailySnapshots;
   if(snaps.length && snaps[snaps.length-1].date === todayStr) return;
@@ -7649,7 +8629,7 @@ document.getElementById('btnControlCenter').addEventListener('click', toggleCont
 document.getElementById('btnReloadExternal').addEventListener('click', function(){
   if(!fileHandle) return;
   fileHandle.getFile().then(function(file){ return file.text(); }).then(function(text){
-    state = migrateState(text ? JSON.parse(text) : null);
+    withPersonalState(function(){ state = migrateState(text ? JSON.parse(text) : null); });
     lastWriteAt = Date.now();
     document.getElementById('externalChangeBanner').classList.remove('show');
     renderAll();
@@ -7662,7 +8642,7 @@ document.getElementById('btnDismissExternal').addEventListener('click', function
 });
 document.getElementById('btnReloadCloud').addEventListener('click', function(){
   if(window.__pendingCloudState){
-    state = migrateState(window.__pendingCloudState);
+    withPersonalState(function(){ state = migrateState(window.__pendingCloudState); });
     window.__pendingCloudState = null;
     renderAll();
     save();
@@ -7899,6 +8879,7 @@ function startAuthGate(){
             boardReady = true;
             document.getElementById('authOverlay').classList.add('hidden');
             init();
+            setTimeout(initCollaboration, 1500);
           });
         }, 0);
       } else if(boardReady){
@@ -8049,12 +9030,13 @@ function renderBoardPassphraseEnter(payloadText, done){
   document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); done(); });
   document.getElementById('bpForgot').addEventListener('click', function(e){
     e.preventDefault();
-    if(!window.confirm('Ohne Passphrase lassen sich die verschlüsselten Cloud-Daten nicht wiederherstellen. Du kannst nur ein NEUES, leeres Cloud-Board anlegen – das bisherige Cloud-Board und seine Snapshots werden dabei gelöscht. Wirklich fortfahren?')) return;
+    if(!window.confirm('Ohne Passphrase lassen sich die verschlüsselten Cloud-Daten nicht wiederherstellen. Du kannst nur ein NEUES, leeres Cloud-Board anlegen – das bisherige Cloud-Board und seine Snapshots werden dabei gelöscht, und der Zugriff auf geteilte Boards geht verloren (du musst neu eingeladen werden). Wirklich fortfahren?')) return;
     var client = getSupabaseClient();
     renderAuthLoading();
     Promise.all([
       client.from('boards').delete().eq('user_id', currentUser.id),
-      client.from('board_snapshots').delete().eq('user_id', currentUser.id)
+      client.from('board_snapshots').delete().eq('user_id', currentUser.id),
+      client.from('user_keys').delete().eq('user_id', currentUser.id)
     ]).then(function(results){
       if(results[0].error) throw new Error(results[0].error.message);
       renderBoardPassphraseCreate(done);
@@ -8113,7 +9095,7 @@ function renderAuthLogin(){
 }
 function renderAuthRegister(){
   document.getElementById('authContent').innerHTML =
-    '<div class="form-row"><label>Name (sichtbar bei Zuweisungen)</label><input id="authDisplayName" autocomplete="name"></div>' +
+    '<div class="form-row"><label>Vor- und Nachname</label><input id="authDisplayName" autocomplete="name" placeholder="z.B. Anna Meier"><div class="hint">Mit diesem Namen können dir andere Tasks zuweisen.</div></div>' +
     '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username"></div>' +
     '<div class="form-row"><label>Passwort (mind. 6 Zeichen)</label><input type="password" id="authPassword" autocomplete="new-password"></div>' +
     '<button class="btn primary" id="authRegisterBtn" style="width:100%; margin-bottom:10px;">Registrieren</button>' +
@@ -8125,6 +9107,7 @@ function renderAuthRegister(){
     var password = document.getElementById('authPassword').value;
     var msgEl = document.getElementById('authErrorMsg');
     if(!name || !email || !password){ msgEl.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+    if(name.length < 2){ msgEl.textContent = 'Bitte deinen vollständigen Namen eingeben, damit dir Tasks zugewiesen werden können.'; return; }
     msgEl.textContent = '';
     getSupabaseClient().auth.signUp({email:email, password:password, options:{data:{display_name:name}}}).then(function(res){
       if(res.error){ msgEl.textContent = translateAuthError(res.error.message); return; }
@@ -8155,11 +9138,18 @@ function upsertProfile(){
 function fetchProfiles(){
   var client = getSupabaseClient();
   if(!client) return Promise.resolve();
-  return client.from('profiles').select('id, display_name, email').then(function(res){
+  function apply(res){
     if(res.data && res.data.length){
       registeredProfileRows = res.data;
       registeredProfiles = res.data.map(function(r){ return r.display_name; }).filter(Boolean);
+      return true;
     }
+    return false;
+  }
+  /* "public_key" gibt es erst nach dem SQL-Update für geteilte Boards - sonst ohne die Spalte laden. */
+  return client.from('profiles').select('id, display_name, email, public_key').then(function(res){
+    if(res.error) return client.from('profiles').select('id, display_name, email').then(apply);
+    return apply(res);
   }).catch(function(){});
 }
 /* "admins"-Tabelle (SQL-Setup siehe README): enthält genau eine Zeile pro
@@ -8255,7 +9245,7 @@ function openShareLinkModal(){
     var btn = document.getElementById('genShareLinkBtn');
     btn.disabled = true; btn.textContent = 'Erstelle…';
     var snapshot = {
-      boardName: state.settings.activeBoardName,
+      boardName: currentBoardName(),
       generatedAt: nowIso(),
       columns: state.columns.map(function(c){ return {id:c.id, name:c.name}; }),
       tasks: openTasks.map(function(t){

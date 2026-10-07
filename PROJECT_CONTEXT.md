@@ -4,6 +4,27 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Zusammenarbeit mit geteilten Boards
+
+Umgesetzt (README-Abschnitt "Geteilte Boards" enthält das einmalige SQL):
+- **Architektur:** Block "GETEILTE BOARDS" vor "PUSH-BENACHRICHTIGUNGEN". Board-Schlüssel (AES-GCM) pro Board; pro Mitglied per ECDH P-256 verpackt
+  (`wrapBoardKey`/`unwrapBoardKey`); eigenes Schlüsselpaar in `ensureUserKeys()` (privat verschlüsselt in `user_keys`, öffentlich in `profiles.public_key`).
+  Entfernen einer Person = Rekey (`removeBoardMember`).
+- **Zustand:** Geteilter Inhalt wird in `state.columns/tasks` "ausgecheckt", das persönliche Board liegt in `personalStash`. Alle persönlichen Speicher-/Sync-Stellen
+  laufen über `withPersonalState()` / `serializePersonalState()` (doSave, Datei, Export, Cloud-Sync, Importe). Siehe `activeShared`, `sharedList`,
+  `enterSharedBoard()`, `leaveSharedBoard()`, `currentBoardName()`.
+- **Sync:** `sharedSync()` = holen, Drei-Wege-Merge (`mergeContent` mit Basis `sb.base`), ggf. Hochladen mit Versionsprüfung (`eq('version')`), Wiederholung bei Konflikt;
+  Poll alle 10 s (`sharedPoll`), Push 1,5 s nach Änderung (`scheduleSharedPush`), lokaler Cache `wb-sb-<id>`. Merge in-place (`applyMergedToState`),
+  damit offene Dialoge gültige Task-Objekte behalten.
+- **Zeit:** Sitzungen in geteilten Boards tragen `by` (User-ID); `isMySession`, `myOpenSession`, `isRunning` und `secondsInRange` zählen nur eigene.
+- **Zuweisung:** `task.assigneeId` + `assignee` (Name); Chip auf der Karte, Filter "Mir zugewiesen", Lanes "Nach Person" aus den Mitgliedern, Rechtsklick "Zuweisen an",
+  Hinweis bei neuer Zuweisung (`notifyAssignments`).
+- **UI:** Board-Umschalter in der Seitenleiste (`#boardSwitchBtn`, `#boardMenu`, `renderBoardMenu`), `openNewBoardDialog`, `openShareLocalBoardDialog`,
+  `openBoardMembers`/`renderMembersModal`, Einstellungen → Board (`settingsBoardsHtml`, `wireSettingsBoards`), Anzeigename ändern (`updateOwnDisplayName`);
+  die Registrierung verlangt Vor- und Nachnamen.
+- Getestet im Browser gegen einen Supabase-Mock mit RLS-Nachbildung und zwei Personen (Anlegen, Einladen, Zuweisen, Timer pro Person, Notizen, Entfernen mit Rekey)
+  sowie Unit-Tests der Merge-Logik. **Noch nicht gegen das echte Supabase getestet; das SQL aus der README muss zuerst ausgeführt werden.**
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Hotline-Formular, Control-Center, Reporter, KI-Ausbau, Task-Fenster
 
 - **Statistik/Tagesabschluss** sind eigene Ansichten (`boardViewMode` = `stats`/`dyce`, `switchToView()`, `renderStatsView()`/`renderDyceView()`), keine Dialoge mehr.
@@ -19,8 +40,6 @@
 - **Task-Fenster** zweispaltig: links Beschreibung, Notizen, Checkliste, Links, "Weitere Optionen" (Wiedervorlage, Übergabe, Abhängigkeiten, Rückfragen);
   rechts Zeit-Karte und Eigenschaften; Titel im Kopf; "Mehr"-Menü im Fuss. Alle IDs unverändert.
 - Löschen-Button im Fuss wird nicht mehr gestreckt.
-- **Noch offen (angefragt):** Collaboration/geteilte Boards mit Zuweisung. Entwurf: pro Board zufälliger AES-Schlüssel, pro Mitglied per ECDH (P-256)
-  eingewickelt; Tabellen `shared_boards` + `board_members` + `user_keys`; Sync per 3-Wege-Merge mit Versionsprüfung; Zeitsitzungen mit `by`-Feld.
 
 ## ✅ Stand 2026-10-07 (Fortsetzung): Design-Erweiterung um neue Funktionen
 
