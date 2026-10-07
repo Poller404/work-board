@@ -882,6 +882,17 @@ button.mobile-only{display:none;}
 mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0 1px;}
 .sim-sol{font-size:12px; color:var(--ok); margin-top:2px;}
 @media (max-width:900px){ .kb{grid-template-columns:1fr;} .kb-detail{position:static;} }
+/* ---- Automatisierung ---- */
+.rule-row{display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--border);}
+.rule-row.off .rule-main{opacity:.55;}
+.rule-main{flex:1; min-width:0;}
+.rule-name{font-weight:600;}
+.rule-sum{font-size:12.5px; color:var(--text-dim);}
+.rule-btns{display:flex; gap:4px; flex-shrink:0;}
+.rule-sec{margin-top:14px;}
+.rule-sec-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); margin-bottom:6px;}
+.rule-line{display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;}
+.rule-line select, .rule-line input{min-width:0;}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1254,7 +1265,8 @@ function defaultState(){
       automationRules: [],
       budgetAlerts: {},
       dyceBreaks: {},
-      dyceClosed: {}
+      dyceClosed: {},
+      ruleLog: []
     },
     boards: [],
     meta: { createdAt: now, updatedAt: now }
@@ -1431,6 +1443,7 @@ function createTask(partial){
   state.tasks.unshift(t);
   save();
   if(t.type === 'hotline') sendNtfyPush('📞 Neues Hotline-Ticket', 'Ein neues Hotline-Ticket wurde erstellt' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + ' – im Board ansehen.');
+  runRules('created', t);
   return t;
 }
 
@@ -1443,6 +1456,9 @@ function logActivity(t, text){
 function updateTask(id, patch){
   var t = getTask(id);
   if(!t) return;
+  var evMoved = !!(patch.columnId && patch.columnId !== t.columnId);
+  var evAssigned = !!((patch.assigneeId && patch.assigneeId !== (t.assigneeId || '')) || (patch.assignee && patch.assignee !== t.assignee));
+  var wasDone = !!t.completedAt;
   if(patch.columnId && patch.columnId !== t.columnId){
     var fromCol = state.columns.find(function(c){ return c.id===t.columnId; });
     var toCol = state.columns.find(function(c){ return c.id===patch.columnId; });
@@ -1469,6 +1485,11 @@ function updateTask(id, patch){
   }
   Object.assign(t, patch, {updatedAt: nowIso()});
   save();
+  if(!ruleDepth){
+    if(evMoved) runRules('moved', t);
+    if(!wasDone && t.completedAt) runRules('completed', t);
+    if(evAssigned) runRules('assigned', t);
+  }
 }
 
 function spawnRecurrenceIfDue(t){
@@ -7697,7 +7718,8 @@ var SETTINGS_TABS = [
   {id:'design', label:'🎨 Darstellung'},
   {id:'time', label:'⏱️ Zeit'},
   {id:'board', label:'🗂️ Board'},
-  {id:'integrations', label:'🔌 Integrationen'}
+  {id:'integrations', label:'🔌 Integrationen'},
+  {id:'automation', label:'🤖 Automatisierung'}
 ];
 var settingsActiveTab = 'account';
 
@@ -7905,7 +7927,7 @@ function openSettings(){
       )
     ) : '';
 
-  var tabBodies = {account:accountTab, design:designTab, time:timeTab, board:boardTab, integrations:integrationsTab, admin:adminTab};
+  var tabBodies = {account:accountTab, design:designTab, time:timeTab, board:boardTab, integrations:integrationsTab, automation:rulesSettingsHtml(), admin:adminTab};
   if(!tabBodies[settingsActiveTab] || (settingsActiveTab === 'admin' && !isCurrentUserAdmin)) settingsActiveTab = 'account';
 
   var html =
@@ -7938,6 +7960,7 @@ function openSettings(){
     btn.addEventListener('click', function(){ applySettingsTab(btn.dataset.settingsTab); });
   });
   applySettingsTab(settingsActiveTab);
+  wireRulesSettings();
 
   var bkmLink = document.getElementById('bkmLink');
   bkmLink.href = 'javascript:' + BOOKMARKLET_SRC;
@@ -8640,6 +8663,7 @@ function cmdActionsList(){
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'🗓️', label:'Planer (Wochenansicht)', run: function(){ switchToView('calendar'); }},
     {icon:'📊', label:'Statistik', run: openStats},
+    {icon:'🤖', label:'Automatisierung (Regeln)', run: function(){ settingsActiveTab = 'automation'; openSettings(); }},
     {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
     {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
@@ -10451,6 +10475,374 @@ function kbAskAi(results){
   }).catch(function(err){ kbAnswerHtml = '<div class="hint" style="color:var(--danger);">KI-Fehler: ' + escapeHtml(err.message) + '</div>'; renderKbView(); });
 }
 
+/* =========================================================
+   AUTOMATISIERUNGS-REGELN ("Wenn … dann …")
+   Regeln liegen in den Einstellungen und werden zwischen den Geräten abgeglichen. Ereignis-Regeln
+   (neu, verschoben, erledigt, zugewiesen) laufen sofort bei der Aktion, zeitbasierte Regeln
+   (älter als, überfällig) prüft die App jede Minute. Regeln lösen keine weiteren Regeln aus
+   (kein Kaskaden-Effekt), zeitbasierte Regeln feuern pro Task nur einmal.
+   ========================================================= */
+var ruleDepth = 0;
+var RULE_FIRED_KEY = 'wb-rules-fired';
+var RULE_TRIGGER_LABELS = {
+  created: 'Neuer Task angelegt', moved: 'Task in eine Spalte verschoben', completed: 'Task erledigt',
+  assigned: 'Task zugewiesen', age: 'Task ist älter als …', overdue: 'Fälligkeit überschritten'
+};
+var RULE_FIELD_LABELS = {type: 'Typ', priority: 'Priorität', column: 'Spalte', reporter: 'Reporter', title: 'Titel', tag: 'Tag', project: 'Projekt', assignee: 'Zugewiesen an'};
+var RULE_OP_LABELS = {is: 'ist', isnot: 'ist nicht', contains: 'enthält'};
+var RULE_ACTION_LABELS = {
+  set_priority: 'Priorität setzen', move: 'In Spalte verschieben', assign: 'Zuweisen an', add_tag: 'Tag hinzufügen', set_type: 'Typ setzen',
+  set_due: 'Frist setzen (in … Tagen)', set_project: 'Projekt setzen', notify: 'Push aufs Handy senden', toast: 'Hinweis anzeigen',
+  create_task: 'Neuen Task anlegen', add_note: 'Notiz hinzufügen', snooze: 'Wiedervorlage (in … Std.)', pin: 'Anheften'
+};
+
+function rulePersonChoices(){
+  if(activeShared) return sharedMembersWithNames().map(function(m){ return m.name; });
+  var names = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
+  return names.slice();
+}
+function ruleText(s, t){
+  return String(s || '').replace(/\{(title|reporter|jira|column)\}/g, function(m, k){
+    if(k === 'title') return t.title;
+    if(k === 'reporter') return t.reporter || '';
+    if(k === 'jira') return t.jiraKey || '';
+    var c = state.columns.find(function(x){ return x.id === t.columnId; });
+    return c ? c.name : '';
+  });
+}
+function ruleCondTrue(c, t){
+  var v = String(c.value || '').trim().toLowerCase();
+  var res;
+  if(c.field === 'tag'){
+    var tags = (t.tags || []).map(function(x){ return String(x).toLowerCase(); });
+    res = c.op === 'contains' ? tags.some(function(x){ return x.indexOf(v) >= 0; }) : tags.indexOf(v.replace(/^#/, '')) >= 0;
+    return c.op === 'isnot' ? !res : res;
+  }
+  var actual;
+  if(c.field === 'type') actual = t.type;
+  else if(c.field === 'priority') actual = t.priority;
+  else if(c.field === 'column') actual = t.columnId;
+  else if(c.field === 'reporter') actual = String(t.reporter || '').toLowerCase();
+  else if(c.field === 'title') actual = String(t.title || '').toLowerCase();
+  else if(c.field === 'assignee') actual = String(assigneeLabel(t) || '').toLowerCase();
+  else if(c.field === 'project'){ var p = projectOf(t); actual = p ? p.id : ''; }
+  else return false;
+  if(c.op === 'contains') return String(actual).toLowerCase().indexOf(v) >= 0;
+  var eq = String(actual).toLowerCase() === (c.field === 'type' || c.field === 'priority' || c.field === 'column' || c.field === 'project' ? String(c.value) : v).toLowerCase();
+  return c.op === 'isnot' ? !eq : eq;
+}
+function ruleMatches(r, t){ return (r.conditions || []).every(function(c){ return ruleCondTrue(c, t); }); }
+function addWorkdays(date, days, workOnly){
+  var d = new Date(date);
+  if(!workOnly){ d.setDate(d.getDate() + days); return d; }
+  var step = days < 0 ? -1 : 1, left = Math.abs(days);
+  while(left > 0){ d.setDate(d.getDate() + step); var w = d.getDay(); if(w !== 0 && w !== 6) left--; }
+  return d;
+}
+function ruleLog(r, t, what){
+  var log = state.settings.ruleLog = Array.isArray(state.settings.ruleLog) ? state.settings.ruleLog : [];
+  log.unshift({ts: nowIso(), rule: r.name, task: t.title.slice(0, 60), what: what});
+  if(log.length > 40) log.length = 40;
+}
+function applyRuleActions(r, t){
+  ruleDepth++;
+  var done = [];
+  try{
+    r.actions.forEach(function(a){
+      var v = a.value;
+      try{
+        if(a.type === 'set_priority' && PRIORITIES[v]){ updateTask(t.id, {priority: v}); done.push('Priorität ' + PRIORITIES[v].label); }
+        else if(a.type === 'move' && state.columns.some(function(c){ return c.id === v; })){ updateTask(t.id, {columnId: v}); done.push('verschoben'); }
+        else if(a.type === 'assign'){
+          if(v === '__me__' || !v){ if(activeShared) assignTask(t.id, myUserId()); else updateTask(t.id, {assignee: ''}); done.push('mir zugewiesen'); }
+          else if(activeShared){ var m = sharedMembersWithNames().find(function(x){ return x.name === v; }); if(m){ assignTask(t.id, m.id); done.push('zugewiesen an ' + v); } }
+          else { updateTask(t.id, {assignee: v}); done.push('zugewiesen an ' + v); }
+        }
+        else if(a.type === 'add_tag'){
+          var add = String(v).split(',').map(function(x){ return x.trim().replace(/^#/, ''); }).filter(Boolean);
+          var tags = t.tags.slice(); add.forEach(function(x){ if(tags.indexOf(x) < 0) tags.push(x); });
+          if(tags.length !== t.tags.length){ updateTask(t.id, {tags: tags}); done.push('Tag ' + add.join(', ')); }
+        }
+        else if(a.type === 'set_type' && TYPES[v]){ updateTask(t.id, {type: v}); done.push('Typ ' + TYPES[v].label); }
+        else if(a.type === 'set_due'){
+          var days = parseInt(v, 10);
+          if(!isNaN(days)){ updateTask(t.id, {dueDate: toDateInputValue(addWorkdays(new Date(), days, a.extra === 'work'))}); done.push('Frist gesetzt'); }
+        }
+        else if(a.type === 'set_project'){ var pr = getProject(v); if(pr){ updateTask(t.id, {projectId: pr.id, projectName: pr.name}); done.push('Projekt ' + pr.name); } }
+        else if(a.type === 'notify'){ sendNtfyPush('🤖 ' + r.name, ruleText(v, {title: '', reporter: '', jiraKey: '', columnId: ''}) || 'Eine Automatisierungs-Regel wurde ausgelöst.'); done.push('Push gesendet'); }
+        else if(a.type === 'toast'){ var tid = t.id; toast('🤖 ' + (ruleText(v, t) || r.name), 8000, 'Öffnen', function(){ openTaskModal(tid); }); done.push('Hinweis'); }
+        else if(a.type === 'create_task'){
+          var nt = createTask({title: ruleText(v, t) || 'Folge-Task', type: 'adhoc', columnId: state.columns[0].id, reporter: t.reporter || '', projectId: t.projectId || undefined, projectName: t.projectName || undefined});
+          var dd = parseInt(a.extra, 10);
+          if(!isNaN(dd)) nt.dueDate = toDateInputValue(addWorkdays(new Date(), dd, true));
+          if(nt.projectId === undefined) delete nt.projectId;
+          if(nt.projectName === undefined) delete nt.projectName;
+          done.push('Task angelegt');
+        }
+        else if(a.type === 'add_note'){ t.notes.push({ts: nowIso(), text: '🤖 ' + (ruleText(v, t) || r.name)}); t.updatedAt = nowIso(); done.push('Notiz'); }
+        else if(a.type === 'snooze'){ var hrs = parseFloat(v); if(hrs > 0){ updateTask(t.id, {snoozeUntil: new Date(Date.now() + hrs * 3600000).toISOString()}); done.push('Wiedervorlage'); } }
+        else if(a.type === 'pin'){ updateTask(t.id, {pinned: true}); done.push('angeheftet'); }
+      }catch(err){ done.push('Fehler: ' + err.message); }
+    });
+    if(done.length){ logActivity(t, 'Regel „' + r.name + '“: ' + done.join(', ')); ruleLog(r, t, done.join(', ')); }
+  } finally { ruleDepth--; }
+  save();
+  clearTimeout(applyRuleActions._t);
+  applyRuleActions._t = setTimeout(function(){ renderAll(); }, 50);
+}
+function runRules(event, t){
+  if(ruleDepth > 0 || !t) return;
+  (state.settings.automationRules || []).forEach(function(r){
+    if(!r.enabled || r.trigger.type !== event) return;
+    if(r.scope !== 'all' && activeShared) return;
+    if(event === 'moved' && r.trigger.column && r.trigger.column !== t.columnId) return;
+    if(event === 'completed' && r.trigger.column && r.trigger.column !== t.columnId) return;
+    if(!ruleMatches(r, t)) return;
+    applyRuleActions(r, t);
+  });
+}
+function ruleFiredLoad(){
+  try{ return JSON.parse(localStorage.getItem(RULE_FIRED_KEY) || '{}') || {}; }catch(e){ return {}; }
+}
+function ruleTimeMatch(r, t){
+  if(t.archived || t.completedAt) return false;
+  if(r.trigger.type === 'age'){
+    if((Date.now() - new Date(t.createdAt).getTime()) / 3600000 < (r.trigger.hours || 0)) return false;
+  } else {
+    if(!t.dueDate) return false;
+    if(Date.now() < new Date(t.dueDate + 'T23:59:59').getTime() + (r.trigger.hours || 0) * 3600000) return false;
+  }
+  return ruleMatches(r, t);
+}
+function ruleFiredKey(r, t){ return r.id + '|' + t.id + '|' + (r.trigger.type === 'overdue' ? t.dueDate : 'age'); }
+function checkTimeRules(){
+  var rules = (state.settings.automationRules || []).filter(function(r){ return r.enabled && (r.trigger.type === 'age' || r.trigger.type === 'overdue'); });
+  if(!rules.length || ruleDepth > 0) return;
+  var fired = ruleFiredLoad(), changed = false, budget = 25;
+  rules.forEach(function(r){
+    if(r.scope !== 'all' && activeShared) return;
+    state.tasks.slice().forEach(function(t){
+      if(budget <= 0) return;
+      var key = ruleFiredKey(r, t);
+      if(fired[key] || !ruleTimeMatch(r, t)) return;
+      fired[key] = Date.now(); changed = true; budget--;
+      applyRuleActions(r, t);
+    });
+  });
+  if(changed){
+    var cutoff = Date.now() - 90 * 86400000;
+    Object.keys(fired).forEach(function(k){ if(fired[k] < cutoff) delete fired[k]; });
+    try{ localStorage.setItem(RULE_FIRED_KEY, JSON.stringify(fired)); }catch(e){}
+  }
+}
+function ruleValueLabel(field, value){
+  if(field === 'type') return (TYPES[value] || {}).label || value;
+  if(field === 'priority') return (PRIORITIES[value] || {}).label || value;
+  if(field === 'column'){ var c = state.columns.find(function(x){ return x.id === value; }); return c ? c.name : value; }
+  if(field === 'project'){ var p = getProject(value); return p ? p.name : value; }
+  return value;
+}
+function ruleSummary(r){
+  var trig = RULE_TRIGGER_LABELS[r.trigger.type];
+  if(r.trigger.type === 'moved') trig = 'Task nach „' + (r.trigger.column ? ruleValueLabel('column', r.trigger.column) : 'beliebige Spalte') + '“ verschoben';
+  if(r.trigger.type === 'age') trig = 'Task älter als ' + (r.trigger.hours || 0) + ' Std.';
+  if(r.trigger.type === 'overdue') trig = 'Frist überschritten' + (r.trigger.hours ? ' (+' + r.trigger.hours + ' Std.)' : '');
+  var conds = r.conditions.map(function(c){ return RULE_FIELD_LABELS[c.field] + ' ' + RULE_OP_LABELS[c.op] + ' „' + ruleValueLabel(c.field, c.value) + '“'; });
+  var acts = r.actions.map(function(a){
+    var base = RULE_ACTION_LABELS[a.type];
+    if(a.type === 'set_priority') return 'Priorität ' + ruleValueLabel('priority', a.value);
+    if(a.type === 'move') return 'verschieben nach ' + ruleValueLabel('column', a.value);
+    if(a.type === 'assign') return 'zuweisen an ' + (a.value === '__me__' || !a.value ? 'mich' : a.value);
+    if(a.type === 'add_tag') return 'Tag „' + a.value + '“';
+    if(a.type === 'set_type') return 'Typ ' + ruleValueLabel('type', a.value);
+    if(a.type === 'set_due') return 'Frist in ' + a.value + (a.extra === 'work' ? ' Arbeitstagen' : ' Tagen');
+    if(a.type === 'set_project') return 'Projekt ' + ruleValueLabel('project', a.value);
+    if(a.type === 'create_task') return 'Task „' + a.value + '“ anlegen';
+    if(a.type === 'snooze') return 'Wiedervorlage in ' + a.value + ' Std.';
+    return base.toLowerCase();
+  });
+  return 'Wenn ' + trig + (conds.length ? ' und ' + conds.join(' und ') : '') + ' → ' + acts.join(', ');
+}
+function saveRule(r){
+  var list = (state.settings.automationRules || []).slice();
+  var idx = list.findIndex(function(x){ return x.id === r.id; });
+  r.updatedAt = nowIso();
+  if(idx >= 0) list[idx] = r; else list.push(r);
+  state.settings.automationRules = list;
+  save();
+}
+function ruleExamples(){
+  var done = state.columns.find(function(c){ return DONE_COLUMN_RE.test(c.name); });
+  return [
+    {name: 'Hotline wird dringend', trigger: {type: 'age', hours: 4}, conditions: [{field: 'type', op: 'is', value: 'hotline'}, {field: 'priority', op: 'isnot', value: 'critical'}], actions: [{type: 'set_priority', value: 'high'}, {type: 'toast', value: 'Hotline-Ticket „{title}“ ist seit 4 Stunden offen.'}]},
+    {name: 'Überfällig: Priorität erhöhen', trigger: {type: 'overdue', hours: 0}, conditions: [], actions: [{type: 'set_priority', value: 'high'}, {type: 'pin', value: ''}]},
+    {name: 'Direktion: sofort kritisch', trigger: {type: 'created'}, conditions: [{field: 'reporter', op: 'contains', value: 'Direktion'}], actions: [{type: 'set_priority', value: 'critical'}, {type: 'pin', value: ''}, {type: 'notify', value: 'Neues Ticket von der Direktion.'}]},
+    {name: 'Nachfassen nach Erledigung', trigger: {type: 'completed'}, conditions: [{field: 'tag', op: 'is', value: 'nachfassen'}], actions: [{type: 'create_task', value: 'Nachfassen: {title}', extra: '3'}]}
+  ].map(normalizeRule).filter(Boolean);
+}
+function rulesSettingsHtml(){
+  var rules = state.settings.automationRules || [];
+  var log = state.settings.ruleLog || [];
+  var list = rules.map(function(r){
+    return '<div class="rule-row' + (r.enabled ? '' : ' off') + '" data-rule="' + r.id + '">' +
+      '<label class="rule-on" title="Regel ein- oder ausschalten"><input type="checkbox" class="s-check" data-rule-toggle="' + r.id + '"' + (r.enabled ? ' checked' : '') + '></label>' +
+      '<div class="rule-main"><div class="rule-name">' + escapeHtml(r.name) + (r.scope === 'all' ? ' <span class="pill low">auch geteilte Boards</span>' : '') + '</div><div class="rule-sum">' + escapeHtml(ruleSummary(r)) + '</div></div>' +
+      '<div class="rule-btns"><button class="btn" data-rule-edit="' + r.id + '">Bearbeiten</button><button class="btn ghost" data-rule-dup="' + r.id + '" title="Duplizieren">⧉</button><button class="btn ghost" data-rule-del="' + r.id + '" title="Löschen">🗑</button></div></div>';
+  }).join('') || '<div class="s-sub" style="padding:8px 0;">Noch keine Regeln. Lege eine eigene an oder füge die Beispiele hinzu.</div>';
+  return sCard('🤖 Automatisierung', 'Regeln im Muster „Wenn … dann …“ nehmen dir Routinearbeit ab, z.B. Priorität erhöhen, zuweisen, Folge-Tasks anlegen oder eine Push-Nachricht senden.',
+      list +
+      '<div class="s-actions"><button class="btn primary" id="btnRuleNew">＋ Neue Regel</button>' + (rules.length ? '' : '<button class="btn" id="btnRuleExamples">Beispiele hinzufügen</button>') + '</div>' +
+      sMore('So funktioniert’s', '<p>Ereignis-Regeln (neu, verschoben, erledigt, zugewiesen) laufen sofort. Zeit-Regeln (älter als, überfällig) prüft die App jede Minute, solange sie geöffnet ist – pro Task feuern sie nur einmal. Regeln lösen keine weiteren Regeln aus. Platzhalter in Texten: <code>{title}</code>, <code>{reporter}</code>, <code>{jira}</code>, <code>{column}</code>. In geteilten Boards laufen Regeln nur, wenn „auch geteilte Boards“ gewählt ist.</p>')) +
+    sCard('Verlauf', 'Die letzten ausgelösten Regeln auf diesem Gerät.', log.length ? '<div class="columns-list">' + log.slice(0, 12).map(function(l){
+      return '<div class="session-row"><span>' + escapeHtml(l.rule) + ' → ' + escapeHtml(l.task) + ' <span class="hint">(' + escapeHtml(l.what) + ')</span></span><span>' + new Date(l.ts).toLocaleString('de-CH', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) + '</span></div>';
+    }).join('') + '</div>' : '<div class="s-sub">Noch nichts ausgelöst.</div>');
+}
+function wireRulesSettings(){
+  var nb = document.getElementById('btnRuleNew');
+  if(nb) nb.addEventListener('click', function(){ openRuleDialog(''); });
+  var ex = document.getElementById('btnRuleExamples');
+  if(ex) ex.addEventListener('click', function(){
+    ruleExamples().forEach(function(r){ r.enabled = false; saveRule(r); });
+    toast('Beispiele hinzugefügt (ausgeschaltet) – prüfen und einschalten.');
+    settingsActiveTab = 'automation'; openSettings();
+  });
+  document.querySelectorAll('[data-rule-toggle]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var r = (state.settings.automationRules || []).find(function(x){ return x.id === cb.dataset.ruleToggle; });
+      if(!r) return;
+      r = JSON.parse(JSON.stringify(r)); r.enabled = cb.checked; saveRule(r);
+      if(cb.checked) ruleApplyPreview(r, function(){ settingsActiveTab = 'automation'; openSettings(); }); else { settingsActiveTab = 'automation'; openSettings(); }
+    });
+  });
+  document.querySelectorAll('[data-rule-edit]').forEach(function(b){ b.addEventListener('click', function(){ openRuleDialog(b.dataset.ruleEdit); }); });
+  document.querySelectorAll('[data-rule-dup]').forEach(function(b){ b.addEventListener('click', function(){
+    var r = (state.settings.automationRules || []).find(function(x){ return x.id === b.dataset.ruleDup; });
+    if(!r) return;
+    var c = JSON.parse(JSON.stringify(r)); c.id = 'ru-' + uid(); c.name = c.name + ' (Kopie)'; c.enabled = false; saveRule(normalizeRule(c));
+    settingsActiveTab = 'automation'; openSettings();
+  }); });
+  document.querySelectorAll('[data-rule-del]').forEach(function(b){ b.addEventListener('click', function(){
+    confirmDialog('Regel wirklich löschen?', 'Löschen', function(){
+      state.settings.automationRules = (state.settings.automationRules || []).filter(function(x){ return x.id !== b.dataset.ruleDel; });
+      save(); settingsActiveTab = 'automation'; openSettings();
+    }, function(){ settingsActiveTab = 'automation'; openSettings(); });
+  }); });
+}
+/* Beim Einschalten/Speichern einer Zeit-Regel: bestehende Tasks, die sofort passen, nur nach Rückfrage anfassen. */
+function ruleApplyPreview(r, next){
+  if(!r.enabled || (r.trigger.type !== 'age' && r.trigger.type !== 'overdue')){ next(); return; }
+  var fired = ruleFiredLoad();
+  var pending = state.tasks.filter(function(t){ return !fired[ruleFiredKey(r, t)] && ruleTimeMatch(r, t) && (r.scope === 'all' || !activeShared); });
+  if(!pending.length){ next(); return; }
+  confirmDialog(pending.length + ' bestehende Task' + (pending.length === 1 ? '' : 's') + ' erfüllen die Regel „' + r.name + '“ bereits (z.B. „' + pending[0].title.slice(0, 40) + '“). Regel jetzt auf ' + (pending.length === 1 ? 'ihn' : 'sie') + ' anwenden? Bei „Nur neue“ greift sie erst bei künftigen Tasks.', 'Jetzt anwenden', function(){
+    closeModal(); next(); setTimeout(checkTimeRules, 200);
+  }, function(){
+    pending.forEach(function(t){ fired[ruleFiredKey(r, t)] = Date.now(); });
+    try{ localStorage.setItem(RULE_FIRED_KEY, JSON.stringify(fired)); }catch(e){}
+    closeModal(); next();
+  });
+  var cancel = document.getElementById('confirmCancelBtn');
+  if(cancel) cancel.textContent = 'Nur neue';
+}
+/* ---- Regel-Editor ---- */
+function ruleSelectHtml(options, value, attrs){
+  return '<select ' + attrs + '>' + options.map(function(o){ return '<option value="' + escapeAttr(o[0]) + '"' + (String(o[0]) === String(value) ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>'; }).join('') + '</select>';
+}
+function ruleCondValueHtml(c){
+  var f = c.field;
+  if(f === 'type') return ruleSelectHtml(Object.keys(TYPES).map(function(k){ return [k, TYPES[k].label]; }), c.value || 'hotline', 'class="rc-val"');
+  if(f === 'priority') return ruleSelectHtml(Object.keys(PRIORITIES).map(function(k){ return [k, PRIORITIES[k].label]; }), c.value || 'high', 'class="rc-val"');
+  if(f === 'column') return ruleSelectHtml(state.columns.map(function(x){ return [x.id, x.name]; }), c.value || state.columns[0].id, 'class="rc-val"');
+  if(f === 'project'){ var pl = projectList(); return pl.length ? ruleSelectHtml(pl.map(function(p){ return [p.id, projectLabel(p)]; }), c.value || pl[0].id, 'class="rc-val"') : '<span class="hint">Noch keine Projekte</span>'; }
+  return '<input class="rc-val" value="' + escapeAttr(c.value || '') + '" placeholder="Text">';
+}
+function ruleActionValueHtml(a){
+  var t = a.type;
+  if(t === 'set_priority') return ruleSelectHtml(Object.keys(PRIORITIES).map(function(k){ return [k, PRIORITIES[k].label]; }), a.value || 'high', 'class="ra-val"');
+  if(t === 'move') return ruleSelectHtml(state.columns.map(function(x){ return [x.id, x.name]; }), a.value || state.columns[0].id, 'class="ra-val"');
+  if(t === 'assign') return ruleSelectHtml([['__me__', 'Mich']].concat(rulePersonChoices().map(function(n){ return [n, n]; })), a.value || '__me__', 'class="ra-val"');
+  if(t === 'set_type') return ruleSelectHtml(Object.keys(TYPES).map(function(k){ return [k, TYPES[k].label]; }), a.value || 'adhoc', 'class="ra-val"');
+  if(t === 'set_project'){ var pl = projectList(); return pl.length ? ruleSelectHtml(pl.map(function(p){ return [p.id, projectLabel(p)]; }), a.value || pl[0].id, 'class="ra-val"') : '<span class="hint">Noch keine Projekte</span>'; }
+  if(t === 'set_due') return '<input class="ra-val" type="number" min="0" value="' + escapeAttr(a.value || '1') + '" style="width:80px;"> <label class="hint"><input type="checkbox" class="ra-extra"' + (a.extra === 'work' ? ' checked' : '') + '> Arbeitstage</label>';
+  if(t === 'snooze') return '<input class="ra-val" type="number" min="1" step="1" value="' + escapeAttr(a.value || '2') + '" style="width:80px;"> <span class="hint">Std.</span>';
+  if(t === 'create_task') return '<input class="ra-val" value="' + escapeAttr(a.value || '') + '" placeholder="Titel, z.B. Nachfassen: {title}" style="flex:1;"> <input class="ra-extra-n" type="number" min="0" value="' + escapeAttr(a.extra || '') + '" placeholder="Frist (Tage)" style="width:100px;">';
+  if(t === 'pin') return '<span class="hint">–</span>';
+  return '<input class="ra-val" value="' + escapeAttr(a.value || '') + '" placeholder="Text ({title}, {reporter} …)" style="flex:1;">';
+}
+function ruleCollect(draft){
+  draft.name = (document.getElementById('ruName').value || '').trim();
+  draft.scope = document.getElementById('ruScope').checked ? 'all' : 'personal';
+  draft.trigger.type = document.getElementById('ruTrigger').value;
+  var colEl = document.getElementById('ruTrigCol'), hrEl = document.getElementById('ruTrigHours');
+  if(colEl) draft.trigger.column = colEl.value; else delete draft.trigger.column;
+  if(hrEl) draft.trigger.hours = parseFloat(hrEl.value) || 0; else delete draft.trigger.hours;
+  draft.conditions = [].map.call(document.querySelectorAll('.rule-cond'), function(row){
+    var val = row.querySelector('.rc-val');
+    return {field: row.querySelector('.rc-field').value, op: row.querySelector('.rc-op').value, value: val ? val.value : ''};
+  });
+  draft.actions = [].map.call(document.querySelectorAll('.rule-act'), function(row){
+    var val = row.querySelector('.ra-val'), ex = row.querySelector('.ra-extra'), exn = row.querySelector('.ra-extra-n');
+    return {type: row.querySelector('.ra-type').value, value: val ? val.value : '', extra: ex ? (ex.checked ? 'work' : '') : (exn ? exn.value : '')};
+  });
+}
+function openRuleDialog(id){
+  var existing = id ? (state.settings.automationRules || []).find(function(x){ return x.id === id; }) : null;
+  var draft = existing ? JSON.parse(JSON.stringify(existing)) : {id: 'ru-' + uid(), name: '', enabled: true, scope: 'personal', trigger: {type: 'created'}, conditions: [], actions: [{type: 'set_priority', value: 'high', extra: ''}]};
+  function render(){
+    var trig = draft.trigger.type;
+    var trigParams = '';
+    if(trig === 'moved' || trig === 'completed') trigParams = trig === 'moved' ? ruleSelectHtml([['', 'beliebige Spalte']].concat(state.columns.map(function(c){ return [c.id, c.name]; })), draft.trigger.column || '', 'id="ruTrigCol"') : '';
+    if(trig === 'age') trigParams = '<input id="ruTrigHours" type="number" min="0" step="0.5" value="' + (draft.trigger.hours != null ? draft.trigger.hours : 4) + '" style="width:90px;"> <span class="hint">Stunden seit Anlage</span>';
+    if(trig === 'overdue') trigParams = '<input id="ruTrigHours" type="number" min="0" step="1" value="' + (draft.trigger.hours || 0) + '" style="width:90px;"> <span class="hint">Stunden nach Fristende</span>';
+    var condRows = draft.conditions.map(function(c, i){
+      return '<div class="rule-line rule-cond" data-i="' + i + '">' + ruleSelectHtml(RULE_COND_FIELDS.map(function(f){ return [f, RULE_FIELD_LABELS[f]]; }), c.field, 'class="rc-field"') +
+        ruleSelectHtml(Object.keys(RULE_OP_LABELS).map(function(o){ return [o, RULE_OP_LABELS[o]]; }), c.op, 'class="rc-op"') + ruleCondValueHtml(c) +
+        '<button class="btn ghost icon-btn" data-del-cond="' + i + '" title="Entfernen">✕</button></div>';
+    }).join('');
+    var actRows = draft.actions.map(function(a, i){
+      return '<div class="rule-line rule-act" data-i="' + i + '">' + ruleSelectHtml(RULE_ACTIONS.map(function(k){ return [k, RULE_ACTION_LABELS[k]]; }), a.type, 'class="ra-type"') + ruleActionValueHtml(a) +
+        '<button class="btn ghost icon-btn" data-del-act="' + i + '" title="Entfernen">✕</button></div>';
+    }).join('');
+    var html = '<div class="modal-header"><h2>' + (existing ? 'Regel bearbeiten' : 'Neue Regel') + '</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+      '<div class="modal-body rule-editor">' +
+        '<div class="form-row"><label for="ruName">Name</label><input id="ruName" value="' + escapeAttr(draft.name) + '" placeholder="z.B. Hotline wird dringend"></div>' +
+        '<div class="rule-sec"><div class="rule-sec-title">Wenn</div><div class="rule-line">' + ruleSelectHtml(RULE_TRIGGERS.map(function(k){ return [k, RULE_TRIGGER_LABELS[k]]; }), trig, 'id="ruTrigger"') + trigParams + '</div></div>' +
+        '<div class="rule-sec"><div class="rule-sec-title">Und (optional)</div>' + condRows + '<button class="btn ghost" id="ruAddCond"' + (draft.conditions.length >= 8 ? ' disabled' : '') + '>＋ Bedingung</button></div>' +
+        '<div class="rule-sec"><div class="rule-sec-title">Dann</div>' + actRows + '<button class="btn ghost" id="ruAddAct"' + (draft.actions.length >= 6 ? ' disabled' : '') + '>＋ Aktion</button></div>' +
+        '<label style="display:flex; gap:8px; align-items:center; margin-top:10px;"><input type="checkbox" id="ruScope"' + (draft.scope === 'all' ? ' checked' : '') + '> Auch in geteilten Boards ausführen</label>' +
+        '<div class="hint" id="ruPreview" style="margin-top:8px;"></div>' +
+      '</div>' +
+      '<div class="modal-footer"><button class="btn" id="ruTest" style="margin-right:auto;">Testen</button><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="ruSave">Speichern</button></div>';
+    openModal(html, {wide: true});
+    function again(){ ruleCollect(draft); render(); }
+    document.getElementById('ruTrigger').addEventListener('change', function(){ ruleCollect(draft); if(draft.trigger.type === 'age' && draft.trigger.hours == null) draft.trigger.hours = 4; render(); });
+    document.getElementById('ruAddCond').addEventListener('click', function(){ ruleCollect(draft); draft.conditions.push({field: 'type', op: 'is', value: 'hotline'}); render(); });
+    document.getElementById('ruAddAct').addEventListener('click', function(){ ruleCollect(draft); draft.actions.push({type: 'set_priority', value: 'high', extra: ''}); render(); });
+    document.querySelectorAll('.rc-field').forEach(function(el){ el.addEventListener('change', function(){ ruleCollect(draft); var row = el.closest('.rule-cond'); draft.conditions[+row.dataset.i].value = ''; render(); }); });
+    document.querySelectorAll('.ra-type').forEach(function(el){ el.addEventListener('change', function(){ ruleCollect(draft); var row = el.closest('.rule-act'); draft.actions[+row.dataset.i].value = ''; draft.actions[+row.dataset.i].extra = ''; render(); }); });
+    document.querySelectorAll('[data-del-cond]').forEach(function(b){ b.addEventListener('click', function(){ ruleCollect(draft); draft.conditions.splice(+b.dataset.delCond, 1); render(); }); });
+    document.querySelectorAll('[data-del-act]').forEach(function(b){ b.addEventListener('click', function(){ ruleCollect(draft); draft.actions.splice(+b.dataset.delAct, 1); render(); }); });
+    document.getElementById('ruTest').addEventListener('click', function(){
+      ruleCollect(draft);
+      var r = normalizeRule(Object.assign({}, draft, {name: draft.name || 'Test'}));
+      var pv = document.getElementById('ruPreview');
+      if(!r){ pv.textContent = 'Die Regel ist unvollständig (mindestens eine Aktion nötig).'; return; }
+      var matches = state.tasks.filter(function(t){ return !t.archived && ruleMatches(r, t) && ((r.trigger.type === 'age' || r.trigger.type === 'overdue') ? ruleTimeMatch(r, t) : true); });
+      pv.innerHTML = '<b>' + escapeHtml(ruleSummary(r)) + '</b><br>' + (matches.length ? matches.length + ' bestehende Task' + (matches.length === 1 ? '' : 's') + ' erfüllen die Bedingungen, z.B. ' + matches.slice(0, 3).map(function(t){ return '„' + escapeHtml(t.title.slice(0, 40)) + '“'; }).join(', ') + '.' : 'Aktuell erfüllt kein Task die Bedingungen.');
+    });
+    document.getElementById('ruSave').addEventListener('click', function(){
+      ruleCollect(draft);
+      if(!draft.name){ toast('Bitte der Regel einen Namen geben.'); return; }
+      var r = normalizeRule(draft);
+      if(!r){ toast('Bitte mindestens eine Aktion mit Inhalt wählen.'); return; }
+      saveRule(r);
+      closeModal();
+      ruleApplyPreview(r, function(){ settingsActiveTab = 'automation'; openSettings(); });
+    });
+  }
+  render();
+}
+
 /*@@EXTRA-JS@@*/
 
 /* =========================================================
@@ -10844,6 +11236,8 @@ function init(){
   setInterval(checkDueReminders, 30000);
   setInterval(checkSlaCriticalPush, 60000);
   setInterval(checkBudgetAlerts, 60000);
+  setInterval(checkTimeRules, 60000);
+  setTimeout(checkTimeRules, 6000);
   setTimeout(checkBudgetAlerts, 4000);
   runAutoArchive();
   setTimeout(checkOvernightTimers, 1200);
