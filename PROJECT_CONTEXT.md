@@ -4,6 +4,22 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Design-Erweiterung um neue Funktionen
+
+Auf Wunsch ("erweitere es wie du es für richtig hältst") zusätzlich zu Variante A:
+- **Schnellfilter-Chips** (`#filterBar`, `renderFilterBar()`, `QUICK_FILTERS`, `quickFilters`, `filterTag`): Heute fällig, Überfällig,
+  Hohe Priorität, SLA-Risiko, Angeheftet, Läuft + die 6 häufigsten Tags, mit Zählern, UND-verknüpft; in `taskMatchesFilters()` integriert.
+  Nur in Board-Ansichten sichtbar (nicht Dashboard/Kalender/Archiv).
+- **Schnell-Anlegen** in der Spalte (`inlineAddColId`, `createQuickTask()`): Enter legt an und bleibt offen, Umschalt+Enter öffnet,
+  Esc bricht ab; Kurzschreibweise `PROJ-123` (Jira-Key+Typ), `#tag`, `!kritisch|hoch|mittel|niedrig`.
+- **Kartenmenü** (Rechtsklick, `openCardContextMenu`) neu: Timer, Anheften, Duplizieren, Priorität (4 Kacheln), Verschieben nach Spalte, Archivieren, Löschen.
+- **Seitenleiste:** Tagesfortschritt (`renderSidebarToday()`, Ziel = `targetHoursPerDay`), Theme-Umschalter (System/Hell/Dunkel),
+  einklappbar (`body.sb-collapsed`, localStorage `wb-sb-collapsed`, nur Desktop).
+- **Dashboard neu** (`renderDashboardWidgets()`): Begrüssung, 5 Kennzahlen (klickbar → gefilterte Board-Ansicht), Fällig/Überfällig, Heute im Fokus,
+  Wochen-Balkendiagramm (SVG, Ziel-Linie), Zeit nach Typ, Erinnerungen, "Was jetzt?". `#board.dashboard-mode` ermöglicht Scrollen.
+- **Task-Fenster:** Zeit-Karte oben, ruhigere Formular-Beschriftungen/Abstände. Leere Spalten mit gestrichelter Fläche und Hinweis.
+- Neue Tastenkürzel: `/` fokussiert die Suche. Cheatsheet (`?`) ergänzt.
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Gesamtdesign "Variante A – modern und clean"
 
 Nutzer wählte nach zwei Mockups Variante A. Umbau (Funktionen unverändert, alle Element-IDs erhalten):
