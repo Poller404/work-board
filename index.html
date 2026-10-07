@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://kxrnwdzxypfepnaafdfn.supabase.co https://api.anthropic.com https://api.github.com https://ntfy.sh; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<script>if(window.top !== window.self){ document.documentElement.style.display = 'none'; try{ window.top.location = window.self.location; }catch(e){} }</script>
 <title>Work Board</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f5bea">
@@ -769,7 +772,7 @@ button.mobile-only{display:none;}
   }
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -1029,6 +1032,56 @@ var DB_NAME = 'kanban-fs-db', STORE = 'handles';
    STATE
    ========================================================= */
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+/* =========================================================
+   SICHERHEITS-HELFER: Eingaben aus Importen, Backups und geteilten Boards gelten als
+   nicht vertrauenswürdig (eine andere Person oder eine manipulierte Datei könnte
+   Schadcode in Felder schreiben). Deshalb werden IDs, Farben, Links und Bilder beim
+   Einlesen geprüft und beim Anzeigen zusätzlich maskiert.
+   ========================================================= */
+var SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+function safeJsonParse(text){
+  return JSON.parse(text, function(k, v){ return k === '__proto__' ? undefined : v; });
+}
+function normalizeUrl(u){
+  u = String(u == null ? '' : u).trim();
+  if(!u) return '';
+  if(/^(https?:\/\/|mailto:)/i.test(u)) return u.slice(0, 2000);
+  if(/^[a-z][a-z0-9+.\-]*:/i.test(u) || /^\/\//.test(u)) return '';
+  return ('https://' + u).slice(0, 2000);
+}
+function safeHref(u){ return normalizeUrl(u) || '#'; }
+function isSafeImageData(s){
+  return typeof s === 'string' && s.length < 8000000 && /^data:image\/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
+}
+function sanitizeColor(c){
+  c = String(c == null ? '' : c).trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '';
+}
+function stripMarkup(s, max){
+  return String(s == null ? '' : s).replace(/[<>&"'`]/g, '').slice(0, max || 80);
+}
+function cleanLinks(links){
+  if(!Array.isArray(links)) return [];
+  return links.filter(function(l){ return l && typeof l === 'object'; }).map(function(l){
+    var url = normalizeUrl(l.url);
+    return {type: ['jira','confluence','other'].indexOf(l.type) >= 0 ? l.type : 'other', url: url, label: String(l.label == null ? url : l.label).slice(0, 300)};
+  }).filter(function(l){ return l.url; });
+}
+function normalizeColumns(cols){
+  var seen = {};
+  return (Array.isArray(cols) ? cols : []).filter(function(c){ return c && typeof c === 'object'; }).map(function(c){
+    var out = Object.assign({}, c);
+    out.id = (typeof c.id === 'string' && SAFE_ID_RE.test(c.id)) ? c.id : 'col-' + uid();
+    out.name = String(c.name == null ? '' : c.name).slice(0, 80) || 'Spalte';
+    if(out.color !== undefined) out.color = sanitizeColor(out.color);
+    if(out.icon !== undefined) out.icon = String(out.icon || '').slice(0, 8);
+    return out;
+  }).filter(function(c){ if(seen[c.id]) return false; seen[c.id] = 1; return true; });
+}
+function icsText(s){
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
+}
+
 function nowIso(){ return new Date().toISOString(); }
 
 var ACCENT_PRESETS = ['#0052cc','#8b5cf6','#de350b','#00875a','#ff8b00','#c2185b','#00838f'];
@@ -1098,15 +1151,30 @@ function defaultState(){
 function migrateState(data){
   var d = defaultState();
   if(!data || typeof data !== 'object') return d;
-  d.columns = Array.isArray(data.columns) && data.columns.length ? data.columns : d.columns;
+  var cleanCols = normalizeColumns(data.columns);
+  d.columns = cleanCols.length ? cleanCols : d.columns;
   d.tasks = Array.isArray(data.tasks) ? data.tasks : [];
   d.journal = Array.isArray(data.journal) ? data.journal : [];
   d.reminders = Array.isArray(data.reminders) ? data.reminders : [];
   d.settings = Object.assign({}, d.settings, data.settings || {});
   d.boards = Array.isArray(data.boards) ? data.boards : [];
   d.meta = Object.assign({}, d.meta, data.meta || {});
+  /* Einstellungen mit Anzeige-Wirkung prüfen, der API-Key lebt nur in einem eigenen Speicher (nie in Exporten/Cloud). */
+  d.settings.customTypes = (Array.isArray(d.settings.customTypes) ? d.settings.customTypes : []).filter(function(ct){ return ct && typeof ct === 'object'; }).map(function(ct){
+    return {key: (typeof ct.key === 'string' && SAFE_ID_RE.test(ct.key)) ? ct.key : 'custom' + uid(), label: stripMarkup(ct.label, 40) || 'Typ', icon: stripMarkup(ct.icon, 8) || '🔧'};
+  });
+  d.settings.accentColor = sanitizeColor(d.settings.accentColor);
+  if(d.settings.backgroundImage && !/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(d.settings.backgroundImage)) d.settings.backgroundImage = '';
+  var storedAiKey = '';
+  try{ storedAiKey = localStorage.getItem('wb-ai-key') || ''; }catch(e){}
+  if(!storedAiKey && typeof d.settings.aiApiKey === 'string' && d.settings.aiApiKey){
+    storedAiKey = d.settings.aiApiKey;
+    try{ localStorage.setItem('wb-ai-key', storedAiKey); }catch(e){}
+  }
+  d.settings.aiApiKey = storedAiKey;
   d.tasks.forEach(function(t){ normalizeTask(t); });
   d.boards.forEach(function(b){
+    b.columns = normalizeColumns(b.columns);
     if(!Array.isArray(b.columns)) b.columns = [];
     if(!Array.isArray(b.tasks)) b.tasks = [];
     b.tasks.forEach(function(t){ normalizeTask(t); });
@@ -1114,6 +1182,14 @@ function migrateState(data){
   return d;
 }
 function normalizeTask(t){
+  if(typeof t.id !== 'string' || !SAFE_ID_RE.test(t.id)) t.id = uid();
+  if(typeof t.title !== 'string') t.title = String(t.title == null ? '' : t.title);
+  if(!PRIORITIES[t.priority]) t.priority = 'medium';
+  if(typeof t.type !== 'string' || !SAFE_ID_RE.test(t.type)) t.type = 'adhoc';
+  if(typeof t.columnId !== 'string' || !SAFE_ID_RE.test(t.columnId)) t.columnId = 'col-backlog';
+  if(typeof t.dueDate !== 'string' || (t.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate))) t.dueDate = '';
+  if(typeof t.jiraKey !== 'string') t.jiraKey = '';
+  if(typeof t.description !== 'string') t.description = '';
   if(!Array.isArray(t.timeSessions)) t.timeSessions = [];
   if(!Array.isArray(t.notes)) t.notes = [];
   if(!Array.isArray(t.links)) t.links = [];
@@ -1133,7 +1209,14 @@ function normalizeTask(t){
   if(typeof t.taskGroup !== 'string') t.taskGroup = '';
   if(typeof t.scheduledAt !== 'string') t.scheduledAt = '';
   if(typeof t.reporter !== 'string') t.reporter = '';
-  if(typeof t.assigneeId !== 'string') t.assigneeId = '';
+  if(typeof t.assigneeId !== 'string' || (t.assigneeId && !SAFE_ID_RE.test(t.assigneeId))) t.assigneeId = '';
+  t.links = cleanLinks(t.links);
+  t.notes = t.notes.filter(function(n){ return n && typeof n === 'object'; }).map(function(n){
+    n.text = String(n.text == null ? '' : n.text);
+    if(n.image && !isSafeImageData(n.image)) delete n.image;
+    return n;
+  });
+  t.tags = t.tags.map(function(x){ return String(x); });
   if(typeof t.phone !== 'string') t.phone = '';
   return t;
 }
@@ -1245,7 +1328,7 @@ function pickExistingFile(){
     }).then(function(file){
       return file.text();
     }).then(function(text){
-      var data = text ? JSON.parse(text) : null;
+      var data = text ? safeJsonParse(text) : null;
       fileHandle = handle;
       return idbSet('fileHandle', handle).then(function(){
         withPersonalState(function(){ state = migrateState(data); state.settings.storageMode = 'file'; });
@@ -1265,7 +1348,7 @@ function tryReconnect(){
       return handle.getFile().then(function(file){
         return file.text();
       }).then(function(text){
-        var data = text ? JSON.parse(text) : null;
+        var data = text ? safeJsonParse(text) : null;
         if(data) state = migrateState(data);
         lastWriteAt = Date.now();
         return true;
@@ -1352,6 +1435,7 @@ function createTask(partial){
     phone: '',
     assigneeId: ''
   }, partial || {});
+  t.links = cleanLinks(t.links);
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
   save();
@@ -3149,7 +3233,7 @@ function openSlaDashboard(){
       (overdueTasks.length ? overdueTasks.map(function(t){
         return '<div class="session-row" data-open-task="'+t.id+'" style="cursor:pointer;">' +
           '<span>'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.title)+'</span>' +
-          '<span class="due overdue">📆 '+t.dueDate+'</span>' +
+          '<span class="due overdue">📆 '+escapeHtml(t.dueDate)+'</span>' +
         '</div>';
       }).join('') : '<div class="empty-state">Keine überfälligen Termine.</div>') +
     '</div>' +
@@ -4304,7 +4388,7 @@ function openTaskModal(taskId){
   }).join('');
 
   var linksHtml = t.links.map(function(l, idx){
-    return '<div class="link-chip"><span>'+linkIcon(l.type)+'</span><a href="'+escapeAttr(l.url)+'" target="_blank" rel="noopener">'+escapeHtml(l.label||l.url)+'</a><button class="icon-btn" data-action="remove-link" data-idx="'+idx+'">✕</button></div>';
+    return '<div class="link-chip"><span>'+linkIcon(l.type)+'</span><a href="'+escapeAttr(safeHref(l.url))+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(l.label||l.url)+'</a><button class="icon-btn" data-action="remove-link" data-idx="'+idx+'">✕</button></div>';
   }).join('') || '<div class="hint">Keine Links.</div>';
 
   var sessionsHtml = t.timeSessions.slice().reverse().map(function(s){
@@ -4329,7 +4413,7 @@ function openTaskModal(taskId){
 
   var notesHtml = t.notes.slice().reverse().map(function(n){
     return '<div class="note-item"><div class="ts">'+new Date(n.ts).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})+'</div>'+escapeHtml(n.text)+
-      (n.image ? '<img src="'+n.image+'" alt="Screenshot">' : '') + '</div>';
+      (n.image && isSafeImageData(n.image) ? '<img src="'+escapeAttr(n.image)+'" alt="Screenshot">' : '') + '</div>';
   }).join('') || '<div class="hint">Keine Notizen.</div>';
 
   var running = isRunning(t);
@@ -4716,8 +4800,8 @@ function openTaskModal(taskId){
   });
 
   document.getElementById('addLinkBtn').addEventListener('click', function(){
-    var url = document.getElementById('newLinkUrl').value.trim();
-    if(!url) return;
+    var url = normalizeUrl(document.getElementById('newLinkUrl').value);
+    if(!url){ toast('Bitte eine gültige Adresse eingeben (http, https oder mailto).'); return; }
     var type = document.getElementById('newLinkType').value;
     t.links.push({type:type, url:url, label: (type==='jira'&&t.jiraKey) ? t.jiraKey : url});
     save();
@@ -5248,7 +5332,7 @@ function normalizeDraft(d){
     dueDate: /^\d{4}-\d{2}-\d{2}$/.test(String(d.dueDate || '')) ? d.dueDate : '',
     estimatedMinutes: (typeof d.estimatedMinutes === 'number' && d.estimatedMinutes > 0) ? Math.round(d.estimatedMinutes) : null,
     checklist: Array.isArray(d.checklist) ? d.checklist.map(function(s){ return String(s).trim(); }).filter(Boolean).slice(0, 8) : [],
-    links: Array.isArray(d.links) ? d.links : []
+    links: cleanLinks(d.links)
   };
 }
 /* Einfache Erfassung ohne KI: erkennt Jira-Key, #Tags, Frist, Telefonnummer, Absender und Dringlichkeit. */
@@ -5587,7 +5671,7 @@ function tryParseImportPayload(text){
       type: 'jira',
       priority: mapPriorityHint(data.priorityHint),
       jiraKey: data.key || '',
-      links: data.url ? [{type:'jira', url:data.url, label:data.key || data.title || data.url}] : []
+      links: normalizeUrl(data.url) ? [{type:'jira', url:normalizeUrl(data.url), label:data.key || data.title || data.url}] : []
     };
   }
   if(data.source === 'confluence'){
@@ -5597,7 +5681,7 @@ function tryParseImportPayload(text){
       type: 'adhoc',
       priority: 'medium',
       jiraKey: '',
-      links: data.url ? [{type:'confluence', url:data.url, label:data.title || data.url}] : []
+      links: normalizeUrl(data.url) ? [{type:'confluence', url:normalizeUrl(data.url), label:data.title || data.url}] : []
     };
   }
   if(data.source === 'wbtask'){
@@ -5971,7 +6055,7 @@ function importBackupFile(file){
   var reader = new FileReader();
   reader.onload = function(){
     try{
-      withPersonalState(function(){ state = migrateState(JSON.parse(reader.result)); });
+      withPersonalState(function(){ state = migrateState(safeJsonParse(reader.result)); });
       changesSinceBackup = 0;
       lastBackupAt = new Date();
       save();
@@ -6040,17 +6124,34 @@ function cloudErrorText(err){
 }
 
 /* ---- Verschlüsselung (Web Crypto API, AES-256-GCM + PBKDF2) ---- */
-function cloudDeriveKey(passphrase, saltBytes){
+var CLOUD_KDF_ITER = 600000;
+var CLOUD_KDF_ITER_LEGACY = 100000;
+var cloudKeyCache = {};
+var cloudSessionSalt = null;
+/* Pro Sitzung wird ein Salz wiederverwendet (jede Verschlüsselung hat trotzdem eine eigene zufällige IV),
+   damit die teure Schlüsselableitung nicht bei jedem Speichern neu laufen muss. */
+function cloudEncSalt(passphrase){
+  if(!cloudSessionSalt || cloudSessionSalt.p !== passphrase) cloudSessionSalt = {p: passphrase, s: crypto.getRandomValues(new Uint8Array(16))};
+  return cloudSessionSalt.s;
+}
+function cloudDeriveKey(passphrase, saltBytes, iterations){
+  iterations = iterations || CLOUD_KDF_ITER_LEGACY;
+  var ck = iterations + '|' + bufToB64(saltBytes) + '|' + passphrase;
+  if(cloudKeyCache[ck]) return cloudKeyCache[ck];
+  if(Object.keys(cloudKeyCache).length > 12) cloudKeyCache = {};
   var enc = new TextEncoder();
-  return crypto.subtle.importKey('raw', enc.encode(passphrase), {name:'PBKDF2'}, false, ['deriveKey']).then(function(keyMaterial){
+  var promise = crypto.subtle.importKey('raw', enc.encode(passphrase), {name:'PBKDF2'}, false, ['deriveKey']).then(function(keyMaterial){
     return crypto.subtle.deriveKey(
-      {name:'PBKDF2', salt: saltBytes, iterations: 100000, hash:'SHA-256'},
+      {name:'PBKDF2', salt: saltBytes, iterations: iterations, hash:'SHA-256'},
       keyMaterial,
       {name:'AES-GCM', length:256},
       false,
       ['encrypt','decrypt']
     );
   });
+  cloudKeyCache[ck] = promise;
+  promise.catch(function(){ delete cloudKeyCache[ck]; });
+  return promise;
 }
 function bufToB64(buf){
   var bytes = new Uint8Array(buf);
@@ -6066,14 +6167,14 @@ function b64ToBuf(b64){
 }
 function cloudEncryptState(passphrase){
   var plainJson = serializePersonalState();
-  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var salt = cloudEncSalt(passphrase);
   var iv = crypto.getRandomValues(new Uint8Array(12));
-  return cloudDeriveKey(passphrase, salt).then(function(key){
+  return cloudDeriveKey(passphrase, salt, CLOUD_KDF_ITER).then(function(key){
     var plaintext = new TextEncoder().encode(plainJson);
     return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, plaintext);
   }).then(function(ciphertext){
     return JSON.stringify({
-      v:1, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(ciphertext),
+      v:1, iter: CLOUD_KDF_ITER, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(ciphertext),
       updatedAt: state.meta.updatedAt
     });
   });
@@ -6083,11 +6184,11 @@ function cloudDecryptPayload(payloadText, passphrase){
   var salt = b64ToBuf(payload.salt);
   var iv = b64ToBuf(payload.iv);
   var ciphertext = b64ToBuf(payload.data);
-  return cloudDeriveKey(passphrase, salt).then(function(key){
+  return cloudDeriveKey(passphrase, salt, payload.iter).then(function(key){
     return crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, key, ciphertext);
   }).then(function(plainBuf){
     var text = new TextDecoder().decode(plainBuf);
-    return {state: JSON.parse(text), updatedAt: payload.updatedAt};
+    return {state: safeJsonParse(text), updatedAt: payload.updatedAt};
   });
 }
 
@@ -6121,122 +6222,196 @@ function cloudMaybeSnapshot(encrypted, cfg){
   }).catch(function(){});
 }
 
-/* skipSafety=true nur bei der bewussten Passphrase-Änderung. */
-function cloudPushNow(skipSafety){
+/* =========================================================
+   PERSÖNLICHER CLOUD-ABGLEICH (zusammenführen statt überschreiben)
+   Früher wurde der ganze Stand hoch- oder heruntergeladen. Dadurch konnten
+   gelöschte Tasks zurückkommen (z.B. wenn ein anderes Gerät noch den alten Stand
+   hatte, oder wenn das Board leer war und deshalb nicht hochgeladen wurde).
+   Jetzt gleicht die App Task für Task mit dem Stand des letzten erfolgreichen
+   Abgleichs ab ("Basis"): was hier gelöscht wurde, bleibt gelöscht, was woanders
+   neu oder geändert ist, wird übernommen. Geschrieben wird nur, wenn sich die
+   Cloud-Version seit dem Lesen nicht verändert hat (sonst wird erneut abgeglichen).
+   Einstellungen, Erinnerungen usw. bleiben pro Gerät.
+   ========================================================= */
+var cloudSyncDirty = false;
+function personalBaseKey(){ return 'wb-pb-' + (currentUser ? currentUser.id : 'x'); }
+function personalBaseLoad(){
+  try{ var raw = localStorage.getItem(personalBaseKey()); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function personalBaseSave(){
+  withPersonalState(function(){
+    var b = sharedMakeBase({name: state.settings.activeBoardName, columns: state.columns, tasks: state.tasks});
+    b.board = state.settings.activeBoardName;
+    try{ localStorage.setItem(personalBaseKey(), JSON.stringify(b)); }catch(e){}
+  });
+}
+function cloudRemoteGetFull(){
+  return getSupabaseClient().from('boards').select('payload, updated_at').eq('user_id', currentUser.id).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    return res.data || null;
+  });
+}
+/* Schreibt nur, wenn die Cloud-Zeile noch den Stand hat, den wir gelesen haben. */
+function cloudRemoteWrite(payload, expectedTs){
+  var client = getSupabaseClient();
+  var now = nowIso();
+  if(!expectedTs){
+    return client.from('boards').insert({user_id: currentUser.id, payload: payload, updated_at: now}).then(function(res){
+      if(res.error){
+        if(/duplicate|unique|23505/i.test(res.error.message)) return false;
+        throw new Error(res.error.message);
+      }
+      return true;
+    });
+  }
+  return client.from('boards').update({payload: payload, updated_at: now}).eq('user_id', currentUser.id).eq('updated_at', expectedTs).select('user_id').then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    return !!(res.data && res.data.length);
+  });
+}
+function applyMergedTasksTo(container, merged){
+  var byId = {};
+  container.tasks.forEach(function(t){ byId[t.id] = t; });
+  var changed = false;
+  var next = merged.tasks.map(function(m){
+    var cur = byId[m.id];
+    if(cur === m) return cur;
+    if(cur){
+      if(canon(cur) !== canon(m)){
+        changed = true;
+        Object.keys(cur).forEach(function(k){ if(k.charAt(0) !== '_') delete cur[k]; });
+        Object.assign(cur, m);
+      }
+      return cur;
+    }
+    changed = true;
+    return normalizeTask(m);
+  });
+  if(next.length !== container.tasks.length) changed = true;
+  container.tasks = next;
+  if(canon(container.columns) !== canon(merged.columns)){ container.columns = merged.columns; changed = true; }
+  return changed;
+}
+/* Läuft synchron mit dem persönlichen Stand (withPersonalState). */
+function mergePersonalRemote(result){
+  var rs = result.state || {};
+  var out = {push: false, banner: false, applied: false, adopted: false};
+  var remoteTasks = Array.isArray(rs.tasks) ? rs.tasks.map(normalizeTask) : [];
+  var remoteCols = normalizeColumns(Array.isArray(rs.columns) && rs.columns.length ? rs.columns : state.columns);
+  var remoteBoard = (rs.settings && rs.settings.activeBoardName) || '';
+  var localBoard = state.settings.activeBoardName;
+  var remoteTime = new Date(result.updatedAt).getTime();
+  var localTime = new Date(state.meta.updatedAt).getTime();
+  var base = personalBaseLoad();
+
+  if(remoteBoard && remoteBoard !== localBoard){
+    /* Auf dem anderen Gerät ist ein anderes persönliches Board aktiv: nicht vermischen. */
+    if(remoteTime > localTime + 2000){ window.__pendingCloudState = rs; out.banner = true; }
+    else out.push = true;
+    return out;
+  }
+  if(!base || base.board !== localBoard){
+    if(state.tasks.length === 0 && remoteTasks.length > 0){
+      /* Frisches Gerät (keine Basis, nichts lokal): Cloud-Stand übernehmen. */
+      state = migrateState(rs);
+      out.applied = true; out.adopted = true;
+      return out;
+    }
+    /* Ohne Basis wird nie gelöscht, es wird nur vereinigt. */
+    base = {tasks: {}, columns: canon(remoteCols), name: localBoard, board: localBoard};
+  }
+  var merged = mergeContent(base, {name: localBoard, columns: state.columns, tasks: state.tasks}, {name: localBoard, columns: remoteCols, tasks: remoteTasks});
+  var changed = applyMergedTasksTo(state, merged);
+  var differsFromRemote = canon({c: merged.columns, t: merged.tasks}) !== canon({c: remoteCols, t: remoteTasks});
+  if(changed) out.applied = true;
+  if(differsFromRemote) state.meta.updatedAt = nowIso();
+  else if(changed) state.meta.updatedAt = result.updatedAt;
+  out.push = differsFromRemote || localTime > remoteTime + 2000;
+  return out;
+}
+function personalSync(showToast){
   var cfg = getCloudSyncConfig();
   if(!cloudIsReady(cfg)) return Promise.resolve();
-  if(cloudSyncBusy) return Promise.resolve();
+  if(cloudSyncBusy){ cloudSyncDirty = true; return Promise.resolve(); }
   cloudSyncBusy = true;
-
-  var safetyCheck = Promise.resolve(true);
-  if(personalTaskCount() === 0 && skipSafety !== true){
-    /* Sicherheits-Check: nie ein leeres lokales Board pushen, wenn die Cloud
-       noch echte Tasks enthalten könnte (z.B. lokal gerade erst
-       zurückgesetzt/neu installiert, automatischer Pull noch nicht
-       gelaufen oder fehlgeschlagen). Ohne diesen Check würde ein Push von
-       einem frischen, leeren Gerät aus den echten Cloud-Stand mit "nichts"
-       überschreiben. Im Zweifel (Netzwerkfehler bei der Prüfung selbst)
-       lieber NICHT pushen. */
-    safetyCheck = cloudRemoteGet().then(function(text){
-      if(!text) return true;
-      return cloudDecryptPayload(text, cfg.passphrase).then(function(result){
-        var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
-        return !remoteHasTasks;
+  cloudSyncDirty = false;
+  var attempts = 0;
+  var summary = {};
+  function step(){
+    var row = null;
+    return cloudRemoteGetFull().then(function(r){
+      row = r;
+      return r ? cloudDecryptPayload(r.payload, cfg.passphrase) : null;
+    }).then(function(result){
+      var res = result ? withPersonalState(function(){ return mergePersonalRemote(result); }) : {push: true};
+      summary.applied = summary.applied || res.applied;
+      summary.adopted = summary.adopted || res.adopted;
+      if(res.banner) document.getElementById('cloudChangeBanner').classList.add('show');
+      if(res.applied){ renderAll(); doSave(); }
+      if(!res.push){ if(!res.banner) personalBaseSave(); return; }
+      return cloudEncryptState(cfg.passphrase).then(function(enc){
+        return cloudMaybeSnapshot(enc, cfg).then(function(){ return cloudRemoteWrite(enc, row ? row.updated_at : null); });
+      }).then(function(ok){
+        if(!ok){
+          attempts++;
+          if(attempts < 4) return step();
+          throw new Error('Der Cloud-Stand wurde gleichzeitig geändert. Bitte erneut synchronisieren.');
+        }
+        personalBaseSave();
       });
-    }).catch(function(){ return false; });
+    });
   }
-
-  return safetyCheck.then(function(safeToPush){
-    if(!safeToPush){
-      cfg.lastError = 'Push übersprungen: lokal keine Tasks, Cloud enthält noch welche. "🔄 Jetzt synchronisieren" nutzen, um sie zuerst zu laden.';
-      setCloudSyncConfig(cfg);
-      renderCloudSyncStatus();
-      cloudSyncBusy = false;
-      return;
-    }
-    return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-      return cloudMaybeSnapshot(encrypted, cfg).then(function(){
-        return cloudRemotePut(encrypted);
-      });
-    }).then(function(){
-      cfg.lastSyncedAt = nowIso();
-      cfg.lastError = '';
+  return step().then(function(){
+    cfg.lastSyncedAt = nowIso();
+    cfg.lastError = '';
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+    if(summary.adopted) toast('☁️ Cloud-Stand automatisch geladen.');
+    else if(summary.applied) toast('☁️ Änderungen von einem anderen Gerät übernommen.');
+    else if(showToast) toast('☁️ Bereits aktuell.');
+  }).catch(function(err){
+    cfg.lastError = cloudErrorText(err);
+    setCloudSyncConfig(cfg);
+    renderCloudSyncStatus();
+  }).then(function(){
+    cloudSyncBusy = false;
+    if(cloudSyncDirty) setTimeout(function(){ personalSync(); }, 0);
+  });
+}
+/* skipSafety=true nur bei der bewussten Passphrase-Änderung: Cloud-Stand ohne Abgleich neu verschlüsseln. */
+function cloudPushNow(skipSafety){
+  if(skipSafety === true){
+    var cfg = getCloudSyncConfig();
+    if(!cloudIsReady(cfg)) return Promise.resolve();
+    cloudSyncBusy = true;
+    return cloudEncryptState(cfg.passphrase).then(function(enc){ return cloudRemotePut(enc); }).then(function(){
+      personalBaseSave();
+      cfg.lastSyncedAt = nowIso(); cfg.lastError = '';
       setCloudSyncConfig(cfg);
       renderCloudSyncStatus();
     }).catch(function(err){
       cfg.lastError = cloudErrorText(err);
       setCloudSyncConfig(cfg);
       renderCloudSyncStatus();
-    }).finally(function(){ cloudSyncBusy = false; });
-  });
+    }).then(function(){ cloudSyncBusy = false; });
+  }
+  return personalSync();
 }
 function scheduleCloudPush(){
   var cfg = getCloudSyncConfig();
   if(!cfg.enabled) return;
   if(cloudSyncPushTimer) clearTimeout(cloudSyncPushTimer);
-  cloudSyncPushTimer = setTimeout(cloudPushNow, 8000);
+  cloudSyncPushTimer = setTimeout(function(){ personalSync(); }, 8000);
 }
 function cloudPullNow(showToastIfUpToDate){
-  var cfg = getCloudSyncConfig();
-  if(!cloudIsReady(cfg)) return Promise.resolve();
-  if(cloudSyncBusy) return Promise.resolve();
-  cloudSyncBusy = true;
-  var remoteMissing = false;
-  return cloudRemoteGet().then(function(text){
-    if(!text){ remoteMissing = true; return null; }
-    return cloudDecryptPayload(text, cfg.passphrase);
-  }).then(function(result){
-    cfg.lastSyncedAt = nowIso();
-    cfg.lastError = '';
-    setCloudSyncConfig(cfg);
-    if(!result){ renderCloudSyncStatus(); return; }
-    var remoteTime = new Date(result.updatedAt).getTime();
-    var localTime = new Date(state.meta.updatedAt).getTime();
-    var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
-    if(personalTaskCount() === 0 && remoteHasTasks){
-      /* Lokal liegt nichts vor, das verloren gehen könnte (z.B. frischer
-         Browser/Neuinstallation/geleerter Cache) - hier IMMER übernehmen,
-         unabhängig vom Zeitstempel-Vergleich unten. Ein frisch
-         initialisierter lokaler Stand bekommt sein updatedAt auf "jetzt"
-         gesetzt (siehe defaultState()) und wirkt dadurch fast immer
-         "neuer" als der zuletzt gepushte Cloud-Stand, obwohl er inhaltlich
-         leer ist. Ausserdem: nicht nur den cloudChangeBanner einblenden
-         (der im normalen Dokumentfluss liegt und von Dialogen komplett
-         verdeckt werden kann), sondern direkt laden. */
-      withPersonalState(function(){ state = migrateState(result.state); });
-      renderAll();
-      save();
-      toast('☁️ Cloud-Stand automatisch geladen.');
-    } else if(remoteTime > localTime + 2000){
-      window.__pendingCloudState = result.state;
-      document.getElementById('cloudChangeBanner').classList.add('show');
-    } else if(showToastIfUpToDate){
-      toast('☁️ Bereits aktuell.');
-    }
-    renderCloudSyncStatus();
-  }).catch(function(err){
-    cfg.lastError = cloudErrorText(err);
-    setCloudSyncConfig(cfg);
-    renderCloudSyncStatus();
-  }).finally(function(){ cloudSyncBusy = false; })
-  .then(function(){
-    /* Noch kein Board in der Cloud (erstes Gerät nach der Einrichtung) →
-       aktuellen lokalen Stand gleich hochladen. */
-    if(remoteMissing) return cloudPushNow();
-  });
+  return personalSync(showToastIfUpToDate);
 }
-/* Sofortiger Sync-Versuch, sobald der Browser die Verbindung zurückmeldet
-   (z.B. nach VPN-Wechsel, Meetingraum ohne WLAN, Tunnel im Zug) - statt bis
-   zu 45s auf das nächste Poll-Intervall zu warten. Push zuerst (damit
-   lokale Änderungen, die während der Unterbrechung passiert sind, nicht
-   verloren gehen), danach Pull; cloudPushNow()'s eigener Sicherheits-Check
-   verhindert dabei weiterhin, dass ein leeres lokales Board echte
-   Cloud-Daten überschreibt. */
+/* Sofortiger Abgleich, sobald der Browser die Verbindung zurückmeldet
+   (z.B. nach VPN-Wechsel, Meetingraum ohne WLAN, Tunnel im Zug). */
 window.addEventListener('online', function(){
-  if(cloudIsReady(getCloudSyncConfig())){
-    cloudPushNow().then(function(){ return cloudPullNow(); });
-  }
+  if(cloudIsReady(getCloudSyncConfig())) personalSync();
 });
+
 /* =========================================================
    GETEILTE BOARDS (Zusammenarbeit mehrerer Personen)
 
@@ -6266,17 +6441,17 @@ var personalStash = null;
 
 /* ---- Text-Verschlüsselung mit der Passphrase (für den privaten Schlüssel) ---- */
 function cloudEncryptText(plain, passphrase){
-  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var salt = cloudEncSalt(passphrase);
   var iv = crypto.getRandomValues(new Uint8Array(12));
-  return cloudDeriveKey(passphrase, salt).then(function(key){
+  return cloudDeriveKey(passphrase, salt, CLOUD_KDF_ITER).then(function(key){
     return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, new TextEncoder().encode(plain));
   }).then(function(ct){
-    return JSON.stringify({v:1, salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)});
+    return JSON.stringify({v:1, iter:CLOUD_KDF_ITER, salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)});
   });
 }
 function cloudDecryptText(payloadText, passphrase){
   var p = JSON.parse(payloadText);
-  return cloudDeriveKey(passphrase, b64ToBuf(p.salt)).then(function(key){
+  return cloudDeriveKey(passphrase, b64ToBuf(p.salt), p.iter).then(function(key){
     return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(p.iv)}, key, b64ToBuf(p.data));
   }).then(function(buf){ return new TextDecoder().decode(buf); });
 }
@@ -6292,7 +6467,7 @@ function boardEncrypt(obj, key){
 function boardDecrypt(text, key){
   var p = JSON.parse(text);
   return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(p.iv)}, key, b64ToBuf(p.data)).then(function(buf){
-    return JSON.parse(new TextDecoder().decode(buf));
+    return safeJsonParse(new TextDecoder().decode(buf));
   });
 }
 function ecdhWrapKey(privKey, pubJwk){
@@ -6413,8 +6588,8 @@ function loadSharedBoards(){
         return boardDecrypt(sb.payload, key).then(function(content){
           return {
             id: sb.id, role: r.role, ownerId: sb.owner_id, key: key, wrapperId: r.wrapper_id,
-            name: content.name || 'Geteiltes Board', version: sb.version,
-            content: {columns: content.columns || [], tasks: (content.tasks || []).map(normalizeTask)}
+            name: stripMarkup(content.name, 80) || 'Geteiltes Board', version: sb.version,
+            content: {columns: normalizeColumns(content.columns), tasks: (Array.isArray(content.tasks) ? content.tasks : []).filter(function(t){ return t && typeof t === 'object'; }).map(normalizeTask)}
           };
         });
       }).catch(function(){ return null; });
@@ -6556,7 +6731,7 @@ function withPersonalState(fn){
   try{ return fn(); } finally { checkoutShared(); }
 }
 function serializePersonalState(indent){
-  return withPersonalState(function(){ return JSON.stringify(state, null, indent); });
+  return withPersonalState(function(){ return JSON.stringify(state, function(k, v){ return k === 'aiApiKey' ? '' : v; }, indent); });
 }
 function currentBoardName(){ return activeShared ? activeShared.name : state.settings.activeBoardName; }
 
@@ -6728,7 +6903,7 @@ function sharedSync(attempt, sbParam){
       return {remote: remote, version: res.data.version};
     }, function(){ var e = new Error('Board konnte nicht entschlüsselt werden (Schlüssel geändert?).'); e.keyProblem = true; throw e; });
   }).then(function(r){
-    var remote = {name: r.remote.name, columns: r.remote.columns || [], tasks: (r.remote.tasks || []).map(normalizeTask)};
+    var remote = {name: stripMarkup(r.remote.name, 80) || sb.name, columns: normalizeColumns(r.remote.columns), tasks: (Array.isArray(r.remote.tasks) ? r.remote.tasks : []).filter(function(t){ return t && typeof t === 'object'; }).map(normalizeTask)};
     var c = sharedContainer(sb);
     var local = {name: sb.name, columns: c.columns, tasks: c.tasks};
     var merged = mergeContent(sb.base, local, remote);
@@ -6799,7 +6974,7 @@ function enterSharedBoard(id){
   sb.name = useCache ? cache.name : entry.name;
   sb.base = useCache ? cache.base : sharedMakeBase({name: entry.name, columns: entry.content.columns, tasks: entry.content.tasks});
   sb.version = useCache ? cache.version : entry.version;
-  sb.content = useCache ? {columns: cache.columns, tasks: cache.tasks.map(normalizeTask)} : {columns: entry.content.columns, tasks: entry.content.tasks};
+  sb.content = useCache ? {columns: normalizeColumns(cache.columns), tasks: cache.tasks.map(normalizeTask)} : {columns: entry.content.columns, tasks: entry.content.tasks};
   sb.members = sb.members || [];
   sb._checkedIn = true;
   sb._keyRetried = false;
@@ -7643,7 +7818,7 @@ function openSettings(){
   });
   document.getElementById('btnCloudChangePassphrase').addEventListener('click', function(){
     var passphrase = document.getElementById('sCloudPassphrase').value;
-    if(passphrase.length < 8){ toast('Neue Passphrase bitte mit mindestens 8 Zeichen eintragen.'); return; }
+    if(passphrase.length < 12){ toast('Neue Passphrase bitte mit mindestens 12 Zeichen eintragen.'); return; }
     confirmDialog(
       'Den Cloud-Stand jetzt mit der eingetragenen Passphrase NEU verschlüsseln? Auf allen anderen Geräten musst du danach die neue Passphrase eingeben (⚙️ Einstellungen → Cloud-Speicher). Die alte Passphrase funktioniert für den Cloud-Stand dann nicht mehr.',
       'Neu verschlüsseln',
@@ -7743,6 +7918,7 @@ function openSettings(){
   });
   document.getElementById('sApiKey').addEventListener('change', function(e){
     state.settings.aiApiKey = e.target.value.trim();
+    try{ if(state.settings.aiApiKey) localStorage.setItem('wb-ai-key', state.settings.aiApiKey); else localStorage.removeItem('wb-ai-key'); }catch(err){}
     save();
   });
   document.getElementById('sAiModel').addEventListener('change', function(e){
@@ -8215,8 +8391,8 @@ function exportMeetingIcs(t){
     'DTSTAMP:' + icsDate(new Date()),
     'DTSTART:' + icsDate(start),
     'DTEND:' + icsDate(end),
-    'SUMMARY:' + (t.title||'Meeting').replace(/\n/g,' '),
-    'DESCRIPTION:' + (t.description||'').replace(/\n/g,'\\n'),
+    'SUMMARY:' + icsText(t.title||'Meeting'),
+    'DESCRIPTION:' + icsText(t.description||''),
     'END:VEVENT','END:VCALENDAR'
   ];
   var blob = new Blob([lines.join('\r\n')], {type:'text/calendar'});
@@ -8242,8 +8418,8 @@ function exportTaskIcs(t){
     'DTSTAMP:' + icsDate(new Date()),
     'DTSTART:' + icsDate(start),
     'DTEND:' + icsDate(end),
-    'SUMMARY:' + (t.title||'Task').replace(/\n/g,' '),
-    'DESCRIPTION:' + (t.description||'').replace(/\n/g,'\\n'),
+    'SUMMARY:' + icsText(t.title||'Task'),
+    'DESCRIPTION:' + icsText(t.description||''),
     'END:VEVENT','END:VCALENDAR'
   ];
   var blob = new Blob([lines.join('\r\n')], {type:'text/calendar'});
@@ -8751,7 +8927,7 @@ document.getElementById('btnControlCenter').addEventListener('click', toggleCont
 document.getElementById('btnReloadExternal').addEventListener('click', function(){
   if(!fileHandle) return;
   fileHandle.getFile().then(function(file){ return file.text(); }).then(function(text){
-    withPersonalState(function(){ state = migrateState(text ? JSON.parse(text) : null); });
+    withPersonalState(function(){ state = migrateState(text ? safeJsonParse(text) : null); });
     lastWriteAt = Date.now();
     document.getElementById('externalChangeBanner').classList.remove('show');
     renderAll();
@@ -9104,7 +9280,7 @@ function renderBoardPassphraseCreate(done){
     '<p class="hint" style="margin-bottom:10px;">Dein Board wird in der Cloud <strong>verschlüsselt</strong> gespeichert. Lege dafür eine eigene Passphrase fest (nicht dein Login-Passwort). Sie verlässt dieses Gerät nie – weder Supabase noch Admins können sie sehen oder zurücksetzen.</p>' +
     '<p class="hint" style="margin-bottom:10px; color:var(--danger);">⚠️ Passphrase verloren = Cloud-Daten unwiederbringlich weg. Am besten im Passwort-Manager ablegen.</p>' +
     (suggestion ? '<p class="hint" style="margin-bottom:10px;">Deine bisherige Sync-Passphrase ist vorausgefüllt – du kannst sie behalten oder ändern.</p>' : '') +
-    '<div class="form-row"><label>Passphrase (mind. 8 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<div class="form-row"><label>Passphrase (mind. 12 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
     '<div class="form-row"><label>Passphrase wiederholen</label><input type="password" id="bpPass2" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"></div>' +
     '<button class="btn primary" id="bpSave" style="width:100%;">Verschlüsselung aktivieren</button>' +
     '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
@@ -9114,7 +9290,7 @@ function renderBoardPassphraseCreate(done){
     var p1 = document.getElementById('bpPass1').value;
     var p2 = document.getElementById('bpPass2').value;
     var err = document.getElementById('authErrorMsg');
-    if(p1.length < 8){ err.textContent = 'Bitte mindestens 8 Zeichen.'; return; }
+    if(p1.length < 12){ err.textContent = 'Bitte mindestens 12 Zeichen (ein Satz aus mehreren Wörtern ist ideal).'; return; }
     if(p1 !== p2){ err.textContent = 'Die beiden Eingaben sind nicht identisch.'; return; }
     finishBoardSetup(p1, done);
   }
@@ -9219,7 +9395,7 @@ function renderAuthRegister(){
   document.getElementById('authContent').innerHTML =
     '<div class="form-row"><label>Vor- und Nachname</label><input id="authDisplayName" autocomplete="name" placeholder="z.B. Anna Meier"><div class="hint">Mit diesem Namen können dir andere Tasks zuweisen.</div></div>' +
     '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username"></div>' +
-    '<div class="form-row"><label>Passwort (mind. 6 Zeichen)</label><input type="password" id="authPassword" autocomplete="new-password"></div>' +
+    '<div class="form-row"><label>Passwort (mind. 10 Zeichen)</label><input type="password" id="authPassword" autocomplete="new-password"></div>' +
     '<button class="btn primary" id="authRegisterBtn" style="width:100%; margin-bottom:10px;">Registrieren</button>' +
     '<a href="#" id="authGoLogin">Schon ein Konto? Anmelden</a>' +
     '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>';
@@ -9229,6 +9405,7 @@ function renderAuthRegister(){
     var password = document.getElementById('authPassword').value;
     var msgEl = document.getElementById('authErrorMsg');
     if(!name || !email || !password){ msgEl.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+    if(password.length < 10){ msgEl.textContent = 'Bitte ein Passwort mit mindestens 10 Zeichen wählen.'; return; }
     if(name.length < 2){ msgEl.textContent = 'Bitte deinen vollständigen Namen eingeben, damit dir Tasks zugewiesen werden können.'; return; }
     msgEl.textContent = '';
     getSupabaseClient().auth.signUp({email:email, password:password, options:{data:{display_name:name}}}).then(function(res){
@@ -9306,7 +9483,7 @@ function init(){
   var localBackup = null;
   try{ localBackup = localStorage.getItem('kanban-state-backup'); }catch(e){}
   if(localBackup){
-    try{ state = migrateState(JSON.parse(localBackup)); }catch(e){}
+    try{ state = migrateState(safeJsonParse(localBackup)); }catch(e){}
   }
   applyLanguage();
   showLockScreenIfNeeded();
@@ -9406,6 +9583,7 @@ function openShareLinkModal(){
    unverschlüsselten, separaten Snapshot-Gist (siehe openShareLinkModal).
    ========================================================= */
 function renderViewerMode(gistId){
+  if(!/^[A-Za-z0-9]{8,64}$/.test(String(gistId))){ document.body.innerHTML = '<p style="padding:20px;">Ungültiger Link.</p>'; return; }
   document.body.innerHTML =
     '<div style="min-height:100vh; background:var(--bg); color:var(--text); padding:20px;">' +
       '<div id="viewerRoot" style="max-width:900px; margin:0 auto;">⏳ Lade geteiltes Board…</div>' +
@@ -9415,8 +9593,9 @@ function renderViewerMode(gistId){
     .then(function(json){
       var fname = Object.keys(json.files || {})[0];
       if(!fname) throw new Error('Keine Datei im Gist gefunden.');
-      var data = JSON.parse(json.files[fname].content);
+      var data = safeJsonParse(json.files[fname].content);
       var byCol = {};
+      data.columns = normalizeColumns(data.columns);
       (data.columns||[]).forEach(function(c){ byCol[c.id] = []; });
       (data.tasks||[]).forEach(function(t){ if(byCol[t.columnId]) byCol[t.columnId].push(t); });
       var colsHtml = (data.columns||[]).map(function(c){
@@ -9425,8 +9604,8 @@ function renderViewerMode(gistId){
           '<div class="column-header"><span style="flex:1;">'+escapeHtml(c.name)+'</span><span class="count">'+tasks.length+'</span></div>' +
           '<div class="column-body" style="max-height:none;">' +
             (tasks.map(function(t){
-              return '<div class="card priority-'+(t.priority||'medium')+'" style="cursor:default;">' +
-                '<div class="card-top"><span class="type-badge">'+((TYPES[t.type]||TYPES.adhoc||{}).icon||'📌')+'</span><span class="card-title">'+escapeHtml(t.title)+'</span></div>' +
+              return '<div class="card priority-'+(PRIORITIES[t.priority] ? t.priority : 'medium')+'" style="cursor:default;">' +
+                '<div class="card-top"><span class="type-badge">'+escapeHtml((TYPES[t.type]||TYPES.adhoc||{}).icon||'📌')+'</span><span class="card-title">'+escapeHtml(t.title)+'</span></div>' +
                 (t.jiraKey ? '<span class="jira-key">'+escapeHtml(t.jiraKey)+'</span>' : '') +
                 (t.dueDate ? '<div class="due" style="margin-top:6px;">📆 '+escapeHtml(t.dueDate)+'</div>' : '') +
               '</div>';
@@ -9436,7 +9615,7 @@ function renderViewerMode(gistId){
       }).join('');
       document.getElementById('viewerRoot').innerHTML =
         '<h1 style="display:flex; align-items:center; gap:8px;">👁️ '+escapeHtml(data.boardName||'Work Board')+' <span style="font-size:12px; font-weight:400; color:var(--text-faint);">(Nur-Lesen-Ansicht)</span></h1>' +
-        '<div class="hint" style="margin-bottom:16px;">Statischer Snapshot vom '+new Date(data.generatedAt).toLocaleString('de-CH')+' – keine Live-Synchronisation. Für einen aktuellen Stand muss der Link-Ersteller einen neuen Snapshot teilen.</div>' +
+        '<div class="hint" style="margin-bottom:16px;">Statischer Snapshot vom '+escapeHtml(new Date(data.generatedAt).toLocaleString('de-CH'))+' – keine Live-Synchronisation. Für einen aktuellen Stand muss der Link-Ersteller einen neuen Snapshot teilen.</div>' +
         '<div style="overflow-x:auto; white-space:nowrap; padding-bottom:10px;">' + colsHtml + '</div>';
     })
     .catch(function(err){

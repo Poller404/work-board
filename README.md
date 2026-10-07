@@ -302,6 +302,70 @@ grant select, insert, update, delete on user_keys to authenticated;
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
 
+## 🔒 Sicherheit
+
+**Was die App absichert:**
+- **Ende-zu-Ende-Verschlüsselung:** Board und geteilte Boards liegen nur verschlüsselt in Supabase (AES-256-GCM, Schlüssel aus der
+  Passphrase mit PBKDF2, 600'000 Durchläufe; ältere Daten mit 100'000 werden weiter gelesen und beim nächsten Speichern neu verschlüsselt).
+  Die Passphrase muss mindestens 12 Zeichen haben (ein Satz aus mehreren Wörtern ist ideal), das Login-Passwort mindestens 10.
+- **Schutz vor Schadcode (XSS):** Alle Daten aus Importen, Backups, geteilten Boards und dem Read-only-Link werden beim Einlesen geprüft
+  (IDs, Farben, Links, Bilder, Prioritäten) und beim Anzeigen maskiert. Links sind nur mit `http`, `https` oder `mailto` erlaubt
+  (kein `javascript:`). Bilder in Notizen müssen echte `data:image/…`-Daten sein.
+- **Content-Security-Policy:** Skripte, Verbindungen und Schriften dürfen nur von den freigegebenen Adressen geladen werden
+  (eigene Seite, jsDelivr, Google Fonts, dein Supabase-Projekt, Anthropic, GitHub-API, ntfy). Selbst bei einem Fehler könnten Daten
+  so nicht an fremde Server geschickt werden. **Wer eine andere Supabase-Instanz verwendet, muss deren Adresse in `index.html`
+  im `Content-Security-Policy`-Tag (`connect-src`) eintragen.**
+- **Bibliothek mit Prüfsumme:** Die Supabase-Bibliothek ist auf eine feste Version gesetzt und wird nur geladen, wenn ihre
+  Prüfsumme (SRI) stimmt. Beim Aktualisieren Version und Prüfsumme gemeinsam ändern.
+- **API-Key getrennt:** Der Anthropic-Key liegt nur auf dem jeweiligen Gerät (nicht in Backups, Dateien oder der Cloud) und muss auf
+  jedem Gerät einmal eingetragen werden.
+- **Service Worker:** speichert nur die App selbst, die fest versionierten Bibliotheken und die Schriften, nie API-Antworten.
+- **Kalender-Dateien (.ics):** Titel und Beschreibung werden maskiert, damit keine fremden Kalenderfelder eingeschleust werden können.
+- **Schutz vor Einbettung:** Die Seite lässt sich nicht in einem fremden Frame darstellen.
+- **Abgleich ohne Datenverlust:** Der persönliche Cloud-Abgleich und die geteilten Boards führen Änderungen Task für Task zusammen und
+  schreiben nur, wenn sich der Cloud-Stand seit dem Lesen nicht geändert hat. Gelöschte Tasks kommen dadurch nicht mehr zurück.
+
+**Was du in Supabase einstellen solltest (Dashboard):**
+1. **Authentication → Sign In / Providers → Email:** "Confirm email" aktiviert lassen. Hast du alle Personen registriert,
+   unter **Authentication → Sign In / Providers** "Allow new users to sign up" ausschalten. Sonst kann sich jede Person mit dem App-Link
+   registrieren und die Profilliste (Namen, E-Mail-Adressen) lesen.
+2. **Nur Firmen-Adressen zulassen (optional, einmalig im SQL-Editor, `deinefirma.ch` anpassen):**
+
+```sql
+create or replace function public.restrict_signup_domain() returns trigger
+  language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.email not ilike '%@deinefirma.ch' then
+    raise exception 'Registrierung nur mit Firmen-E-Mail-Adresse möglich';
+  end if;
+  return new;
+end $$;
+create trigger restrict_signup before insert on auth.users
+  for each row execute function public.restrict_signup_domain();
+```
+
+3. **Zusätzliche Absicherung der Tabellen (einmalig im SQL-Editor):**
+
+```sql
+-- In board_members darf nachträglich nur der verpackte Schlüssel geändert werden
+revoke update on board_members from authenticated;
+grant update (wrapped_key, wrapper_id) on board_members to authenticated;
+
+-- Größenlimit gegen Missbrauch (Chiffretext, 8 MB pro Zeile)
+alter table boards add constraint boards_payload_size check (length(payload) < 8000000);
+alter table shared_boards add constraint shared_boards_payload_size check (length(payload) < 8000000);
+alter table board_snapshots add constraint board_snapshots_payload_size check (length(payload) < 8000000);
+alter table user_keys add constraint user_keys_size check (length(private_key_enc) < 20000);
+```
+
+**Was bewusst so ist:**
+- Aufgaben liegen auf dem Gerät im Browser-Speicher unverschlüsselt (nötig für den Offline-Betrieb). Wer Zugriff auf dein entsperrtes
+  Gerät hat, sieht sie. Die PIN ist nur ein Sichtschutz.
+- Die Passphrase wird auf dem Gerät im Browser-Speicher gemerkt, damit du sie nicht ständig eingeben musst.
+- Der Read-only-Link legt einen **unverschlüsselten** Snapshot (nur Titel, Typ, Priorität, Spalte, Fälligkeit) in einem GitHub-Gist ab.
+- Mitglieder eines geteilten Boards können dessen Inhalt vollständig bearbeiten und löschen.
+
 ## 🗑️ Eigenes Konto löschen
 
 Unter ⚙️ Einstellungen → Konto gibt es **"Mein Konto löschen…"**. Der Browser darf Konten nicht direkt löschen

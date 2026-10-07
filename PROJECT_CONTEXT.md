@@ -4,6 +4,25 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Sicherheitsprüfung und Abgleich-Fix
+
+**Gefunden und behoben (siehe README "Sicherheit"):**
+- Gespeichertes XSS über Link-`href` (`javascript:`), Bild-`src` in Notizen (ungeprüft), Read-only-Ansicht (Priorität in `class`, Gist-ID) und unmaskierte IDs/Farben/Typ-Namen
+  aus fremden Daten (geteilte Boards, Backups). Jetzt: `normalizeTask`/`normalizeColumns`/`cleanLinks`/`normalizeUrl`/`isSafeImageData`/`sanitizeColor`/`stripMarkup`,
+  `safeJsonParse` (kein `__proto__`), Maskierung an den Fundstellen.
+- CSP-Meta (connect-src nur Supabase-Projekt, Anthropic, GitHub, ntfy), Referrer `no-referrer`, Frame-Schutz, Supabase-Bibliothek fest auf 2.117.3 mit SRI.
+- PBKDF2 600'000 Durchläufe (Payload-Feld `iter`, alte 100'000 werden gelesen), Schlüssel-/Salz-Cache pro Sitzung (`cloudDeriveKey`, `cloudEncSalt`);
+  Passphrase mind. 12, Passwort mind. 10 Zeichen.
+- Anthropic-API-Key nur noch in localStorage `wb-ai-key`, nie in State, Export, Datei oder Cloud (`serializePersonalState` blankt ihn, `migrateState` lädt ihn).
+- Service Worker (`sw.js`, Cache v3) cached nur eigene Datei, jsDelivr und Google Fonts, nie API-Antworten.
+- ICS-Export maskiert Felder (`icsText`).
+- README: Supabase-Härtung (Registrierung einschränken, Spaltenrechte, Größenlimits).
+
+**Fehler "gelöschte Tasks kommen zurück":** Der persönliche Cloud-Abgleich überschrieb ganze Stände; ein leeres Board wurde wegen der Sicherheitsprüfung nicht hochgeladen und danach
+aus der Cloud wiederhergestellt, und veraltete Geräte konnten Löschungen rückgängig machen. Neu: `personalSync()` mit Drei-Wege-Abgleich pro Task (Basis `wb-pb-<userId>`),
+bedingtem Schreiben (`cloudRemoteWrite` prüft `updated_at`) und Wiederholung bei Konflikt. Ohne Basis (frisches Gerät) wird die Cloud übernommen, es wird nie gelöscht.
+`cloudPushNow()`/`cloudPullNow()` sind nur noch Hüllen; `cloudPushNow(true)` überschreibt bewusst (Passphrase-Änderung).
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Konto löschen, Meeting-Betreff
 
 - **Konto löschen** (Einstellungen → Konto, `openDeleteAccountDialog()`): ruft die SQL-Funktion `delete_own_account()` (SQL in der README, Abschnitt "Eigenes Konto löschen") auf,

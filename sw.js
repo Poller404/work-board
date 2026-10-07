@@ -1,5 +1,10 @@
-var CACHE_NAME = 'work-board-v2';
+var CACHE_NAME = 'work-board-v3';
 var ASSETS = ['./', './index.html', './manifest.json'];
+
+/* Nur Dateien der App selbst sowie die fest versionierten Bibliotheken und Schriften
+   (CDN, Google Fonts) werden zwischengespeichert. API-Antworten (Supabase, GitHub,
+   Anthropic, ntfy) werden bewusst NIE gecacht, damit keine Nutzerdaten im Cache liegen. */
+var CACHEABLE_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', function(event){
   event.waitUntil(
@@ -19,21 +24,20 @@ self.addEventListener('activate', function(event){
 
 /* Network-first statt Cache-first: liefert bei aktiver Internetverbindung
    immer den aktuell deployten Stand und aktualisiert den Cache nebenbei;
-   nur offline greift der zuletzt zwischengespeicherte Stand. Verhindert,
-   dass Nutzer:innen bei häufigen Deploys dauerhaft einen Stand hinterher-
-   hängen (was die vorherige Cache-first-Strategie verursachen konnte). */
+   nur offline greift der zuletzt zwischengespeicherte Stand. */
 self.addEventListener('fetch', function(event){
   if(event.request.method !== 'GET') return;
-  /* cache:'no-store' umgeht zusätzlich den normalen HTTP-Cache des Browsers
-     (der sonst trotz Network-first-Strategie hier die Antwort gemäss
-     GitHub Pages' eigenem Cache-Control: max-age=600 wiederverwenden
-     würde). GitHub Pages' CDN selbst cached serverseitig bis zu 10 Minuten
-     pro Datei - das kann diese App nicht umgehen, das betrifft aber nur
-     den CDN-Edge, nicht mehr den Browser dieses Geräts. */
+  var url;
+  try{ url = new URL(event.request.url); }catch(e){ return; }
+  var sameOrigin = url.origin === self.location.origin;
+  if(!sameOrigin && CACHEABLE_HOSTS.indexOf(url.hostname) < 0) return;
+  /* cache:'no-store' umgeht den normalen HTTP-Cache des Browsers (GitHub Pages sendet max-age=600). */
   event.respondWith(
     fetch(event.request, {cache:'no-store'}).then(function(networkResponse){
-      var copy = networkResponse.clone();
-      caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+      if(networkResponse && networkResponse.ok){
+        var copy = networkResponse.clone();
+        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+      }
       return networkResponse;
     }).catch(function(){
       return caches.match(event.request);
