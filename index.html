@@ -780,6 +780,73 @@ button.mobile-only{display:none;}
 .project-chip{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--border); border-radius:99px; padding:1px 8px; margin:2px 4px 2px 0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .project-chip i{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
 #filterProject{max-width:190px;}
+/* ---- Planer ---- */
+#board.planner-mode{display:block; overflow:hidden; padding:0;}
+.planner{display:flex; height:100%; min-height:0;}
+.pl-side{width:250px; flex-shrink:0; border-right:1px solid var(--border); padding:12px; display:flex; flex-direction:column; gap:8px; min-height:0; background:var(--surface);}
+.pl-side-head{display:flex; align-items:center; justify-content:space-between;}
+.pl-list{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; min-height:0;}
+.pl-item{display:flex; align-items:center; gap:8px; padding:7px 8px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:grab;}
+.pl-item:active{cursor:grabbing;}
+.pl-item:hover{border-color:var(--border-strong);}
+.pl-item-ty{width:22px; height:22px; border-radius:6px; display:grid; place-items:center; flex-shrink:0; background:var(--ty-adhoc-bg); color:var(--ty-adhoc);}
+.pl-item-ty.ty-jira{background:var(--ty-jira-bg); color:var(--ty-jira);}
+.pl-item-ty.ty-mail{background:var(--ty-mail-bg); color:var(--ty-mail);}
+.pl-item-ty.ty-hotline{background:var(--ty-hotline-bg); color:var(--ty-hotline);}
+.pl-item-ty.ty-meeting{background:var(--ty-meeting-bg); color:var(--ty-meeting);}
+.pl-item-main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.pl-item-title{font-size:12.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-item-meta{font-size:11px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.pl-toolbar{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; background:var(--surface);}
+.pl-toolbar .spacer{flex:1;}
+.pl-nav{display:flex; gap:4px; align-items:center;}
+.pl-title{display:flex; flex-direction:column; line-height:1.2;}
+.pl-title span{font-size:12px; color:var(--text-dim);}
+.pl-sum{font-size:12.5px; color:var(--text-dim);}
+.pl-sum b{color:var(--text); font-weight:600;}
+.pl-sum .neg{color:var(--danger); font-weight:600;}
+.pl-check{display:flex; gap:5px; align-items:center; font-size:12.5px; color:var(--text-dim);}
+.pl-scroll{flex:1; overflow:auto; position:relative;}
+.pl-grid{display:grid; min-width:640px;}
+.pl-corner{position:sticky; top:0; left:0; z-index:6; background:var(--surface); border-bottom:1px solid var(--border);}
+.pl-dayhead{position:sticky; top:0; z-index:4; background:var(--surface); border-bottom:1px solid var(--border); border-left:1px solid var(--border); padding:6px 8px; min-height:58px;}
+.pl-dayhead.today{background:var(--accent-soft);}
+.pl-dayname{font-size:12.5px; color:var(--text-dim);}
+.pl-dayname b{font-size:16px; color:var(--text); margin-left:2px;}
+.pl-daysum{font-size:11px; color:var(--text-faint);}
+.pl-daysum.over{color:var(--danger);}
+.pl-warn{font-size:11px; color:var(--danger); font-weight:600;}
+.pl-due{display:flex; flex-wrap:wrap; gap:3px; margin-top:3px;}
+.pl-due span{font-size:10.5px; background:var(--warn-bg); color:var(--warn); border-radius:4px; padding:0 5px; cursor:pointer; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-times{position:sticky; left:0; z-index:5; background:var(--surface);}
+.pl-time{position:relative; font-size:10.5px; color:var(--text-faint);}
+.pl-time span{position:absolute; top:-7px; right:6px; background:var(--surface); padding:0 2px;}
+.pl-time:first-child span{top:2px;}
+.pl-col{position:relative; border-left:1px solid var(--border); background-image:linear-gradient(to bottom, var(--border) 1px, transparent 1px);}
+.pl-col.today{background-color:var(--accent-glow);}
+.pl-block{position:absolute; border-radius:6px; padding:3px 6px; overflow:hidden; cursor:grab; border-left:3px solid var(--ty-adhoc); background:var(--ty-adhoc-bg); font-size:11.5px; box-shadow:var(--shadow); user-select:none; touch-action:none; z-index:2;}
+.pl-block.ty-jira{background:var(--ty-jira-bg); border-left-color:var(--ty-jira);}
+.pl-block.ty-mail{background:var(--ty-mail-bg); border-left-color:var(--ty-mail);}
+.pl-block.ty-hotline{background:var(--ty-hotline-bg); border-left-color:var(--ty-hotline);}
+.pl-block.ty-meeting{background:var(--ty-meeting-bg); border-left-color:var(--ty-meeting);}
+.pl-block.done{opacity:.55;}
+.pl-block.done .pl-block-title{text-decoration:line-through;}
+.pl-block.running{outline:2px solid var(--ok);}
+.pl-block.conflict{outline:1.5px solid var(--danger);}
+.pl-block.dragging{opacity:.9; z-index:10; box-shadow:var(--shadow-lg); cursor:grabbing;}
+.pl-block-time{font-size:10.5px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+.pl-block-title{font-weight:600; line-height:1.25; overflow:hidden;}
+.pl-block-tools{position:absolute; top:2px; right:3px; display:none; gap:2px;}
+.pl-block:hover .pl-block-tools{display:flex;}
+.pl-block-tools button{border:0; background:var(--surface); border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; color:var(--text);}
+.pl-rs{position:absolute; left:0; right:0; bottom:0; height:7px; cursor:ns-resize;}
+.pl-log{position:absolute; right:2px; width:6px; border-radius:3px; background:var(--ok); opacity:.75; cursor:pointer; z-index:1;}
+.pl-now{position:absolute; left:0; right:0; height:2px; background:var(--danger); z-index:6; pointer-events:none;}
+.pl-now::before{content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--danger);}
+.pl-drop{position:absolute; left:0; right:0; height:0; border-top:2px dashed var(--accent); z-index:7; pointer-events:none;}
+.pl-drop::after{content:attr(data-label); position:absolute; left:4px; top:-18px; font-size:10.5px; color:var(--accent); background:var(--surface); padding:0 3px; border-radius:3px;}
+@media (max-width:900px){ .pl-side{display:none;} }
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -2599,153 +2666,6 @@ function computeLanes(){
       match:function(t){ return t.columnId===c.id; }, patch:{columnId:c.id}};
   });
 }
-/* =========================================================
-   KALENDER-ANSICHT
-   Zeigt die nächsten 7 Tage als Spalten. Pro Tag chronologisch gemischt:
-   📅 geplante Tasks (scheduledAt) und 🕒 tatsächlich erfasste Zeitsitzungen
-   an diesem Tag - so sieht man auf einen Blick Planung UND wo bereits
-   wirklich Zeit rapportiert wurde. Eine "Nicht geplant"-Spalte links
-   sammelt offene Tasks ohne Zeit; per Drag&Drop auf einen Tag ziehen
-   setzt scheduledAt (Standard 09:00, oder die bisherige Uhrzeit falls der
-   Task schon mal geplant war). Die Uhrzeit lässt sich direkt in der
-   Kalender-Ansicht per Zeit-Eingabefeld anpassen, ohne den Task zu öffnen.
-   ========================================================= */
-function renderCalendarView(){
-  var board = document.getElementById('board');
-  board.innerHTML = '';
-  board.classList.remove('compact');
-
-  var backlogTasks = state.tasks.filter(function(t){
-    return !t.archived && !t.completedAt && !t.scheduledAt;
-  }).sort(function(a,b){ return (b.pinned?1:0) - (a.pinned?1:0); });
-
-  var backlogCol = document.createElement('div');
-  backlogCol.className = 'column';
-  backlogCol.innerHTML = '<div class="column-header"><span style="flex:1;">📋 Nicht geplant</span><span class="count">'+backlogTasks.length+'</span></div>';
-  var backlogBody = document.createElement('div');
-  backlogBody.className = 'column-body';
-  if(!backlogTasks.length){
-    var backlogEmpty = document.createElement('div');
-    backlogEmpty.className = 'empty-state';
-    backlogEmpty.textContent = 'Alles geplant.';
-    backlogBody.appendChild(backlogEmpty);
-  }
-  backlogTasks.forEach(function(t){ backlogBody.appendChild(renderCard(t)); });
-  backlogCol.appendChild(backlogBody);
-  board.appendChild(backlogCol);
-
-  var todayStr = toDateInputValue(new Date());
-  for(var i=0; i<7; i++){
-    var d = new Date(); d.setDate(d.getDate()+i);
-    var dateStr = toDateInputValue(d);
-    var dayLoggedSec = state.tasks.reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
-
-    var entries = [];
-    state.tasks.forEach(function(t){
-      if(!t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === dateStr){
-        entries.push({kind:'planned', time: new Date(t.scheduledAt), task: t});
-      }
-      t.timeSessions.forEach(function(s){
-        var sd = new Date(s.start);
-        if(toDateInputValue(sd) === dateStr){
-          entries.push({kind:'logged', time: sd, task: t, session: s});
-        }
-      });
-    });
-    entries.sort(function(a,b){ return a.time - b.time; });
-
-    var col = document.createElement('div');
-    col.className = 'column' + (dateStr === todayStr ? ' calendar-today' : '');
-    var dayLabel = d.toLocaleDateString('de-CH', {weekday:'short', day:'2-digit', month:'2-digit'});
-    var header = document.createElement('div');
-    header.className = 'column-header';
-    header.innerHTML = '<span style="flex:1;">'+dayLabel+'</span>' + (dayLoggedSec ? '<span class="hint" title="Erfasste Zeit an diesem Tag">🕒 '+fmtHM(dayLoggedSec)+'</span>' : '');
-    col.appendChild(header);
-
-    var body = document.createElement('div');
-    body.className = 'column-body';
-    if(!entries.length){
-      var empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'Keine Einträge.';
-      body.appendChild(empty);
-    }
-    entries.forEach(function(entry){ body.appendChild(renderCalendarEntry(entry, dateStr)); });
-    col.appendChild(body);
-
-    (function(targetDate, targetBody){
-      targetBody.addEventListener('dragover', function(e){
-        e.preventDefault();
-        if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-        targetBody.classList.add('dragover');
-      });
-      targetBody.addEventListener('dragleave', function(){ targetBody.classList.remove('dragover'); });
-      targetBody.addEventListener('drop', function(e){
-        e.preventDefault();
-        targetBody.classList.remove('dragover');
-        var taskId = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-        if(!taskId) return;
-        var dt = getTask(taskId);
-        if(!dt) return;
-        var existing = dt.scheduledAt ? new Date(dt.scheduledAt) : null;
-        var newDt = new Date(targetDate);
-        newDt.setHours(existing ? existing.getHours() : 9, existing ? existing.getMinutes() : 0, 0, 0);
-        pushUndoSnapshot();
-        updateTask(taskId, {scheduledAt: newDt.toISOString()});
-        renderAll();
-      });
-    })(d, body);
-
-    board.appendChild(col);
-  }
-}
-function renderCalendarEntry(entry, dateStr){
-  var t = entry.task;
-  var typeInfo = TYPES[t.type] || TYPES.adhoc;
-  var el = document.createElement('div');
-  el.className = 'card priority-' + t.priority + ' calendar-entry';
-  if(entry.kind === 'planned'){
-    var timeVal = String(entry.time.getHours()).padStart(2,'0')+':'+String(entry.time.getMinutes()).padStart(2,'0');
-    el.innerHTML =
-      '<div class="card-top">' +
-        '<input type="time" class="calendar-time-input" value="'+timeVal+'" title="Geplante Uhrzeit ändern">' +
-        '<span class="type-badge">'+typeInfo.icon+'</span>' +
-        '<span class="card-title calendar-entry-title">'+escapeHtml(t.title)+'</span>' +
-      '</div>';
-    el.draggable = true;
-    el.dataset.taskId = t.id;
-    el.addEventListener('dragstart', function(e){
-      draggedTaskId = t.id;
-      el.classList.add('dragging');
-      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', t.id); }catch(err){} }
-    });
-    el.addEventListener('dragend', function(){ draggedTaskId = null; el.classList.remove('dragging'); });
-    el.querySelector('.calendar-time-input').addEventListener('click', function(e){ e.stopPropagation(); });
-    el.querySelector('.calendar-time-input').addEventListener('change', function(e){
-      var parts = e.target.value.split(':');
-      if(parts.length !== 2) return;
-      var newDt = new Date(dateStr + 'T00:00:00');
-      newDt.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
-      updateTask(t.id, {scheduledAt: newDt.toISOString()});
-      renderAll();
-    });
-  } else {
-    var startStr = String(entry.time.getHours()).padStart(2,'0')+':'+String(entry.time.getMinutes()).padStart(2,'0');
-    var endStr = 'läuft…';
-    if(entry.session.end){
-      var e2 = new Date(entry.session.end);
-      endStr = String(e2.getHours()).padStart(2,'0')+':'+String(e2.getMinutes()).padStart(2,'0');
-    }
-    el.innerHTML =
-      '<div class="card-top">' +
-        '<span class="time-badge'+(!entry.session.end?' running':'')+'">🕒 '+startStr+'–'+endStr+'</span>' +
-        '<span class="type-badge">'+typeInfo.icon+'</span>' +
-        '<span class="card-title calendar-entry-title">'+escapeHtml(t.title)+'</span>' +
-      '</div>';
-  }
-  el.querySelector('.calendar-entry-title').addEventListener('click', function(){ openTaskModal(t.id); });
-  return el;
-}
 function renderDashboardWidgets(){
   var board = document.getElementById('board');
   board.innerHTML = '';
@@ -2890,11 +2810,12 @@ function renderBoard(){
   renderProjectFilter();
   renderFilterBar();
   board.classList.toggle('dashboard-mode', FULL_VIEWS.indexOf(boardViewMode) >= 0);
+  board.classList.toggle('planner-mode', boardViewMode === 'calendar');
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
   if(boardViewMode === 'dyce'){ renderDyceView(); return; }
   if(boardViewMode === 'projects'){ renderProjectsView(); return; }
-  if(boardViewMode === 'calendar'){ renderCalendarView(); return; }
+  if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
      scrollTop 0 zurücksetzen, sodass ein bearbeiteter Task weiter unten in
@@ -4434,6 +4355,7 @@ function openTaskModal(taskId){
             '</div>' +
             '<div class="prop"><label for="fScheduledAt">Geplant für (Kalender)</label><input type="datetime-local" id="fScheduledAt" value="'+(t.scheduledAt ? toDateTimeInputValue(new Date(t.scheduledAt)) : '')+'">' +
               '<button type="button" class="btn ghost" id="btnExportScheduledIcs" style="margin-top:6px; align-self:flex-start;" '+(t.scheduledAt?'':'disabled')+'>Outlook-Termin (.ics)</button></div>' +
+            '<div class="prop"><label for="fSchedMin">Dauer im Planer (Min.)</label><input type="number" id="fSchedMin" min="5" step="5" value="'+(t.scheduledMinutes||'')+'" placeholder="'+plannedMinutes(t)+'"></div>' +
           '</div>' +
           '<details class="s-more"><summary>Zeitsitzungen</summary><div class="notes-log">'+sessionsHtml+'</div></details>' +
         '</aside>' +
@@ -4491,6 +4413,12 @@ function openTaskModal(taskId){
       projPatch.projectId = chosen ? chosen.id : '';
       projPatch.projectName = chosen ? chosen.name : '';
     }
+    var smEl = document.getElementById('fSchedMin');
+    if(smEl){
+      var smv = parseInt(smEl.value, 10);
+      if(!isNaN(smv) && smv >= 5){ if(smv !== (t.scheduledMinutes || 0)) projPatch.scheduledMinutes = smv; }
+      else if(smEl.value === '' && t.scheduledMinutes) projPatch.scheduledMinutes = null;
+    }
     updateTask(t.id, Object.assign(projPatch, {
       title: document.getElementById('fTitle').value.trim() || 'Unbenannt',
       type: document.getElementById('fType').value,
@@ -4521,7 +4449,7 @@ function openTaskModal(taskId){
     renderStatusbar();
     renderSimilarHint(t.id);
   }
-  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fRecurrence','fAssignee','fReporter','fPhone'].forEach(function(id){
+  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fSchedMin','fRecurrence','fAssignee','fReporter','fPhone'].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener('change', persist);
   });
@@ -8265,7 +8193,7 @@ function exportMeetingIcs(t){
 function exportTaskIcs(t){
   if(!t.scheduledAt){ toast('Bitte zuerst eine geplante Zeit setzen.'); return; }
   var start = new Date(t.scheduledAt);
-  var durationMin = t.estimatedMinutes || 30;
+  var durationMin = plannedMinutes(t);
   var end = new Date(start.getTime() + durationMin*60000);
   var lines = [
     'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Work Board//DE',
@@ -8303,6 +8231,7 @@ function cmdActionsList(){
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
     {icon:'🎯', label:'Fokus-Modus starten', run: enterFocusMode},
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
+    {icon:'🗓️', label:'Planer (Wochenansicht)', run: function(){ switchToView('calendar'); }},
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
     {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
@@ -9444,6 +9373,428 @@ function projectChipHtml(t){
   if(!name) return '';
   return '<span class="project-chip" title="Projekt: ' + escapeAttr(p ? projectLabel(p) : name) + '"><i style="background:' + escapeAttr(p ? p.color : '#98a0ae') + '"></i>' + escapeHtml(name) + '</span>';
 }
+
+/* =========================================================
+   PLANER (Wochenansicht mit Zeitblöcken)
+   Tasks werden per Drag & Drop aus der Liste "Nicht geplant" in den Kalender gezogen,
+   per Ziehen verschoben und am unteren Rand in der Länge verändert (15-Minuten-Raster).
+   Links vom Block: geplante Zeit (scheduledAt + scheduledMinutes). Am rechten Rand
+   erscheinen die tatsächlich gebuchten Zeiten als Streifen, so sieht man Plan und Ist.
+   ========================================================= */
+var PL_HPX = 52;
+var plannerWeek = null;
+var plannerScroll = null;
+var plannerSearch = '';
+var plannerNowTimer = null;
+
+function plannedMinutes(t){
+  var m = t.scheduledMinutes || t.estimatedMinutes || 60;
+  return Math.max(15, Math.min(720, Math.round(m / 15) * 15));
+}
+function plAxis(){
+  var s = parseInt(state.settings.planStartHour, 10);
+  var e = parseInt(state.settings.planEndHour, 10);
+  if(isNaN(s)) s = 7;
+  if(isNaN(e)) e = 19;
+  if(e <= s) e = Math.min(24, s + 1);
+  return {s: s, e: e};
+}
+function plMinToTime(min){
+  min = Math.max(0, Math.min(1440, Math.round(min)));
+  return String(Math.floor(min / 60) % 24).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+}
+function plDayMinutes(dt){ return dt.getHours() * 60 + dt.getMinutes(); }
+function plLanes(items){
+  items.sort(function(a, b){ return a.start - b.start || b.end - a.end; });
+  var cluster = [], clusterEnd = 0, conflicts = 0;
+  function flush(){
+    if(!cluster.length) return;
+    var lanes = Math.max.apply(null, cluster.map(function(i){ return i.lane; })) + 1;
+    cluster.forEach(function(i){ i.lanes = lanes; });
+    if(cluster.length > 1) conflicts += cluster.length - 1;
+    cluster = [];
+  }
+  items.forEach(function(it){
+    if(cluster.length && it.start >= clusterEnd){ flush(); clusterEnd = 0; }
+    var used = cluster.filter(function(c){ return c.end > it.start; }).map(function(c){ return c.lane; });
+    var lane = 0;
+    while(used.indexOf(lane) >= 0) lane++;
+    it.lane = lane;
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
+  });
+  flush();
+  return conflicts;
+}
+function plLoggedOnDay(ds){
+  var out = [];
+  var dayStart = new Date(ds + 'T00:00:00').getTime();
+  var dayEnd = dayStart + 24 * 3600 * 1000;
+  state.tasks.forEach(function(t){
+    t.timeSessions.forEach(function(s){
+      if(!isMySession(s)) return;
+      var a = Math.max(new Date(s.start).getTime(), dayStart);
+      var b = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), dayEnd);
+      if(b <= a) return;
+      out.push({task: t, start: (a - dayStart) / 60000, end: (b - dayStart) / 60000, open: !s.end});
+    });
+  });
+  return out;
+}
+function plUnscheduled(){
+  var q = plannerSearch.trim().toLowerCase();
+  return state.tasks.filter(function(t){
+    if(t.archived || t.completedAt || t.scheduledAt || isSnoozed(t)) return false;
+    return !q || (t.title + ' ' + (t.jiraKey || '') + ' ' + (t.reporter || '')).toLowerCase().indexOf(q) >= 0;
+  }).sort(function(a, b){
+    return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || PRIORITIES[a.priority].order - PRIORITIES[b.priority].order || (a.dueDate || '9') .localeCompare(b.dueDate || '9');
+  });
+}
+function plItemHtml(t){
+  var p = projectOf(t);
+  return '<div class="pl-item" draggable="true" data-task="' + t.id + '" title="Auf den Kalender ziehen">' +
+    '<span class="pl-item-ty ty-' + (BASE_TYPES[t.type] ? t.type : 'adhoc') + '">' + typeIconHtml(t.type) + '</span>' +
+    '<span class="pl-item-main"><span class="pl-item-title">' + escapeHtml(t.title) + '</span>' +
+    '<span class="pl-item-meta">' + plannedMinutes(t) + ' Min.' + (t.dueDate ? ' · fällig ' + escapeHtml(t.dueDate.slice(5).split('-').reverse().join('.')) : '') + (p ? ' · <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 3px 0 0;"></i>' + escapeHtml(p.name) : '') + '</span></span>' +
+    '<span class="prio prio-' + escapeAttr(t.priority) + '"><i></i><i></i><i></i></span></div>';
+}
+function renderPlannerView(){
+  var board = document.getElementById('board');
+  var oldScroll = board.querySelector('.pl-scroll');
+  if(oldScroll) plannerScroll = oldScroll.scrollTop;
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var week = plannerWeek || (plannerWeek = startOfWeek(new Date()));
+  var showWe = !!state.settings.planWeekend;
+  var nDays = showWe ? 7 : 5;
+  var axis = plAxis();
+  var days = [];
+  for(var i = 0; i < nDays; i++){ var d = new Date(week); d.setDate(d.getDate() + i); days.push(d); }
+  var todayStr = toDateInputValue(new Date());
+  var weekEndMs = new Date(week.getFullYear(), week.getMonth(), week.getDate() + nDays).getTime();
+
+  /* Datenaufbereitung pro Tag */
+  var dayData = days.map(function(d){
+    var ds = toDateInputValue(d);
+    var items = [];
+    state.tasks.forEach(function(t){
+      if(t.archived || !t.scheduledAt) return;
+      var st = new Date(t.scheduledAt);
+      if(toDateInputValue(st) !== ds) return;
+      var s = plDayMinutes(st);
+      items.push({task: t, start: s, end: Math.min(1440, s + plannedMinutes(t))});
+    });
+    var conflicts = plLanes(items);
+    var logged = plLoggedOnDay(ds);
+    var plannedMin = items.reduce(function(sum, it){ return sum + (it.end - it.start); }, 0);
+    var loggedMin = logged.reduce(function(sum, l){ return sum + (l.end - l.start); }, 0);
+    var due = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && t.dueDate === ds && !(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds); });
+    return {date: d, ds: ds, items: items, conflicts: conflicts, logged: logged, plannedMin: plannedMin, loggedMin: loggedMin, due: due};
+  });
+  /* Achse erweitern, falls Blöcke ausserhalb der Arbeitszeit liegen */
+  var axS = axis.s * 60, axE = axis.e * 60;
+  dayData.forEach(function(dd){
+    dd.items.forEach(function(it){ axS = Math.min(axS, Math.floor(it.start / 60) * 60); axE = Math.max(axE, Math.ceil(it.end / 60) * 60); });
+    dd.logged.forEach(function(l){ axS = Math.min(axS, Math.floor(l.start / 60) * 60); axE = Math.max(axE, Math.ceil(l.end / 60) * 60); });
+  });
+  var hours = (axE - axS) / 60;
+  var colH = hours * PL_HPX;
+  var targetMin = (parseFloat(state.settings.targetHoursPerDay) || 0) * 60;
+
+  var weekPlanned = dayData.reduce(function(s, d){ return s + d.plannedMin; }, 0);
+  var weekLogged = dayData.reduce(function(s, d){ return s + d.loggedMin; }, 0);
+  var weekConflicts = dayData.reduce(function(s, d){ return s + d.conflicts; }, 0);
+  var wkNum = (function(){ var t = new Date(Date.UTC(week.getFullYear(), week.getMonth(), week.getDate())); var dn = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dn); var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 86400000 + 1) / 7); })();
+  var lastDay = days[days.length - 1];
+  var rangeLabel = days[0].toLocaleDateString('de-CH', {day: 'numeric', month: 'short'}) + ' – ' + lastDay.toLocaleDateString('de-CH', {day: 'numeric', month: 'short', year: 'numeric'});
+
+  function hm(min){ return Math.floor(min / 60) + 'h ' + String(Math.round(min % 60)).padStart(2, '0') + 'm'; }
+  var timesHtml = '';
+  for(var h = 0; h < hours; h++) timesHtml += '<div class="pl-time" style="height:' + PL_HPX + 'px;"><span>' + String(Math.floor(axS / 60) + h).padStart(2, '0') + ':00</span></div>';
+
+  var headHtml = '<div class="pl-corner"></div>' + dayData.map(function(dd){
+    var over = targetMin && dd.plannedMin > targetMin + 30;
+    return '<div class="pl-dayhead' + (dd.ds === todayStr ? ' today' : '') + '"><div class="pl-dayname">' + dd.date.toLocaleDateString('de-CH', {weekday: 'short'}) + ' <b>' + dd.date.getDate() + '</b></div>' +
+      '<div class="pl-daysum' + (over ? ' over' : '') + '" title="Geplant / Gebucht">' + (dd.plannedMin ? 'Plan ' + hm(dd.plannedMin) : 'Plan –') + ' · ' + (dd.loggedMin ? 'Ist ' + hm(dd.loggedMin) : 'Ist –') + '</div>' +
+      (dd.conflicts ? '<div class="pl-warn">⚠ ' + dd.conflicts + ' Überschneidung' + (dd.conflicts === 1 ? '' : 'en') + '</div>' : (over ? '<div class="pl-warn">⚠ überplant</div>' : '')) +
+      (dd.due.length ? '<div class="pl-due">' + dd.due.slice(0, 2).map(function(t){ return '<span data-open-task="' + t.id + '" title="Fällig: ' + escapeAttr(t.title) + '">📆 ' + escapeHtml(t.title.slice(0, 22)) + '</span>'; }).join('') + (dd.due.length > 2 ? '<span>+' + (dd.due.length - 2) + '</span>' : '') + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  var colsHtml = dayData.map(function(dd){
+    var blocks = dd.items.map(function(it){
+      var t = it.task;
+      var top = (it.start - axS) / 60 * PL_HPX;
+      var height = Math.max(18, (it.end - it.start) / 60 * PL_HPX - 2);
+      var w = 100 / it.lanes;
+      var tyc = BASE_TYPES[t.type] ? t.type : 'adhoc';
+      var p = projectOf(t);
+      return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + '" data-task="' + t.id + '" ' +
+        'style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (it.lane * w).toFixed(2) + '% + 2px); width:calc(' + w.toFixed(2) + '% - 12px);">' +
+        '<div class="pl-block-time">' + plMinToTime(it.start) + '–' + plMinToTime(it.end) + (p ? ' <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 0 0 4px;"></i>' : '') + '</div>' +
+        '<div class="pl-block-title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="pl-block-tools"><button data-pl-play="' + t.id + '" title="Timer ' + (isRunning(t) ? 'stoppen' : 'starten') + '">' + (isRunning(t) ? '⏸' : '▶') + '</button><button data-pl-x="' + t.id + '" title="Planung aufheben">✕</button></div>' +
+        '<div class="pl-rs" title="Länge ändern"></div></div>';
+    }).join('');
+    var logs = dd.logged.map(function(l){
+      var top = (l.start - axS) / 60 * PL_HPX;
+      var height = Math.max(3, (l.end - l.start) / 60 * PL_HPX);
+      return '<div class="pl-log' + (l.open ? ' open' : '') + '" data-open-task="' + l.task.id + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht: ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
+    }).join('');
+    var nowLine = '';
+    if(dd.ds === todayStr){
+      var nm = plDayMinutes(new Date());
+      if(nm >= axS && nm <= axE) nowLine = '<div class="pl-now" style="top:' + ((nm - axS) / 60 * PL_HPX).toFixed(1) + 'px;"></div>';
+    }
+    return '<div class="pl-col' + (dd.ds === todayStr ? ' today' : '') + '" data-date="' + dd.ds + '" style="height:' + colH + 'px; background-size:100% ' + PL_HPX + 'px;">' + logs + blocks + nowLine + '</div>';
+  }).join('');
+
+  var unsched = plUnscheduled();
+  var html =
+    '<div class="planner">' +
+      '<aside class="pl-side"><div class="pl-side-head"><b>Nicht geplant</b><span class="count">' + unsched.length + '</span></div>' +
+        '<input id="plSearch" type="search" placeholder="Task suchen…" value="' + escapeAttr(plannerSearch) + '">' +
+        '<div class="pl-list" id="plList">' + (unsched.map(plItemHtml).join('') || '<div class="empty-state">Alles geplant.</div>') + '</div>' +
+        '<div class="hint" style="margin:6px 4px 0;">Task auf den Kalender ziehen. Doppelklick auf eine freie Stelle legt einen neuen Block an.</div></aside>' +
+      '<section class="pl-main">' +
+        '<div class="pl-toolbar">' +
+          '<div class="pl-nav"><button class="btn icon-btn" id="plPrev" title="Vorherige Woche" aria-label="Vorherige Woche">‹</button>' +
+            '<button class="btn" id="plToday">Heute</button><button class="btn icon-btn" id="plNext" title="Nächste Woche" aria-label="Nächste Woche">›</button></div>' +
+          '<div class="pl-title"><b>KW ' + wkNum + '</b><span>' + rangeLabel + '</span></div>' +
+          '<div class="pl-sum">Geplant <b>' + hm(weekPlanned) + '</b> · Gebucht <b>' + hm(weekLogged) + '</b>' + (weekConflicts ? ' · <span class="neg">⚠ ' + weekConflicts + ' Überschneidung' + (weekConflicts === 1 ? '' : 'en') + '</span>' : '') + '</div>' +
+          '<div class="spacer"></div>' +
+          '<button class="btn" id="plAdd">' + svgIcon('plus') + '<span>Planen</span></button>' +
+          '<label class="pl-check"><input type="checkbox" id="plWeekend"' + (showWe ? ' checked' : '') + '> Wochenende</label>' +
+          '<select id="plStart" title="Beginn des Tages">' + hourOptions(axis.s, 0, 12) + '</select><select id="plEnd" title="Ende des Tages">' + hourOptions(axis.e, 12, 24) + '</select>' +
+          '<button class="btn" id="plIcs" title="Geplante Blöcke dieser Woche als Kalenderdatei">' + svgIcon('cal') + '<span>.ics</span></button>' +
+        '</div>' +
+        '<div class="pl-scroll"><div class="pl-grid" style="grid-template-columns:52px repeat(' + nDays + ', minmax(110px, 1fr));">' +
+          headHtml + '<div class="pl-times">' + timesHtml + '</div>' + colsHtml +
+        '</div></div>' +
+      '</section>' +
+    '</div>';
+  board.innerHTML = html;
+  board.classList.add('planner-mode');
+
+  var scroller = board.querySelector('.pl-scroll');
+  if(plannerScroll != null) scroller.scrollTop = plannerScroll;
+  else {
+    var nowMin = plDayMinutes(new Date());
+    scroller.scrollTop = Math.max(0, (Math.max(axS, nowMin - 90) - axS) / 60 * PL_HPX);
+  }
+  wirePlanner(board);
+}
+function hourOptions(sel, from, to){
+  var o = '';
+  for(var h = from; h <= to; h++) o += '<option value="' + h + '"' + (h === sel ? ' selected' : '') + '>' + String(h).padStart(2, '0') + ':00</option>';
+  return o;
+}
+function plColAt(clientX){
+  var cols = document.querySelectorAll('.pl-col');
+  for(var i = 0; i < cols.length; i++){
+    var r = cols[i].getBoundingClientRect();
+    if(clientX >= r.left && clientX <= r.right) return cols[i];
+  }
+  return null;
+}
+function plMinutesAt(col, clientY){
+  var axS = parseInt(col.parentNode.dataset.axs, 10);
+  if(isNaN(axS)) axS = plAxisStartFromDom();
+  return axS + (clientY - col.getBoundingClientRect().top) / PL_HPX * 60;
+}
+function plAxisStartFromDom(){
+  var first = document.querySelector('.pl-time span');
+  return first ? parseInt(first.textContent, 10) * 60 : plAxis().s * 60;
+}
+function plSnap(min){ return Math.round(min / 15) * 15; }
+function plSchedule(taskId, ds, startMin, duration){
+  var d = new Date(ds + 'T00:00:00');
+  d.setMinutes(Math.max(0, Math.min(1440 - 15, startMin)));
+  var patch = {scheduledAt: d.toISOString()};
+  if(duration) patch.scheduledMinutes = duration;
+  updateTask(taskId, patch);
+}
+function wirePlanner(board){
+  document.getElementById('plPrev').addEventListener('click', function(){ plannerWeek = new Date(plannerWeek.getFullYear(), plannerWeek.getMonth(), plannerWeek.getDate() - 7); plannerScroll = null; renderPlannerView(); });
+  document.getElementById('plNext').addEventListener('click', function(){ plannerWeek = new Date(plannerWeek.getFullYear(), plannerWeek.getMonth(), plannerWeek.getDate() + 7); plannerScroll = null; renderPlannerView(); });
+  document.getElementById('plToday').addEventListener('click', function(){ plannerWeek = startOfWeek(new Date()); plannerScroll = null; renderPlannerView(); });
+  document.getElementById('plWeekend').addEventListener('change', function(e){ state.settings.planWeekend = e.target.checked; save(); renderPlannerView(); });
+  document.getElementById('plStart').addEventListener('change', function(e){ state.settings.planStartHour = parseInt(e.target.value, 10); plannerScroll = null; save(); renderPlannerView(); });
+  document.getElementById('plEnd').addEventListener('change', function(e){ state.settings.planEndHour = parseInt(e.target.value, 10); save(); renderPlannerView(); });
+  document.getElementById('plAdd').addEventListener('click', function(){ openPlannerAdd(toDateInputValue(new Date()), Math.max(8 * 60, Math.ceil(plDayMinutes(new Date()) / 15) * 15)); });
+  document.getElementById('plIcs').addEventListener('click', exportPlannerIcs);
+  document.getElementById('plSearch').addEventListener('input', function(e){
+    plannerSearch = e.target.value;
+    var list = plUnscheduled();
+    document.getElementById('plList').innerHTML = list.map(plItemHtml).join('') || '<div class="empty-state">Keine Treffer.</div>';
+    wirePlannerItems();
+  });
+  wirePlannerItems();
+  board.querySelectorAll('[data-open-task]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); openTaskModal(el.dataset.openTask); });
+  });
+  var axS = plAxisStartFromDom();
+  var grid = board.querySelector('.pl-grid');
+  grid.dataset.axs = axS;
+  board.querySelectorAll('.pl-col').forEach(function(col){
+    col.dataset.axs = axS;
+    col.addEventListener('dragover', function(e){
+      if(!draggedTaskId) return;
+      e.preventDefault();
+      var min = plSnap(plMinutesAt(col, e.clientY));
+      var line = col.querySelector('.pl-drop') || col.appendChild(Object.assign(document.createElement('div'), {className: 'pl-drop'}));
+      line.style.top = ((min - axS) / 60 * PL_HPX) + 'px';
+      line.dataset.label = plMinToTime(min);
+    });
+    col.addEventListener('dragleave', function(e){ if(e.target === col){ var l = col.querySelector('.pl-drop'); if(l) l.remove(); } });
+    col.addEventListener('drop', function(e){
+      var l = col.querySelector('.pl-drop'); if(l) l.remove();
+      var id = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+      var t = id && getTask(id);
+      if(!t) return;
+      e.preventDefault();
+      pushUndoSnapshot();
+      plSchedule(t.id, col.dataset.date, plSnap(plMinutesAt(col, e.clientY)), plannedMinutes(t));
+      renderAll();
+    });
+    col.addEventListener('dblclick', function(e){
+      if(e.target !== col) return;
+      openPlannerAdd(col.dataset.date, plSnap(plMinutesAt(col, e.clientY)));
+    });
+  });
+  board.querySelectorAll('[data-pl-x]').forEach(function(b){
+    b.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+    b.addEventListener('click', function(e){ e.stopPropagation(); pushUndoSnapshot(); updateTask(b.dataset.plX, {scheduledAt: ''}); renderAll(); });
+  });
+  board.querySelectorAll('[data-pl-play]').forEach(function(b){
+    b.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+    b.addEventListener('click', function(e){ e.stopPropagation(); var t = getTask(b.dataset.plPlay); if(!t) return; if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); });
+  });
+  board.querySelectorAll('.pl-block').forEach(function(blk){
+    blk.addEventListener('pointerdown', function(e){ plStartDrag(e, blk, axS); });
+  });
+}
+function wirePlannerItems(){
+  document.querySelectorAll('.pl-item').forEach(function(el){
+    el.addEventListener('dragstart', function(e){
+      draggedTaskId = el.dataset.task;
+      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', el.dataset.task); }catch(err){} }
+    });
+    el.addEventListener('dragend', function(){ draggedTaskId = null; document.querySelectorAll('.pl-drop').forEach(function(l){ l.remove(); }); });
+    el.addEventListener('click', function(){ openTaskModal(el.dataset.task); });
+  });
+}
+function plStartDrag(e, blk, axS){
+  if(e.button !== 0 || e.target.closest('button')) return;
+  var t = getTask(blk.dataset.task);
+  if(!t) return;
+  var resizing = !!e.target.closest('.pl-rs');
+  var startX = e.clientX, startY = e.clientY, moved = false;
+  var dur = plannedMinutes(t);
+  var blkRect = blk.getBoundingClientRect();
+  var grab = (e.clientY - blkRect.top) / PL_HPX * 60;
+  var target = {ds: blk.closest('.pl-col').dataset.date, start: plDayMinutes(new Date(t.scheduledAt)), dur: dur};
+  var origCol = blk.closest('.pl-col');
+  var origLeft = blk.style.left, origWidth = blk.style.width;
+  function onMove(ev){
+    if(!moved && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 5) return;
+    if(!moved){ moved = true; blk.classList.add('dragging'); }
+    ev.preventDefault();
+    if(resizing){
+      target.dur = Math.max(15, plSnap(dur + (ev.clientY - startY) / PL_HPX * 60));
+      blk.style.height = Math.max(18, target.dur / 60 * PL_HPX - 2) + 'px';
+    } else {
+      var col = plColAt(ev.clientX) || blk.parentNode;
+      var min = plSnap(plMinutesAt(col, ev.clientY) - grab);
+      min = Math.max(axS, Math.min(1440 - target.dur, min));
+      if(col !== blk.parentNode){ col.appendChild(blk); blk.style.left = '2px'; blk.style.width = 'calc(100% - 12px)'; }
+      blk.style.top = ((min - axS) / 60 * PL_HPX) + 'px';
+      target.ds = col.dataset.date; target.start = min;
+    }
+    var tm = blk.querySelector('.pl-block-time');
+    if(tm){ var dot = tm.querySelector('i'); tm.firstChild.textContent = plMinToTime(target.start) + '–' + plMinToTime(target.start + target.dur) + ' '; }
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    if(!moved){ if(!resizing) openTaskModal(t.id); return; }
+    pushUndoSnapshot();
+    plSchedule(t.id, target.ds, target.start, target.dur);
+    renderAll();
+  }
+  document.addEventListener('pointermove', onMove, {passive: false});
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+  e.preventDefault();
+}
+function openPlannerAdd(ds, startMin){
+  var cands = plUnscheduled();
+  var html =
+    '<div class="modal-header"><h2>Block planen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row-inline"><div class="form-row"><label for="paDate">Tag</label><input type="date" id="paDate" value="' + ds + '"></div>' +
+        '<div class="form-row"><label for="paTime">Beginn</label><input type="time" id="paTime" step="900" value="' + plMinToTime(startMin) + '"></div>' +
+        '<div class="form-row"><label for="paDur">Dauer</label><select id="paDur">' + [15, 30, 45, 60, 90, 120, 180, 240].map(function(m){ return '<option value="' + m + '"' + (m === 60 ? ' selected' : '') + '>' + (m >= 60 ? (m / 60) + ' h' : m + ' Min.') + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="form-row"><label for="paTitle">Neuer Task</label><input id="paTitle" placeholder="Titel (PROJ-123, #tag, !hoch möglich)"></div>' +
+      (cands.length ? '<div class="form-row"><label for="paExisting">… oder bestehenden Task einplanen</label><select id="paExisting"><option value="">– wählen –</option>' +
+        cands.slice(0, 80).map(function(t){ return '<option value="' + t.id + '">' + escapeHtml(t.title.slice(0, 80)) + '</option>'; }).join('') + '</select></div>' : '') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="paSave">Einplanen</button></div>';
+  openModal(html);
+  document.getElementById('paTitle').focus();
+  function go(){
+    var title = document.getElementById('paTitle').value.trim();
+    var existing = document.getElementById('paExisting') ? document.getElementById('paExisting').value : '';
+    var tm = document.getElementById('paTime').value.split(':');
+    var min = (parseInt(tm[0], 10) || 0) * 60 + (parseInt(tm[1], 10) || 0);
+    var dur = parseInt(document.getElementById('paDur').value, 10) || 60;
+    var day = document.getElementById('paDate').value || ds;
+    if(!title && !existing){ toast('Bitte einen Titel eingeben oder einen Task wählen.'); return; }
+    var id = existing;
+    if(!id){ var nt = createQuickTask(state.columns[0].id, title); id = nt.id; }
+    plSchedule(id, day, min, dur);
+    closeModal(); renderAll();
+  }
+  document.getElementById('paSave').addEventListener('click', go);
+  document.getElementById('paTitle').addEventListener('keydown', function(e){ if(e.key === 'Enter') go(); });
+}
+function exportPlannerIcs(){
+  var week = plannerWeek || startOfWeek(new Date());
+  var nDays = state.settings.planWeekend ? 7 : 5;
+  var from = week.getTime(), to = new Date(week.getFullYear(), week.getMonth(), week.getDate() + nDays).getTime();
+  var events = state.tasks.filter(function(t){
+    if(t.archived || !t.scheduledAt) return false;
+    var ts = new Date(t.scheduledAt).getTime();
+    return ts >= from && ts < to;
+  });
+  if(!events.length){ toast('Keine geplanten Blöcke in dieser Woche.'); return; }
+  var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Work Board//DE'];
+  events.forEach(function(t){
+    var start = new Date(t.scheduledAt);
+    var end = new Date(start.getTime() + plannedMinutes(t) * 60000);
+    lines.push('BEGIN:VEVENT', 'UID:' + t.id + '-plan@work-board', 'DTSTAMP:' + icsDate(new Date()), 'DTSTART:' + icsDate(start), 'DTEND:' + icsDate(end),
+      'SUMMARY:' + icsText(t.title || 'Task'), 'DESCRIPTION:' + icsText((t.jiraKey ? t.jiraKey + ' ' : '') + (t.description || '').slice(0, 300)), 'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  var blob = new Blob([lines.join('\r\n')], {type: 'text/calendar'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'work-board-woche.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('📅 ' + events.length + ' Block' + (events.length === 1 ? '' : 'e') + ' exportiert – in Outlook öffnen oder importieren.');
+}
+/* Zeigt die Linie "jetzt" aktuell, solange der Planer offen ist. */
+setInterval(function(){
+  if(boardViewMode !== 'calendar' || showArchive) return;
+  var line = document.querySelector('.pl-now');
+  var col = document.querySelector('.pl-col.today');
+  if(!col){ return; }
+  var axS = plAxisStartFromDom();
+  var nm = plDayMinutes(new Date());
+  if(!line){ line = document.createElement('div'); line.className = 'pl-now'; col.appendChild(line); }
+  line.style.top = ((nm - axS) / 60 * PL_HPX) + 'px';
+}, 60000);
 
 /*@@EXTRA-JS@@*/
 
