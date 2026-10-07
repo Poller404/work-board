@@ -86,6 +86,11 @@ weder Supabase noch Admins.
      for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
    create policy "Eigene Snapshots löschen" on board_snapshots
      for delete to authenticated using (auth.uid() = user_id);
+
+   -- Neue Supabase-Projekte geben der Rolle "authenticated" auf selbst angelegte Tabellen
+   -- nicht mehr automatisch Rechte (Fehler sonst: "permission denied for table ..."):
+   grant select, insert, update, delete on public.boards to authenticated;
+   grant select, insert, update, delete on public.board_snapshots to authenticated;
    ```
 4. **Authentication → URL Configuration**: **Site URL** auf deine echte Adresse setzen, z.B.
    `https://poller404.github.io/work-board/` (steht standardmässig auf `localhost:3000` – lässt man
