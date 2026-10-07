@@ -847,6 +847,22 @@ button.mobile-only{display:none;}
 .pl-drop{position:absolute; left:0; right:0; height:0; border-top:2px dashed var(--accent); z-index:7; pointer-events:none;}
 .pl-drop::after{content:attr(data-label); position:absolute; left:4px; top:-18px; font-size:10.5px; color:var(--accent); background:var(--surface); padding:0 3px; border-radius:3px;}
 @media (max-width:900px){ .pl-side{display:none;} }
+/* ---- Tagesabschluss-Assistent ---- */
+.gap-card{border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:10px; background:var(--surface-2);}
+.gap-head{display:flex; gap:12px; align-items:baseline; margin-bottom:6px; flex-wrap:wrap;}
+.gap-head span{color:var(--text-dim); font-size:12.5px;}
+.gap-sug{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+.gap-form{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.gap-form select{flex:1; min-width:160px;}
+.gap-form input[type=time]{width:96px;}
+.gap-ai{margin-top:6px; color:var(--accent); min-height:0;}
+.gap-ai:empty{display:none;}
+.week-table tbody tr:hover td{background:var(--hover);}
+.week-table tr.sel td{background:var(--accent-soft);}
+.week-table .st-ok{color:var(--ok); font-weight:600;}
+.week-table .st-warn{color:var(--warn); font-weight:600;}
+.week-table .st-bad{color:var(--danger); font-weight:600;}
+.week-hints{margin-top:10px; display:flex; flex-direction:column; gap:6px; font-size:13px;}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1216,7 +1232,9 @@ function defaultState(){
       notifiedSlaCriticalIds: [],
       projects: [],
       automationRules: [],
-      budgetAlerts: {}
+      budgetAlerts: {},
+      dyceBreaks: {},
+      dyceClosed: {}
     },
     boards: [],
     meta: { createdAt: now, updatedAt: now }
@@ -5582,69 +5600,433 @@ function openDyceExport(){
   switchToView('dyce');
 }
 function roundSeconds(sec, roundingMinutes){
-  if(!roundingMinutes) return sec;
+  if(!roundingMinutes || sec <= 0) return sec;
   var chunk = roundingMinutes * 60;
+  var mode = state.settings.dyceRoundingMode;
+  if(mode === 'up') return Math.ceil(sec / chunk) * chunk;
+  if(mode === 'down') return Math.floor(sec / chunk) * chunk;
   return Math.round(sec / chunk) * chunk;
 }
+
+/* =========================================================
+   TAGESABSCHLUSS-ASSISTENT (Dyce)
+   - Buchungen des Tages mit Rundung (auf Wunsch mit Ausgleich der Rundungsdifferenz)
+   - Lücken-Erkennung: ungebuchte Zeit zwischen den Sitzungen, mit Vorschlägen aus
+     Planer, Notizen und Aktivität (und optional der KI), Nachbuchen mit einem Klick
+   - Wochenabschluss-Check: Soll/Ist je Tag, fehlende Tage, offene Timer, fehlende Projekte
+   ========================================================= */
+function parseHM(str, fallbackMin){
+  var m = String(str || '').match(/^(\d{1,2}):(\d{2})$/);
+  return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : fallbackMin;
+}
+function dayStartMs(ds){ return new Date(ds + 'T00:00:00').getTime(); }
+function fmtClock(ms){ return new Date(ms).toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'}); }
+function shiftDate(ds, delta){
+  var d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() + delta); return toDateInputValue(d);
+}
+function dyceRows(ds){
+  var rounding = state.settings.dyceRoundingMinutes || 0;
+  var rows = state.tasks.map(function(t){ return {t: t, sec: secondsOnDate(t, ds)}; }).filter(function(r){ return r.sec > 0; });
+  rows.forEach(function(r){ r.rsec = roundSeconds(r.sec, rounding); });
+  if(rounding && state.settings.dyceBalance && rows.length){
+    var rawTotal = rows.reduce(function(s, r){ return s + r.sec; }, 0);
+    var target = roundSeconds(rawTotal, rounding);
+    var cur = rows.reduce(function(s, r){ return s + r.rsec; }, 0);
+    var step = rounding * 60, diff = target - cur, guard = 0;
+    while(diff !== 0 && guard++ < 200){
+      var dir = diff > 0 ? 1 : -1, best = null;
+      rows.forEach(function(r){
+        if(dir < 0 && r.rsec < step) return;
+        var score = dir > 0 ? r.sec - r.rsec : r.rsec - r.sec;
+        if(!best || score > best.score) best = {r: r, score: score};
+      });
+      if(!best) break;
+      best.r.rsec += dir * step; diff -= dir * step;
+    }
+  }
+  rows.sort(function(a, b){ return b.sec - a.sec; });
+  return rows;
+}
+/* Meine Sitzungen eines Tages als Intervalle (ms), laufende bis jetzt. */
+function dayIntervals(ds){
+  var a = dayStartMs(ds), b = a + 86400000, out = [];
+  state.tasks.forEach(function(t){
+    t.timeSessions.forEach(function(s){
+      if(!isMySession(s)) return;
+      var s0 = Math.max(new Date(s.start).getTime(), a);
+      var s1 = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), b);
+      if(s1 > s0) out.push({s: s0, e: s1, task: t});
+    });
+  });
+  out.sort(function(x, y){ return x.s - y.s; });
+  return out;
+}
+function mergeIntervals(list){
+  var out = [];
+  list.forEach(function(iv){
+    var last = out[out.length - 1];
+    if(last && iv.s <= last.e) last.e = Math.max(last.e, iv.e); else out.push({s: iv.s, e: iv.e});
+  });
+  return out;
+}
+function subtractRanges(gap, ranges){
+  var pieces = [{s: gap.s, e: gap.e}];
+  ranges.forEach(function(r){
+    var next = [];
+    pieces.forEach(function(p){
+      if(r.e <= p.s || r.s >= p.e){ next.push(p); return; }
+      if(r.s > p.s) next.push({s: p.s, e: r.s});
+      if(r.e < p.e) next.push({s: r.e, e: p.e});
+    });
+    pieces = next;
+  });
+  return pieces;
+}
+function dyceGaps(ds){
+  var iv = dayIntervals(ds);
+  if(!iv.length) return [];
+  var merged = mergeIntervals(iv);
+  var minGap = Math.max(1, state.settings.dyceGapMinutes || 10) * 60000;
+  var base = dayStartMs(ds);
+  var ws = base + parseHM(state.settings.dyceWorkStart, 480) * 60000;
+  var we = base + parseHM(state.settings.dyceWorkEnd, 1020) * 60000;
+  var isToday = ds === toDateInputValue(new Date());
+  var gaps = [];
+  if(merged[0].s - ws >= minGap) gaps.push({s: ws, e: merged[0].s, kind: 'Arbeitsbeginn'});
+  for(var i = 0; i < merged.length - 1; i++){
+    if(merged[i + 1].s - merged[i].e >= minGap) gaps.push({s: merged[i].e, e: merged[i + 1].s, kind: ''});
+  }
+  var lastEnd = merged[merged.length - 1].e;
+  if(!isToday && we - lastEnd >= minGap) gaps.push({s: lastEnd, e: we, kind: 'Feierabend'});
+  var breaks = ((state.settings.dyceBreaks || {})[ds] || []).map(function(b){ return {s: new Date(b.s).getTime(), e: new Date(b.e).getTime()}; });
+  var out = [];
+  gaps.forEach(function(g){
+    subtractRanges(g, breaks).forEach(function(p){ if(p.e - p.s >= minGap) out.push({s: p.s, e: p.e, kind: g.kind}); });
+  });
+  return out;
+}
+function gapSuggestions(ds, g){
+  var score = {};
+  function add(t, pts, why){
+    if(!t || t.archived && !t.completedAt) return;
+    var e = score[t.id] || (score[t.id] = {t: t, pts: 0, why: []});
+    e.pts += pts; if(why && e.why.indexOf(why) < 0) e.why.push(why);
+  }
+  var gMin = Math.max(1, (g.e - g.s) / 60000);
+  state.tasks.forEach(function(t){
+    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds){
+      var ps = new Date(t.scheduledAt).getTime(), pe = ps + plannedMinutes(t) * 60000;
+      var ov = (Math.min(pe, g.e) - Math.max(ps, g.s)) / 60000;
+      if(ov > 0) add(t, 3 * Math.min(1, ov / gMin) + 1, 'Geplant ' + fmtClock(ps) + '–' + fmtClock(pe));
+    }
+    (t.notes || []).forEach(function(n){
+      var ts = new Date(n.ts).getTime();
+      if(ts >= g.s - 300000 && ts <= g.e + 300000) add(t, 2, 'Notiz um ' + fmtClock(ts));
+    });
+    (t.activityLog || []).forEach(function(a){
+      var ts = new Date(a.ts).getTime();
+      if(ts >= g.s - 300000 && ts <= g.e + 300000 && !/^Task erstellt/.test(a.text)) add(t, 1.5, 'Aktivität um ' + fmtClock(ts));
+    });
+    var ca = t.createdAt ? new Date(t.createdAt).getTime() : 0;
+    if(ca >= g.s - 300000 && ca <= g.e + 300000) add(t, 1.5, 'Angelegt um ' + fmtClock(ca));
+    if(t.completedAt){ var cm = new Date(t.completedAt).getTime(); if(cm >= g.s - 300000 && cm <= g.e + 300000) add(t, 2, 'Erledigt um ' + fmtClock(cm)); }
+  });
+  dayIntervals(ds).forEach(function(iv){
+    if(Math.abs(iv.e - g.s) < 120000) add(iv.task, 1, 'davor gebucht');
+    if(Math.abs(iv.s - g.e) < 120000) add(iv.task, 1, 'danach gebucht');
+  });
+  return Object.keys(score).map(function(k){ return score[k]; }).sort(function(a, b){ return b.pts - a.pts; }).slice(0, 4);
+}
+function addManualSession(taskId, startMs, endMs){
+  var t = getTask(taskId);
+  if(!t || !(endMs > startMs)) return false;
+  var clash = t.timeSessions.some(function(s){
+    if(!isMySession(s)) return false;
+    var a = new Date(s.start).getTime(), b = s.end ? new Date(s.end).getTime() : Date.now();
+    return a < endMs && b > startMs;
+  });
+  if(clash){ toast('In diesem Zeitraum ist für diesen Task bereits Zeit gebucht.'); return false; }
+  var sess = {start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString(), manual: true};
+  if(activeShared) sess.by = myUserId();
+  t.timeSessions.push(sess);
+  t.timeSessions.sort(function(a, b){ return new Date(a.start) - new Date(b.start); });
+  logActivity(t, 'Zeit nachgebucht: ' + fmtClock(startMs) + '–' + fmtClock(endMs));
+  t.updatedAt = nowIso();
+  save();
+  return true;
+}
+function askText(title, label, placeholder, okLabel, cb){
+  var html = '<div class="modal-header"><h2>' + escapeHtml(title) + '</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body"><div class="form-row"><label for="askInput">' + escapeHtml(label) + '</label><input id="askInput" placeholder="' + escapeAttr(placeholder || '') + '"></div></div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="askOk">' + escapeHtml(okLabel || 'OK') + '</button></div>';
+  openModal(html);
+  var inp = document.getElementById('askInput');
+  inp.focus();
+  function go(){ var v = inp.value.trim(); if(!v) return; closeModal(); cb(v); }
+  document.getElementById('askOk').addEventListener('click', go);
+  inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') go(); });
+}
+function dayStats(ds){
+  var rows = dyceRows(ds);
+  var raw = rows.reduce(function(s, r){ return s + r.sec; }, 0);
+  var rounded = rows.reduce(function(s, r){ return s + r.rsec; }, 0);
+  var dow = new Date(ds + 'T00:00:00').getDay();
+  var weekday = dow !== 0 && dow !== 6;
+  var target = weekday ? (parseFloat(state.settings.targetHoursPerDay) || 0) * 3600 : 0;
+  return {ds: ds, raw: raw, rounded: rounded, target: target, weekday: weekday, gaps: dyceGaps(ds), closed: !!(state.settings.dyceClosed || {})[ds], rows: rows};
+}
 function renderDyceView(){
-  var dateStr = dyceDateStr || toDateInputValue(new Date());
+  var today = toDateInputValue(new Date());
+  var dateStr = dyceDateStr || today;
   dyceDateStr = dateStr;
   var board = document.getElementById('board');
   board.innerHTML = '';
   board.classList.remove('compact');
   board.classList.add('dashboard-mode');
-  var roundingMinutes = state.settings.dyceRoundingMinutes || 0;
-  var rows = state.tasks.map(function(t){
-    var sec = secondsOnDate(t, dateStr);
-    return {t:t, sec:sec, roundedSec: roundSeconds(sec, roundingMinutes)};
-  }).filter(function(r){ return r.sec > 0; }).sort(function(a,b){ return b.sec - a.sec; });
-
-  var total = rows.reduce(function(s,r){ return s+r.sec; }, 0);
-  var roundedTotal = rows.reduce(function(s,r){ return s+r.roundedSec; }, 0);
+  var rounding = state.settings.dyceRoundingMinutes || 0;
+  var st = dayStats(dateStr);
+  var rows = st.rows;
+  var hasProjects = projectList().length > 0;
+  var roundedTotal = st.rounded, total = st.raw;
+  var gaps = st.gaps;
+  var gapTotal = gaps.reduce(function(s, g){ return s + (g.e - g.s); }, 0) / 1000;
 
   var bodyRows = rows.map(function(r){
-    return '<tr><td>'+(TYPES[r.t.type]||TYPES.adhoc).icon+' '+escapeHtml(r.t.jiraKey || r.t.title)+'</td>' +
-      '<td>'+escapeHtml(r.t.title)+'</td>' +
-      '<td>'+fmtHM(r.roundedSec)+'</td></tr>';
-  }).join('') || '<tr><td colspan="3" class="empty-state">Keine erfasste Zeit an diesem Tag.</td></tr>';
+    return '<tr data-open-task="' + r.t.id + '" style="cursor:pointer;"><td>' + (TYPES[r.t.type] || TYPES.adhoc).icon + ' ' + escapeHtml(r.t.jiraKey || r.t.title) + '</td>' +
+      '<td>' + escapeHtml(r.t.title) + '</td>' + (hasProjects ? '<td>' + escapeHtml(projectNameOf(r.t) || '–') + '</td>' : '') +
+      '<td>' + fmtHM(r.sec) + '</td><td><b>' + fmtHM(r.rsec) + '</b></td></tr>';
+  }).join('') || '<tr><td colspan="' + (hasProjects ? 5 : 4) + '" class="empty-state">Keine erfasste Zeit an diesem Tag.</td></tr>';
 
+  /* Lücken */
+  var taskPool = state.tasks.filter(function(t){ return !t.archived; }).sort(function(a, b){ return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); }).slice(0, 150);
+  var gapHtml = gaps.map(function(g, i){
+    var sug = gapSuggestions(dateStr, g);
+    var min = Math.round((g.e - g.s) / 60000);
+    var opts = '<option value="">– Task wählen –</option>' + (sug.length ? '<optgroup label="Vorschläge">' + sug.map(function(x){ return '<option value="' + x.t.id + '">' + escapeHtml(x.t.title.slice(0, 70)) + '</option>'; }).join('') + '</optgroup>' : '') +
+      '<optgroup label="Alle Tasks">' + taskPool.map(function(t){ return '<option value="' + t.id + '">' + escapeHtml(t.title.slice(0, 70)) + '</option>'; }).join('') + '</optgroup>';
+    return '<div class="gap-card" data-gap="' + i + '">' +
+      '<div class="gap-head"><b>' + fmtClock(g.s) + '–' + fmtClock(g.e) + '</b><span>' + (min >= 60 ? Math.floor(min / 60) + ' h ' + (min % 60) + ' Min.' : min + ' Min.') + ' nicht gebucht' + (g.kind ? ' · ' + g.kind : '') + '</span></div>' +
+      (sug.length ? '<div class="gap-sug">' + sug.map(function(x){ return '<button type="button" class="chip" data-gap-pick="' + x.t.id + '" title="' + escapeAttr(x.why.join(' · ')) + '">' + escapeHtml(x.t.title.slice(0, 34)) + '<b>' + escapeHtml(x.why[0] || '') + '</b></button>'; }).join('') + '</div>' : '') +
+      '<div class="gap-form"><input type="time" class="gap-from" value="' + fmtClock(g.s) + '"><span>–</span><input type="time" class="gap-to" value="' + fmtClock(g.e) + '">' +
+        '<select class="gap-task">' + opts + '</select>' +
+        '<button class="btn primary" data-gap-book="' + i + '">Buchen</button><button class="btn" data-gap-new="' + i + '">Neuer Task…</button><button class="btn ghost" data-gap-pause="' + i + '" title="Als Pause markieren (wird ignoriert)">Pause</button></div>' +
+      '<div class="gap-ai hint"></div></div>';
+  }).join('');
+
+  /* Woche */
+  var weekStart = startOfWeek(new Date(dateStr + 'T00:00:00'));
+  var weekDays = [];
+  for(var i = 0; i < 7; i++){ var d = new Date(weekStart); d.setDate(d.getDate() + i); weekDays.push(toDateInputValue(d)); }
+  var wStats = weekDays.map(dayStats).filter(function(x, idx){ return idx < 5 || x.raw > 0; });
+  var weekRaw = 0, weekTarget = 0, weekRounded = 0, missing = 0, unclosed = 0;
+  var weekHtml = wStats.map(function(x){
+    var future = x.ds > today;
+    weekRaw += x.raw; weekRounded += x.rounded;
+    if(!future || x.raw) weekTarget += x.target;
+    var status = '', cls = '';
+    if(future && !x.raw){ status = '–'; }
+    else if(x.weekday && !x.raw && x.ds < today){ status = '✗ nichts gebucht'; cls = 'bad'; missing++; }
+    else if(x.target && x.raw < x.target - 900 && x.ds < today){ status = '⚠ ' + fmtHM(x.target - x.raw) + ' fehlen'; cls = 'warn'; }
+    else if(x.raw){ status = '✓'; cls = 'ok'; }
+    if(x.raw && x.ds < today && !x.closed) unclosed++;
+    var d = new Date(x.ds + 'T00:00:00');
+    return '<tr class="' + (x.ds === dateStr ? 'sel' : '') + '" data-week-day="' + x.ds + '" style="cursor:pointer;"><td>' + d.toLocaleDateString('de-CH', {weekday: 'short', day: '2-digit', month: '2-digit'}) + '</td>' +
+      '<td>' + (x.raw ? fmtHM(x.raw) : '–') + '</td><td>' + (x.rounded ? fmtHM(x.rounded) : '–') + '</td><td>' + (x.target ? fmtHM(x.target) : '–') + '</td>' +
+      '<td>' + (x.gaps.length ? x.gaps.length + ' Lücke' + (x.gaps.length === 1 ? '' : 'n') : '–') + '</td><td>' + (x.closed ? '🔒' : '') + '</td><td class="st-' + cls + '">' + status + '</td></tr>';
+  }).join('');
+  var hints = [];
+  state.tasks.forEach(function(t){
+    var open = myOpenSession(t);
+    if(open && Date.now() - new Date(open.start).getTime() > 12 * 3600000) hints.push('⏱ Timer läuft seit ' + new Date(open.start).toLocaleString('de-CH', {weekday: 'short', hour: '2-digit', minute: '2-digit'}) + ' bei „' + escapeHtml(t.title.slice(0, 40)) + '“ <button class="btn ghost" data-stop-open="' + t.id + '">Stoppen</button>');
+  });
+  if(hasProjects){
+    var wkStartMs = weekStart.getTime(), wkEndMs = wkStartMs + 7 * 86400000;
+    var noProj = state.tasks.filter(function(t){ return !projectOf(t) && !t.projectName && secondsInRange(t, wkStartMs, wkEndMs) > 0; }).length;
+    if(noProj) hints.push('📁 ' + noProj + ' Task' + (noProj === 1 ? '' : 's') + ' mit gebuchter Zeit ohne Projekt <button class="btn ghost" data-go-projects="1">Zuordnen</button>');
+  }
+  var unnamed = state.tasks.filter(function(t){ return /^(Zeiterfassung|Meeting|Hotline-Anruf) \d{1,2}:\d{2}$/.test(t.title) && secondsInRange(t, weekStart.getTime(), weekStart.getTime() + 7 * 86400000) > 0; }).length;
+  if(unnamed) hints.push('✏️ ' + unnamed + ' Task' + (unnamed === 1 ? '' : 's') + ' mit Standardtitel (z.B. „Meeting 09:30“) – besser benennen.');
+  if(unclosed) hints.push('🔓 ' + unclosed + ' vergangene' + (unclosed === 1 ? 'r Tag' : ' Tage') + ' nicht abgeschlossen.');
+  if(missing) hints.push('📅 ' + missing + ' Arbeitstag' + (missing === 1 ? '' : 'e') + ' ohne gebuchte Zeit.');
+  var weekDiff = weekTarget ? weekRaw - weekTarget : 0;
+
+  var dateLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('de-CH', {weekday: 'long', day: 'numeric', month: 'long'});
   var html =
     '<div class="dash">' +
-      '<div class="dash-head"><div><h1>Tagesabschluss</h1><p>Erfasste Zeit pro Task, bereit für die Übernahme in Dyce.</p></div>' +
+      '<div class="dash-head"><div><h1>Tagesabschluss</h1><p>' + dateLabel + ' · ' + fmtHM(total) + (rounding ? ' (gerundet ' + fmtHM(roundedTotal) + ')' : '') + (st.closed ? ' · 🔒 abgeschlossen' : '') + '</p></div>' +
         '<div class="dash-actions">' +
-          '<div class="form-row"><label>Datum</label><input type="date" id="dyceDate" value="'+dateStr+'"></div>' +
-          '<div class="form-row"><label>Rundung</label><select id="dyceRounding">' +
-            '<option value="0"'+(roundingMinutes===0?' selected':'')+'>Keine</option>' +
-            '<option value="5"'+(roundingMinutes===5?' selected':'')+'>Auf 5 Minuten</option>' +
-            '<option value="15"'+(roundingMinutes===15?' selected':'')+'>Auf 15 Minuten</option>' +
-          '</select></div>' +
-          '<button class="btn primary" id="copyDyceTsvBtn">'+svgIcon('clipboard')+'<span>Als Tabelle kopieren</span></button>' +
+          '<div class="seg"><button class="seg-btn" id="dycePrev" title="Vortag" aria-label="Vortag">‹</button><button class="seg-btn' + (dateStr === today ? ' on' : '') + '" id="dyceToday">Heute</button><button class="seg-btn" id="dyceNext" title="Folgetag" aria-label="Folgetag">›</button></div>' +
+          '<div class="form-row"><label>Datum</label><input type="date" id="dyceDate" value="' + dateStr + '"></div>' +
+          '<div class="form-row"><label>Rundung</label><select id="dyceRounding">' + [[0, 'Keine'], [5, 'Auf 5 Min.'], [10, 'Auf 10 Min.'], [15, 'Auf 15 Min.'], [30, 'Auf 30 Min.']].map(function(o){ return '<option value="' + o[0] + '"' + (rounding === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+          '<div class="form-row"><label>Art</label><select id="dyceMode"><option value="nearest"' + (!state.settings.dyceRoundingMode || state.settings.dyceRoundingMode === 'nearest' ? ' selected' : '') + '>Kaufmännisch</option><option value="up"' + (state.settings.dyceRoundingMode === 'up' ? ' selected' : '') + '>Aufrunden</option><option value="down"' + (state.settings.dyceRoundingMode === 'down' ? ' selected' : '') + '>Abrunden</option></select></div>' +
+          '<button class="btn" id="dyceAddTime">' + svgIcon('plus') + '<span>Zeit nachtragen</span></button>' +
+          '<button class="btn primary" id="copyDyceTsvBtn">' + svgIcon('clipboard') + '<span>Als Tabelle kopieren</span></button>' +
         '</div></div>' +
-      '<section class="dcard">' +
-        '<table class="dyce-table"><thead><tr><th>Ticket/Task</th><th>Titel</th><th>Zeit</th></tr></thead>' +
-        '<tbody>'+bodyRows+'</tbody>' +
-        '<tfoot><tr><td></td><td>Total</td><td>'+fmtHM(roundedTotal)+'</td></tr></tfoot></table>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Buchungen</h3>' +
+        (rounding ? '<label class="hint" style="display:flex; gap:6px; align-items:center;"><input type="checkbox" id="dyceBalance"' + (state.settings.dyceBalance ? ' checked' : '') + '> Rundungsdifferenz ausgleichen</label>' : '') + '</div>' +
+        '<table class="dyce-table"><thead><tr><th>Ticket/Task</th><th>Titel</th>' + (hasProjects ? '<th>Projekt</th>' : '') + '<th>Effektiv</th><th>Gerundet</th></tr></thead>' +
+        '<tbody>' + bodyRows + '</tbody>' +
+        '<tfoot><tr><td></td><td>Total</td>' + (hasProjects ? '<td></td>' : '') + '<td>' + fmtHM(total) + '</td><td><b>' + fmtHM(roundedTotal) + '</b></td></tr></tfoot></table>' +
+        (rounding && Math.abs(roundedTotal - total) >= 60 ? '<div class="hint" style="margin-top:6px;">Rundungsdifferenz: ' + (roundedTotal >= total ? '+' : '−') + fmtHM(Math.abs(roundedTotal - total)) + (state.settings.dyceBalance ? ' (ausgeglichen)' : ' – Option „ausgleichen“ verteilt sie auf die Einträge.') + '</div>' : '') +
+      '</section>' +
+      '<section class="dcard" style="margin-top:14px;"><div class="dcard-head"><h3>Lücken ' + (gaps.length ? '<span class="count">' + gaps.length + '</span>' : '') + '</h3>' +
+        '<div style="display:flex; gap:8px; align-items:center;">' + (gaps.length ? '<span class="hint">' + fmtHM(gapTotal) + ' ungebucht</span>' : '') +
+          (gaps.length ? '<button class="btn" id="dyceAiBtn">✨ KI-Vorschläge</button>' : '') + '</div></div>' +
+        (gaps.length ? '<div class="hint" style="margin:-2px 0 8px;">Zwischen deinen Buchungen ist Zeit offen (ab ' + (state.settings.dyceGapMinutes || 10) + ' Min., Arbeitszeit ' + (state.settings.dyceWorkStart || '08:00') + '–' + (state.settings.dyceWorkEnd || '17:00') + '). Buche sie nach oder markiere sie als Pause.</div>' + gapHtml
+          : '<div class="empty-state">' + (rows.length ? 'Keine Lücken – lückenlos gebucht. ✅' : 'Keine Buchungen an diesem Tag.') + '</div>') +
+      '</section>' +
+      '<section class="dcard" style="margin-top:14px;"><div class="dcard-head"><h3>Wochenabschluss (KW ' + (function(){ var t = new Date(Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate())); var dn = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dn); var y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 86400000 + 1) / 7); })() + ')</h3>' +
+        '<div style="display:flex; gap:8px; align-items:center;"><button class="btn" id="dyceCopyWeek">Woche kopieren</button><button class="btn' + (st.closed ? '' : ' primary') + '" id="dyceClose">' + (st.closed ? '🔓 Tag wieder öffnen' : '🔒 Tag abschliessen') + '</button></div></div>' +
+        '<table class="dyce-table week-table"><thead><tr><th>Tag</th><th>Effektiv</th><th>Gerundet</th><th>Soll</th><th>Lücken</th><th></th><th>Status</th></tr></thead><tbody>' + weekHtml + '</tbody>' +
+        '<tfoot><tr><td>Woche</td><td>' + fmtHM(weekRaw) + '</td><td>' + fmtHM(weekRounded) + '</td><td>' + (weekTarget ? fmtHM(weekTarget) : '–') + '</td><td></td><td></td><td class="' + (weekDiff >= 0 ? 'st-ok' : 'st-warn') + '">' + (weekTarget ? (weekDiff >= 0 ? '+' : '−') + fmtHM(Math.abs(weekDiff)) : '') + '</td></tr></tfoot></table>' +
+        (hints.length ? '<div class="week-hints">' + hints.map(function(h){ return '<div>' + h + '</div>'; }).join('') + '</div>' : '<div class="hint" style="margin-top:8px;">Keine Auffälligkeiten. 👍</div>') +
+        (!state.settings.targetHoursPerDay ? '<div class="hint">Tipp: Unter ⚙️ Einstellungen → Zeit eine Zielarbeitszeit eintragen, dann erscheint der Soll/Ist-Vergleich.</div>' : '') +
       '</section>' +
     '</div>';
   board.innerHTML = html;
-  document.getElementById('dyceDate').addEventListener('change', function(e){
-    dyceDateStr = e.target.value || dyceDateStr;
-    renderDyceView();
-  });
-  document.getElementById('dyceRounding').addEventListener('change', function(e){
-    state.settings.dyceRoundingMinutes = parseInt(e.target.value, 10) || 0;
-    save();
-    renderDyceView();
+  wireDyce(board, dateStr, gaps, rows, wStats);
+}
+function wireDyce(board, dateStr, gaps, rows, wStats){
+  function go(ds){ dyceDateStr = ds; renderDyceView(); }
+  document.getElementById('dycePrev').addEventListener('click', function(){ go(shiftDate(dateStr, -1)); });
+  document.getElementById('dyceNext').addEventListener('click', function(){ go(shiftDate(dateStr, 1)); });
+  document.getElementById('dyceToday').addEventListener('click', function(){ go(toDateInputValue(new Date())); });
+  document.getElementById('dyceDate').addEventListener('change', function(e){ go(e.target.value || dateStr); });
+  document.getElementById('dyceRounding').addEventListener('change', function(e){ state.settings.dyceRoundingMinutes = parseInt(e.target.value, 10) || 0; save(); renderDyceView(); });
+  document.getElementById('dyceMode').addEventListener('change', function(e){ state.settings.dyceRoundingMode = e.target.value; save(); renderDyceView(); });
+  var bal = document.getElementById('dyceBalance');
+  if(bal) bal.addEventListener('change', function(e){ state.settings.dyceBalance = e.target.checked; save(); renderDyceView(); });
+  board.querySelectorAll('[data-open-task]').forEach(function(el){ el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); }); });
+  board.querySelectorAll('[data-week-day]').forEach(function(tr){ tr.addEventListener('click', function(){ go(tr.dataset.weekDay); }); });
+  board.querySelectorAll('[data-stop-open]').forEach(function(b){ b.addEventListener('click', function(){
+    var t = getTask(b.dataset.stopOpen), open = t && myOpenSession(t);
+    if(!open) return;
+    var startMs = new Date(open.start).getTime();
+    var stopDefault = new Date(Math.min(Date.now(), startMs + 8 * 3600000));
+    confirmDialog('Der Timer läuft seit über 12 Stunden. Auf ' + fmtClock(stopDefault.getTime()) + ' Uhr (8 Stunden nach dem Start) beenden?', 'Beenden', function(){
+      open.end = stopDefault.toISOString(); if(state.settings.activeTaskId === t.id) state.settings.activeTaskId = null;
+      t.updatedAt = nowIso(); save(); closeModal(); renderAll();
+    }, function(){ closeModal(); });
+  }); });
+  board.querySelectorAll('[data-go-projects]').forEach(function(b){ b.addEventListener('click', function(){ projDetailId = ''; projRange = 'month'; switchToView('projects'); }); });
+  document.getElementById('dyceClose').addEventListener('click', function(){
+    var closed = state.settings.dyceClosed = state.settings.dyceClosed || {};
+    if(closed[dateStr]){ delete closed[dateStr]; toast('Tag wieder geöffnet.'); }
+    else {
+      closed[dateStr] = nowIso();
+      toast('🔒 Tag abgeschlossen.' + (gaps.length ? ' Achtung: ' + gaps.length + ' Lücke' + (gaps.length === 1 ? '' : 'n') + ' offen.' : ''));
+    }
+    save(); renderDyceView();
   });
   document.getElementById('copyDyceTsvBtn').addEventListener('click', function(){
-    var lines = ['Ticket\tTitel\tStunden'];
-    rows.forEach(function(r){
-      lines.push((r.t.jiraKey||r.t.title) + '\t' + r.t.title + '\t' + (Math.round(r.roundedSec/360)/10));
-    });
-    lines.push('Total\t\t' + (Math.round(roundedTotal/360)/10));
+    var hasP = projectList().length > 0;
+    var lines = ['Ticket\tTitel' + (hasP ? '\tProjekt' : '') + '\tStunden'];
+    var tot = 0;
+    rows.forEach(function(r){ tot += r.rsec; lines.push((r.t.jiraKey || r.t.title) + '\t' + r.t.title + (hasP ? '\t' + (projectNameOf(r.t) || '') : '') + '\t' + (Math.round(r.rsec / 360) / 10)); });
+    lines.push('Total\t' + (hasP ? '\t' : '') + '\t' + (Math.round(tot / 360) / 10));
     copyToClipboard(lines.join('\n'));
     toast('Tabelle kopiert – bereit zum Einfügen in Dyce/Excel.');
   });
+  document.getElementById('dyceCopyWeek').addEventListener('click', function(){
+    var hasP = projectList().length > 0;
+    var lines = ['Datum\tTicket\tTitel' + (hasP ? '\tProjekt' : '') + '\tStunden'];
+    wStats.forEach(function(x){ x.rows.forEach(function(r){ lines.push(x.ds + '\t' + (r.t.jiraKey || r.t.title) + '\t' + r.t.title + (hasP ? '\t' + (projectNameOf(r.t) || '') : '') + '\t' + (Math.round(r.rsec / 360) / 10)); }); });
+    copyToClipboard(lines.join('\n'));
+    toast('Wochentabelle kopiert.');
+  });
+  document.getElementById('dyceAddTime').addEventListener('click', function(){ openDyceAddTime(dateStr); });
+
+  /* Lücken: Vorschläge, Buchen, Pause */
+  board.querySelectorAll('.gap-card').forEach(function(card){
+    var i = parseInt(card.dataset.gap, 10), g = gaps[i];
+    var sel = card.querySelector('.gap-task');
+    card.querySelectorAll('[data-gap-pick]').forEach(function(b){ b.addEventListener('click', function(){ sel.value = b.dataset.gapPick; }); });
+    function range(){
+      var a = card.querySelector('.gap-from').value.split(':'), b = card.querySelector('.gap-to').value.split(':');
+      var base = dayStartMs(dateStr);
+      return {s: base + ((parseInt(a[0], 10) || 0) * 60 + (parseInt(a[1], 10) || 0)) * 60000, e: base + ((parseInt(b[0], 10) || 0) * 60 + (parseInt(b[1], 10) || 0)) * 60000};
+    }
+    card.querySelector('[data-gap-book]').addEventListener('click', function(){
+      var r = range();
+      if(!sel.value){ toast('Bitte einen Task wählen.'); return; }
+      if(r.e <= r.s){ toast('Das Ende muss nach dem Beginn liegen.'); return; }
+      if(addManualSession(sel.value, r.s, r.e)){ toast('✅ ' + Math.round((r.e - r.s) / 60000) + ' Min. nachgebucht.'); renderAll(); }
+    });
+    card.querySelector('[data-gap-new]').addEventListener('click', function(){
+      var r = range();
+      askText('Neuer Task für die Lücke', 'Wofür war die Zeit?', 'z.B. Rechnungen kontrollieren', 'Anlegen und buchen', function(title){
+        var col = inProgressColumn();
+        var nt = createQuickTask(col.id, title);
+        if(addManualSession(nt.id, r.s, r.e)) toast('✅ Task angelegt und ' + Math.round((r.e - r.s) / 60000) + ' Min. gebucht.');
+        renderAll();
+      });
+    });
+    card.querySelector('[data-gap-pause]').addEventListener('click', function(){
+      var r = range();
+      var br = state.settings.dyceBreaks = state.settings.dyceBreaks || {};
+      (br[dateStr] = br[dateStr] || []).push({s: new Date(r.s).toISOString(), e: new Date(r.e).toISOString()});
+      save(); renderDyceView();
+    });
+  });
+  var aiBtn = document.getElementById('dyceAiBtn');
+  if(aiBtn) aiBtn.addEventListener('click', function(){ dyceAiSuggest(dateStr, gaps, aiBtn); });
+}
+function openDyceAddTime(ds){
+  var pool = state.tasks.filter(function(t){ return !t.archived; }).sort(function(a, b){ return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); }).slice(0, 150);
+  var html = '<div class="modal-header"><h2>Zeit nachtragen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body"><div class="form-row"><label for="atTask">Task</label><select id="atTask">' + pool.map(function(t){ return '<option value="' + t.id + '">' + escapeHtml(t.title.slice(0, 80)) + '</option>'; }).join('') + '</select></div>' +
+    '<div class="form-row-inline"><div class="form-row"><label for="atDate">Tag</label><input type="date" id="atDate" value="' + ds + '"></div>' +
+    '<div class="form-row"><label for="atFrom">Von</label><input type="time" id="atFrom" value="09:00"></div><div class="form-row"><label for="atTo">Bis</label><input type="time" id="atTo" value="10:00"></div></div></div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="atSave">Nachtragen</button></div>';
+  openModal(html);
+  document.getElementById('atSave').addEventListener('click', function(){
+    var day = document.getElementById('atDate').value, f = document.getElementById('atFrom').value.split(':'), t2 = document.getElementById('atTo').value.split(':');
+    var base = dayStartMs(day);
+    var s = base + ((parseInt(f[0], 10) || 0) * 60 + (parseInt(f[1], 10) || 0)) * 60000, e = base + ((parseInt(t2[0], 10) || 0) * 60 + (parseInt(t2[1], 10) || 0)) * 60000;
+    if(e <= s){ toast('Das Ende muss nach dem Beginn liegen.'); return; }
+    if(addManualSession(document.getElementById('atTask').value, s, e)){ closeModal(); dyceDateStr = day; renderAll(); toast('✅ Zeit nachgetragen.'); }
+  });
+}
+function dyceAiSuggest(ds, gaps, btn){
+  if(!aiReady()) return;
+  var cand = {};
+  function addCand(t){ if(t && !t.archived) cand[t.id] = t; }
+  state.tasks.forEach(function(t){
+    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds) addCand(t);
+    if(secondsOnDate(t, ds) > 0) addCand(t);
+    var a = dayStartMs(ds), b = a + 86400000;
+    (t.notes || []).concat(t.activityLog || []).forEach(function(x){ var ts = new Date(x.ts).getTime(); if(ts >= a && ts < b) addCand(t); });
+    if(!t.completedAt && Date.now() - new Date(t.updatedAt || 0).getTime() < 3 * 86400000) addCand(t);
+  });
+  var tasks = Object.keys(cand).map(function(k){ return cand[k]; }).slice(0, 30);
+  var ctx = ['Datum: ' + ds, 'Lücken (Nr: von–bis):'].concat(gaps.map(function(g, i){ return i + ': ' + fmtClock(g.s) + '–' + fmtClock(g.e) + (g.kind ? ' (' + g.kind + ')' : ''); }));
+  ctx.push('', 'Gebuchte Sitzungen an diesem Tag:');
+  dayIntervals(ds).forEach(function(iv){ ctx.push(fmtClock(iv.s) + '–' + fmtClock(iv.e) + ' ' + iv.task.title); });
+  ctx.push('', 'Mögliche Tasks (id | Titel | Typ | Hinweise):');
+  tasks.forEach(function(t){
+    var hints = [];
+    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds) hints.push('geplant ' + fmtClock(new Date(t.scheduledAt).getTime()) + ' für ' + plannedMinutes(t) + ' Min.');
+    (t.notes || []).forEach(function(n){ var ts = new Date(n.ts).getTime(); if(ts >= dayStartMs(ds) && ts < dayStartMs(ds) + 86400000) hints.push('Notiz ' + fmtClock(ts) + ': ' + String(n.text).slice(0, 60)); });
+    (t.activityLog || []).forEach(function(a){ var ts = new Date(a.ts).getTime(); if(ts >= dayStartMs(ds) && ts < dayStartMs(ds) + 86400000 && !/^Task erstellt/.test(a.text)) hints.push(fmtClock(ts) + ' ' + String(a.text).slice(0, 50)); });
+    ctx.push(t.id + ' | ' + t.title + ' | ' + (TYPES[t.type] || TYPES.adhoc).label + (hints.length ? ' | ' + hints.slice(0, 4).join('; ') : ''));
+  });
+  btn.disabled = true; btn.textContent = '✨ KI arbeitet…';
+  aiJson('Du hilfst beim Nachbuchen ungebuchter Arbeitszeit. Für jede Lücke schlägst du den wahrscheinlichsten Task der Liste vor, anhand von Planung, Notizen, Aktivität und den benachbarten Buchungen. Ist keiner plausibel (z.B. Mittagspause, Weg), setze "taskId" auf "" und "pause" auf true. Erfinde keine Task-IDs. Antworte NUR mit JSON: {"suggestions":[{"gap":Nummer,"taskId":string,"pause":boolean,"reason":"kurz, Schweizer Rechtschreibung"}]}.', ctx.join('\n'), 1200).then(function(res){
+    var list = Array.isArray(res) ? res : (res.suggestions || []);
+    var applied = 0;
+    list.forEach(function(sg){
+      var card = document.querySelector('.gap-card[data-gap="' + parseInt(sg.gap, 10) + '"]');
+      if(!card) return;
+      var info = card.querySelector('.gap-ai');
+      if(sg.taskId && getTask(sg.taskId)){
+        card.querySelector('.gap-task').value = sg.taskId; applied++;
+        info.textContent = '✨ ' + (sg.reason || 'Vorschlag der KI');
+      } else if(sg.pause){
+        info.textContent = '✨ ' + (sg.reason || 'Wahrscheinlich eine Pause.');
+      }
+    });
+    toast(applied ? '✨ ' + applied + ' Vorschläge eingetragen – prüfen und „Buchen“ klicken.' : 'Die KI hat keinen passenden Task gefunden.');
+  }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✨ KI-Vorschläge'; });
 }
 
 /* =========================================================
@@ -7419,6 +7801,10 @@ function openSettings(){
       sRow('Stundensatz', sNum('sHourlyRate', state.settings.hourlyRate||'', 0, ' placeholder="z.B. 95"') + '<span class="s-unit">CHF</span>', 'Zeigt den erarbeiteten Wert pro Zeitraum.') +
       sRow('Zielarbeitszeit', sNum('sTargetHours', state.settings.targetHoursPerDay||'', 0, ' step="0.1" placeholder="z.B. 8.4"') + '<span class="s-unit">Std./Tag</span>', 'Soll/Ist-Vergleich ohne Wochenenden.') +
       sRow('Archivieren nach', sNum('sArchiveDays', state.settings.autoArchiveDays, 0) + '<span class="s-unit">Tagen</span>', 'Erledigte Tasks, 0 = nie.')
+    ) +
+    sCard('Tagesabschluss', 'Lücken-Erkennung und Arbeitszeit für den Tagesabschluss-Assistenten.',
+      sRow('Lücke ab', sNum('sDyceGap', state.settings.dyceGapMinutes || 10, 5) + '<span class="s-unit">Min.</span>', 'Ungebuchte Zeit zwischen zwei Sitzungen wird ab dieser Dauer gemeldet.') +
+      sRow('Arbeitszeit', '<div class="s-inline"><input type="time" id="sDyceStart" value="' + escapeAttr(state.settings.dyceWorkStart || '08:00') + '"><span class="s-unit">bis</span><input type="time" id="sDyceEnd" value="' + escapeAttr(state.settings.dyceWorkEnd || '17:00') + '"></div>', 'Für Lücken am Tagesanfang und -ende.')
     );
 
   /* ---------- Board ---------- */
@@ -7773,6 +8159,9 @@ function openSettings(){
       if(col){ col.name = inp.value || col.name; save(); renderBoard(); }
     });
   });
+  document.getElementById('sDyceGap').addEventListener('change', function(e){ state.settings.dyceGapMinutes = Math.max(5, parseInt(e.target.value, 10) || 10); save(); });
+  document.getElementById('sDyceStart').addEventListener('change', function(e){ if(e.target.value){ state.settings.dyceWorkStart = e.target.value; save(); } });
+  document.getElementById('sDyceEnd').addEventListener('change', function(e){ if(e.target.value){ state.settings.dyceWorkEnd = e.target.value; save(); } });
   document.getElementById('sHourlyRate').addEventListener('change', function(e){
     state.settings.hourlyRate = e.target.value ? parseFloat(e.target.value) : null;
     save();
