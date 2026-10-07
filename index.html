@@ -246,7 +246,7 @@ button.btn.primary svg.i{color:inherit;}
 .card .prio-low i:nth-child(1){background:var(--p-low);}
 .card .card-title{flex:1; font-weight:500; font-size:13.5px; line-height:1.4; word-break:break-word; color:var(--text);}
 .jira-key{font-size:11px; font-weight:600; color:var(--accent);}
-.card .group-badge{display:inline-flex; align-self:flex-start; font-size:11.5px; font-weight:500; color:var(--text-dim); background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:0 6px;}
+.card .group-badge, .card .reporter-badge{gap:5px; align-items:center; display:inline-flex; align-self:flex-start; font-size:11.5px; font-weight:500; color:var(--text-dim); background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:0 6px;}
 .card .pin-badge{font-size:11px; opacity:.8;}
 .group-block{border:1px dashed var(--border); border-radius:var(--radius-sm); background:var(--surface-2);}
 .group-block[draggable="true"]{cursor:grab;}
@@ -362,9 +362,10 @@ button.icon-btn.recording{color:var(--danger); animation:pulse 1s infinite;}
 .modal-header h2{margin:0; font-size:16px; flex:1;}
 .modal-body{padding:18px 20px; overflow-y:auto;}
 .modal-footer{padding:13px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px;}
-.modal-footer:has(.modal-footer-danger){justify-content:space-between;}
-.modal-footer-danger{display:flex;}
-.modal-footer-actions{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px;}
+.modal-footer:has(.modal-footer-danger){justify-content:space-between; align-items:flex-start;}
+.modal-footer-danger{display:flex; align-items:flex-start; flex-shrink:0;}
+.modal-footer-danger .btn{align-self:flex-start;}
+.modal-footer-actions{display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px;}
 .form-row{margin-bottom:13px; display:flex; flex-direction:column; gap:5px;}
 .form-row label{font-size:12px; font-weight:500; color:var(--text-dim);}
 .form-row-inline{display:flex; gap:10px;}
@@ -590,6 +591,68 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .dash-grid{grid-template-columns:1fr;} }
 @media (max-width:680px){ #board.dashboard-mode{padding:16px 14px 30px;} }
 
+/* ---- Task-Fenster (zwei Spalten) ---- */
+.modal.wide:has(.task-layout){max-width:1040px;}
+.task-head{gap:10px; padding:12px 20px;}
+.task-ref{color:var(--text-dim); font-weight:500; font-size:13px; white-space:nowrap;}
+.task-title-input{flex:1; min-width:0; font-size:17px; font-weight:600; border:1px solid transparent; background:transparent; padding:6px 8px; border-radius:8px; color:var(--text);}
+.task-title-input:hover{border-color:var(--border);}
+.task-title-input:focus{border-color:var(--accent); background:var(--surface);}
+.task-layout{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:24px; align-items:start;}
+.task-block{margin-bottom:20px;}
+.task-block-title{font-weight:600; font-size:13.5px; margin-bottom:8px; display:flex; align-items:baseline; gap:8px;}
+.task-block-sub{font-weight:400; font-size:12px; color:var(--text-faint);}
+.task-main textarea{width:100%;}
+.task-main .form-row-inline{align-items:center;}
+.task-main .form-row-inline > .form-row{flex:0 0 auto;}
+.task-side{position:sticky; top:0; display:flex; flex-direction:column; gap:12px;}
+.task-side .total-time-display{margin:0; font-size:26px; padding:10px 12px;}
+.task-side .total-time-display .btn{margin-left:auto;}
+.prop-panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px;}
+.prop{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
+.prop:last-child{margin-bottom:0;}
+.prop label{font-size:12px; color:var(--text-dim); font-weight:500;}
+.prop input, .prop select{width:100%; min-width:0;}
+.prop-row2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.task-more{margin-top:4px;}
+.task-more > summary{font-size:13px;}
+.ai-row{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
+.ai-row .btn{padding:4px 9px; font-size:12.5px; color:var(--text-dim);}
+.ai-result{margin-top:8px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface-2); padding:10px 12px; font-size:13px; line-height:1.5;}
+.ai-result pre{white-space:pre-wrap; font:inherit; margin:0 0 8px;}
+.ai-result .actions{display:flex; gap:6px; flex-wrap:wrap;}
+.menu.up{top:auto; bottom:calc(100% + 6px);}
+@media (max-width:820px){
+  .task-layout{grid-template-columns:1fr; gap:14px;}
+  .task-side{position:static;}
+}
+
+/* ---- Hotline-Formular und Ähnlichkeits-Vorschläge ---- */
+.hotline-form textarea{width:100%;}
+.sim-box{margin:2px 0 12px;}
+.sim-title{font-weight:600; font-size:13px;}
+.sim-head{font-size:12px; color:var(--text-dim); font-weight:500; margin-bottom:6px;}
+.sim-row{border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; margin-bottom:6px; display:grid; grid-template-columns:1fr auto; gap:4px 10px; align-items:center; background:var(--surface);}
+.sim-main{cursor:pointer; min-width:0;}
+.sim-title-line{display:flex; align-items:center; gap:8px; min-width:0;}
+.sim-title-line .sim-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.sim-status{font-size:11px; padding:0 7px; border-radius:99px; background:var(--surface-2); color:var(--text-dim); flex-shrink:0;}
+.sim-status.offen{background:var(--accent-soft); color:var(--accent);}
+.sim-status.erledigt{background:var(--ok-bg); color:var(--ok);}
+.sim-meta{font-size:12px; color:var(--text-faint);}
+.sim-actions{display:flex; gap:2px;}
+.sim-actions .btn{padding:3px 8px; font-size:12px;}
+.sim-detail{grid-column:1 / -1; font-size:12.5px; color:var(--text-dim); border-top:1px solid var(--border); padding-top:6px;}
+.sim-detail ul{margin:4px 0 0 18px; padding:0;}
+.sim-notes-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); margin-top:4px;}
+.sim-hint{margin-bottom:12px;}
+
+.card .reporter-badge svg.i{width:12px; height:12px;}
+.draft-card{border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:12px; background:var(--surface);}
+.draft-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-weight:600;}
+.draft-use{display:flex; align-items:center; gap:8px; cursor:pointer;}
+.draft-card textarea{width:100%;}
+
 /* ---- Print view ---- */
 #printArea{display:none;}
 @media print{
@@ -794,6 +857,7 @@ button.mobile-only{display:none;}
       <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Timer-Fenster" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
       <button class="btn" id="tbPause"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
     </div>
+    <button class="btn ghost icon-btn" id="btnControlCenter" title="Control-Center (schwebendes Fenster)" aria-label="Control-Center öffnen"><svg class="i"><use href="#i-pip"/></svg></button>
     <button class="btn ghost" id="btnCloudSyncTopbar" title="Cloud-Speicher jetzt synchronisieren"><svg class="i"><use href="#i-cloud"/></svg><span class="lbl" data-i18n="btnCloudSyncTopbar">Sync</span></button>
     <div class="menu-wrap">
       <div class="split">
@@ -1043,6 +1107,8 @@ function normalizeTask(t){
   if(typeof t.followUp !== 'string') t.followUp = '';
   if(typeof t.taskGroup !== 'string') t.taskGroup = '';
   if(typeof t.scheduledAt !== 'string') t.scheduledAt = '';
+  if(typeof t.reporter !== 'string') t.reporter = '';
+  if(typeof t.phone !== 'string') t.phone = '';
   return t;
 }
 
@@ -1254,7 +1320,9 @@ function createTask(partial){
     checklist: [],
     assignee: '',
     taskGroup: '',
-    scheduledAt: ''
+    scheduledAt: '',
+    reporter: '',
+    phone: ''
   }, partial || {});
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
@@ -1466,7 +1534,7 @@ function mapPriorityHint(hint){
    ========================================================= */
 var I18N = {
   de: {
-    btnHotline:'Hotline-Anruf', btnMeeting:'Meeting', btnQuickTimeEntry:'Zeit erfassen', btnQuickCapture:'Schnellerfassung',
+    btnHotline:'Hotline-Anruf', btnMeeting:'Meeting', btnQuickTimeEntry:'Zeit erfassen', btnQuickCapture:'Ticket aus Text (KI)',
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
@@ -1475,7 +1543,7 @@ var I18N = {
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
   en: {
-    btnHotline:'Hotline Call', btnMeeting:'Meeting', btnQuickTimeEntry:'Track Time', btnQuickCapture:'Quick Capture',
+    btnHotline:'Hotline Call', btnMeeting:'Meeting', btnQuickTimeEntry:'Track Time', btnQuickCapture:'Ticket from text (AI)',
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
@@ -2181,6 +2249,7 @@ function openShortcutsCheatsheet(){
     ['Leertaste', 'Laufenden Timer pausieren'],
     ['Strg + S', 'Cloud-Backup herunterladen'],
     ['Strg + K', 'Command Palette öffnen'],
+    ['Strg + V (auf dem Board)', 'Text einfügen: Ticket aus Text erstellen (KI)'],
     ['/', 'Suche fokussieren'],
     ['Umschalt + Enter', 'Beim Schnell-Anlegen: Task anlegen und gleich öffnen'],
     ['PROJ-123, #tag, !hoch', 'Kurzschreibweise im Schnell-Anlegen (Jira-Key, Tag, Priorität)'],
@@ -2465,7 +2534,7 @@ function taskMatchesFilters(t){
   }
   if(searchQuery){
     var q = searchQuery.toLowerCase();
-    var hay = (t.title + ' ' + t.jiraKey + ' ' + t.description + ' ' + t.tags.join(' ')).toLowerCase();
+    var hay = (t.title + ' ' + t.jiraKey + ' ' + t.description + ' ' + t.tags.join(' ') + ' ' + (t.reporter || '')).toLowerCase();
     if(hay.indexOf(q) < 0) return false;
   }
   return true;
@@ -3186,6 +3255,7 @@ function renderCard(t){
       '<span class="prio prio-'+escapeAttr(t.priority||'medium')+'" title="Priorität: '+escapeAttr(prioInfo.label)+'"><i></i><i></i><i></i></span>' +
     '</div>' +
     '<div class="card-title">'+escapeHtml(t.title)+'</div>' +
+    (t.reporter ? '<span class="reporter-badge" title="Reporter">'+svgIcon('users')+escapeHtml(t.reporter)+'</span>' : '') +
     (t.taskGroup ? '<span class="group-badge" title="Gruppe">'+escapeHtml(t.taskGroup)+'</span>' : '') +
     (t.blockedBy && t.blockedBy.length ? '<div class="blocked-badge">🔗 blockiert durch '+t.blockedBy.length+' Task(s)</div>' : '') +
     (t.assignee ? '<div class="hint">👤 '+escapeHtml(t.assignee)+'</div>' : '') +
@@ -3309,11 +3379,11 @@ function renderTimerBanner(){
   var banner = document.getElementById('timerBanner');
   var id = state.settings.activeTaskId;
   var t = id ? getTask(id) : null;
-  if(!t){ banner.classList.remove('active'); if(pipWindow) pipWindow.close(); return; }
+  if(!t){ banner.classList.remove('active'); ccRefresh(true); return; }
   banner.classList.add('active');
   document.getElementById('tbTitle').textContent = (t.jiraKey ? t.jiraKey + ' · ' : '') + t.title;
   document.getElementById('tbTime').textContent = fmtHMS(totalSeconds(t));
-  updateTimerPip();
+  ccRefresh(true);
 }
 
 /* =========================================================
@@ -3323,39 +3393,254 @@ function renderTimerBanner(){
    Nutzt die Document-PiP-API (Chrome/Edge); ohne Unterstützung schlägt
    requestWindow() fehl und wir zeigen einen Hinweis statt eines Fehlers.
    ========================================================= */
-var pipWindow = null;
-function toggleTimerPip(){
-  if(pipWindow){ pipWindow.close(); return; }
-  if(!('documentPictureInPicture' in window)){ toast('Schwebendes Fenster wird von diesem Browser nicht unterstützt (Chrome/Edge ab v116).'); return; }
-  documentPictureInPicture.requestWindow({width:260, height:110}).then(function(win){
-    pipWindow = win;
-    win.document.title = 'Work Board Timer';
-    var style = win.document.createElement('style');
-    style.textContent = 'body{margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; background:#14171c; color:#f2f2f2; font-family:system-ui,-apple-system,Segoe UI,sans-serif;} ' +
-      '#pipTitle{font-size:13px; opacity:.75; text-align:center; padding:0 12px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} ' +
-      '#pipTime{font-size:34px; font-weight:700; font-variant-numeric:tabular-nums;} ' +
-      '#pipPause{padding:5px 16px; border-radius:7px; border:none; background:#3b82f6; color:#fff; font-size:13px; cursor:pointer;} ' +
-      '#pipPause:hover{background:#2563eb;}';
-    win.document.head.appendChild(style);
-    win.document.body.innerHTML = '<div id="pipTitle"></div><div id="pipTime">00:00:00</div><button id="pipPause">⏸ Pause</button>';
-    win.document.getElementById('pipPause').addEventListener('click', function(){
-      var id = state.settings.activeTaskId;
-      if(id) stopTimer(id);
-    });
-    win.addEventListener('pagehide', function(){ pipWindow = null; });
-    updateTimerPip();
-  }).catch(function(err){ toast('Konnte schwebendes Fenster nicht öffnen: ' + err.message); });
+/* =========================================================
+   CONTROL-CENTER (schwebendes Fenster)
+   Kleines Always-on-Top-Fenster (Document Picture-in-Picture, Chrome/Edge ab v116),
+   das auch sichtbar bleibt, wenn das Board im Hintergrund ist - z.B. während der Arbeit
+   in Jira oder Outlook. Ohne PiP-Unterstützung erscheint dasselbe Panel als Overlay
+   unten rechts in der Seite. Inhalt: laufender Timer, Schnell-Anlegen, Hotline-Anruf,
+   Meeting, Zeit erfassen und die zuletzt bearbeiteten Tasks mit Start/Pause.
+   ========================================================= */
+var CC_CSS =
+  '.cc{font-family:var(--font); color:var(--text); background:var(--surface); display:flex; flex-direction:column; gap:10px; padding:12px; box-sizing:border-box; height:100%; overflow-y:auto; font-size:13px; line-height:1.4;}' +
+  '.cc *{box-sizing:border-box;}' +
+  '.cc button{font:inherit; cursor:pointer;}' +
+  '.cc-head{display:flex; align-items:center; gap:8px;}' +
+  '.cc-title{font-weight:600; font-size:14px; flex:1;}' +
+  '.cc-today{font-size:12px; color:var(--text-dim);}' +
+  '.cc-icon{border:0; background:transparent; color:var(--text-dim); padding:3px 7px; border-radius:6px; font-size:14px;}' +
+  '.cc-icon:hover{background:var(--hover); color:var(--text);}' +
+  '.cc-now{border:1px solid var(--border); border-radius:10px; padding:12px; background:var(--surface-2);}' +
+  '.cc-now.run{border-color:var(--accent); background:var(--accent-soft);}' +
+  '.cc-idle{color:var(--text-dim);}' +
+  '.cc-run-title{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}' +
+  '.cc-time{font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; margin:4px 0 10px;}' +
+  '.cc-actions{display:flex; gap:8px;}' +
+  '.cc-btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:8px; padding:7px 12px; font-weight:500;}' +
+  '.cc-btn:hover{background:var(--hover);}' +
+  '.cc-btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}' +
+  '.cc-btn.primary:hover{background:var(--accent-hover);}' +
+  '.cc-field{width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); color:var(--text); font:inherit;}' +
+  '.cc-field:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow);}' +
+  'textarea.cc-field{resize:vertical; min-height:54px;}' +
+  '.cc-add{display:flex; gap:6px;}' +
+  '.cc-quick{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}' +
+  '.cc-quick .cc-btn{padding:8px 4px; font-size:12.5px; text-align:center;}' +
+  '.cc-form{border:1px solid var(--border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;}' +
+  '.cc-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}' +
+  '.cc-row{display:flex; align-items:center; gap:8px; padding:6px; border-radius:8px;}' +
+  '.cc-row:hover{background:var(--hover);}' +
+  '.cc-row-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}' +
+  '.cc-row-time{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums;}' +
+  '.cc-play{width:26px; height:26px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text-dim); display:grid; place-items:center; padding:0; font-size:11px;}' +
+  '.cc-play:hover{border-color:var(--accent); color:var(--accent);}' +
+  '.cc-play.on{background:var(--accent); border-color:var(--accent); color:#fff;}' +
+  '.cc-msg{font-size:12px; color:var(--ok); min-height:16px;}' +
+  '[hidden]{display:none !important;}';
+var CC_VARS = ['--bg','--side','--surface','--surface-2','--hover','--border','--border-strong','--text','--text-dim','--text-faint',
+  '--accent','--accent-hover','--accent-glow','--accent-soft','--danger','--danger-bg','--ok','--ok-bg','--font'];
+var ccWindow = null;
+var ccRoot = null;
+var ccPanelEl = null;
+
+function ccApplyVars(targetEl){
+  var cs = getComputedStyle(document.documentElement);
+  CC_VARS.forEach(function(v){ targetEl.style.setProperty(v, cs.getPropertyValue(v)); });
 }
-function updateTimerPip(){
-  if(!pipWindow) return;
+function toggleControlCenter(){
+  if(ccWindow){ ccWindow.close(); return; }
+  if(ccPanelEl){ closeCcPanel(); return; }
+  if(!('documentPictureInPicture' in window)){ openCcPanel(); return; }
+  documentPictureInPicture.requestWindow({width:360, height:620}).then(function(win){
+    ccWindow = win;
+    win.document.title = 'Work Board – Control-Center';
+    var st = win.document.createElement('style');
+    st.textContent = 'html,body{margin:0; height:100%; background:var(--surface);} ' + CC_CSS;
+    win.document.head.appendChild(st);
+    ccApplyVars(win.document.documentElement);
+    var root = win.document.createElement('div');
+    root.style.height = '100%';
+    win.document.body.appendChild(root);
+    ccRoot = root;
+    ccBuild(root, false);
+    win.addEventListener('pagehide', function(){ if(ccWindow === win){ ccWindow = null; ccRoot = null; } });
+  }).catch(function(){ openCcPanel(); });
+}
+function openCcPanel(){
+  if(!document.getElementById('ccStyle')){
+    var st = document.createElement('style');
+    st.id = 'ccStyle';
+    st.textContent = CC_CSS + ' #ccPanel{position:fixed; right:18px; bottom:18px; width:340px; max-height:82vh; height:560px; z-index:1200; border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow-lg); overflow:hidden; background:var(--surface);}' +
+      ' @media (max-width:680px){ #ccPanel{left:8px; right:8px; bottom:8px; width:auto;} }';
+    document.head.appendChild(st);
+  }
+  ccPanelEl = document.createElement('div');
+  ccPanelEl.id = 'ccPanel';
+  document.body.appendChild(ccPanelEl);
+  ccRoot = ccPanelEl;
+  ccBuild(ccPanelEl, true);
+}
+function closeCcPanel(){
+  if(ccPanelEl){ ccPanelEl.remove(); ccPanelEl = null; if(!ccWindow) ccRoot = null; }
+}
+function ccBuild(root, withClose){
+  var reporters = uniqueReporters();
+  root.innerHTML =
+    '<div class="cc">' +
+      '<div class="cc-head"><span class="cc-title">Control-Center</span><span class="cc-today" data-cc-today></span>' +
+        '<button class="cc-icon" data-cc="main" title="Hauptfenster in den Vordergrund">↗</button>' +
+        (withClose ? '<button class="cc-icon" data-cc="close" title="Schliessen">✕</button>' : '') +
+      '</div>' +
+      '<div class="cc-now" data-cc-now></div>' +
+      '<form class="cc-add" data-cc-noteform hidden><input class="cc-field" data-cc-noteinput placeholder="Notiz zum laufenden Task…" autocomplete="off"><button class="cc-btn" type="submit">Notiz</button></form>' +
+      '<form class="cc-add" data-cc-addform><input class="cc-field" data-cc-addinput placeholder="Neuer Task… (PROJ-123, #tag, !hoch)" autocomplete="off"><button class="cc-btn primary" type="submit" title="Task anlegen">+</button></form>' +
+      '<div class="cc-quick"><button class="cc-btn" data-cc="hotline">Hotline-Anruf</button><button class="cc-btn" data-cc="meeting">Meeting</button><button class="cc-btn" data-cc="time">Zeit erfassen</button></div>' +
+      '<div data-cc-formhost></div>' +
+      '<div class="cc-msg" data-cc-msg></div>' +
+      '<div class="cc-label">Zuletzt bearbeitet</div>' +
+      '<div data-cc-recent></div>' +
+      '<datalist id="ccReporters">'+reporters.map(function(c){ return '<option value="'+escapeAttr(c)+'">'; }).join('')+'</datalist>' +
+    '</div>';
+  var q = function(sel){ return root.querySelector(sel); };
+
+  function say(msg){
+    var m = q('[data-cc-msg]');
+    if(!m) return;
+    m.textContent = msg;
+    setTimeout(function(){ if(m.textContent === msg) m.textContent = ''; }, 3500);
+  }
+  function showForm(kind){
+    var host = q('[data-cc-formhost]');
+    if(host.dataset.kind === kind){ host.innerHTML = ''; host.dataset.kind = ''; return; }
+    host.dataset.kind = kind;
+    if(kind === 'hotline'){
+      host.innerHTML =
+        '<form class="cc-form" data-cc-hotline>' +
+          '<input class="cc-field" name="reporter" list="ccReporters" placeholder="Reporter (wer meldet das Ticket?)" autocomplete="off">' +
+          '<input class="cc-field" name="issue" placeholder="Worum geht es?" autocomplete="off">' +
+          '<textarea class="cc-field" name="notes" rows="2" placeholder="Notizen…"></textarea>' +
+          '<button class="cc-btn primary" type="submit">Anruf starten</button>' +
+        '</form>';
+      host.querySelector('[name="reporter"]').focus();
+    } else {
+      host.innerHTML =
+        '<form class="cc-form" data-cc-timeform>' +
+          '<input class="cc-field" name="title" placeholder="Wofür? (z.B. Rechnungen kontrollieren)" autocomplete="off">' +
+          '<button class="cc-btn primary" type="submit">Starten</button>' +
+        '</form>';
+      host.querySelector('[name="title"]').focus();
+    }
+  }
+  function clearForm(){ var h = q('[data-cc-formhost]'); h.innerHTML = ''; h.dataset.kind = ''; }
+
+  root.addEventListener('click', function(e){
+    var el = e.target.closest('[data-cc], [data-cc-toggle], [data-cc-open]');
+    if(!el) return;
+    if(el.dataset.ccToggle){
+      var tt = getTask(el.dataset.ccToggle);
+      if(tt){ if(isRunning(tt)) stopTimer(tt.id); else startTimer(tt.id); }
+    } else if(el.dataset.ccOpen){
+      window.focus();
+      openTaskModal(el.dataset.ccOpen);
+    } else if(el.dataset.cc === 'main'){ window.focus(); }
+    else if(el.dataset.cc === 'close'){ closeCcPanel(); }
+    else if(el.dataset.cc === 'pause'){ var id = state.settings.activeTaskId; if(id) stopTimer(id); }
+    else if(el.dataset.cc === 'done'){
+      var did = state.settings.activeTaskId;
+      if(did){
+        stopTimer(did, true);
+        var doneCol = state.columns.find(function(c){ return DONE_COLUMN_RE.test(c.name); });
+        if(doneCol) updateTask(did, {columnId: doneCol.id});
+        renderAll();
+        say('Task erledigt.');
+      }
+    }
+    else if(el.dataset.cc === 'hotline'){ showForm('hotline'); }
+    else if(el.dataset.cc === 'time'){ showForm('time'); }
+    else if(el.dataset.cc === 'meeting'){
+      var tm = new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
+      createTimerTask('meeting', 'Meeting ' + tm);
+      say('Meeting läuft.');
+    }
+  });
+  root.addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    if(form.hasAttribute('data-cc-addform')){
+      var inp = q('[data-cc-addinput]');
+      var val = inp.value.trim();
+      if(!val) return;
+      createQuickTask(state.columns[0].id, val);
+      renderAll();
+      inp.value = '';
+      say('Task angelegt.');
+    } else if(form.hasAttribute('data-cc-noteform')){
+      var ni = q('[data-cc-noteinput]');
+      var text = ni.value.trim();
+      var id = state.settings.activeTaskId;
+      var t = id ? getTask(id) : null;
+      if(!text || !t) return;
+      t.notes.push({ts: nowIso(), text: text});
+      t.updatedAt = nowIso();
+      save();
+      renderAll();
+      ni.value = '';
+      say('Notiz gespeichert.');
+    } else if(form.hasAttribute('data-cc-hotline')){
+      createHotlineTask({reporter: form.reporter.value, issue: form.issue.value, notes: form.notes.value, start: true});
+      clearForm();
+      say('Hotline-Task angelegt, Timer läuft.');
+    } else if(form.hasAttribute('data-cc-timeform')){
+      var title = form.title.value.trim() || ('Zeiterfassung ' + new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'}));
+      createTimerTask('adhoc', title);
+      clearForm();
+      say('Zeiterfassung läuft.');
+    }
+  });
+  ccRefresh(true);
+}
+function ccRefresh(full){
+  if(!ccRoot) return;
+  var q = function(sel){ return ccRoot.querySelector(sel); };
   var id = state.settings.activeTaskId;
   var t = id ? getTask(id) : null;
-  var titleEl = pipWindow.document.getElementById('pipTitle');
-  var timeEl = pipWindow.document.getElementById('pipTime');
-  if(!t){ pipWindow.close(); return; }
-  if(titleEl) titleEl.textContent = (TYPES[t.type]||TYPES.adhoc).icon + ' ' + t.title;
-  if(timeEl) timeEl.textContent = fmtHMS(totalSeconds(t));
+  if(full){
+    if(ccWindow) ccApplyVars(ccWindow.document.documentElement);
+    var now = q('[data-cc-now]');
+    if(now){
+      now.className = 'cc-now' + (t ? ' run' : '');
+      now.innerHTML = t ?
+        '<div class="cc-run-title" data-cc-open="'+t.id+'" title="Task öffnen">'+escapeHtml((t.jiraKey ? t.jiraKey + ' · ' : '') + t.title)+'</div>' +
+        '<div class="cc-time" data-cc-time>'+fmtHMS(totalSeconds(t))+'</div>' +
+        '<div class="cc-actions"><button class="cc-btn" data-cc="pause">Pause</button><button class="cc-btn" data-cc="done">Erledigt</button></div>'
+        : '<div class="cc-idle">Kein Timer aktiv. Starte unten einen Task oder lege einen neuen an.</div>';
+    }
+    var noteForm = q('[data-cc-noteform]');
+    if(noteForm) noteForm.hidden = !t;
+    var dayStart = startOfDay(new Date()).getTime();
+    var todaySec = state.tasks.reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+    var todayEl = q('[data-cc-today]');
+    if(todayEl) todayEl.textContent = 'Heute ' + fmtHM(todaySec);
+    var recent = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x); })
+      .map(function(x){
+        var last = x.timeSessions.length ? new Date(x.timeSessions[x.timeSessions.length-1].start).getTime() : 0;
+        return {t: x, at: Math.max(last, new Date(x.updatedAt || 0).getTime())};
+      })
+      .sort(function(a, b){ return b.at - a.at; }).slice(0, 6);
+    var list = q('[data-cc-recent]');
+    if(list){
+      list.innerHTML = recent.length ? recent.map(function(r){
+        var x = r.t, run = isRunning(x);
+        return '<div class="cc-row"><span class="cc-row-title" data-cc-open="'+x.id+'" title="'+escapeAttr(x.title)+'">'+escapeHtml(x.title)+'</span>' +
+          '<span class="cc-row-time">'+fmtHM(totalSeconds(x))+'</span>' +
+          '<button class="cc-play'+(run?' on':'')+'" data-cc-toggle="'+x.id+'" title="'+(run?'Pause':'Start')+'" aria-label="'+(run?'Pause':'Start')+'">'+(run?'⏸':'▶')+'</button></div>';
+      }).join('') : '<div class="cc-idle">Noch keine Tasks.</div>';
+    }
+  }
+  var tm = q('[data-cc-time]');
+  if(tm && t) tm.textContent = fmtHMS(totalSeconds(t));
 }
+
 function tick(){
   updateClockAndTitle();
   var id = state.settings.activeTaskId;
@@ -3371,7 +3656,7 @@ function tick(){
     var modalTimeEl = document.getElementById('modalTotalTime');
     if(modalTimeEl) modalTimeEl.textContent = fmtHMS(totalSeconds(t));
   }
-  updateTimerPip();
+  ccRefresh(false);
 
   // idle reminder
   var openSession = t.timeSessions.find(function(s){ return !s.end; });
@@ -3997,133 +4282,176 @@ function openTaskModal(taskId){
   state.tasks.forEach(function(x){ x.tags.forEach(function(tag){ existingTagNames[tag] = true; }); });
   var tagPool = Object.keys(existingTagNames).sort();
 
+  var typeInfoModal = TYPES[t.type] || TYPES.adhoc;
+  var reporterListHtml = uniqueReporters().map(function(r){ return '<option value="'+escapeAttr(r)+'">'; }).join('');
+  var assigneeHtml = (function(){
+    var assigneeOptions = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
+    if(!assigneeOptions.length) return '';
+    return '<div class="prop"><label for="fAssignee">Zugewiesen an</label><select id="fAssignee"><option value="">– Ich –</option>' +
+      assigneeOptions.map(function(m){ return '<option value="'+escapeAttr(m)+'"'+(t.assignee===m?' selected':'')+'>'+escapeHtml(m)+'</option>'; }).join('') +
+    '</select></div>';
+  })();
+  var checklistDone = t.checklist.filter(function(c){ return c.done; }).length;
+
   var html =
-    '<div class="modal-header"><h2>'+(TYPES[t.type]||TYPES.adhoc).icon+' Task bearbeiten</h2>' +
-      '<button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="total-time-display"><span id="modalTotalTime">'+fmtHMS(totalSeconds(t))+'</span> <button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn" style="font-size:13px; vertical-align:middle; margin-left:10px;">'+(running?'⏸ Pause':'▶ Start')+'</button></div>' +
+    '<div class="modal-header task-head">' +
+      '<span class="type-badge'+(BASE_TYPES[t.type] ? ' ty-'+t.type : '')+'" title="'+escapeAttr(typeInfoModal.label)+'">'+typeIconHtml(t.type)+'</span>' +
+      '<span class="task-ref">'+escapeHtml(t.jiraKey || typeInfoModal.label)+'</span>' +
+      '<input id="fTitle" class="task-title-input" value="'+escapeAttr(t.title)+'" placeholder="Titel" aria-label="Titel">' +
+      '<button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button>' +
+    '</div>' +
+    '<div class="modal-body task-body">' +
       (t.type==='meeting' && state.settings.recentMeetingTitles.length ?
         '<div class="meeting-chip-row">' + state.settings.recentMeetingTitles.map(function(mt){
           return '<span class="meeting-chip" data-meeting-title="'+escapeAttr(mt)+'">'+escapeHtml(mt)+'</span>';
         }).join('') + '</div>' : '') +
-      '<div class="form-row"><label>Titel</label><input id="fTitle" value="'+escapeAttr(t.title)+'"></div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Typ</label><select id="fType">'+typeOptions+'</select></div>' +
-        '<div class="form-row"><label>Priorität</label><select id="fPriority">'+prioOptions+'</select></div>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Spalte</label><select id="fColumn">'+colOptions+'</select></div>' +
-        '<div class="form-row"><label>Fällig am</label><input type="date" id="fDue" value="'+escapeAttr(t.dueDate||'')+'"></div>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Jira-Key</label><input id="fJiraKey" value="'+escapeAttr(t.jiraKey||'')+'" placeholder="z.B. PROJ-1234"></div>' +
-        '<div class="form-row"><label>Zeit-Budget (Min.)</label><input type="number" id="fBudget" min="0" value="'+(t.estimatedMinutes||'')+'" placeholder="z.B. 120"></div>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>📅 Geplant für (Kalender-Ansicht)</label><input type="datetime-local" id="fScheduledAt" value="'+(t.scheduledAt ? toDateTimeInputValue(new Date(t.scheduledAt)) : '')+'"></div>' +
-        '<div class="form-row"><label>&nbsp;</label><button type="button" class="btn" id="btnExportScheduledIcs" '+(t.scheduledAt?'':'disabled')+'>📤 Outlook-Termin (.ics)</button></div>' +
-      '</div>' +
-      '<div class="form-row"><label>Beschreibung</label><textarea id="fDesc" rows="4">'+escapeHtml(t.description)+'</textarea></div>' +
-      '<div class="form-row"><label>📦 Gruppe (optional – z.B. gleiches Thema, ein Task pro Kunde)</label>' +
-        '<input id="fGroup" list="groupNamesList" value="'+escapeAttr(t.taskGroup||'')+'" placeholder="z.B. VPN-Rollout">' +
-        '<datalist id="groupNamesList">'+groupDatalistHtml+'</datalist>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row autocomplete-wrap" style="flex:1"><label>Tags (Komma-getrennt)</label><input id="fTags" autocomplete="off" value="'+escapeAttr(t.tags.join(', '))+'"><div class="autocomplete-list" id="tagSuggestions"></div></div>' +
-        (function(){
-          var assigneeOptions = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
-          if(!assigneeOptions.length) return '';
-          return '<div class="form-row"><label>Zugewiesen an</label><select id="fAssignee"><option value="">– Ich –</option>' +
-            assigneeOptions.map(function(m){ return '<option value="'+escapeAttr(m)+'"'+(t.assignee===m?' selected':'')+'>'+escapeHtml(m)+'</option>'; }).join('') +
-          '</select></div>';
-        })() +
-      '</div>' +
+      '<div id="similarHint"></div>' +
+      '<div class="task-layout">' +
 
-      '<div class="section-title">Checkliste'+(t.checklist.length?' ('+t.checklist.filter(function(c){return c.done;}).length+'/'+t.checklist.length+')':'')+'</div>' +
-      '<div class="notes-log" id="checklistLog">' + (t.checklist.map(function(c, idx){
-        return '<div class="note-item" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" data-checklist-idx="'+idx+'" '+(c.done?'checked':'')+'><span style="flex:1; '+(c.done?'text-decoration:line-through; color:var(--text-faint);':'')+'">'+escapeHtml(c.text)+'</span><button class="icon-btn" data-remove-checklist="'+idx+'">✕</button></div>';
-      }).join('') || '<div class="hint">Keine Checklisten-Punkte.</div>') + '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row" style="flex:1"><input id="newChecklistText" placeholder="Punkt hinzufügen und Enter drücken…"></div>' +
-        '<div class="form-row"><button class="btn" id="addChecklistBtn">+ Punkt</button></div>' +
+        '<div class="task-main">' +
+          '<div class="task-block"><div class="task-block-title">Beschreibung</div>' +
+            '<textarea id="fDesc" rows="4" placeholder="Worum geht es?">'+escapeHtml(t.description)+'</textarea>' +
+            '<div class="ai-row"><button type="button" class="btn ghost" data-ai="improve">✨ Verbessern</button><button type="button" class="btn ghost" data-ai="summary">✨ Zusammenfassen</button><button type="button" class="btn ghost" data-ai="checklist">✨ Checkliste vorschlagen</button><button type="button" class="btn ghost" data-ai="reply">✨ Antwort entwerfen</button></div>' +
+            '<div id="aiResult"></div>' +
+          '</div>' +
+
+          '<div class="task-block"><div class="task-block-title">Notizen'+(t.type==='hotline'?'<span class="task-block-sub">z.B. während des Anrufs</span>':'')+'</div>' +
+            '<div class="form-row-inline">' +
+              '<div class="form-row" style="flex:1; margin-bottom:8px;"><input id="newNoteText" placeholder="Notiz hinzufügen und Enter drücken…"></div>' +
+              (('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) ? '<div class="form-row" style="margin-bottom:8px;"><button class="btn icon-btn" id="voiceNoteBtn" title="Diktieren">🎙️</button></div>' : '') +
+              '<div class="form-row" style="margin-bottom:8px;"><button class="btn icon-btn" id="noteSnippetBtn" title="Textbaustein einfügen">📎</button></div>' +
+              '<div class="form-row" style="margin-bottom:8px;"><button class="btn" id="addNoteBtn">Notiz</button></div>' +
+            '</div>' +
+            '<div class="notes-log" id="notesLog">'+notesHtml+'</div>' +
+            (t.notes.length ? '<button class="btn ghost" id="copyNotesBtn">'+svgIcon('clipboard')+'<span>Notizen und Dauer für Jira-Kommentar kopieren</span></button>' : '') +
+            '<div class="hint">Tipp: Screenshots mit Strg+V einfügen.</div>' +
+          '</div>' +
+
+          '<div class="task-block"><div class="task-block-title">Checkliste'+(t.checklist.length ? '<span class="task-block-sub">'+checklistDone+' von '+t.checklist.length+'</span>' : '')+'</div>' +
+            '<div class="notes-log" id="checklistLog">' + (t.checklist.map(function(c, idx){
+              return '<div class="note-item" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" data-checklist-idx="'+idx+'" '+(c.done?'checked':'')+'><span style="flex:1; '+(c.done?'text-decoration:line-through; color:var(--text-faint);':'')+'">'+escapeHtml(c.text)+'</span><button class="icon-btn" data-remove-checklist="'+idx+'" aria-label="Entfernen">✕</button></div>';
+            }).join('') || '<div class="hint">Keine Punkte.</div>') + '</div>' +
+            '<div class="form-row-inline">' +
+              '<div class="form-row" style="flex:1; margin-bottom:0;"><input id="newChecklistText" placeholder="Punkt hinzufügen und Enter drücken…"></div>' +
+              '<div class="form-row" style="margin-bottom:0;"><button class="btn" id="addChecklistBtn">Punkt</button></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="task-block"><div class="task-block-title">Links</div>' +
+            '<div id="linksList">'+linksHtml+'</div>' +
+            '<div class="form-row-inline">' +
+              '<div class="form-row" style="margin-bottom:0;"><select id="newLinkType"><option value="jira">Jira</option><option value="confluence">Confluence</option><option value="other">Sonstige</option></select></div>' +
+              '<div class="form-row" style="flex:2; margin-bottom:0;"><input id="newLinkUrl" placeholder="URL"></div>' +
+              '<div class="form-row" style="margin-bottom:0;"><button class="btn" id="addLinkBtn">Link</button></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<details class="s-more task-more"><summary>Weitere Optionen: Wiedervorlage, Übergabe, Abhängigkeiten, Rückfragen</summary><div class="s-more-body">' +
+            '<div class="section-title">Wiedervorlage und Wiederholung</div>' +
+            (t.snoozeUntil && isSnoozed(t) ?
+              '<div class="hint" style="margin-bottom:8px;">Wiedervorlage bis '+new Date(t.snoozeUntil).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' <button class="btn ghost" id="clearSnoozeBtn" style="margin-left:6px;">Aufheben</button></div>'
+              : '') +
+            '<div class="form-row-inline">' +
+              '<div class="form-row"><button class="btn" id="snoozeTomorrowBtn">Morgen 9 Uhr</button></div>' +
+              '<div class="form-row"><button class="btn" id="snooze2hBtn">In 2 Stunden</button></div>' +
+              '<div class="form-row"><input type="datetime-local" id="snoozeCustom"></div>' +
+            '</div>' +
+            '<div class="form-row"><label for="fRecurrence">Wiederkehrend</label><select id="fRecurrence">' +
+              '<option value=""'+(!t.recurrence?' selected':'')+'>Keine</option>' +
+              '<option value="daily"'+(t.recurrence&&t.recurrence.freq==='daily'?' selected':'')+'>Täglich (bei Erledigung neu anlegen)</option>' +
+              '<option value="weekly"'+(t.recurrence&&t.recurrence.freq==='weekly'?' selected':'')+'>Wöchentlich (bei Erledigung neu anlegen)</option>' +
+            '</select></div>' +
+
+            '<div class="section-title">Übergabe</div>' +
+            (t.handoff ?
+              '<div class="hint" style="margin-bottom:8px;">An <strong>'+escapeHtml(t.handoff.to)+'</strong> übergeben ('+new Date(t.handoff.ts).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')'+(t.handoff.note?': '+escapeHtml(t.handoff.note):'')+' <button class="btn ghost" id="clearHandoffBtn" style="margin-left:6px;">Aufheben</button></div>'
+              : '') +
+            '<div class="form-row-inline">' +
+              '<div class="form-row"><input id="handoffTo" placeholder="An wen (Name)"></div>' +
+              '<div class="form-row" style="flex:2"><input id="handoffNote" placeholder="Grund/Notiz (optional)"></div>' +
+              '<div class="form-row"><button class="btn" id="handoffBtn">Übergeben</button></div>' +
+            '</div>' +
+
+            '<div class="section-title">Abhängigkeiten</div>' +
+            '<div id="blockedByList">'+blockedByHtml+'</div>' +
+            '<div class="form-row-inline">' +
+              '<div class="form-row" style="flex:1"><select id="newBlockerSelect"><option value="">– Task wählen –</option>'+otherTasksOptions+'</select></div>' +
+              '<div class="form-row"><button class="btn" id="addBlockerBtn">Blockiert durch</button></div>' +
+            '</div>' +
+
+            '<div class="section-title">Rückfragen (später klären)</div>' +
+            '<textarea id="fFollowUp" rows="2" placeholder="z.B. Rückfrage an Kollege X, ob…" style="width:100%;">'+escapeHtml(t.followUp||'')+'</textarea>' +
+
+            '<div class="section-title">Aktivitäts-Verlauf</div>' +
+            '<div class="notes-log">'+activityHtml+'</div>' +
+          '</div></details>' +
+        '</div>' +
+
+        '<aside class="task-side">' +
+          '<div class="total-time-display"><span id="modalTotalTime">'+fmtHMS(totalSeconds(t))+'</span> <button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn">'+(running?'Pause':'Start')+'</button></div>' +
+          '<div class="prop-panel">' +
+            '<div class="prop"><label for="fColumn">Status</label><select id="fColumn">'+colOptions+'</select></div>' +
+            '<div class="prop-row2">' +
+              '<div class="prop"><label for="fPriority">Priorität</label><select id="fPriority">'+prioOptions+'</select></div>' +
+              '<div class="prop"><label for="fType">Typ</label><select id="fType">'+typeOptions+'</select></div>' +
+            '</div>' +
+            '<div class="prop"><label for="fReporter">Reporter (wer hat das Ticket eröffnet?)</label><input id="fReporter" list="reporterList" autocomplete="off" value="'+escapeAttr(t.reporter||'')+'" placeholder="Name der meldenden Person"><datalist id="reporterList">'+reporterListHtml+'</datalist></div>' +
+            '<div class="prop"><label for="fPhone">Telefon</label><input id="fPhone" type="tel" autocomplete="off" value="'+escapeAttr(t.phone||'')+'" placeholder="Rückruf-Nummer"></div>' +
+            assigneeHtml +
+            '<div class="prop"><label for="fDue">Fällig am</label><input type="date" id="fDue" value="'+escapeAttr(t.dueDate||'')+'"></div>' +
+            '<div class="prop-row2">' +
+              '<div class="prop"><label for="fJiraKey">Jira-Key</label><input id="fJiraKey" value="'+escapeAttr(t.jiraKey||'')+'" placeholder="PROJ-1234"></div>' +
+              '<div class="prop"><label for="fBudget">Budget (Min.)</label><input type="number" id="fBudget" min="0" value="'+(t.estimatedMinutes||'')+'" placeholder="120"></div>' +
+            '</div>' +
+            '<div class="prop autocomplete-wrap"><label for="fTags">Tags (Komma-getrennt)</label><input id="fTags" autocomplete="off" value="'+escapeAttr(t.tags.join(', '))+'"><div class="autocomplete-list" id="tagSuggestions"></div></div>' +
+            '<div class="prop"><label for="fGroup">Gruppe (optional)</label>' +
+              '<input id="fGroup" list="groupNamesList" value="'+escapeAttr(t.taskGroup||'')+'" placeholder="z.B. VPN-Rollout">' +
+              '<datalist id="groupNamesList">'+groupDatalistHtml+'</datalist>' +
+            '</div>' +
+            '<div class="prop"><label for="fScheduledAt">Geplant für (Kalender)</label><input type="datetime-local" id="fScheduledAt" value="'+(t.scheduledAt ? toDateTimeInputValue(new Date(t.scheduledAt)) : '')+'">' +
+              '<button type="button" class="btn ghost" id="btnExportScheduledIcs" style="margin-top:6px; align-self:flex-start;" '+(t.scheduledAt?'':'disabled')+'>Outlook-Termin (.ics)</button></div>' +
+          '</div>' +
+          '<details class="s-more"><summary>Zeitsitzungen</summary><div class="notes-log">'+sessionsHtml+'</div></details>' +
+        '</aside>' +
+
       '</div>' +
-
-      '<div class="section-title">Wiedervorlage & Wiederholung</div>' +
-      (t.snoozeUntil && isSnoozed(t) ?
-        '<div class="hint" style="margin-bottom:8px;">😴 Wiedervorlage bis '+new Date(t.snoozeUntil).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' <button class="btn ghost" id="clearSnoozeBtn" style="margin-left:6px;">✕ Aufheben</button></div>'
-        : '') +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><button class="btn" id="snoozeTomorrowBtn">😴 Morgen 9 Uhr</button></div>' +
-        '<div class="form-row"><button class="btn" id="snooze2hBtn">😴 In 2 Stunden</button></div>' +
-        '<div class="form-row"><input type="datetime-local" id="snoozeCustom"></div>' +
-      '</div>' +
-      '<div class="form-row"><label>Wiederkehrend</label><select id="fRecurrence">' +
-        '<option value=""'+(!t.recurrence?' selected':'')+'>Keine</option>' +
-        '<option value="daily"'+(t.recurrence&&t.recurrence.freq==='daily'?' selected':'')+'>Täglich (bei Erledigung neu anlegen)</option>' +
-        '<option value="weekly"'+(t.recurrence&&t.recurrence.freq==='weekly'?' selected':'')+'>Wöchentlich (bei Erledigung neu anlegen)</option>' +
-      '</select></div>' +
-
-      '<div class="section-title">Übergabe</div>' +
-      (t.handoff ?
-        '<div class="hint" style="margin-bottom:8px;">🤝 An <strong>'+escapeHtml(t.handoff.to)+'</strong> übergeben ('+new Date(t.handoff.ts).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')'+(t.handoff.note?': '+escapeHtml(t.handoff.note):'')+' <button class="btn ghost" id="clearHandoffBtn" style="margin-left:6px;">✕ Aufheben</button></div>'
-        : '') +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><input id="handoffTo" placeholder="An wen (Name)"></div>' +
-        '<div class="form-row" style="flex:2"><input id="handoffNote" placeholder="Grund/Notiz (optional)"></div>' +
-        '<div class="form-row"><button class="btn" id="handoffBtn">🤝 Übergeben</button></div>' +
-      '</div>' +
-
-      '<div class="section-title">Abhängigkeiten</div>' +
-      '<div id="blockedByList">'+blockedByHtml+'</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row" style="flex:1"><select id="newBlockerSelect"><option value="">– Task wählen –</option>'+otherTasksOptions+'</select></div>' +
-        '<div class="form-row"><button class="btn" id="addBlockerBtn">+ Blockiert durch</button></div>' +
-      '</div>' +
-
-      '<div class="section-title">Links (Jira / Confluence / Sonstige)</div>' +
-      '<div id="linksList">'+linksHtml+'</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><select id="newLinkType"><option value="jira">🎫 Jira</option><option value="confluence">📘 Confluence</option><option value="other">🔗 Sonstige</option></select></div>' +
-        '<div class="form-row" style="flex:2"><input id="newLinkUrl" placeholder="URL"></div>' +
-        '<div class="form-row"><button class="btn" id="addLinkBtn">+ Link</button></div>' +
-      '</div>' +
-
-      '<div class="section-title">Notizen '+(t.type==='hotline'?'(z.B. während des Anrufs)':'')+'</div>' +
-      '<div class="hint" style="margin-bottom:6px;">Tipp: Ein Bild (z.B. Screenshot) direkt mit Strg+V irgendwo in dieses Fenster einfügen, um es als Notiz anzuhängen.</div>' +
-      '<div class="notes-log" id="notesLog">'+notesHtml+'</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row" style="flex:1"><input id="newNoteText" placeholder="Notiz hinzufügen und Enter drücken…"></div>' +
-        (('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) ? '<div class="form-row"><button class="btn icon-btn" id="voiceNoteBtn" title="Diktieren">🎙️</button></div>' : '') +
-        '<div class="form-row"><button class="btn icon-btn" id="noteSnippetBtn" title="Textbaustein einfügen">📎</button></div>' +
-        '<div class="form-row"><button class="btn" id="addNoteBtn">+ Notiz</button></div>' +
-      '</div>' +
-      (t.notes.length ? '<button class="btn" id="copyNotesBtn">📋 Notizen + Dauer für Jira-Kommentar kopieren</button>' : '') +
-
-      '<div class="section-title">Rückfragen (später klären)</div>' +
-      '<div class="hint" style="margin-bottom:6px;">Getrennt vom Notizen-Log – für offene Punkte, die du noch abklären musst.</div>' +
-      '<textarea id="fFollowUp" rows="2" placeholder="z.B. Rückfrage an Kollege X, ob…" style="width:100%;">'+escapeHtml(t.followUp||'')+'</textarea>' +
-
-      '<div class="section-title">Zeiterfassung – Sitzungen</div>' +
-      '<div class="notes-log">'+sessionsHtml+'</div>' +
-
-      '<div class="section-title">Aktivitäts-Verlauf</div>' +
-      '<div class="notes-log">'+activityHtml+'</div>' +
     '</div>' +
     '<div class="modal-footer">' +
-      '<div class="modal-footer-danger"><button class="btn danger" id="deleteTaskBtn">🗑 Löschen</button></div>' +
+      '<div class="modal-footer-danger"><button class="btn danger" id="deleteTaskBtn">'+svgIcon('trash')+'<span>Löschen</span></button></div>' +
       '<div class="modal-footer-actions">' +
-        '<button class="btn" id="pinToggleBtn">'+(t.pinned?'📌 Losgelöst':'📌 Anpinnen')+'</button>' +
-        (t.type==='meeting' ? '<button class="btn" id="icsExportBtn">📅 Zum Kalender (.ics)</button>' : '') +
-        '<button class="btn" id="saveAsTemplateBtn">💾 Als Vorlage</button>' +
-        '<button class="btn" id="mailReplyBtn">✉️ E-Mail-Antwort</button>' +
-        '<button class="btn" id="qrShareBtn">📱 QR-Code</button>' +
-        (!t.archived ? '<button class="btn" id="archiveTaskBtn">🗄️ Archivieren</button>' : '<button class="btn" id="unarchiveTaskBtn">↩️ Wiederherstellen</button>') +
+        '<div class="menu-wrap">' +
+          '<button class="btn" id="taskMoreBtn" aria-haspopup="true">Mehr'+svgIcon('chevron')+'</button>' +
+          '<div class="menu up" id="taskMoreMenu">' +
+            '<button class="btn" id="pinToggleBtn">'+svgIcon('pin')+'<span>'+(t.pinned?'Anheften lösen':'Anheften')+'</span></button>' +
+            '<button class="btn" id="saveAsTemplateBtn">'+svgIcon('save')+'<span>Als Vorlage speichern</span></button>' +
+            '<button class="btn" id="mailReplyBtn">'+svgIcon('mail')+'<span>E-Mail-Antwort</span></button>' +
+            (t.type==='meeting' ? '<button class="btn" id="icsExportBtn">'+svgIcon('cal')+'<span>Zum Kalender (.ics)</span></button>' : '') +
+            '<button class="btn" id="qrShareBtn">'+svgIcon('grid')+'<span>QR-Code</span></button>' +
+            '<div class="sep"></div>' +
+            (!t.archived ? '<button class="btn" id="archiveTaskBtn">'+svgIcon('box')+'<span>Archivieren</span></button>' : '<button class="btn" id="unarchiveTaskBtn">'+svgIcon('box')+'<span>Wiederherstellen</span></button>') +
+          '</div>' +
+        '</div>' +
         '<button class="btn primary" data-close-modal>Fertig</button>' +
       '</div>' +
     '</div>';
 
   openModal(html, {wide:true});
   wireCommaAutocomplete('fTags', 'tagSuggestions', tagPool);
+  (function(){
+    var moreBtn = document.getElementById('taskMoreBtn');
+    var moreMenu = document.getElementById('taskMoreMenu');
+    moreBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var wasOpen = moreMenu.classList.contains('open');
+      closeAllMenus();
+      if(!wasOpen) moreMenu.classList.add('open');
+    });
+    moreMenu.addEventListener('click', function(){ moreMenu.classList.remove('open'); });
+    document.querySelectorAll('[data-ai]').forEach(function(b){
+      b.addEventListener('click', function(){ runTaskAi(b.dataset.ai, t.id); });
+    });
+    renderSimilarHint(t.id);
+  })();
 
   function persist(){
     updateTask(t.id, {
@@ -4137,6 +4465,8 @@ function openTaskModal(taskId){
       description: document.getElementById('fDesc').value,
       tags: document.getElementById('fTags').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
       taskGroup: document.getElementById('fGroup').value.trim(),
+      reporter: document.getElementById('fReporter').value.trim(),
+      phone: document.getElementById('fPhone').value.trim(),
       scheduledAt: document.getElementById('fScheduledAt').value ? new Date(document.getElementById('fScheduledAt').value).toISOString() : '',
       assignee: document.getElementById('fAssignee') ? document.getElementById('fAssignee').value : t.assignee,
       recurrence: document.getElementById('fRecurrence').value ? {freq: document.getElementById('fRecurrence').value, active:true} : null
@@ -4153,8 +4483,9 @@ function openTaskModal(taskId){
     }
     renderBoard();
     renderStatusbar();
+    renderSimilarHint(t.id);
   }
-  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fRecurrence','fAssignee'].forEach(function(id){
+  ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fRecurrence','fAssignee','fReporter','fPhone'].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener('change', persist);
   });
@@ -4487,6 +4818,225 @@ function openColumnMenu(colId, anchorEl){
 /* =========================================================
    HOTLINE / MEETING QUICK ACTIONS
    ========================================================= */
+/* =========================================================
+   ÄHNLICHE TASKS (Autofill-Vorschläge)
+   Findet frühere Tasks (auch erledigte und archivierte) mit überlappenden
+   Stichworten - "das hatten wir schon mal". Einfache Wortübereinstimmung,
+   kein Server und keine KI nötig.
+   ========================================================= */
+var SIM_STOP = {der:1,die:1,das:1,den:1,dem:1,des:1,ein:1,eine:1,einen:1,einem:1,und:1,oder:1,für:1,fuer:1,mit:1,von:1,vom:1,bei:1,zum:1,zur:1,
+  nicht:1,kein:1,keine:1,ist:1,wird:1,auf:1,aus:1,wegen:1,neue:1,neuer:1,neues:1,task:1,hotline:1,anruf:1,ticket:1,sich:1,nach:1,über:1,ueber:1};
+function simTokens(s){
+  return (String(s || '').toLowerCase().match(/[a-z0-9äöüß]+/g) || []).filter(function(w){ return w.length >= 3 && !SIM_STOP[w]; });
+}
+function uniqueReporters(){
+  var counts = {};
+  state.tasks.forEach(function(t){ if(t.reporter) counts[t.reporter] = (counts[t.reporter] || 0) + 1; });
+  return Object.keys(counts).sort(function(a,b){ return counts[b] - counts[a] || a.localeCompare(b); });
+}
+function findSimilarTasks(text, excludeId){
+  var qset = {};
+  simTokens(text).forEach(function(w){ qset[w] = 1; });
+  var qwords = Object.keys(qset);
+  if(!qwords.length) return [];
+  var need = qwords.length <= 2 ? 1 : 2;
+  var found = [];
+  state.tasks.forEach(function(t){
+    if(t.id === excludeId) return;
+    var hs = {};
+    simTokens(t.title + ' ' + (t.jiraKey || '') + ' ' + (t.reporter || '') + ' ' + t.tags.join(' ') + ' ' + (t.description || '')).forEach(function(w){ hs[w] = 1; });
+    var m = 0;
+    qwords.forEach(function(w){
+      if(hs[w]){ m += 1; return; }
+      for(var h in hs){
+        if(h.length >= 4 && w.length >= 4 && (h.indexOf(w) === 0 || w.indexOf(h) === 0)){ m += 0.7; break; }
+      }
+    });
+    if(m >= need) found.push({t: t, score: m / qwords.length});
+  });
+  found.sort(function(a, b){ return b.score - a.score || new Date(b.t.updatedAt || 0) - new Date(a.t.updatedAt || 0); });
+  return found.slice(0, 5).map(function(f){ return f.t; });
+}
+function similarRowsHtml(list, withUse, noOpen){
+  return list.map(function(t){
+    var status = t.archived ? 'archiviert' : (t.completedAt ? 'erledigt' : 'offen');
+    var notes = (t.notes || []).slice(-3).reverse().map(function(n){ return '<li>'+escapeHtml(String(n.text || '').slice(0, 160))+'</li>'; }).join('');
+    var desc = t.description ? '<div class="sim-desc">'+escapeHtml(t.description.slice(0, 200))+'</div>' : '';
+    return '<div class="sim-row" data-sim-id="'+t.id+'">' +
+      '<div class="sim-main" data-sim-toggle>' +
+        '<div class="sim-title-line"><span class="sim-title">'+escapeHtml(t.title)+'</span><span class="sim-status '+status+'">'+status+'</span></div>' +
+        '<div class="sim-meta">'+(t.reporter ? escapeHtml(t.reporter)+' · ' : '')+new Date(t.updatedAt || t.createdAt).toLocaleDateString('de-CH')+'</div>' +
+      '</div>' +
+      '<div class="sim-actions">' +
+        (withUse ? '<button type="button" class="btn ghost" data-sim-use="'+t.id+'">Übernehmen</button>' : '') +
+        (noOpen ? '' : '<button type="button" class="btn ghost" data-sim-open="'+t.id+'">Öffnen</button>') +
+      '</div>' +
+      '<div class="sim-detail" hidden>' + desc + (notes ? '<div class="sim-notes-label">Letzte Notizen</div><ul>'+notes+'</ul>' : (desc ? '' : '<div class="hint">Keine Notizen oder Beschreibung hinterlegt.</div>')) + '</div>' +
+    '</div>';
+  }).join('');
+}
+function wireSimilarRows(container, onUse){
+  container.querySelectorAll('[data-sim-toggle]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var d = el.parentNode.querySelector('.sim-detail');
+      if(d) d.hidden = !d.hidden;
+    });
+  });
+  container.querySelectorAll('[data-sim-open]').forEach(function(b){
+    b.addEventListener('click', function(){ openTaskModal(b.dataset.simOpen); });
+  });
+  if(onUse) container.querySelectorAll('[data-sim-use]').forEach(function(b){
+    b.addEventListener('click', function(){ onUse(getTask(b.dataset.simUse)); });
+  });
+}
+function renderSimilarHint(taskId){
+  var el = document.getElementById('similarHint');
+  if(!el) return;
+  var t = getTask(taskId);
+  if(!t) return;
+  var list = /^Neuer Task$/i.test(t.title.trim()) ? [] : findSimilarTasks(t.title, t.id);
+  if(!list.length){ el.innerHTML = ''; return; }
+  el.innerHTML = '<details class="s-more sim-hint"><summary>'+list.length+' ähnliche'+(list.length === 1 ? 'r Task' : ' Tasks')+' gefunden</summary>' +
+    '<div class="s-more-body">'+similarRowsHtml(list, false)+'</div></details>';
+  wireSimilarRows(el, null);
+}
+
+/* =========================================================
+   HOTLINE-ANRUF: schnelles Anlegen, während der Reporter noch am Telefon ist
+   Bewusst nur das Nötigste (Reporter, Anliegen, Notizen, Priorität). Alles weitere
+   (Übergabe, Wiedervorlage, ...) lässt sich später im Task ergänzen. Beim Tippen
+   erscheinen Vorschläge: frühere, ähnliche Tasks und bisherige Tickets des Reporters.
+   ========================================================= */
+function inProgressColumn(){
+  return state.columns.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); }) || state.columns[0];
+}
+function createHotlineTask(o){
+  var reporter = (o.reporter || '').trim();
+  var issue = (o.issue || '').trim();
+  var timeLabel = new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
+  var title = reporter && issue ? reporter + ' – ' + issue
+    : (reporter ? reporter + ' – Hotline-Anruf ' + timeLabel : (issue || 'Hotline-Anruf ' + timeLabel));
+  var t = createTask({
+    title: title, type: 'hotline', priority: o.priority || 'high',
+    columnId: inProgressColumn().id, reporter: reporter, phone: (o.phone || '').trim()
+  });
+  var notes = (o.notes || '').trim();
+  if(notes){ t.notes.push({ts: nowIso(), text: notes}); save(); }
+  if(o.start !== false) startTimer(t.id);
+  renderAll();
+  return t;
+}
+function createTimerTask(type, title){
+  var t = createTask({title: title, type: type, priority: 'medium', columnId: inProgressColumn().id});
+  startTimer(t.id);
+  renderAll();
+  return t;
+}
+function openHotlineDialog(){
+  var reporters = uniqueReporters();
+  var prio = 'high';
+  var html =
+    '<div class="modal-header"><h2>'+svgIcon('phone')+' Hotline-Anruf</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body hotline-form">' +
+      '<div class="form-row"><label for="hlReporter">Reporter (wer meldet das Ticket?)</label><input id="hlReporter" list="hlReporters" autocomplete="off" placeholder="Name der Person, die anruft">' +
+        '<datalist id="hlReporters">'+reporters.map(function(c){ return '<option value="'+escapeAttr(c)+'">'; }).join('')+'</datalist></div>' +
+      '<div class="form-row"><label for="hlIssue">Worum geht es?</label><input id="hlIssue" autocomplete="off" placeholder="Kurz das Anliegen"></div>' +
+      '<div class="sim-box" id="hlSim"></div>' +
+      '<div class="form-row"><label for="hlNotes">Notizen zum Gespräch</label><textarea id="hlNotes" rows="4" placeholder="Während des Gesprächs mitschreiben…"></textarea>' +
+        '<div class="ai-row"><button type="button" class="btn ghost" id="hlAi">✨ Aus Notizen ausfüllen</button></div></div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row"><label>Priorität</label><div class="seg" id="hlPrio" role="group" aria-label="Priorität">' +
+          '<button type="button" class="seg-btn" data-prio="medium">Normal</button>' +
+          '<button type="button" class="seg-btn on" data-prio="high">Hoch</button>' +
+          '<button type="button" class="seg-btn" data-prio="critical">Kritisch</button>' +
+        '</div></div>' +
+        '<div class="form-row"><label for="hlPhone">Rückruf-Nr. (optional)</label><input id="hlPhone" type="tel" autocomplete="off" placeholder="079 …"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn" data-close-modal>Abbrechen</button>' +
+      '<button class="btn" id="hlOnly">Nur anlegen</button>' +
+      '<button class="btn primary" id="hlStart">'+svgIcon('play')+'<span>Anruf starten</span></button>' +
+    '</div>';
+  openModal(html);
+  var reporterEl = document.getElementById('hlReporter');
+  var issueEl = document.getElementById('hlIssue');
+  var notesEl = document.getElementById('hlNotes');
+  var phoneEl = document.getElementById('hlPhone');
+  var simEl = document.getElementById('hlSim');
+  reporterEl.focus();
+
+  function setPrio(p){
+    prio = p;
+    document.querySelectorAll('#hlPrio .seg-btn').forEach(function(x){ x.classList.toggle('on', x.dataset.prio === p); });
+  }
+  document.getElementById('hlPrio').addEventListener('click', function(e){
+    var b = e.target.closest('.seg-btn');
+    if(b) setPrio(b.dataset.prio);
+  });
+
+  var simTimer = null;
+  function refreshSuggestions(){
+    var issue = issueEl.value.trim();
+    var rep = reporterEl.value.trim();
+    var list = [], head = '';
+    if(issue.length >= 3){ list = findSimilarTasks(issue, null).slice(0, 3); head = 'Ähnliche Tasks gefunden'; }
+    if(!list.length && rep){
+      list = state.tasks.filter(function(t){ return t.reporter && t.reporter.toLowerCase() === rep.toLowerCase(); })
+        .sort(function(a, b){ return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); }).slice(0, 4);
+      head = list.length ? 'Bisherige Tickets von ' + rep : '';
+    }
+    simEl.innerHTML = list.length ? '<div class="sim-head">' + escapeHtml(head) + '</div>' + similarRowsHtml(list, true, true) : '';
+    wireSimilarRows(simEl, function(src){
+      var title = src.title;
+      if(src.reporter && title.indexOf(src.reporter + ' – ') === 0) title = title.slice((src.reporter + ' – ').length);
+      issueEl.value = title;
+      if(!reporterEl.value.trim() && src.reporter) reporterEl.value = src.reporter;
+      if(!phoneEl.value.trim() && src.phone) phoneEl.value = src.phone;
+      if(src.priority && PRIORITIES[src.priority]) setPrio(src.priority);
+      refreshSuggestions();
+    });
+  }
+  function scheduleSuggestions(){ clearTimeout(simTimer); simTimer = setTimeout(refreshSuggestions, 180); }
+  reporterEl.addEventListener('input', scheduleSuggestions);
+  reporterEl.addEventListener('change', function(){
+    var known = state.tasks.find(function(t){ return t.reporter && t.reporter.toLowerCase() === reporterEl.value.trim().toLowerCase() && t.phone; });
+    if(known && !phoneEl.value.trim()) phoneEl.value = known.phone;
+    scheduleSuggestions();
+  });
+  issueEl.addEventListener('input', scheduleSuggestions);
+
+  document.getElementById('hlAi').addEventListener('click', function(){
+    if(!aiReady()) return;
+    var text = [reporterEl.value, issueEl.value, notesEl.value].filter(function(s){ return s.trim(); }).join('\n');
+    if(!text.trim()){ toast('Bitte zuerst Notizen eintragen.'); return; }
+    var btn = this;
+    btn.disabled = true; btn.textContent = '✨ KI arbeitet…';
+    aiJson('Aus Notizen eines Telefonats mit der IT-Hotline extrahierst du: reporter (Name der anrufenden Person), issue (Anliegen in höchstens 80 Zeichen, ohne Namen), phone (Rückrufnummer), priority ("medium", "high" oder "critical": critical nur bei Ausfall oder Sicherheitsvorfall). Fehlendes als leeren String. Antworte NUR mit JSON: {"reporter":string,"issue":string,"phone":string,"priority":string}. ' + aiContextHint(), text, 400).then(function(r){
+      if(r.reporter && !reporterEl.value.trim()) reporterEl.value = String(r.reporter).trim();
+      if(r.issue && !issueEl.value.trim()) issueEl.value = String(r.issue).trim();
+      if(r.phone && !phoneEl.value.trim()) phoneEl.value = String(r.phone).trim();
+      if(PRIORITIES[r.priority]) setPrio(r.priority);
+      refreshSuggestions();
+    }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){
+      btn.disabled = false; btn.textContent = '✨ Aus Notizen ausfüllen';
+    });
+  });
+
+  function submit(start){
+    var t = createHotlineTask({
+      reporter: reporterEl.value, issue: issueEl.value, notes: notesEl.value,
+      priority: prio, phone: phoneEl.value, start: start
+    });
+    closeModal();
+    toast(start ? 'Hotline-Task angelegt, Timer läuft.' : 'Hotline-Task angelegt.', 6000, 'Öffnen', function(){ openTaskModal(t.id); });
+  }
+  document.getElementById('hlStart').addEventListener('click', function(){ submit(true); });
+  document.getElementById('hlOnly').addEventListener('click', function(){ submit(false); });
+  reporterEl.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); issueEl.focus(); } });
+  issueEl.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); submit(true); } });
+}
+
 function quickStart(type, defaultTitlePrefix){
   var timeLabel = new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
   var col = state.columns.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); }) || state.columns[0];
@@ -4532,56 +5082,146 @@ function openQuickTimeEntry(){
 /* =========================================================
    QUICK CAPTURE (AI or heuristic)
    ========================================================= */
-function openQuickCapture(prefillText){
+var AI_MODELS = [
+  {id:'claude-haiku-4-5-20251001', label:'Haiku 4.5 (schnell, günstig)'},
+  {id:'claude-sonnet-5-5', label:'Sonnet 5.5 (ausgewogen)'},
+  {id:'claude-opus-5-5', label:'Opus 5.5 (am genauesten)'}
+];
+function aiReady(){
+  if(state.settings.aiApiKey) return true;
+  toast('Dafür braucht es einen Anthropic-API-Key (Einstellungen → Integrationen).', 7000, 'Einstellungen', function(){ settingsActiveTab = 'integrations'; openSettings(); });
+  return false;
+}
+function aiJson(systemPrompt, userText, maxTokens){
+  return callAIRaw(systemPrompt, userText, maxTokens).then(function(raw){
+    var m = raw.match(/[\[{][\s\S]*[\]}]/);
+    if(!m) throw new Error('Keine gültige Antwort der KI');
+    return JSON.parse(m[0]);
+  });
+}
+function aiContextHint(){
+  var tagCounts = {};
+  state.tasks.forEach(function(t){ t.tags.forEach(function(tag){ tagCounts[tag] = (tagCounts[tag] || 0) + 1; }); });
+  var topTags = Object.keys(tagCounts).sort(function(a,b){ return tagCounts[b] - tagCounts[a]; }).slice(0, 20);
+  var reporters = uniqueReporters().slice(0, 15);
+  var names = registeredProfiles.length ? registeredProfiles : state.settings.teamMembers;
+  return 'Heute ist ' + new Date().toLocaleDateString('de-CH', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'}) + ' (ISO ' + toDateInputValue(new Date()) + ').' +
+    (topTags.length ? ' Bereits verwendete Tags: ' + topTags.join(', ') + '.' : '') +
+    (reporters.length ? ' Bekannte Reporter: ' + reporters.join(', ') + '.' : '') +
+    (names && names.length ? ' Team: ' + names.join(', ') + '.' : '');
+}
+var AI_EXTRACT_SYSTEM = 'Du bist Assistent für das Kanban-Board eines IT-Supports und legst aus eingefügtem Text (E-Mail, Telefonnotiz, Jira-Text, Chat, Stichworte) Tasks an. ' +
+  'Antworte NUR mit JSON ohne Markdown, Format: {"tasks":[{"title":string,"description":string,"type":"mail"|"jira"|"hotline"|"meeting"|"adhoc","priority":"critical"|"high"|"medium"|"low","jiraKey":string,"reporter":string,"phone":string,"tags":[string],"dueDate":string,"estimatedMinutes":number|null,"checklist":[string]}]}. ' +
+  'Regeln: Ein Task pro eigenständigem Anliegen (mehrere Anliegen in einem Text ergeben mehrere Tasks, maximal 8). title: präzise, höchstens 80 Zeichen, ohne Grussformeln. description: sachlich und knapp, relevante Fakten, keine Anrede. ' +
+  'type: "mail" bei E-Mail, "hotline" bei Anruf oder Telefonnotiz, "jira" wenn ein Ticket-Key vorkommt, "meeting" bei Terminen, sonst "adhoc". priority: "critical" nur bei Ausfall oder Sicherheitsvorfall, "high" bei dringend oder blockierend, sonst "medium", "low" bei Gelegenheit. ' +
+  'jiraKey nur bei Muster wie ABC-123, sonst "". reporter: Name der Person, die das Anliegen meldet (Absender oder Anrufer), sonst "". phone nur wenn eine Rückrufnummer genannt wird. tags: 1 bis 3 kurze, kleingeschriebene Stichworte, bevorzugt bereits verwendete. ' +
+  'dueDate (YYYY-MM-DD) nur wenn eine Frist genannt wird, sonst "". estimatedMinutes nur bei erkennbarem Aufwand, sonst null. checklist: nur bei erkennbaren konkreten Schritten, höchstens 6, sonst []. Schweizer Rechtschreibung (kein ß).';
+
+function normalizeDraft(d){
+  d = d || {};
+  var jira = String(d.jiraKey || '').trim();
+  return {
+    title: String(d.title || '').trim().slice(0, 140) || 'Neuer Task',
+    description: String(d.description || '').trim(),
+    type: TYPES[d.type] ? d.type : 'mail',
+    priority: PRIORITIES[d.priority] ? d.priority : 'medium',
+    jiraKey: /^[A-Z][A-Z0-9]{1,9}-\d+$/.test(jira) ? jira : '',
+    reporter: String(d.reporter || '').trim().slice(0, 80),
+    phone: String(d.phone || '').trim().slice(0, 40),
+    tags: Array.isArray(d.tags) ? d.tags.map(function(s){ return String(s).toLowerCase().replace(/^#/, '').trim(); }).filter(Boolean).slice(0, 5) : [],
+    dueDate: /^\d{4}-\d{2}-\d{2}$/.test(String(d.dueDate || '')) ? d.dueDate : '',
+    estimatedMinutes: (typeof d.estimatedMinutes === 'number' && d.estimatedMinutes > 0) ? Math.round(d.estimatedMinutes) : null,
+    checklist: Array.isArray(d.checklist) ? d.checklist.map(function(s){ return String(s).trim(); }).filter(Boolean).slice(0, 8) : [],
+    links: Array.isArray(d.links) ? d.links : []
+  };
+}
+/* Einfache Erfassung ohne KI: erkennt Jira-Key, #Tags, Frist, Telefonnummer, Absender und Dringlichkeit. */
+function heuristicDueDate(text){
+  var low = text.toLowerCase();
+  var base = new Date(); base.setHours(0,0,0,0);
+  function iso(d){ return toDateInputValue(d); }
+  if(/bis\s+(heute|ende\s+tag)/.test(low)) return iso(base);
+  if(/bis\s+morgen/.test(low)){ base.setDate(base.getDate() + 1); return iso(base); }
+  var days = ['sonntag','montag','dienstag','mittwoch','donnerstag','freitag','samstag'];
+  for(var i = 0; i < days.length; i++){
+    if(new RegExp('bis\\s+(spätestens\\s+)?' + days[i]).test(low)){
+      var d = new Date(base); var diff = (i - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + diff); return iso(d);
+    }
+  }
+  var m = low.match(/bis\s+(?:zum\s+)?(\d{1,2})\.(\d{1,2})\.(\d{2,4})?/);
+  if(m){
+    var y = m[3] ? (m[3].length === 2 ? 2000 + parseInt(m[3],10) : parseInt(m[3],10)) : base.getFullYear();
+    var dt = new Date(y, parseInt(m[2],10) - 1, parseInt(m[1],10));
+    if(!isNaN(dt.getTime())) return iso(dt);
+  }
+  return '';
+}
+function heuristicParse(text){
+  var allLines = text.trim().split('\n').filter(function(l){ return l.trim(); });
+  var subjMatch = text.match(/^(?:betreff|subject)\s*:\s*(.+)$/im);
+  var bodyLines = allLines.filter(function(l){ return !/^\s*(von|from|an|to|cc|bcc|datum|date|gesendet|sent|betreff|subject|absender)\s*:/i.test(l); });
+  var titleLine = subjMatch ? subjMatch[1] : (bodyLines[0] || allLines[0] || 'Neuer Task');
+  var title = titleLine.replace(/^((re|aw|fwd|wg)\s*:\s*)+/i, '').trim().slice(0, 120) || 'Neuer Task';
+  var description = (subjMatch ? bodyLines : bodyLines.slice(1)).join('\n');
+  var keyMatch = text.match(/\b[A-Z][A-Z0-9]{1,9}-\d+\b/);
+  var fromMatch = text.match(/^(?:von|from|absender)\s*:\s*([^<\n]+?)\s*(?:<|$)/im);
+  var phoneMatch = text.match(/(\+?\d[\d\s\/().-]{7,}\d)/);
+  var tags = (text.match(/(?:^|\s)#([a-zA-ZäöüÄÖÜ0-9_-]+)/g) || []).map(function(s){ return s.replace(/^\s*#/, '').toLowerCase(); });
+  var low = text.toLowerCase();
+  var priority = /kritisch|critical|notfall|sicherheitsvorfall|totalausfall/.test(low) ? 'critical'
+    : (/dringend|urgent|asap|ausfall|störung|blockier|sofort/.test(low) ? 'high' : 'medium');
+  var type = keyMatch ? 'jira' : (/anruf|angerufen|telefon/.test(low) ? 'hotline' : (/meeting|besprechung|termin/.test(low) ? 'meeting' : 'mail'));
+  return {
+    title: title, description: description, type: type, priority: priority, jiraKey: keyMatch ? keyMatch[0] : '',
+    reporter: fromMatch ? fromMatch[1].trim() : '', phone: phoneMatch ? phoneMatch[1].trim() : '', tags: tags.slice(0, 4), dueDate: heuristicDueDate(text)
+  };
+}
+function processQuickCapture(text){
+  if(!state.settings.aiApiKey) return Promise.resolve([normalizeDraft(heuristicParse(text))]);
+  return aiJson(AI_EXTRACT_SYSTEM + ' ' + aiContextHint(), text, 2000).then(function(json){
+    var arr = Array.isArray(json) ? json : (Array.isArray(json.tasks) ? json.tasks : [json]);
+    arr = arr.filter(function(o){ return o && typeof o === 'object'; }).slice(0, 8).map(normalizeDraft);
+    if(!arr.length) throw new Error('Keine Tasks erkannt');
+    return arr;
+  });
+}
+function openQuickCapture(prefillText, autoProcess){
+  var hasKey = !!state.settings.aiApiKey;
   var html =
-    '<div class="modal-header"><h2>🤖 Schnellerfassung</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-header"><h2>✨ Ticket aus Text erstellen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
-      '<div class="hint" style="margin-bottom:10px;">Füge E-Mail-Text, Jira-Text oder eine Notiz ein. '+(state.settings.aiApiKey?'Die KI erstellt daraus automatisch einen Task-Entwurf.':'Es wird eine einfache Erfassung ohne KI verwendet (kein API-Key hinterlegt, siehe Einstellungen).')+'</div>' +
-      '<textarea id="qcText" rows="8" placeholder="Text hier einfügen…" style="width:100%;">'+escapeHtml(prefillText||'')+'</textarea>' +
+      '<div class="hint" style="margin:0 0 10px;">Füge eine E-Mail, Telefonnotiz, einen Chat oder Stichworte ein. ' +
+        (hasKey ? 'Die KI erkennt Titel, Reporter, Priorität, Frist, Tags und Schritte, und legt bei mehreren Anliegen mehrere Tasks an.'
+                : 'Ohne API-Key gibt es eine einfache Erkennung (Ticket-Key, #Tags, Frist, Absender). Mit KI wird es deutlich besser: Einstellungen → Integrationen.') +
+      '</div>' +
+      '<textarea id="qcText" rows="10" placeholder="Beschreibung oder E-Mail-Text hier einfügen…" style="width:100%;">'+escapeHtml(prefillText||'')+'</textarea>' +
+      '<div class="hint" style="margin-top:6px;">Tipp: Text einfach mit Strg+V auf dem Board einfügen, dann öffnet sich dieses Fenster automatisch.</div>' +
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn icon-btn" id="qcSnippetBtn" title="Textbaustein einfügen" style="margin-right:auto;">📎</button>' +
       '<button class="btn" data-close-modal>Abbrechen</button>' +
-      '<button class="btn primary" id="qcProcessBtn">Task-Entwurf erstellen</button>' +
+      '<button class="btn primary" id="qcProcessBtn">'+(hasKey ? 'Mit KI auswerten' : 'Entwurf erstellen')+'</button>' +
     '</div>';
-  openModal(html);
+  openModal(html, {wide:true});
   document.getElementById('qcSnippetBtn').addEventListener('click', function(e){
     openSnippetMenu(e.currentTarget, document.getElementById('qcText'));
   });
-  document.getElementById('qcProcessBtn').addEventListener('click', function(){
+  var btn = document.getElementById('qcProcessBtn');
+  function run(){
     var text = document.getElementById('qcText').value.trim();
     if(!text) return;
     var importPayload = tryParseImportPayload(text);
-    if(importPayload){
-      openDraftPreview(importPayload, text);
-      return;
-    }
-    var btn = document.getElementById('qcProcessBtn');
-    btn.disabled = true; btn.textContent = 'Verarbeite…';
-    processQuickCapture(text).then(function(draft){
-      openDraftPreview(draft, text);
+    if(importPayload){ openDraftPreview(importPayload, text); return; }
+    btn.disabled = true; btn.textContent = hasKey ? 'KI wertet aus…' : 'Verarbeite…';
+    processQuickCapture(text).then(function(drafts){
+      openDraftPreview(drafts, text);
     }).catch(function(err){
-      toast('KI-Verarbeitung fehlgeschlagen (' + err.message + '), nutze einfache Erfassung.');
-      openDraftPreview(heuristicParse(text), text);
+      toast('KI-Auswertung fehlgeschlagen (' + err.message + '), nutze einfache Erkennung.', 6000);
+      openDraftPreview([normalizeDraft(heuristicParse(text))], text);
     });
-  });
-}
-function heuristicParse(text){
-  var lines = text.trim().split('\n').filter(function(l){ return l.trim(); });
-  var title = (lines[0] || 'Neuer Task').slice(0,120);
-  var description = lines.slice(1).join('\n');
-  var keyMatch = text.match(/\b[A-Z][A-Z0-9]{1,9}-\d+\b/);
-  return {
-    title: title,
-    description: description,
-    type: keyMatch ? 'jira' : 'mail',
-    priority: 'medium',
-    jiraKey: keyMatch ? keyMatch[0] : ''
-  };
-}
-function processQuickCapture(text){
-  if(!state.settings.aiApiKey) return Promise.resolve(heuristicParse(text));
-  return callAI(text).catch(function(){ return heuristicParse(text); });
+  }
+  btn.addEventListener('click', run);
+  if(autoProcess && prefillText && prefillText.trim()) setTimeout(run, 0);
 }
 function callAIRaw(systemPrompt, userText, maxTokens){
   var key = state.settings.aiApiKey;
@@ -4634,99 +5274,188 @@ function openAiWeeklyAnalysis(){
   });
 }
 
-function callAI(promptText){
-  var key = state.settings.aiApiKey;
-  var model = state.settings.aiModel || 'claude-haiku-4-5-20251001';
-  return fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{
-      'content-type':'application/json',
-      'x-api-key': key,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body: JSON.stringify({
-      model: model,
-      max_tokens: 500,
-      system: 'Du extrahierst aus eingefügtem Text (E-Mail, Jira-Ticket-Text oder Notiz) einen strukturierten Task für ein Kanban-Board. Antworte NUR mit kompaktem JSON ohne Markdown-Codeblock, Format: {"title":string,"description":string,"type":"mail"|"jira"|"hotline"|"meeting"|"adhoc","priority":"critical"|"high"|"medium"|"low","jiraKey":string}. jiraKey nur setzen wenn ein Muster wie ABC-123 im Text vorkommt, sonst leerer String.',
-      messages: [{role:'user', content: promptText}]
-    })
-  }).then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+' '+t.slice(0,120)); });
-    return res.json();
-  }).then(function(json){
-    var raw = (json.content && json.content[0] && json.content[0].text) || '';
-    var match = raw.match(/\{[\s\S]*\}/);
-    if(!match) throw new Error('Keine gültige Antwort');
-    var parsed = JSON.parse(match[0]);
-    if(!TYPES[parsed.type]) parsed.type = 'mail';
-    if(!PRIORITIES[parsed.priority]) parsed.priority = 'medium';
-    return parsed;
-  });
-}
-function openDraftPreview(draft, sourceText){
-  var typeOptions = Object.keys(TYPES).map(function(k){
-    return '<option value="'+k+'"'+(draft.type===k?' selected':'')+'>'+TYPES[k].icon+' '+TYPES[k].label+'</option>';
-  }).join('');
-  var prioOptions = Object.keys(PRIORITIES).map(function(k){
-    return '<option value="'+k+'"'+(draft.priority===k?' selected':'')+'>'+PRIORITIES[k].label+'</option>';
-  }).join('');
-  var colOptions = state.columns.map(function(c){
-    return '<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>';
-  }).join('');
+function openDraftPreview(input, sourceText){
+  var drafts = (Array.isArray(input) ? input : [input]).map(normalizeDraft);
+  var typeOptionsFor = function(sel){ return Object.keys(TYPES).map(function(k){
+    return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+TYPES[k].label+'</option>';
+  }).join(''); };
+  var prioOptionsFor = function(sel){ return Object.keys(PRIORITIES).map(function(k){
+    return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+PRIORITIES[k].label+'</option>';
+  }).join(''); };
+  var colOptions = state.columns.map(function(c){ return '<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>'; }).join('');
+  var reporterList = uniqueReporters().map(function(r){ return '<option value="'+escapeAttr(r)+'">'; }).join('');
 
-  var existing = draft.jiraKey ? state.tasks.find(function(t){ return t.jiraKey === draft.jiraKey && !t.archived; }) : null;
-  var draftLinks = draft.links || [];
+  var cards = drafts.map(function(d, i){
+    var existing = d.jiraKey ? state.tasks.find(function(t){ return t.jiraKey === d.jiraKey && !t.archived; }) : null;
+    var similar = findSimilarTasks(d.title + ' ' + d.reporter, existing ? existing.id : null).filter(function(t){ return !existing || t.id !== existing.id; }).slice(0, 3);
+    return '<section class="draft-card" data-draft="'+i+'">' +
+      '<div class="draft-head">' +
+        '<label class="draft-use"><input type="checkbox" class="d-use" checked> <span>'+(drafts.length > 1 ? 'Task '+(i+1) : 'Task')+'</span></label>' +
+        (existing ? '<span class="sim-status offen">aktualisiert '+escapeHtml(d.jiraKey)+'</span>' : '') +
+      '</div>' +
+      (existing ? '<div class="hint" style="color:var(--warn); margin:0 0 8px;">Es gibt bereits einen Task mit Ticket '+escapeHtml(d.jiraKey)+' ("'+escapeHtml(existing.title)+'"). Er wird aktualisiert statt dupliziert.</div>' : '') +
+      (d.links.length ? '<div class="hint" style="margin:0 0 8px;">Link wird hinzugefügt: '+d.links.map(function(l){ return escapeHtml(l.label || l.url); }).join(', ')+'</div>' : '') +
+      '<div class="form-row"><label>Titel</label><input class="d-title" value="'+escapeAttr(d.title)+'"></div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row"><label>Typ</label><select class="d-type">'+typeOptionsFor(d.type)+'</select></div>' +
+        '<div class="form-row"><label>Priorität</label><select class="d-prio">'+prioOptionsFor(d.priority)+'</select></div>' +
+        '<div class="form-row"><label>Spalte</label><select class="d-col">'+colOptions+'</select></div>' +
+      '</div>' +
+      '<div class="form-row-inline">' +
+        '<div class="form-row"><label>Reporter</label><input class="d-reporter" list="draftReporters" value="'+escapeAttr(d.reporter)+'" placeholder="Wer meldet das?"></div>' +
+        '<div class="form-row"><label>Fällig am</label><input type="date" class="d-due" value="'+escapeAttr(d.dueDate)+'"></div>' +
+        '<div class="form-row"><label>Jira-Key</label><input class="d-key" value="'+escapeAttr(d.jiraKey)+'" placeholder="PROJ-123"></div>' +
+      '</div>' +
+      '<div class="form-row"><label>Tags (Komma-getrennt)</label><input class="d-tags" value="'+escapeAttr(d.tags.join(', '))+'"></div>' +
+      '<div class="form-row"><label>Beschreibung</label><textarea class="d-desc" rows="3">'+escapeHtml(d.description)+'</textarea></div>' +
+      (d.checklist.length ? '<div class="form-row"><label>Checkliste (ein Punkt pro Zeile)</label><textarea class="d-check" rows="'+Math.min(6, d.checklist.length + 1)+'">'+escapeHtml(d.checklist.join('\n'))+'</textarea></div>' : '<textarea class="d-check" hidden></textarea>') +
+      '<input type="hidden" class="d-phone" value="'+escapeAttr(d.phone)+'"><input type="hidden" class="d-est" value="'+(d.estimatedMinutes || '')+'">' +
+      (similar.length ? '<details class="s-more sim-hint"><summary>'+similar.length+' ähnliche'+(similar.length === 1 ? 'r Task' : ' Tasks')+' vorhanden, evtl. Duplikat</summary><div class="s-more-body">'+similarRowsHtml(similar, false, true)+'</div></details>' : '') +
+    '</section>';
+  }).join('');
 
   var html =
-    '<div class="modal-header"><h2>Task-Entwurf</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-header"><h2>'+(drafts.length > 1 ? drafts.length + ' Tasks erkannt' : 'Task-Entwurf')+'</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
-      (existing ? '<div class="hint" style="color:var(--warn); margin-bottom:10px;">⚠️ Es existiert bereits ein Task mit Ticket '+escapeHtml(draft.jiraKey)+' ("'+escapeHtml(existing.title)+'"). Beim Speichern wird dieser aktualisiert statt dupliziert.</div>' : '') +
-      (draftLinks.length ? '<div class="hint" style="margin-bottom:10px;">🔗 Link wird automatisch hinzugefügt: ' + draftLinks.map(function(l){ return escapeHtml(l.label||l.url); }).join(', ') + '</div>' : '') +
-      '<div class="form-row"><label>Titel</label><input id="dTitle" value="'+escapeAttr(draft.title||'')+'"></div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Typ</label><select id="dType">'+typeOptions+'</select></div>' +
-        '<div class="form-row"><label>Priorität</label><select id="dPriority">'+prioOptions+'</select></div>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Spalte</label><select id="dColumn">'+colOptions+'</select></div>' +
-        '<div class="form-row"><label>Jira-Key</label><input id="dJiraKey" value="'+escapeAttr(draft.jiraKey||'')+'"></div>' +
-      '</div>' +
-      '<div class="form-row"><label>Beschreibung</label><textarea id="dDesc" rows="5">'+escapeHtml(draft.description||'')+'</textarea></div>' +
+      '<datalist id="draftReporters">'+reporterList+'</datalist>' +
+      (drafts.length > 1 ? '<div class="hint" style="margin:0 0 10px;">Prüfe die Entwürfe und hake ab, was nicht angelegt werden soll.</div>' : '') +
+      cards +
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn" data-close-modal>Verwerfen</button>' +
-      '<button class="btn primary" id="dCreateBtn">'+(existing?'Ticket aktualisieren':'Task erstellen')+'</button>' +
+      '<button class="btn primary" id="dCreateBtn">'+(drafts.length > 1 ? 'Ausgewählte anlegen' : 'Task erstellen')+'</button>' +
     '</div>';
-  openModal(html);
+  openModal(html, {wide:true});
+  document.querySelectorAll('.draft-card').forEach(function(card){ wireSimilarRows(card, null); });
   document.getElementById('dCreateBtn').addEventListener('click', function(){
-    var payload = {
-      title: document.getElementById('dTitle').value.trim() || 'Unbenannt',
-      type: document.getElementById('dType').value,
-      priority: document.getElementById('dPriority').value,
-      columnId: document.getElementById('dColumn').value,
-      jiraKey: document.getElementById('dJiraKey').value.trim(),
-      description: document.getElementById('dDesc').value
-    };
-    if(existing){
-      if(draftLinks.length){
-        draftLinks.forEach(function(l){
+    var created = 0, updated = 0;
+    document.querySelectorAll('.draft-card').forEach(function(card){
+      if(!card.querySelector('.d-use').checked) return;
+      var d = drafts[parseInt(card.dataset.draft, 10)];
+      var payload = {
+        title: card.querySelector('.d-title').value.trim() || 'Unbenannt',
+        type: card.querySelector('.d-type').value,
+        priority: card.querySelector('.d-prio').value,
+        columnId: card.querySelector('.d-col').value,
+        jiraKey: card.querySelector('.d-key').value.trim(),
+        reporter: card.querySelector('.d-reporter').value.trim(),
+        phone: card.querySelector('.d-phone').value.trim(),
+        dueDate: card.querySelector('.d-due').value,
+        tags: card.querySelector('.d-tags').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+        description: card.querySelector('.d-desc').value,
+        estimatedMinutes: card.querySelector('.d-est').value ? parseInt(card.querySelector('.d-est').value, 10) : null
+      };
+      var checklist = card.querySelector('.d-check').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean).map(function(s){ return {text: s, done: false}; });
+      var existing = payload.jiraKey ? state.tasks.find(function(t){ return t.jiraKey === payload.jiraKey && !t.archived; }) : null;
+      if(existing){
+        (d.links || []).forEach(function(l){
           if(!existing.links.some(function(el){ return el.url === l.url; })) existing.links.push(l);
         });
+        if(!payload.estimatedMinutes) delete payload.estimatedMinutes;
+        updateTask(existing.id, payload);
+        updated++;
+      } else {
+        payload.links = d.links || [];
+        if(checklist.length) payload.checklist = checklist;
+        createTask(payload);
+        created++;
       }
-      updateTask(existing.id, payload);
-      toast('Ticket '+payload.jiraKey+' aktualisiert.');
-    } else {
-      var similar = findSimilarTask(payload.title, null);
-      if(similar) toast('🔁 Ähnlicher Task existiert bereits: "' + similar.title + '" – evtl. Duplikat?', 7000);
-      payload.links = draftLinks;
-      createTask(payload);
-      toast('Task erstellt.');
-    }
+    });
     closeModal();
     renderAll();
+    toast((created ? created + ' Task' + (created === 1 ? '' : 's') + ' erstellt' : '') + (created && updated ? ', ' : '') + (updated ? updated + ' aktualisiert' : '') + (created || updated ? '.' : 'Nichts ausgewählt.'));
   });
 }
+
+/* =========================================================
+   KI-HILFEN IM TASK (Verbessern, Zusammenfassen, Checkliste, Antwort)
+   ========================================================= */
+function taskAiContext(t){
+  var lines = ['Titel: ' + t.title, 'Typ: ' + (TYPES[t.type] || TYPES.adhoc).label];
+  if(t.reporter) lines.push('Reporter: ' + t.reporter);
+  if(t.jiraKey) lines.push('Ticket: ' + t.jiraKey);
+  if(t.description) lines.push('Beschreibung:\n' + t.description);
+  if(t.notes.length) lines.push('Notizen:\n' + t.notes.map(function(n){ return '- ' + n.text; }).join('\n'));
+  if(t.checklist.length) lines.push('Checkliste:\n' + t.checklist.map(function(c){ return (c.done ? '[x] ' : '[ ] ') + c.text; }).join('\n'));
+  lines.push('Erfasste Zeit: ' + fmtHM(totalSeconds(t)));
+  return lines.join('\n');
+}
+var AI_TASK_PROMPTS = {
+  improve: {sys:'Du schreibst Task-Beschreibungen für ein IT-Support-Board um: klar, sachlich, kurz, mit den wichtigsten Fakten (Problem, Betroffene, bereits Versuchtes). Keine Grussformeln. Antworte NUR mit dem neuen Beschreibungstext auf Deutsch (Schweizer Rechtschreibung, kein ß).', tokens:500},
+  summary: {sys:'Fasse den Fall für einen Jira-Kommentar oder eine Übergabe zusammen: Problem, Ursache (falls bekannt), Lösung bzw. aktueller Stand, offene Punkte. Höchstens 120 Wörter, Deutsch (Schweizer Rechtschreibung, kein ß), keine Floskeln, kein Markdown.', tokens:500},
+  reply: {sys:'Verfasse eine höfliche, knappe Antwort-E-Mail an den Reporter (Sie-Form, Schweizer Hochdeutsch ohne ß) zum aktuellen Stand der Anfrage. Beginne mit der Anrede, ende mit "Freundliche Grüsse". Erfinde keine Fakten; ist die Lösung unbekannt, nenne den nächsten Schritt.', tokens:600},
+  checklist: {sys:'Schlage 3 bis 8 konkrete, kurze Arbeitsschritte vor, um diesen Task zu erledigen. Antworte NUR mit JSON: {"steps":["...","..."]}.', tokens:500, json:true}
+};
+function showAiResult(box, text, actions){
+  box.innerHTML = '<div class="ai-result"><pre></pre><div class="actions"></div></div>';
+  box.querySelector('pre').textContent = text;
+  var wrap = box.querySelector('.actions');
+  actions.forEach(function(a){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn' + (a.primary ? ' primary' : ' ghost');
+    b.textContent = a.label;
+    b.addEventListener('click', a.fn);
+    wrap.appendChild(b);
+  });
+}
+function runTaskAi(kind, taskId){
+  if(!aiReady()) return;
+  var t = getTask(taskId);
+  var box = document.getElementById('aiResult');
+  var cfg = AI_TASK_PROMPTS[kind];
+  if(!t || !box || !cfg) return;
+  box.innerHTML = '<div class="ai-result">KI arbeitet…</div>';
+  var done = function(){ box.innerHTML = ''; };
+  callAIRaw(cfg.sys, taskAiContext(t), cfg.tokens).then(function(raw){
+    var text = raw.trim();
+    if(kind === 'checklist'){
+      var m = text.match(/\{[\s\S]*\}/);
+      var steps = (m ? JSON.parse(m[0]).steps : []) || [];
+      steps = steps.map(function(s){ return String(s).trim(); }).filter(Boolean).slice(0, 8);
+      if(!steps.length) throw new Error('Keine Schritte erkannt');
+      showAiResult(box, steps.map(function(s){ return '☐ ' + s; }).join('\n'), [
+        {label:'Alle übernehmen', primary:true, fn:function(){
+          steps.forEach(function(s){ t.checklist.push({text: s, done: false}); });
+          t.updatedAt = nowIso(); save(); openTaskModal(t.id);
+        }},
+        {label:'Verwerfen', fn:done}
+      ]);
+    } else if(kind === 'improve'){
+      showAiResult(box, text, [
+        {label:'Als Beschreibung übernehmen', primary:true, fn:function(){ updateTask(t.id, {description: text}); openTaskModal(t.id); }},
+        {label:'Verwerfen', fn:done}
+      ]);
+    } else if(kind === 'summary'){
+      showAiResult(box, text, [
+        {label:'Als Notiz speichern', primary:true, fn:function(){ t.notes.push({ts: nowIso(), text: 'Zusammenfassung: ' + text}); t.updatedAt = nowIso(); save(); openTaskModal(t.id); }},
+        {label:'Kopieren', fn:function(){ copyToClipboard(text); toast('Kopiert.'); }},
+        {label:'Verwerfen', fn:done}
+      ]);
+    } else {
+      showAiResult(box, text, [
+        {label:'Kopieren', primary:true, fn:function(){ copyToClipboard(text); toast('Antwort kopiert.'); }},
+        {label:'Mail öffnen', fn:function(){ window.location.href = 'mailto:?subject=' + encodeURIComponent((t.jiraKey ? '[' + t.jiraKey + '] ' : '') + t.title) + '&body=' + encodeURIComponent(text); }},
+        {label:'Verwerfen', fn:done}
+      ]);
+    }
+  }).catch(function(err){
+    box.innerHTML = '<div class="ai-result" style="color:var(--danger);">KI-Fehler: ' + escapeHtml(err.message) + '</div>';
+  });
+}
+
+/* Text direkt auf dem Board einfügen (Strg+V) → Ticket aus Text */
+document.addEventListener('paste', function(e){
+  if(!document.getElementById('modalOverlay').classList.contains('hidden')) return;
+  var tg = e.target;
+  if(tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable)) return;
+  var cd = e.clipboardData || window.clipboardData;
+  if(!cd) return;
+  var text = cd.getData('text');
+  if(!text || text.trim().length < 25) return;
+  e.preventDefault();
+  openQuickCapture(text.trim(), true);
+});
 
 /* =========================================================
    CLIPBOARD IMPORT (Jira / Confluence Bookmarklet payload)
@@ -5674,7 +6403,9 @@ function openSettings(){
     ) +
     sCard('KI-Schnellerfassung', 'Optional: erstellt Tasks automatisch aus eingefügtem Mail- oder Ticket-Text.',
       sRow('Anthropic API-Key', '<input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…">', 'Ohne Key gibt es eine einfachere Texterkennung.') +
-      sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert und direkt an Anthropic gesendet.</p>')
+      sRow('KI-Modell', '<select id="sAiModel">' + AI_MODELS.map(function(m){ return '<option value="'+m.id+'"'+((state.settings.aiModel||AI_MODELS[0].id)===m.id?' selected':'')+'>'+m.label+'</option>'; }).join('') + '</select>', 'Haiku ist schnell und günstig, Sonnet und Opus erkennen mehr.') +
+      sMore('Wofür die KI genutzt wird', '<p><strong>Ticket aus Text:</strong> E-Mail oder Notiz einfügen (auch direkt mit Strg+V auf dem Board), die KI legt einen oder mehrere Tasks an. <strong>Im Task:</strong> Beschreibung verbessern, zusammenfassen, Checkliste vorschlagen, Antwort entwerfen. <strong>Hotline-Anruf:</strong> Notizen auswerten und Felder ausfüllen.</p>') +
+      sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert. Beim Auswerten werden der eingefügte Text bzw. die Inhalte des gewählten Tasks direkt an Anthropic gesendet, nicht an Supabase oder andere Dienste.</p>')
     ) +
     sCard('🔗 Read-only-Link teilen', 'Optional: Ein GitHub-Token (Scope nur „gist“) wird für den Button „Read-only-Link teilen“ gebraucht.',
       sRow('GitHub-Token', '<div class="s-inline"><input type="password" id="sCloudToken" value="'+escapeAttr(cloudCfg.token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div>')
@@ -5914,6 +6645,10 @@ function openSettings(){
   });
   document.getElementById('sApiKey').addEventListener('change', function(e){
     state.settings.aiApiKey = e.target.value.trim();
+    save();
+  });
+  document.getElementById('sAiModel').addEventListener('change', function(e){
+    state.settings.aiModel = e.target.value;
     save();
   });
   document.getElementById('sIdle').addEventListener('change', function(e){
@@ -6428,7 +7163,9 @@ var cmdCurrentItems = [];
 function cmdActionsList(){
   return [
     {icon:'➕', label:'Neuer Task', run:function(){ var t=createTask({columnId:state.columns[0].id}); renderAll(); openTaskModal(t.id); }},
-    {icon:'📞', label:'Hotline-Anruf starten', run:function(){ quickStart('hotline','📞 Hotline-Anruf'); }},
+    {icon:'📞', label:'Hotline-Anruf starten', run:openHotlineDialog},
+    {icon:'🪟', label:'Control-Center öffnen (schwebendes Fenster)', run:toggleControlCenter},
+    {icon:'✨', label:'Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
     {icon:'📅', label:'Meeting starten', run:function(){ quickStart('meeting','📅 Meeting'); }},
     {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
@@ -6743,7 +7480,7 @@ function openSnoozedList(){
 /* =========================================================
    EVENT WIRING
    ========================================================= */
-document.getElementById('btnHotline').addEventListener('click', function(){ quickStart('hotline', '📞 Hotline-Anruf'); });
+document.getElementById('btnHotline').addEventListener('click', openHotlineDialog);
 document.getElementById('btnMeeting').addEventListener('click', function(){ quickStart('meeting', '📅 Meeting'); });
 document.getElementById('btnQuickTimeEntry').addEventListener('click', openQuickTimeEntry);
 document.getElementById('btnQuickCapture').addEventListener('click', function(){ openQuickCapture(''); });
@@ -6907,7 +7644,8 @@ document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
 });
-document.getElementById('tbPip').addEventListener('click', toggleTimerPip);
+document.getElementById('tbPip').addEventListener('click', toggleControlCenter);
+document.getElementById('btnControlCenter').addEventListener('click', toggleControlCenter);
 document.getElementById('btnReloadExternal').addEventListener('click', function(){
   if(!fileHandle) return;
   fileHandle.getFile().then(function(file){ return file.text(); }).then(function(text){
@@ -7066,7 +7804,7 @@ function handleUrlShortcutAction(){
   var action = params.get('action');
   if(!action) return;
   if(action === 'hotline'){
-    quickStart('hotline', '📞 Hotline-Anruf');
+    openHotlineDialog();
   } else if(action === 'meeting'){
     quickStart('meeting', '📅 Meeting');
   } else if(action === 'timeentry'){

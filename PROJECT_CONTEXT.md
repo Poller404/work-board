@@ -4,6 +4,24 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Hotline-Formular, Control-Center, Reporter, KI-Ausbau, Task-Fenster
+
+- **Statistik/Tagesabschluss** sind eigene Ansichten (`boardViewMode` = `stats`/`dyce`, `switchToView()`, `renderStatsView()`/`renderDyceView()`), keine Dialoge mehr.
+- **Hotline-Anruf** (`openHotlineDialog()`, `createHotlineTask()`): nur Reporter, Anliegen, Notizen, Priorität, Rückruf-Nr.;
+  Vorschläge beim Tippen (`findSimilarTasks()`, bisherige Tickets des Reporters), Button "Aus Notizen ausfüllen" (KI).
+- **Reporter** (`task.reporter`, `task.phone`) = wer das Ticket eröffnet hat; Autofill über `uniqueReporters()`; Chip auf der Karte; in Suche enthalten.
+- **Ähnliche Tasks** (`e_similar`-Block vor `quickStart`): Wortüberlappung inkl. erledigter/archivierter Tasks; Hinweis im Task-Fenster und im Entwurf.
+- **Control-Center** (`toggleControlCenter()`, `ccBuild()`, `ccRefresh()`): Document-PiP-Fenster (Fallback: Panel `#ccPanel` in der Seite) mit laufendem Timer,
+  Pause/Erledigt, Notiz, Schnell-Anlegen, Hotline/Meeting/Zeit erfassen, zuletzt bearbeitete Tasks. Ersetzt das alte Mini-Timer-Fenster.
+- **KI-Ausbau:** "Ticket aus Text" (`openQuickCapture`, `processQuickCapture`) erkennt mehrere Tasks mit Reporter, Frist, Tags, Checkliste, Aufwand;
+  `openDraftPreview` zeigt Entwürfe (mehrere, abwählbar, Duplikat-Hinweise); Strg+V auf dem Board startet es automatisch; Einfach-Erkennung ohne Key
+  (`heuristicParse`); im Task: Verbessern/Zusammenfassen/Checkliste/Antwort (`runTaskAi`); Modellwahl (`AI_MODELS`, Standard Haiku 4.5).
+- **Task-Fenster** zweispaltig: links Beschreibung, Notizen, Checkliste, Links, "Weitere Optionen" (Wiedervorlage, Übergabe, Abhängigkeiten, Rückfragen);
+  rechts Zeit-Karte und Eigenschaften; Titel im Kopf; "Mehr"-Menü im Fuss. Alle IDs unverändert.
+- Löschen-Button im Fuss wird nicht mehr gestreckt.
+- **Noch offen (angefragt):** Collaboration/geteilte Boards mit Zuweisung. Entwurf: pro Board zufälliger AES-Schlüssel, pro Mitglied per ECDH (P-256)
+  eingewickelt; Tabellen `shared_boards` + `board_members` + `user_keys`; Sync per 3-Wege-Merge mit Versionsprüfung; Zeitsitzungen mit `by`-Feld.
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Design-Erweiterung um neue Funktionen
 
 Auf Wunsch ("erweitere es wie du es für richtig hältst") zusätzlich zu Variante A:
