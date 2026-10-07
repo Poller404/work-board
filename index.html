@@ -765,6 +765,22 @@ button.mobile-only{display:none;}
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 }
+/* ---- Projekte & Abrechnung ---- */
+.proj-dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle;}
+.proj-card.inactive{opacity:.6;}
+.proj-nums{display:flex; gap:20px; margin:6px 0 10px; flex-wrap:wrap;}
+.proj-nums div{display:flex; flex-direction:column;}
+.proj-nums b{font-size:18px; font-weight:600; font-variant-numeric:tabular-nums;}
+.proj-nums span{font-size:11.5px; color:var(--text-faint);}
+.proj-actions{margin-top:10px; display:flex; gap:8px;}
+.pbar{height:8px; border-radius:99px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden; margin:4px 0;}
+.pbar i{display:block; height:100%; border-radius:99px; background:var(--ok);}
+.pbar i.warn{background:var(--p-high);}
+.pbar i.over{background:var(--danger);}
+.project-chip{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--border); border-radius:99px; padding:1px 8px; margin:2px 4px 2px 0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.project-chip i{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+#filterProject{max-width:190px;}
+/*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
 </head>
@@ -808,13 +824,18 @@ button.mobile-only{display:none;}
     <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></symbol>
     <symbol id="i-collapse" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h4l2 2.5h7A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v13H6.5A1.5 1.5 0 0 0 5 18.5z"/><path d="M5 18.5A1.5 1.5 0 0 0 6.5 20H19M9 8h6"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3.5 12h4l2.5-6 4 12 2.5-6h4"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5v8a1.5 1.5 0 0 1-1.5 1.5H11l-4 3.5V16H6.5A1.5 1.5 0 0 1 5 14.5z"/></symbol>
   </defs>
 </svg>
 <div id="app">
   <aside id="sidebar" aria-label="Navigation">
     <div class="menu-wrap sb-brand-wrap"><button class="sb-brand" id="boardSwitchBtn" aria-haspopup="true" title="Board wechseln"><span class="sb-logo">W</span><span class="sb-brand-text"><span class="sb-name">Work Board</span><span class="sb-board" id="boardNameLabel"></span></span><svg class="i sb-caret"><use href="#i-chevron"/></svg></button><div class="menu" id="boardMenu"></div></div>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
-    <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Kalender</span></button>
+    <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
+    <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
@@ -826,7 +847,7 @@ button.mobile-only{display:none;}
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Kalender</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -867,6 +888,7 @@ button.mobile-only{display:none;}
         <option value="medium">Mittel</option>
         <option value="low">Niedrig</option>
       </select>
+      <select id="filterProject" class="hidden" title="Nach Projekt filtern"></select>
       <button class="btn ghost" id="btnWhatNow" title="Schlägt den nächsten Task vor"><svg class="i"><use href="#i-compass"/></svg><span class="lbl" data-i18n="btnWhatNow">Was jetzt?</span></button>
       <button class="btn ghost" id="btnFocus" title="Fokus-Modus für den aktuellen Task"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="btnFocus">Fokus</span></button>
       <button class="btn ghost" id="btnSnoozed" title="Tasks in Wiedervorlage" style="display:none;"><svg class="i"><use href="#i-moon"/></svg><span class="lbl">Wiedervorlage</span></button>
@@ -1124,7 +1146,10 @@ function defaultState(){
       xp: 0,
       ntfyEnabled: false,
       ntfyTopic: '',
-      notifiedSlaCriticalIds: []
+      notifiedSlaCriticalIds: [],
+      projects: [],
+      automationRules: [],
+      budgetAlerts: {}
     },
     boards: [],
     meta: { createdAt: now, updatedAt: now }
@@ -1147,6 +1172,7 @@ function migrateState(data){
     return {key: (typeof ct.key === 'string' && SAFE_ID_RE.test(ct.key)) ? ct.key : 'custom' + uid(), label: stripMarkup(ct.label, 40) || 'Typ', icon: stripMarkup(ct.icon, 8) || '🔧'};
   });
   d.settings.accentColor = sanitizeColor(d.settings.accentColor);
+  normalizeSyncSettings(d.settings);
   if(d.settings.backgroundImage && !/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(d.settings.backgroundImage)) d.settings.backgroundImage = '';
   var storedAiKey = '';
   try{ storedAiKey = localStorage.getItem('wb-ai-key') || ''; }catch(e){}
@@ -1201,6 +1227,13 @@ function normalizeTask(t){
   });
   t.tags = t.tags.map(function(x){ return String(x); });
   if(typeof t.phone !== 'string') t.phone = '';
+  /* Optionale Felder: nur prüfen, wenn vorhanden (fehlen bei Tasks, die sie nicht brauchen). */
+  if(t.projectId !== undefined && (typeof t.projectId !== 'string' || (t.projectId && !SAFE_ID_RE.test(t.projectId)))) t.projectId = '';
+  if(t.projectName !== undefined) t.projectName = stripMarkup(t.projectName, 80);
+  if(t.scheduledMinutes !== undefined && !(typeof t.scheduledMinutes === 'number' && t.scheduledMinutes >= 5 && t.scheduledMinutes <= 1440)) delete t.scheduledMinutes;
+  if(t.comments !== undefined) t.comments = normalizeComments(t.comments);
+  if(t.solution !== undefined) t.solution = typeof t.solution === 'string' ? t.solution.slice(0, 8000) : '';
+  if(t.mail !== undefined){ var nm = normalizeMail(t.mail); if(nm) t.mail = nm; else delete t.mail; }
   return t;
 }
 
@@ -1504,7 +1537,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navBoard:'Board', navCalendar:'Kalender', navViews:'Ansichten', navSettings:'Einstellungen',
+    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -1513,7 +1546,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navBoard:'Board', navCalendar:'Calendar', navViews:'Views', navSettings:'Settings',
+    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -2421,8 +2454,10 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
+var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects'];
 var quickFilters = {};
 var filterTag = '';
+var filterProject = '';
 var inlineAddColId = null;
 var QUICK_FILTERS = [
   {id:'today',   label:'Heute fällig',   fn:function(t){ return !t.completedAt && t.dueDate === toDateInputValue(new Date()); }},
@@ -2434,12 +2469,12 @@ var QUICK_FILTERS = [
   {id:'mine',    label:'Mir zugewiesen', shared:true, fn:function(t){ return !t.completedAt && !!t.assigneeId && t.assigneeId === myUserId(); }}
 ];
 function anyFilterActive(){
-  return !!(searchQuery || filterType || filterPriority || filterTag || Object.keys(quickFilters).length);
+  return !!(searchQuery || filterType || filterPriority || filterTag || filterProject || Object.keys(quickFilters).length);
 }
 function renderFilterBar(){
   var bar = document.getElementById('filterBar');
   if(!bar) return;
-  var show = !showArchive && ['dashboard','calendar','stats','dyce'].indexOf(boardViewMode) < 0;
+  var show = !showArchive && FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) < 0;
   var html = '';
   if(show){
     var pool = state.tasks.filter(function(t){ return !t.archived && !isSnoozed(t); });
@@ -2504,6 +2539,7 @@ function taskMatchesFilters(t){
   if(filterType && t.type !== filterType) return false;
   if(filterPriority && t.priority !== filterPriority) return false;
   if(filterTag && t.tags.indexOf(filterTag) < 0) return false;
+  if(filterProject){ var tp = projectOf(t); if(filterProject === '__none__' ? (tp || t.projectName) : !(tp && tp.id === filterProject)) return false; }
   for(var qi = 0; qi < QUICK_FILTERS.length; qi++){
     if(quickFilters[QUICK_FILTERS[qi].id] && !QUICK_FILTERS[qi].fn(t)) return false;
   }
@@ -2851,11 +2887,13 @@ function renderDashboardWidgets(){
 function renderBoard(){
   var board = document.getElementById('board');
   renderSidebarActive();
+  renderProjectFilter();
   renderFilterBar();
-  board.classList.toggle('dashboard-mode', boardViewMode === 'dashboard' || boardViewMode === 'stats' || boardViewMode === 'dyce');
+  board.classList.toggle('dashboard-mode', FULL_VIEWS.indexOf(boardViewMode) >= 0);
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
   if(boardViewMode === 'dyce'){ renderDyceView(); return; }
+  if(boardViewMode === 'projects'){ renderProjectsView(); return; }
   if(boardViewMode === 'calendar'){ renderCalendarView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -3237,6 +3275,7 @@ function renderCard(t){
     '</div>' +
     '<div class="card-title">'+escapeHtml(t.title)+'</div>' +
     (t.reporter ? '<span class="reporter-badge" title="Reporter">'+svgIcon('users')+escapeHtml(t.reporter)+'</span>' : '') +
+    projectChipHtml(t) +
     (t.taskGroup ? '<span class="group-badge" title="Gruppe">'+escapeHtml(t.taskGroup)+'</span>' : '') +
     (t.blockedBy && t.blockedBy.length ? '<div class="blocked-badge">🔗 blockiert durch '+t.blockedBy.length+' Task(s)</div>' : '') +
     (assigneeLabel(t) ? '<span class="assignee-chip'+(t.assigneeId && t.assigneeId === myUserId() ? ' me' : '')+'" title="Zugewiesen an '+escapeAttr(assigneeLabel(t))+'"><span class="sb-avatar">'+escapeHtml(personInitials(assigneeLabel(t)))+'</span>'+escapeHtml(assigneeLabel(t))+'</span>' : '') +
@@ -4380,6 +4419,7 @@ function openTaskModal(taskId){
               '<div class="prop"><label for="fType">Typ</label><select id="fType">'+typeOptions+'</select></div>' +
             '</div>' +
             '<div class="prop"><label for="fReporter">Reporter (wer hat das Ticket eröffnet?)</label><input id="fReporter" list="reporterList" autocomplete="off" value="'+escapeAttr(t.reporter||'')+'" placeholder="Name der meldenden Person"><datalist id="reporterList">'+reporterListHtml+'</datalist></div>' +
+            '<div class="prop"><label for="fProject">Projekt</label><select id="fProject">'+projectOptionsHtml(t)+'</select></div>' +
             '<div class="prop"><label for="fPhone">Telefon</label><input id="fPhone" type="tel" autocomplete="off" value="'+escapeAttr(t.phone||'')+'" placeholder="Rückruf-Nummer"></div>' +
             assigneeHtml +
             '<div class="prop"><label for="fDue">Fällig am</label><input type="date" id="fDue" value="'+escapeAttr(t.dueDate||'')+'"></div>' +
@@ -4444,7 +4484,14 @@ function openTaskModal(taskId){
       if(activeShared){ assignPatch.assigneeId = asEl.value; assignPatch.assignee = asEl.value ? personName(asEl.value) : ''; }
       else assignPatch.assignee = asEl.value;
     }
-    updateTask(t.id, Object.assign({
+    var projPatch = {};
+    var prSel = document.getElementById('fProject');
+    if(prSel && prSel.value !== '__virtual__' && prSel.value !== '__new__' && (t.projectId || '') !== prSel.value){
+      var chosen = getProject(prSel.value);
+      projPatch.projectId = chosen ? chosen.id : '';
+      projPatch.projectName = chosen ? chosen.name : '';
+    }
+    updateTask(t.id, Object.assign(projPatch, {
       title: document.getElementById('fTitle').value.trim() || 'Unbenannt',
       type: document.getElementById('fType').value,
       priority: document.getElementById('fPriority').value,
@@ -4479,6 +4526,14 @@ function openTaskModal(taskId){
     if(el) el.addEventListener('change', persist);
   });
 
+  document.getElementById('fProject').addEventListener('change', function(e){
+    if(e.target.value === '__new__'){
+      e.target.value = t.projectId || (t.projectName ? '__virtual__' : '');
+      openProjectDialog('', function(pr){ updateTask(t.id, {projectId: pr.id, projectName: pr.name}); renderBoard(); openTaskModal(t.id); });
+      return;
+    }
+    persist();
+  });
   document.getElementById('modalTimerBtn').addEventListener('click', function(){
     if(isRunning(t)) stopTimer(t.id); else startTimer(t.id);
     openTaskModal(t.id);
@@ -4703,6 +4758,15 @@ function openTaskModal(taskId){
   });
 }
 
+function projectOptionsHtml(t){
+  var cur = projectOf(t);
+  var html = '<option value="">– Kein Projekt –</option>';
+  projectList().filter(function(p){ return p.active || (cur && cur.id === p.id); }).forEach(function(p){
+    html += '<option value="' + p.id + '"' + (cur && cur.id === p.id ? ' selected' : '') + '>' + escapeHtml(projectLabel(p)) + '</option>';
+  });
+  if(!cur && t.projectName) html += '<option value="__virtual__" selected>' + escapeHtml(t.projectName) + ' (nicht in deiner Liste)</option>';
+  return html + '<option value="__new__">＋ Neues Projekt…</option>';
+}
 function linkIcon(type){
   if(type==='jira') return '🎫';
   if(type==='confluence') return '📘';
@@ -5761,7 +5825,7 @@ function renderStatsView(range){
   state.tasks.forEach(function(t){
     var sec = secondsInRange(t, startMs, endMs);
     if(!sec) return;
-    var proj = t.jiraKey ? t.jiraKey.split('-')[0] : '– ohne Jira-Key –';
+    var proj = projectNameOf(t) || (t.jiraKey ? t.jiraKey.split('-')[0] : '– ohne Projekt –');
     projectTotals[proj] = (projectTotals[proj]||0) + sec;
   });
   var projectEntries = Object.keys(projectTotals).map(function(k){ return {key:k, sec:projectTotals[k]}; }).sort(function(a,b){ return b.sec - a.sec; });
@@ -5772,7 +5836,7 @@ function renderStatsView(range){
       '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>🏷️ '+escapeHtml(p.key)+'</span><span style="font-weight:700;">'+fmtHM(p.sec)+'</span></div>' +
       '<div style="background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; border:1px solid var(--border);"><div style="width:'+pct+'%; background:var(--accent); height:100%;"></div></div>' +
     '</div>';
-  }).join('') : '<div class="empty-state">Keine erfasste Zeit mit Jira-Ticket in diesem Zeitraum.</div>';
+  }).join('') : '<div class="empty-state">Keine erfasste Zeit in diesem Zeitraum.</div>';
 
   // 7-Tage-Sparkline
   var dayLabels = ['So','Mo','Di','Mi','Do','Fr','Sa'];
@@ -5859,7 +5923,7 @@ function renderStatsView(range){
       (targetHtml ? '<section class="dcard" style="margin-bottom:14px;">'+targetHtml+'</section>' : '') +
       '<div class="dash-grid">' +
         pcard('Zeitverteilung', donutHtml + rows) +
-        pcard('Zeit pro Projekt/Kunde', projectRows) +
+        pcard('Zeit pro Projekt', projectRows) +
         pcard('Letzte 7 Tage', sparkHtml) +
         pcard('Verlauf (12 Wochen)', heatHtml) +
         pcard('Offen und erledigt', burndownHtml) +
@@ -6066,6 +6130,7 @@ function personalBaseSave(){
   withPersonalState(function(){
     var b = sharedMakeBase({name: state.settings.activeBoardName, columns: state.columns, tasks: state.tasks});
     b.board = state.settings.activeBoardName;
+    b.lists = syncListsBase();
     try{ localStorage.setItem(personalBaseKey(), JSON.stringify(b)); }catch(e){}
   });
 }
@@ -6147,6 +6212,9 @@ function mergePersonalRemote(result){
   var merged = mergeContent(base, {name: localBoard, columns: state.columns, tasks: state.tasks}, {name: localBoard, columns: remoteCols, tasks: remoteTasks});
   var changed = applyMergedTasksTo(state, merged);
   var differsFromRemote = canon({c: merged.columns, t: merged.tasks}) !== canon({c: remoteCols, t: remoteTasks});
+  var listMerge = mergeSyncLists(base, rs.settings);
+  if(listMerge.applied) changed = true;
+  if(listMerge.differs) differsFromRemote = true;
   if(changed) out.applied = true;
   if(differsFromRemote) state.meta.updatedAt = nowIso();
   else if(changed) state.meta.updatedAt = result.updatedAt;
@@ -8236,6 +8304,8 @@ function cmdActionsList(){
     {icon:'🎯', label:'Fokus-Modus starten', run: enterFocusMode},
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'📊', label:'Statistik', run: openStats},
+    {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
+    {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
     {icon:'🚨', label:'SLA-/Fälligkeits-Dashboard', run: openSlaDashboard},
     {icon:'🔍', label:'Lösungs-Wissensdatenbank durchsuchen', run: function(){ openKnowledgeBase(''); }},
@@ -8625,6 +8695,7 @@ function renderSidebarUser(){
 document.querySelectorAll('#sidebar [data-view]').forEach(function(btn){
   btn.addEventListener('click', function(){
     if(btn.dataset.view === 'dyce') dyceDateStr = '';
+    if(btn.dataset.view === 'projects') projDetailId = '';
     switchToView(btn.dataset.view);
   });
 });
@@ -8734,6 +8805,7 @@ document.getElementById('searchInput').addEventListener('input', function(e){
 });
 document.getElementById('filterType').addEventListener('change', function(e){ filterType = e.target.value; renderBoard(); });
 document.getElementById('filterPriority').addEventListener('change', function(e){ filterPriority = e.target.value; renderBoard(); });
+document.getElementById('filterProject').addEventListener('change', function(e){ filterProject = e.target.value; renderBoard(); });
 
 document.getElementById('cmdPaletteInput').addEventListener('input', function(e){
   renderCmdResults(e.target.value);
@@ -8867,6 +8939,514 @@ function handleUrlShortcutAction(){
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 }
+/* =========================================================
+   FUNDAMENT FÜR PROJEKTE, REGELN UND SYNCHRONISIERTE LISTEN
+   Projekte und Automatisierungs-Regeln liegen in den Einstellungen, werden aber
+   (anders als sonstige Einstellungen) zwischen den Geräten einer Person
+   abgeglichen: Eintrag für Eintrag, mit demselben Drei-Wege-Prinzip wie die Tasks.
+   Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
+   Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
+   ========================================================= */
+var SYNC_LISTS = ['projects', 'automationRules'];
+var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
+var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
+var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
+
+function cleanStr(s, max){ return String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, max || 200); }
+function normalizeProject(p){
+  if(!p || typeof p !== 'object') return null;
+  var rate = (typeof p.rate === 'number' && isFinite(p.rate) && p.rate >= 0) ? p.rate : null;
+  var budget = (typeof p.budgetHours === 'number' && isFinite(p.budgetHours) && p.budgetHours > 0) ? p.budgetHours : null;
+  return {
+    id: (typeof p.id === 'string' && SAFE_ID_RE.test(p.id)) ? p.id : 'pr-' + uid(),
+    name: stripMarkup(p.name, 80) || 'Projekt',
+    client: stripMarkup(p.client, 80),
+    rate: rate, budgetHours: budget,
+    color: sanitizeColor(p.color) || '#2f5bea',
+    billable: p.billable !== false,
+    active: p.active !== false,
+    note: cleanStr(p.note, 500),
+    updatedAt: typeof p.updatedAt === 'string' && !isNaN(new Date(p.updatedAt).getTime()) ? p.updatedAt : nowIso()
+  };
+}
+function normalizeRule(r){
+  if(!r || typeof r !== 'object') return null;
+  var trig = (r.trigger && typeof r.trigger === 'object') ? r.trigger : {};
+  if(RULE_TRIGGERS.indexOf(trig.type) < 0) return null;
+  var out = {
+    id: (typeof r.id === 'string' && SAFE_ID_RE.test(r.id)) ? r.id : 'ru-' + uid(),
+    name: stripMarkup(r.name, 80) || 'Regel',
+    enabled: r.enabled !== false,
+    scope: r.scope === 'all' ? 'all' : 'personal',
+    trigger: {type: trig.type},
+    conditions: [], actions: [],
+    updatedAt: typeof r.updatedAt === 'string' && !isNaN(new Date(r.updatedAt).getTime()) ? r.updatedAt : nowIso()
+  };
+  if(trig.type === 'moved' || trig.type === 'completed') out.trigger.column = (typeof trig.column === 'string' && SAFE_ID_RE.test(trig.column)) ? trig.column : '';
+  if(trig.type === 'age' || trig.type === 'overdue'){
+    var h = parseFloat(trig.hours);
+    out.trigger.hours = (isFinite(h) && h >= 0 && h <= 24 * 365) ? h : (trig.type === 'age' ? 4 : 0);
+  }
+  (Array.isArray(r.conditions) ? r.conditions : []).slice(0, 8).forEach(function(c){
+    if(!c || RULE_COND_FIELDS.indexOf(c.field) < 0) return;
+    out.conditions.push({field: c.field, op: ['is', 'isnot', 'contains'].indexOf(c.op) >= 0 ? c.op : 'is', value: cleanStr(c.value, 120)});
+  });
+  (Array.isArray(r.actions) ? r.actions : []).slice(0, 6).forEach(function(a){
+    if(!a || RULE_ACTIONS.indexOf(a.type) < 0) return;
+    out.actions.push({type: a.type, value: cleanStr(a.value, 300), extra: cleanStr(a.extra, 300)});
+  });
+  return out.actions.length ? out : null;
+}
+function normalizeSyncSettings(settings){
+  settings.projects = (Array.isArray(settings.projects) ? settings.projects : []).map(normalizeProject).filter(Boolean);
+  settings.automationRules = (Array.isArray(settings.automationRules) ? settings.automationRules : []).map(normalizeRule).filter(Boolean);
+  if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
+}
+function normalizeComments(list){
+  return (Array.isArray(list) ? list : []).filter(function(c){ return c && typeof c === 'object'; }).slice(-200).map(function(c){
+    return {
+      id: (typeof c.id === 'string' && SAFE_ID_RE.test(c.id)) ? c.id : 'cm-' + uid(),
+      ts: (typeof c.ts === 'string' && !isNaN(new Date(c.ts).getTime())) ? c.ts : nowIso(),
+      by: (typeof c.by === 'string' && SAFE_ID_RE.test(c.by)) ? c.by : '',
+      byName: stripMarkup(c.byName, 60),
+      text: cleanStr(c.text, 4000),
+      mentions: (Array.isArray(c.mentions) ? c.mentions : []).filter(function(m){ return typeof m === 'string' && SAFE_ID_RE.test(m); }).slice(0, 10)
+    };
+  });
+}
+function normalizeMail(m){
+  if(!m || typeof m !== 'object') return null;
+  var email = cleanStr(m.fromEmail, 120);
+  if(!/^[^\s@<>"']+@[^\s@<>"']+$/.test(email)) email = '';
+  return {
+    from: stripMarkup(m.from, 120), fromEmail: email,
+    subject: cleanStr(m.subject, 300), date: cleanStr(m.date, 40), to: cleanStr(m.to, 200),
+    attachments: (Array.isArray(m.attachments) ? m.attachments : []).slice(0, 20).map(function(a){ return cleanStr(a, 120); }).filter(Boolean)
+  };
+}
+
+/* Eintrag-für-Eintrag-Abgleich (Projekte, Regeln): wie mergeTasks, aber bei beidseitiger Änderung gewinnt der neuere Eintrag. */
+function mergeListById(baseMap, L, R){
+  var Lm = {}, Rm = {};
+  L.forEach(function(x){ Lm[x.id] = x; });
+  R.forEach(function(x){ Rm[x.id] = x; });
+  var ids = R.map(function(x){ return x.id; });
+  L.forEach(function(x){ if(!Rm[x.id]) ids.push(x.id); });
+  var out = [];
+  ids.forEach(function(id){
+    var l = Lm[id], r = Rm[id], b = baseMap[id];
+    if(l && r){
+      var cl = canon(l), cr = canon(r);
+      if(cl === cr) out.push(l);
+      else if(b !== undefined && cl === b) out.push(r);
+      else if(b !== undefined && cr === b) out.push(l);
+      else out.push(new Date(r.updatedAt || 0) > new Date(l.updatedAt || 0) ? r : l);
+    } else if(l){
+      if(b === undefined || canon(l) !== b) out.push(l);
+    } else if(r){
+      if(b === undefined || canon(r) !== b) out.push(r);
+    }
+  });
+  return out;
+}
+function syncListsBase(){
+  var lists = {};
+  SYNC_LISTS.forEach(function(k){
+    var m = {};
+    (Array.isArray(state.settings[k]) ? state.settings[k] : []).forEach(function(x){ m[x.id] = canon(x); });
+    lists[k] = m;
+  });
+  return lists;
+}
+/* Gibt zurück, ob lokal etwas übernommen wurde und ob sich das Ergebnis vom Cloud-Stand unterscheidet. */
+function mergeSyncLists(base, remoteSettings){
+  var res = {applied: false, differs: false};
+  SYNC_LISTS.forEach(function(k){
+    var L = Array.isArray(state.settings[k]) ? state.settings[k] : [];
+    var Rraw = remoteSettings && Array.isArray(remoteSettings[k]) ? remoteSettings[k] : [];
+    var tmp = {projects: [], automationRules: []};
+    tmp[k] = Rraw;
+    normalizeSyncSettings(tmp);
+    var R = tmp[k];
+    var bm = (base && base.lists && base.lists[k]) || {};
+    var m = mergeListById(bm, L, R);
+    if(canon(m) !== canon(L)){ state.settings[k] = m; res.applied = true; }
+    if(canon(m) !== canon(R)) res.differs = true;
+  });
+  return res;
+}
+
+/* =========================================================
+   PROJEKTE UND KUNDEN: Stammdaten, Auswertung, Abrechnung
+   ========================================================= */
+function projectList(){ return Array.isArray(state.settings.projects) ? state.settings.projects : []; }
+function getProject(id){
+  if(!id) return null;
+  return projectList().find(function(p){ return p.id === id; }) || null;
+}
+function findProjectByName(name){
+  var n = String(name || '').trim().toLowerCase();
+  if(!n) return null;
+  return projectList().find(function(p){ return p.name.toLowerCase() === n || projectLabel(p).toLowerCase() === n; }) || null;
+}
+function projectOf(t){
+  if(!t) return null;
+  var p = t.projectId ? getProject(t.projectId) : null;
+  if(!p && t.projectName) p = findProjectByName(t.projectName);
+  return p;
+}
+function projectLabel(p){ return p.client ? p.client + ' · ' + p.name : p.name; }
+function projectNameOf(t){
+  var p = projectOf(t);
+  return p ? projectLabel(p) : (t && t.projectName) || '';
+}
+function projectRate(p){
+  if(p && typeof p.rate === 'number') return p.rate;
+  return parseFloat(state.settings.hourlyRate) || 0;
+}
+function saveProject(p){
+  var list = projectList().slice();
+  var idx = list.findIndex(function(x){ return x.id === p.id; });
+  p.updatedAt = nowIso();
+  if(idx >= 0) list[idx] = p; else list.push(p);
+  state.settings.projects = list;
+  save();
+}
+function removeProject(id){
+  state.settings.projects = projectList().filter(function(p){ return p.id !== id; });
+  save();
+}
+function secondsInRangeAll(task, startMs, endMs){
+  var sum = 0;
+  task.timeSessions.forEach(function(s){
+    var a = Math.max(new Date(s.start).getTime(), startMs);
+    var b = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), endMs);
+    if(b > a) sum += (b - a) / 1000;
+  });
+  return sum;
+}
+/* Zerlegt die Sitzungen eines Tasks in Tage und Personen: {datum: {personenId: sekunden}} */
+function sessionsPerDay(task, startMs, endMs, mineOnly){
+  var out = {};
+  task.timeSessions.forEach(function(s){
+    if(mineOnly && !isMySession(s)) return;
+    var cur = Math.max(new Date(s.start).getTime(), startMs);
+    var last = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), endMs);
+    var who = s.by || myUserId() || '';
+    var guard = 0;
+    while(cur < last && guard++ < 400){
+      var dayEnd = new Date(cur); dayEnd.setHours(24, 0, 0, 0);
+      var seg = Math.min(dayEnd.getTime(), last);
+      var ds = toDateInputValue(new Date(cur));
+      out[ds] = out[ds] || {};
+      out[ds][who] = (out[ds][who] || 0) + (seg - cur) / 1000;
+      cur = seg;
+    }
+  });
+  return out;
+}
+function projectTasks(p){ return state.tasks.filter(function(t){ return projectOf(t) === p; }); }
+function projectSecondsAll(p, startMs, endMs){
+  return projectTasks(p).reduce(function(s, t){ return s + secondsInRangeAll(t, startMs, endMs); }, 0);
+}
+function projectRangeBounds(range){
+  var now = new Date();
+  var start = 0, label = 'Gesamt';
+  if(range === 'month'){ start = startOfMonth(now).getTime(); label = 'Dieser Monat'; }
+  else if(range === 'quarter'){ var q = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); start = q.getTime(); label = 'Dieses Quartal'; }
+  else if(range === 'year'){ start = new Date(now.getFullYear(), 0, 1).getTime(); label = 'Dieses Jahr'; }
+  else if(range === 'lastmonth'){
+    var lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return {start: lm.getTime(), end: startOfMonth(now).getTime() - 1, label: 'Letzter Monat'};
+  }
+  return {start: start, end: Date.now(), label: label};
+}
+function personDisplayName(id){
+  if(!id) return currentUser ? currentUser.displayName : 'Ich';
+  if(id === myUserId()) return currentUser ? currentUser.displayName : 'Ich';
+  return personName(id);
+}
+/* Abrechenbare Einträge: pro Tag, Task und Person, mit der unter "Tagesabschluss" gewählten Rundung. */
+function billingEntries(p, startMs, endMs){
+  var rounding = state.settings.dyceRoundingMinutes || 0;
+  var rate = projectRate(p);
+  var rows = [];
+  projectTasks(p).forEach(function(t){
+    var perDay = sessionsPerDay(t, startMs, endMs, false);
+    Object.keys(perDay).forEach(function(ds){
+      Object.keys(perDay[ds]).forEach(function(who){
+        var sec = perDay[ds][who];
+        var rs = roundSeconds(sec, rounding);
+        rows.push({date: ds, task: t, who: who, person: personDisplayName(who), sec: sec, rsec: rs, amount: p.billable ? rs / 3600 * rate : 0});
+      });
+    });
+  });
+  rows.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : a.task.title.localeCompare(b.task.title); });
+  return rows;
+}
+function fmtCHF(n){ return (Math.round(n * 100) / 100).toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+function fmtHdec(sec){ return (Math.round(sec / 36) / 100).toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+/* Budget-Warnungen (80 % und 100 %): einmal pro Schwelle, wird zurückgesetzt wenn das Budget wieder darunter liegt. */
+function checkBudgetAlerts(){
+  var alerts = state.settings.budgetAlerts || {};
+  var changed = false;
+  projectList().forEach(function(p){
+    if(!p.active || !p.budgetHours) return;
+    var pct = projectSecondsAll(p, 0, Date.now()) / 3600 / p.budgetHours * 100;
+    var done = alerts[p.id] || 0;
+    var level = pct >= 100 ? 100 : (pct >= 80 ? 80 : 0);
+    if(level > done){
+      toast((level === 100 ? '🚨 Budget aufgebraucht: ' : '⚠️ Budget zu 80 % verbraucht: ') + projectLabel(p), 9000, 'Projekte', function(){ projDetailId = p.id; switchToView('projects'); });
+      sendNtfyPush('📊 Projektbudget', level === 100 ? 'Ein Projekt hat sein Budget erreicht – in der Projektansicht prüfen.' : 'Ein Projekt hat 80 % des Budgets erreicht – in der Projektansicht prüfen.');
+    }
+    if(level !== done){ alerts[p.id] = level; changed = true; }
+  });
+  if(changed){ state.settings.budgetAlerts = alerts; doSave(); }
+}
+
+var projRange = 'month';
+var projDetailId = '';
+function budgetBar(pct){
+  var cls = pct >= 100 ? 'over' : (pct >= 80 ? 'warn' : 'ok');
+  return '<div class="pbar"><i class="' + cls + '" style="width:' + Math.min(100, Math.round(pct)) + '%"></i></div>';
+}
+function renderProjectsView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var b = projectRangeBounds(projRange);
+  var p = projDetailId ? getProject(projDetailId) : null;
+  if(projDetailId && !p) projDetailId = '';
+  var seg = '<div class="seg" role="group" aria-label="Zeitraum">' +
+    [['month','Monat'],['lastmonth','Letzter Monat'],['quarter','Quartal'],['year','Jahr'],['all','Gesamt']].map(function(r){
+      return '<button class="seg-btn' + (projRange === r[0] ? ' on' : '') + '" data-prange="' + r[0] + '">' + r[1] + '</button>';
+    }).join('') + '</div>';
+  var html;
+  if(p){
+    html = renderProjectDetailHtml(p, b, seg);
+  } else {
+    var list = projectList().slice().sort(function(a, c){ return (c.active ? 1 : 0) - (a.active ? 1 : 0) || projectLabel(a).localeCompare(projectLabel(c)); });
+    var totalSec = 0, totalRev = 0, warnCount = 0;
+    var cards = list.map(function(pr){
+      var secR = projectSecondsAll(pr, b.start, b.end);
+      var secT = projectSecondsAll(pr, 0, Date.now());
+      var rev = pr.billable ? secR / 3600 * projectRate(pr) : 0;
+      var pct = pr.budgetHours ? secT / 3600 / pr.budgetHours * 100 : 0;
+      if(pr.active){ totalSec += secR; totalRev += rev; if(pct >= 80) warnCount++; }
+      return '<section class="dcard proj-card' + (pr.active ? '' : ' inactive') + '" data-proj="' + pr.id + '">' +
+        '<div class="dcard-head"><h3><span class="proj-dot" style="background:' + escapeAttr(pr.color) + '"></span>' + escapeHtml(pr.name) + '</h3>' +
+          '<button class="btn" data-proj-edit="' + pr.id + '">Bearbeiten</button></div>' +
+        (pr.client ? '<div class="hint" style="margin:-4px 0 8px;">' + escapeHtml(pr.client) + (pr.active ? '' : ' · archiviert') + '</div>' : (pr.active ? '' : '<div class="hint">archiviert</div>')) +
+        '<div class="proj-nums"><div><b>' + fmtHM(secR) + '</b><span>' + b.label + '</span></div>' +
+          '<div><b>' + (pr.billable ? fmtCHF(rev) : '–') + '</b><span>CHF' + (pr.billable ? '' : ' (nicht abrechenbar)') + '</span></div>' +
+          '<div><b>' + fmtHM(secT) + '</b><span>gesamt</span></div></div>' +
+        (pr.budgetHours ? budgetBar(pct) + '<div class="hint" style="display:flex; justify-content:space-between;"><span>' + Math.round(pct) + ' % von ' + pr.budgetHours + ' h</span><span>' +
+          (pct >= 100 ? '<b style="color:var(--danger)">' + fmtHM((secT / 3600 - pr.budgetHours) * 3600) + ' darüber</b>' : fmtHM(Math.max(0, pr.budgetHours * 3600 - secT)) + ' übrig') + '</span></div>' : '<div class="hint">Kein Budget gesetzt</div>') +
+        '<div class="proj-actions"><button class="btn primary" data-proj-open="' + pr.id + '">Details &amp; Abrechnung</button></div>' +
+      '</section>';
+    }).join('');
+    /* Zeit ohne Projekt */
+    var noProj = state.tasks.filter(function(t){ return !projectOf(t) && !t.projectName; })
+      .map(function(t){ return {t: t, sec: secondsInRangeAll(t, b.start, b.end)}; }).filter(function(x){ return x.sec > 0; })
+      .sort(function(a, c){ return c.sec - a.sec; });
+    var noProjSec = noProj.reduce(function(s, x){ return s + x.sec; }, 0);
+    var projOpts = list.filter(function(x){ return x.active; }).map(function(x){ return '<option value="' + x.id + '">' + escapeHtml(projectLabel(x)) + '</option>'; }).join('');
+    var noProjHtml = noProj.length ? '<section class="dcard wide"><div class="dcard-head"><h3>Zeit ohne Projekt</h3><span class="hint">' + fmtHM(noProjSec) + ' · ' + b.label + '</span></div>' +
+      noProj.slice(0, 6).map(function(x){
+        return '<div class="dash-row" style="cursor:default;"><span class="dash-row-title" data-open-task="' + x.t.id + '" style="cursor:pointer;">' + escapeHtml(x.t.title) + '</span><span class="dash-row-extra">' + fmtHM(x.sec) + '</span>' +
+          (projOpts ? '<select data-assign-proj="' + x.t.id + '"><option value="">Projekt wählen…</option>' + projOpts + '</select>' : '') + '</div>';
+      }).join('') + '</section>' : '';
+    html = '<div class="dash">' +
+      '<div class="dash-head"><div><h1>Projekte &amp; Abrechnung</h1><p>' + b.label + ' · ' + fmtHM(totalSec) + ' · <strong style="color:var(--text);">' + fmtCHF(totalRev) + ' CHF</strong>' +
+        (warnCount ? ' · <span style="color:var(--danger);font-weight:600;">' + warnCount + ' Budget-Warnung' + (warnCount === 1 ? '' : 'en') + '</span>' : '') + '</p></div>' +
+        '<div class="dash-actions">' + seg + '<button class="btn primary" id="projNewBtn">' + svgIcon('plus') + '<span>Projekt</span></button></div></div>' +
+      (list.length ? '<div class="dash-grid">' + cards + noProjHtml + '</div>' :
+        '<section class="dcard"><div class="empty-state">Noch keine Projekte. Lege Kunden und Projekte an, ordne Tasks zu und erhalte Auswertung, Budget-Warnungen und Leistungsübersichten.</div>' +
+        '<div style="text-align:center;"><button class="btn primary" id="projNewBtn2">' + svgIcon('plus') + '<span>Erstes Projekt anlegen</span></button></div></section>' + noProjHtml) +
+    '</div>';
+  }
+  board.innerHTML = html;
+  board.querySelectorAll('[data-prange]').forEach(function(btn){
+    btn.addEventListener('click', function(){ projRange = btn.dataset.prange; renderProjectsView(); });
+  });
+  board.querySelectorAll('[data-proj-edit]').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); openProjectDialog(btn.dataset.projEdit); });
+  });
+  board.querySelectorAll('[data-proj-open]').forEach(function(btn){
+    btn.addEventListener('click', function(){ projDetailId = btn.dataset.projOpen; renderProjectsView(); });
+  });
+  board.querySelectorAll('[data-open-task]').forEach(function(el){
+    el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); });
+  });
+  board.querySelectorAll('[data-assign-proj]').forEach(function(sel){
+    sel.addEventListener('change', function(){
+      var pr = getProject(sel.value);
+      if(!pr) return;
+      updateTask(sel.dataset.assignProj, {projectId: pr.id, projectName: pr.name});
+      renderProjectsView();
+    });
+  });
+  ['projNewBtn', 'projNewBtn2'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('click', function(){ openProjectDialog(''); });
+  });
+  var back = document.getElementById('projBackBtn');
+  if(back) back.addEventListener('click', function(){ projDetailId = ''; renderProjectsView(); });
+  var pr2 = document.getElementById('projPrintBtn');
+  if(pr2) pr2.addEventListener('click', function(){ printProjectReport(getProject(projDetailId), b); });
+  var cp = document.getElementById('projCopyBtn');
+  if(cp) cp.addEventListener('click', function(){ copyProjectTable(getProject(projDetailId), b); });
+  var ed = document.getElementById('projEditBtn');
+  if(ed) ed.addEventListener('click', function(){ openProjectDialog(projDetailId); });
+}
+function renderProjectDetailHtml(p, b, seg){
+  var rows = billingEntries(p, b.start, b.end);
+  var rate = projectRate(p);
+  var totalRaw = rows.reduce(function(s, r){ return s + r.sec; }, 0);
+  var totalR = rows.reduce(function(s, r){ return s + r.rsec; }, 0);
+  var amount = rows.reduce(function(s, r){ return s + r.amount; }, 0);
+  var secT = projectSecondsAll(p, 0, Date.now());
+  var pct = p.budgetHours ? secT / 3600 / p.budgetHours * 100 : 0;
+  /* Personen */
+  var byPerson = {};
+  rows.forEach(function(r){ byPerson[r.person] = byPerson[r.person] || {sec: 0, amount: 0}; byPerson[r.person].sec += r.rsec; byPerson[r.person].amount += r.amount; });
+  var personHtml = Object.keys(byPerson).length > 1 ? '<section class="dcard"><div class="dcard-head"><h3>Nach Person</h3></div>' + Object.keys(byPerson).sort().map(function(n){
+    return '<div class="dash-row" style="cursor:default;"><span class="dash-row-title">' + escapeHtml(n) + '</span><span class="dash-row-extra">' + fmtHM(byPerson[n].sec) + ' · ' + fmtCHF(byPerson[n].amount) + ' CHF</span></div>';
+  }).join('') + '</section>' : '';
+  /* Monate */
+  var months = [];
+  for(var i = 5; i >= 0; i--){
+    var d0 = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+    var d1 = new Date(d0.getFullYear(), d0.getMonth() + 1, 1);
+    months.push({label: d0.toLocaleDateString('de-CH', {month: 'short'}), sec: projectSecondsAll(p, d0.getTime(), d1.getTime() - 1)});
+  }
+  var mMax = Math.max.apply(null, months.map(function(m){ return m.sec; })) || 1;
+  var monthHtml = '<div style="display:flex; gap:8px; align-items:flex-end; height:90px;">' + months.map(function(m){
+    return '<div style="flex:1; text-align:center;"><div title="' + fmtHM(m.sec) + '" style="height:' + Math.max(3, Math.round(m.sec / mMax * 70)) + 'px; background:' + escapeAttr(p.color) + '; border-radius:3px 3px 0 0;"></div><div style="font-size:11px; color:var(--text-faint); margin-top:3px;">' + m.label + '</div></div>';
+  }).join('') + '</div>';
+  /* Tasks */
+  var byTask = {};
+  rows.forEach(function(r){ byTask[r.task.id] = byTask[r.task.id] || {t: r.task, sec: 0, amount: 0}; byTask[r.task.id].sec += r.rsec; byTask[r.task.id].amount += r.amount; });
+  var taskHtml = Object.keys(byTask).map(function(k){ return byTask[k]; }).sort(function(a, c){ return c.sec - a.sec; }).map(function(x){
+    return '<tr data-open-task="' + x.t.id + '" style="cursor:pointer;"><td>' + (TYPES[x.t.type] || TYPES.adhoc).icon + ' ' + escapeHtml(x.t.title) + '</td><td>' + fmtHM(x.sec) + '</td><td>' + (p.billable ? fmtCHF(x.amount) : '–') + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" class="empty-state">Keine erfasste Zeit in diesem Zeitraum.</td></tr>';
+  return '<div class="dash">' +
+    '<div class="dash-head"><div><button class="btn ghost" id="projBackBtn">← Alle Projekte</button><h1><span class="proj-dot" style="background:' + escapeAttr(p.color) + '"></span>' + escapeHtml(p.name) + '</h1>' +
+      '<p>' + (p.client ? escapeHtml(p.client) + ' · ' : '') + b.label + ' · Satz ' + fmtCHF(rate) + ' CHF/h' + (p.billable ? '' : ' · nicht abrechenbar') + '</p></div>' +
+      '<div class="dash-actions">' + seg + '<button class="btn" id="projEditBtn">Bearbeiten</button><button class="btn" id="projCopyBtn">' + svgIcon('clipboard') + '<span>Tabelle kopieren</span></button><button class="btn primary" id="projPrintBtn">Leistungsübersicht drucken</button></div></div>' +
+    '<div class="dash-grid">' +
+      '<section class="dcard"><div class="dcard-head"><h3>Übersicht</h3></div><div class="proj-nums">' +
+        '<div><b>' + fmtHM(totalR) + '</b><span>abrechenbar (gerundet)</span></div><div><b>' + (p.billable ? fmtCHF(amount) : '–') + '</b><span>CHF</span></div><div><b>' + fmtHM(totalRaw) + '</b><span>effektiv</span></div></div>' +
+        (p.budgetHours ? budgetBar(pct) + '<div class="hint">Budget: ' + fmtHM(secT) + ' von ' + p.budgetHours + ' h (' + Math.round(pct) + ' %)</div>' : '<div class="hint">Kein Budget gesetzt.</div>') + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Letzte 6 Monate</h3></div>' + monthHtml + '</section>' +
+      personHtml +
+      '<section class="dcard wide"><div class="dcard-head"><h3>Tasks</h3></div><table class="dyce-table"><thead><tr><th>Task</th><th>Zeit</th><th>CHF</th></tr></thead><tbody>' + taskHtml + '</tbody></table></section>' +
+    '</div></div>';
+}
+function copyProjectTable(p, b){
+  if(!p) return;
+  var lines = ['Datum\tTask\tPerson\tStunden\tBetrag CHF'];
+  billingEntries(p, b.start, b.end).forEach(function(r){
+    lines.push(r.date + '\t' + r.task.title + '\t' + r.person + '\t' + fmtHdec(r.rsec) + '\t' + fmtCHF(r.amount));
+  });
+  copyToClipboard(lines.join('\n'));
+  toast('Tabelle kopiert – bereit für Excel.');
+}
+function printProjectReport(p, b){
+  if(!p) return;
+  var rows = billingEntries(p, b.start, b.end);
+  var rate = projectRate(p);
+  var totalR = rows.reduce(function(s, r){ return s + r.rsec; }, 0);
+  var amount = rows.reduce(function(s, r){ return s + r.amount; }, 0);
+  var body = rows.map(function(r){
+    return '<tr><td>' + new Date(r.date + 'T00:00:00').toLocaleDateString('de-CH') + '</td><td>' + escapeHtml(r.task.title) + (r.task.jiraKey ? ' (' + escapeHtml(r.task.jiraKey) + ')' : '') + '</td><td>' + escapeHtml(r.person) + '</td><td>' + fmtHdec(r.rsec) + '</td><td>' + (p.billable ? fmtCHF(r.amount) : '–') + '</td></tr>';
+  }).join('') || '<tr><td colspan="5">Keine Leistungen im Zeitraum.</td></tr>';
+  document.getElementById('printArea').innerHTML =
+    '<div class="print-report"><h1>Leistungsübersicht</h1>' +
+    '<div class="print-meta">' + (p.client ? escapeHtml(p.client) + ' · ' : '') + escapeHtml(p.name) + ' · ' + b.label + ' (' + new Date(b.start || (rows[0] ? new Date(rows[0].date).getTime() : Date.now())).toLocaleDateString('de-CH') + ' – ' + new Date(b.end).toLocaleDateString('de-CH') + ') · erstellt am ' + new Date().toLocaleDateString('de-CH') + '</div>' +
+    '<div class="report-summary">Total: <strong>' + fmtHdec(totalR) + ' h</strong> &nbsp;·&nbsp; Satz: <strong>' + fmtCHF(rate) + ' CHF/h</strong> &nbsp;·&nbsp; Betrag: <strong>' + (p.billable ? fmtCHF(amount) : '–') + ' CHF</strong></div>' +
+    '<table><thead><tr><th>Datum</th><th>Leistung</th><th>Person</th><th>Stunden</th><th>CHF</th></tr></thead><tbody>' + body + '</tbody>' +
+    '<tfoot><tr><td colspan="3"><strong>Total</strong></td><td><strong>' + fmtHdec(totalR) + '</strong></td><td><strong>' + (p.billable ? fmtCHF(amount) : '–') + '</strong></td></tr></tfoot></table></div>';
+  window.print();
+}
+function openProjectDialog(id, onDone){
+  var p = id ? getProject(id) : null;
+  var isNew = !p;
+  p = p ? Object.assign({}, p) : normalizeProject({name: '', color: ACCENT_PRESETS[projectList().length % ACCENT_PRESETS.length]});
+  var clients = {};
+  projectList().forEach(function(x){ if(x.client) clients[x.client] = 1; });
+  var html =
+    '<div class="modal-header"><h2>' + (isNew ? 'Neues Projekt' : 'Projekt bearbeiten') + '</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row-inline"><div class="form-row"><label for="pjName">Projekt</label><input id="pjName" value="' + escapeAttr(isNew ? '' : p.name) + '" placeholder="z.B. VPN-Rollout"></div>' +
+        '<div class="form-row"><label for="pjClient">Kunde (optional)</label><input id="pjClient" list="pjClients" value="' + escapeAttr(p.client) + '" placeholder="z.B. Muster AG"><datalist id="pjClients">' + Object.keys(clients).map(function(c){ return '<option value="' + escapeAttr(c) + '">'; }).join('') + '</datalist></div></div>' +
+      '<div class="form-row-inline"><div class="form-row"><label for="pjRate">Stundensatz (CHF)</label><input type="number" id="pjRate" min="0" step="0.5" value="' + (p.rate == null ? '' : p.rate) + '" placeholder="' + (state.settings.hourlyRate ? 'Standard: ' + state.settings.hourlyRate : 'z.B. 120') + '"></div>' +
+        '<div class="form-row"><label for="pjBudget">Budget (Stunden)</label><input type="number" id="pjBudget" min="0" step="0.5" value="' + (p.budgetHours == null ? '' : p.budgetHours) + '" placeholder="z.B. 80"></div></div>' +
+      '<div class="form-row"><label>Farbe</label><div style="display:flex; gap:8px; flex-wrap:wrap;" id="pjColors">' + ACCENT_PRESETS.map(function(c){
+        return '<button type="button" class="accent-swatch" data-color="' + c + '" style="width:24px;height:24px;border-radius:50%;background:' + c + ';border:2px solid ' + (p.color === c ? 'var(--text)' : 'transparent') + ';cursor:pointer;"></button>';
+      }).join('') + '</div></div>' +
+      '<div class="form-row"><label for="pjNote">Notiz</label><textarea id="pjNote" rows="2">' + escapeHtml(p.note) + '</textarea></div>' +
+      '<label style="display:flex; gap:8px; align-items:center; margin-bottom:8px;"><input type="checkbox" id="pjBillable"' + (p.billable ? ' checked' : '') + '> Abrechenbar</label>' +
+      '<label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="pjActive"' + (p.active ? ' checked' : '') + '> Aktiv (neue Tasks können zugeordnet werden)</label>' +
+    '</div>' +
+    '<div class="modal-footer">' + (isNew ? '' : '<button class="btn danger" id="pjDelete" style="margin-right:auto;">Löschen</button>') +
+      '<button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="pjSave">Speichern</button></div>';
+  openModal(html);
+  document.getElementById('pjName').focus();
+  document.querySelectorAll('#pjColors .accent-swatch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      p.color = sw.dataset.color;
+      document.querySelectorAll('#pjColors .accent-swatch').forEach(function(o){ o.style.borderColor = o === sw ? 'var(--text)' : 'transparent'; });
+    });
+  });
+  document.getElementById('pjSave').addEventListener('click', function(){
+    var name = document.getElementById('pjName').value.trim();
+    if(!name){ toast('Bitte einen Projektnamen eingeben.'); return; }
+    p.name = name;
+    p.client = document.getElementById('pjClient').value.trim();
+    var rate = parseFloat(document.getElementById('pjRate').value);
+    var budget = parseFloat(document.getElementById('pjBudget').value);
+    p.rate = isFinite(rate) && rate >= 0 ? rate : null;
+    p.budgetHours = isFinite(budget) && budget > 0 ? budget : null;
+    p.note = document.getElementById('pjNote').value;
+    p.billable = document.getElementById('pjBillable').checked;
+    p.active = document.getElementById('pjActive').checked;
+    p = normalizeProject(p);
+    saveProject(p);
+    if(state.settings.budgetAlerts) delete state.settings.budgetAlerts[p.id];
+    closeModal();
+    renderAll();
+    checkBudgetAlerts();
+    if(onDone) onDone(p);
+  });
+  var del = document.getElementById('pjDelete');
+  if(del) del.addEventListener('click', function(){
+    confirmDialog('Projekt "' + p.name + '" löschen? Die Tasks bleiben erhalten, behalten aber nur den Projektnamen.', 'Löschen', function(){
+      removeProject(p.id);
+      if(projDetailId === p.id) projDetailId = '';
+      closeModal(); renderAll();
+    }, function(){ openProjectDialog(p.id, onDone); });
+  });
+}
+function renderProjectFilter(){
+  var sel = document.getElementById('filterProject');
+  if(!sel) return;
+  var list = projectList().filter(function(p){ return p.active; });
+  sel.classList.toggle('hidden', !list.length);
+  var cur = filterProject;
+  sel.innerHTML = '<option value="">Alle Projekte</option>' + list.map(function(p){ return '<option value="' + p.id + '">' + escapeHtml(projectLabel(p)) + '</option>'; }).join('') + '<option value="__none__">Ohne Projekt</option>';
+  if(cur && (cur === '__none__' || getProject(cur))) sel.value = cur; else { filterProject = ''; sel.value = ''; }
+}
+function projectChipHtml(t){
+  var p = projectOf(t);
+  var name = p ? p.name : (t.projectName || '');
+  if(!name) return '';
+  return '<span class="project-chip" title="Projekt: ' + escapeAttr(p ? projectLabel(p) : name) + '"><i style="background:' + escapeAttr(p ? p.color : '#98a0ae') + '"></i>' + escapeHtml(name) + '</span>';
+}
+
+/*@@EXTRA-JS@@*/
+
 /* =========================================================
    LOGIN / REGISTRIERUNG (Supabase Auth)
    Identitäts-Gate vor der App: WER benutzt das Board. Die Board-Daten
@@ -9257,6 +9837,8 @@ function init(){
   setInterval(checkWakeSnoozed, 60000);
   setInterval(checkDueReminders, 30000);
   setInterval(checkSlaCriticalPush, 60000);
+  setInterval(checkBudgetAlerts, 60000);
+  setTimeout(checkBudgetAlerts, 4000);
   runAutoArchive();
   setTimeout(checkOvernightTimers, 1200);
   captureDailySnapshotIfNeeded();
