@@ -125,8 +125,8 @@ Buttons zum direkten Anlegen, Löschen oder Sperren von Konten. Das würde den g
 Browser-Code einer öffentlich gehosteten Seite wie GitHub Pages landen, da ihn dann jede Person
 über "Seitenquelltext anzeigen" auslesen und damit vollen Zugriff auf das gesamte Supabase-Projekt
 bekommen könnte (nicht nur auf Work Board, auf *alles* in diesem Projekt). Neue Personen müssen sich
-deshalb weiterhin selbst registrieren (die Registrierung ist absichtlich offen – einfach den
-App-Link weitergeben); Admin-Rechte vergeben/entziehen bleibt ein manueller Schritt im
+deshalb weiterhin selbst registrieren (die Registrierung ist anfangs offen – nach dem Einrichten solltest du sie schliessen, siehe
+Abschnitt "Sicherheit"); Admin-Rechte vergeben/entziehen bleibt ein manueller Schritt im
 Supabase-Dashboard (Schritt 6 oben, dieselbe Zeile für eine andere Person entfernen entzieht sie
 wieder).
 
@@ -285,6 +285,52 @@ grant select, insert, update, delete on user_keys to authenticated;
 - **Passphrase vergessen:** Dann gehen auch die Schlüssel für geteilte Boards verloren; andere Mitglieder behalten ihren
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
+
+## ✨ Große Funktionen (Planer, Projekte, Wissen, Automatisierung, Team, Mail, KI)
+
+Alle Daten dieser Funktionen liegen im verschlüsselten Board bzw. in den (ebenfalls verschlüsselten) Einstellungen –
+**es ist kein zusätzliches SQL in Supabase nötig.**
+
+**🗓️ Planer (Seitenleiste "Planer").** Wochenansicht mit Zeitblöcken. Tasks aus der Liste "Nicht geplant" auf den Kalender ziehen,
+Blöcke per Ziehen verschieben und am unteren Rand in der Länge ändern (15-Minuten-Raster). Doppelklick auf eine freie Stelle oder
+"Planen" legt einen neuen Block an. Überschneidungen und überplante Tage werden markiert; am rechten Rand jeder Spalte erscheinen die
+tatsächlich gebuchten Zeiten (Plan gegen Ist). Arbeitstag und Wochenende sind einstellbar, "📅 .ics" exportiert die Woche für Outlook.
+Die Dauer eines Blocks steht im Task unter "Dauer im Planer".
+
+**📁 Projekte & Abrechnung.** Kunden und Projekte mit Stundensatz, Budget und Farbe anlegen, im Task unter "Projekt" zuordnen
+(Filter oben, Chip auf der Karte). Die Ansicht "Projekte" zeigt Stunden, Betrag und Budgetverbrauch pro Zeitraum, warnt bei 80 % und 100 %
+(Hinweis und, falls eingerichtet, Push) und erstellt pro Projekt eine **Leistungsübersicht** (Drucken/PDF) oder eine Tabelle für Excel.
+Gerundet wird mit der Rundung aus dem Tagesabschluss. Projekte werden zwischen deinen Geräten abgeglichen.
+
+**🧾 Tagesabschluss-Assistent.** Zusätzlich zur Dyce-Tabelle: **Lücken-Erkennung** (ungebuchte Zeit zwischen den Sitzungen) mit Vorschlägen aus
+Planer, Notizen und Aktivität, "Buchen" mit einem Klick, "Neuer Task" oder "Pause"; optional **✨ KI-Vorschläge**. Rundung auf 5/10/15/30 Minuten
+(kaufmännisch, auf- oder abrunden, auf Wunsch mit Ausgleich der Rundungsdifferenz), "Zeit nachtragen", Tag abschliessen und ein
+**Wochenabschluss-Check** (Soll/Ist je Tag, fehlende Tage, alte Timer, Tasks ohne Projekt). Schwelle und Arbeitszeit: ⚙️ Einstellungen → Zeit.
+
+**💡 Wissen (Wissensdatenbank).** Im Task gibt es das Feld "Lösung". Beim Erledigen eines Hotline-Tickets fragt die App, ob die Lösung festgehalten
+werden soll (auf Wunsch mit KI-Entwurf). Die Ansicht "Wissen" durchsucht alle Fälle (gewichtete Suche mit Wortstämmen), zeigt Artikel mit Lösung und
+beantwortet auf Knopfdruck ("🤖 Antwort") Fragen anhand der besten Treffer. Bei neuen Hotline-Anrufen und im Task erscheinen ähnliche Fälle samt Lösung,
+die sich mit einem Klick als Notiz übernehmen lassen.
+
+**🤖 Automatisierung.** ⚙️ Einstellungen → Automatisierung: Regeln nach dem Muster "Wenn … dann …" (neuer Task, verschoben, erledigt, zugewiesen,
+älter als X Stunden, Frist überschritten; Bedingungen nach Typ, Priorität, Spalte, Reporter, Titel, Tag, Projekt, Person; Aktionen wie Priorität setzen,
+verschieben, zuweisen, Tag, Frist, Projekt, Push, Hinweis, Folge-Task, Notiz, Wiedervorlage, anheften). Mit "Testen" siehst du vorab, was passen würde.
+Regeln lösen keine weiteren Regeln aus, Zeit-Regeln feuern pro Task nur einmal. Regeln werden zwischen deinen Geräten abgeglichen.
+
+**👥 Team & Kommentare.** In geteilten Boards gibt es im Task **Kommentare mit @Erwähnung** (wer erwähnt oder zugewiesen ist, bekommt einen Hinweis).
+Die Ansicht "Team" zeigt Live-Status (wer hat gerade einen Timer laufen), Auslastung pro Person, Zeit pro Person und Projekt, Engpässe (WIP, nicht zugewiesen,
+überfällig, blockiert, lange unverändert) und die letzte Aktivität.
+
+**✉️ Mail-Import.** **.eml** oder Outlook-**.msg** direkt ins Fenster ziehen (oder "Neu ▾ → Mail importieren…"). Daraus wird per KI oder einfacher Erkennung ein Task
+mit Absender als Reporter, Betreff, Datum und Anhangsnamen; Dubletten werden gemeldet. Im Task öffnet "Antworten" das Mailprogramm mit Empfänger,
+"AW:"-Betreff und zitiertem Original; "✨ Antwort mit KI entwerfen" schreibt den Text vor. Die Mails werden nur lokal im Browser gelesen, die Anhänge selbst nicht gespeichert.
+*Hinweis:* Ein automatischer Posteingang (Weiterleitung an eine Adresse) ist ohne eigenen Mailserver nicht möglich; der .msg-Leser ist mit selbst erzeugten
+Testdateien geprüft, bitte mit einer echten Outlook-Mail gegentesten.
+
+**💬 KI-Assistent (Strg+J oder Rundknopf unten rechts).** Chat über das ganze Board: Fragen zu Tasks, Zeiten und Planung ("Was habe ich diese Woche für Projekt X
+gemacht?", "Offene Hotline-Tickets zusammenfassen", "Wochenbericht"). Der Assistent kann nach deiner Bestätigung Tasks anlegen, verschieben, planen,
+Notizen schreiben, Wiedervorlagen setzen und Timer starten/stoppen; löschen kann er nichts. Er sendet nur die abgefragten Daten an Anthropic (dein
+eigener API-Key, ⚙️ Einstellungen → Integrationen), nichts an Supabase. Aktionen lassen sich mit Strg+Z zurücknehmen.
 
 ## 🔒 Sicherheit
 
@@ -641,6 +687,7 @@ manuelles Exportieren/Importieren. Einzelne Tasks lassen sich zusätzlich über 
 - `N` – neuen Task erstellen
 - `Leertaste` – laufenden Timer pausieren
 - `Strg+S` – lokale Sicherung herunterladen
+- `Strg+J` – KI-Assistent öffnen/schliessen
 - `Strg+K` – Command Palette öffnen
 - `Strg+Z` – letzte Aktion rückgängig
 - Pfeiltasten (bei fokussierter Karte) – navigieren; `Shift`+Pfeil – Karte verschieben

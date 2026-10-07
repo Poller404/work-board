@@ -4,6 +4,24 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Acht grosse Funktionen
+
+Nutzer wollte aus einer Vorschlagsliste alles ausser Offline-App/Web-Push (9) und Jira-API (2) umgesetzt haben. Je Funktion ein Commit auf `main`.
+
+- **Fundament:** Optionale neue Task-Felder (`projectId/projectName`, `scheduledMinutes`, `comments`, `solution`, `mail`) fehlen bei Tasks, die sie nicht brauchen (sonst würde der
+  Drei-Wege-Abgleich jeden Task als geändert sehen). `settings.projects` und `settings.automationRules` werden über `SYNC_LISTS`/`mergeSyncLists`/`mergeListById` Eintrag für Eintrag
+  zwischen Geräten abgeglichen (Basis `base.lists` in `wb-pb-<userId>`). Neue Ansichten: `calendar` (Planer), `projects`, `kb`, `teamdash`; `FULL_VIEWS` steuert `dashboard-mode`.
+- **Planer** (`renderPlannerView`): Pointer-Events für Verschieben/Grösse, HTML5-DnD aus der Liste, `plLanes` für Überschneidungen, `plannedMinutes(t)`.
+- **Projekte** (`renderProjectsView`, `billingEntries`, `printProjectReport`, `checkBudgetAlerts`), Budget-Schwellen 80/100 %.
+- **Tagesabschluss-Assistent** (`renderDyceView` neu): `dyceGaps`, `gapSuggestions`, `addManualSession` (Sitzung mit `manual:true`), `dyceAiSuggest`, Rundungsmodi, `dyceClosed/dyceBreaks`.
+- **Wissen** (`kbSearch` gewichtete Stichwortsuche mit Wortstamm; `renderKbView`; `findSimilarTasks` nutzt sie zusätzlich; Hinweis "Lösung festhalten" beim Erledigen).
+- **Automatisierung** (`runRules`, `checkTimeRules`, `applyRuleActions`, Editor `openRuleDialog`); Regeln lösen keine Regeln aus (`ruleDepth`), Zeit-Regeln feuern einmal (localStorage `wb-rules-fired`).
+- **Team** (`renderTeamView`) und **Kommentare** (`commentsBlockHtml`, `notifyMentions` im `sharedSync`, `mergeTask` vereinigt `comments`).
+- **Mail-Import** (`parseEml`, `parseMsg` = eigener CFB-Leser, `importMailFiles`, Drop-Overlay `#mailDrop`, `taskMailtoUrl`). Der .msg-Leser ist nur mit selbst erzeugten Dateien (`scratchpad/make_mails.py`) geprüft.
+- **KI-Assistent** (`chatRun`: Tool-Schleife mit `CHAT_TOOLS`, Schreib-Werkzeuge nur nach Bestätigung, kein Löschen; `callAIMessages`).
+- Getestet mit dem Mock-Supabase (zwei Benutzer: Zuweisen, Kommentar mit @Erwähnung, Live-Status), Zeit-/Ereignis-Regeln, Projekt-Abgleich zwischen zwei "Geräten", Chat mit gemocktem `fetch`.
+  Nicht getestet: echte Anthropic-Antworten, echte Outlook-.msg-Dateien, echtes Supabase.
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Aufräumen nach der Supabase-Umstellung
 
 Nutzer: "nochmals durch den ganzen Code gehen und prüfen, ob Sachen mit der Supabase-Änderung nicht mehr benötigt werden, z.B. Gist".

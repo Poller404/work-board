@@ -916,6 +916,40 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 #mailDrop.show{display:flex;}
 .mail-meta{display:flex; flex-direction:column; gap:2px; font-size:13px; margin-bottom:8px;}
 .mail-att{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+/* ---- KI-Assistent ---- */
+.ai-fab{position:fixed; right:18px; bottom:44px; width:46px; height:46px; border-radius:50%; border:none; background:var(--accent); color:#fff; display:grid; place-items:center; box-shadow:var(--shadow-lg); z-index:940; cursor:pointer;}
+.ai-fab:hover{background:var(--accent-hover);}
+.ai-fab svg.i{width:22px; height:22px; color:#fff;}
+.ai-chat{position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow-lg); z-index:950; display:flex; flex-direction:column; transform:translateX(105%); transition:transform .22s var(--ease); visibility:hidden;}
+.ai-chat.open{transform:none; visibility:visible;}
+.ai-head{display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border);}
+.ai-head .spacer{flex:1;}
+.ai-msgs{flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px;}
+.ai-msg{max-width:92%; padding:9px 12px; border-radius:12px; font-size:13.5px; line-height:1.45; word-break:break-word;}
+.ai-msg.user{align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px;}
+.ai-msg.bot{align-self:flex-start; background:var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:4px;}
+.ai-msg.bot ul, .ai-msg.bot ol{margin:4px 0 4px 18px; padding:0;}
+.md-gap{height:6px;}
+.md-h{font-weight:700; margin-top:4px;}
+.ai-msg.err{align-self:stretch; background:var(--danger-bg); color:var(--danger);}
+.ai-msg-tools{margin-top:4px;}
+.ai-msg-tools .btn{padding:1px 6px; font-size:11.5px;}
+.ai-step{font-size:12px; color:var(--text-faint);}
+.ai-chips{display:flex; gap:5px; flex-wrap:wrap; margin-top:4px;}
+.ai-confirm{border:1px solid var(--warn); background:var(--warn-bg); border-radius:var(--radius-sm); padding:10px 12px; font-size:13px;}
+.ai-confirm ul{margin:6px 0 8px 18px; padding:0;}
+.ai-confirm-btns{display:flex; gap:8px;}
+.ai-note{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; font-size:13px;}
+.ai-empty{text-align:center; color:var(--text-dim); padding:30px 10px;}
+.ai-quick{display:flex; gap:6px; flex-wrap:wrap; padding:0 14px 8px;}
+.ai-quick:empty{display:none;}
+.ai-form{display:flex; gap:8px; padding:10px 14px 14px; border-top:1px solid var(--border); align-items:flex-end;}
+.ai-form textarea{flex:1; resize:none; max-height:120px;}
+.ai-dots i{display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--text-faint); margin-right:3px; animation:aidot 1s infinite;}
+.ai-dots i:nth-child(2){animation-delay:.15s;}
+.ai-dots i:nth-child(3){animation-delay:.3s;}
+@keyframes aidot{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+@media print{ #aiChat, #aiFab{display:none !important;} }
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1104,6 +1138,13 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 
 <input type="file" id="mailFileInput" accept=".eml,.msg,message/rfc822" multiple hidden>
 <div id="toastHost"></div>
+<button id="aiFab" class="ai-fab" title="KI-Assistent (Strg+J)" aria-label="KI-Assistent öffnen"><svg class="i"><use href="#i-chat"/></svg></button>
+<aside id="aiChat" class="ai-chat" aria-label="KI-Assistent">
+  <div class="ai-head"><b>🤖 Assistent</b><span class="hint" id="aiModel"></span><div class="spacer"></div><button class="btn ghost" id="aiNew" title="Neues Gespräch beginnen">Neu</button><button class="btn ghost icon-btn" id="aiClose" aria-label="Schliessen">✕</button></div>
+  <div id="aiMsgs" class="ai-msgs"></div>
+  <div id="aiQuick" class="ai-quick"></div>
+  <form id="aiForm" class="ai-form"><textarea id="aiInput" rows="1" placeholder="Frage stellen oder Auftrag geben…"></textarea><button class="btn primary" id="aiSend" type="submit">Senden</button></form>
+</aside>
 <div id="confettiHost"></div>
 <div id="printArea"></div>
 
@@ -2403,6 +2444,7 @@ function openShortcutsCheatsheet(){
     ['Leertaste', 'Laufenden Timer pausieren'],
     ['Strg + S', 'Lokale Sicherung herunterladen'],
     ['Strg + K', 'Command Palette öffnen'],
+    ['Strg + J', 'KI-Assistent öffnen/schliessen'],
     ['Strg + V (auf dem Board)', 'Text einfügen: Ticket aus Text erstellen (KI)'],
     ['/', 'Suche fokussieren'],
     ['Umschalt + Enter', 'Beim Schnell-Anlegen: Task anlegen und gleich öffnen'],
@@ -4430,6 +4472,7 @@ function openTaskModal(taskId){
             '<button class="btn" id="saveAsTemplateBtn">'+svgIcon('save')+'<span>Als Vorlage speichern</span></button>' +
             '<button class="btn" id="mailReplyBtn">'+svgIcon('mail')+'<span>E-Mail-Antwort</span></button>' +
             (t.type==='meeting' ? '<button class="btn" id="icsExportBtn">'+svgIcon('cal')+'<span>Zum Kalender (.ics)</span></button>' : '') +
+            '<button class="btn" id="askAiBtn">'+svgIcon('chat')+'<span>Assistent fragen…</span></button>' +
             '<button class="btn" id="qrShareBtn">'+svgIcon('grid')+'<span>QR-Code</span></button>' +
             '<div class="sep"></div>' +
             (!t.archived ? '<button class="btn" id="archiveTaskBtn">'+svgIcon('box')+'<span>Archivieren</span></button>' : '<button class="btn" id="unarchiveTaskBtn">'+svgIcon('box')+'<span>Wiederherstellen</span></button>') +
@@ -4542,6 +4585,7 @@ function openTaskModal(taskId){
   var icsBtn = document.getElementById('icsExportBtn');
   if(icsBtn) icsBtn.addEventListener('click', function(){ exportMeetingIcs(t); });
   document.getElementById('qrShareBtn').addEventListener('click', function(){ openQrShare(t); });
+  document.getElementById('askAiBtn').addEventListener('click', function(){ closeModal(); openAiChat('Zum Task «' + t.title + '»: '); });
   var followUpEl = document.getElementById('fFollowUp');
   if(followUpEl) followUpEl.addEventListener('change', function(e){
     updateTask(t.id, {followUp: e.target.value});
@@ -5383,9 +5427,11 @@ function openAiWeeklyAnalysis(){
     report,
     500
   ).then(function(text){
-    document.getElementById('aiAnalysisBody').innerHTML = '<div style="white-space:pre-wrap; line-height:1.6;">' + escapeHtml(text) + '</div>';
+    var bodyEl = document.getElementById('aiAnalysisBody');
+    if(bodyEl) bodyEl.innerHTML = '<div style="white-space:pre-wrap; line-height:1.6;">' + escapeHtml(text) + '</div>';
   }).catch(function(err){
-    document.getElementById('aiAnalysisBody').innerHTML = '<div class="hint" style="color:var(--danger);">Fehler: ' + escapeHtml(err.message) + '</div>';
+    var bodyEl = document.getElementById('aiAnalysisBody');
+    if(bodyEl) bodyEl.innerHTML = '<div class="hint" style="color:var(--danger);">Fehler: ' + escapeHtml(err.message) + '</div>';
   });
 }
 
@@ -8705,6 +8751,7 @@ function cmdActionsList(){
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'👥', label:'Team-Ansicht', run: function(){ switchToView('teamdash'); }},
     {icon:'✉️', label:'Mail importieren (.eml / .msg)', run: openMailFilePicker},
+    {icon:'💬', label:'KI-Assistent öffnen (Chat)', run: function(){ openAiChat(); }},
     {icon:'🤖', label:'Automatisierung (Regeln)', run: function(){ settingsActiveTab = 'automation'; openSettings(); }},
     {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
     {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
@@ -11456,6 +11503,447 @@ function mailBlockHtml(t){
     (m.attachments && m.attachments.length ? '<div class="mail-att">' + m.attachments.map(function(a){ return '<span class="chip">📎 ' + escapeHtml(a) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
     '<div class="ai-row"><button type="button" class="btn primary" id="mailReplyTop">✉️ Antworten</button><button type="button" class="btn ghost" data-ai="reply">✨ Antwort mit KI entwerfen</button></div></div>';
 }
+
+/* =========================================================
+   KI-ASSISTENT (Chat über das ganze Board)
+   Der Assistent beantwortet Fragen zu Tasks, Zeiten und Planung und kann nach deiner
+   Bestätigung Änderungen vornehmen (Task anlegen, verschieben, planen, Notiz, Wiedervorlage,
+   Timer). Er nutzt "Werkzeuge": kleine Funktionen, die lokal auf deinen Daten laufen. Zur
+   KI (Anthropic, dein eigener API-Key) gehen nur die Daten, die er dafür abfragt.
+   Löschen kann der Assistent nichts.
+   ========================================================= */
+var chat = {open: false, busy: false, msgs: [], view: [], pending: null, ack: false};
+var CHAT_QUICK = [
+  ['📅 Was ist heute dran?', 'Was ist heute dran? Gib mir eine kurze Übersicht: Fälligkeiten, geplante Blöcke, laufender Timer, dringende offene Tasks.'],
+  ['📄 Wochenbericht', 'Erstelle meinen Wochenbericht für die laufende Woche (Montag bis heute): gebuchte Zeit nach Projekt und Typ, erledigte Tasks, offene Punkte. Gliedere übersichtlich, halte dich kurz.'],
+  ['📞 Offene Hotline-Tickets', 'Fasse die offenen Hotline-Tickets zusammen, nach Dringlichkeit sortiert. Was sollte ich zuerst tun?'],
+  ['🗓️ Morgen planen', 'Schlage vor, wie ich meine offenen Tasks morgen auf Zeitblöcke im Planer verteile (Arbeitszeit 08:00–17:00, Priorität und Fälligkeit beachten, bereits geplante Blöcke respektieren). Trage die Blöcke nach meiner Bestätigung ein.'],
+  ['📁 Zeit pro Projekt', 'Wie viel Zeit habe ich diese Woche pro Projekt gebucht? Und wie viel liegt ohne Projekt?']
+];
+var CHAT_WRITE = {create_task: 1, update_task: 1, add_note: 1, snooze_task: 1, start_timer: 1, stop_timer: 1};
+var CHAT_TOOLS = [
+  {name: 'board_overview', description: 'Überblick über das aktuelle Board: Spalten mit Anzahl, offene und überfällige Tasks, heute fällige, laufender Timer, heute gebuchte Zeit, heute geplante Blöcke.', input_schema: {type: 'object', properties: {}}},
+  {name: 'search_tasks', description: 'Sucht Tasks. Ohne Filter werden die zuletzt geänderten geliefert. Liefert kurze Angaben (id, Titel, Spalte, Priorität, Fälligkeit, Projekt, gebuchte Minuten, Planung).', input_schema: {type: 'object', properties: {
+    query: {type: 'string', description: 'Suchtext (Titel, Beschreibung, Notizen, Lösung, Reporter, Tags)'},
+    status: {type: 'string', enum: ['open', 'done', 'all'], description: 'open = offen (Standard), done = erledigt oder archiviert'},
+    type: {type: 'string', description: 'Typ, z.B. hotline, mail, jira, meeting, adhoc'}, priority: {type: 'string', description: 'kritisch, hoch, mittel, niedrig'},
+    column: {type: 'string', description: 'Name der Spalte'}, assignee: {type: 'string'}, project: {type: 'string'}, reporter: {type: 'string'}, tag: {type: 'string'},
+    due_before: {type: 'string', description: 'Datum YYYY-MM-DD: nur Tasks mit Frist bis und mit diesem Tag'}, overdue: {type: 'boolean'}, limit: {type: 'integer', description: 'maximal 40, Standard 15'}}}},
+  {name: 'get_task', description: 'Alle Details eines Tasks: Beschreibung, Notizen, Checkliste, Kommentare, Lösung, Mail-Angaben, letzte Zeitbuchungen.', input_schema: {type: 'object', properties: {id: {type: 'string'}}, required: ['id']}},
+  {name: 'time_report', description: 'Gebuchte Zeit (eigene) in einem Zeitraum, gruppiert. Liefert Stunden pro Gruppe und das Total.', input_schema: {type: 'object', properties: {
+    from: {type: 'string', description: 'Datum YYYY-MM-DD'}, to: {type: 'string', description: 'Datum YYYY-MM-DD (inklusive)'},
+    group_by: {type: 'string', enum: ['task', 'type', 'project', 'day', 'reporter']}}, required: ['from', 'to', 'group_by']}},
+  {name: 'schedule_overview', description: 'Geplante Zeitblöcke (Planer) und gebuchte Zeit pro Tag in einem Zeitraum, um freie Zeiten zu finden.', input_schema: {type: 'object', properties: {from: {type: 'string'}, to: {type: 'string'}}, required: ['from', 'to']}},
+  {name: 'create_task', description: 'Legt einen neuen Task an (nach Bestätigung des Nutzers).', input_schema: {type: 'object', properties: {
+    title: {type: 'string'}, description: {type: 'string'}, type: {type: 'string'}, priority: {type: 'string', description: 'kritisch, hoch, mittel, niedrig'}, column: {type: 'string'},
+    due_date: {type: 'string', description: 'YYYY-MM-DD'}, reporter: {type: 'string'}, project: {type: 'string'}, tags: {type: 'array', items: {type: 'string'}}, estimated_minutes: {type: 'integer'},
+    scheduled_at: {type: 'string', description: 'Beginn im Planer, lokale Zeit YYYY-MM-DDTHH:MM'}, scheduled_minutes: {type: 'integer'}}, required: ['title']}},
+  {name: 'update_task', description: 'Ändert Felder eines Tasks, z.B. Spalte (auch "Erledigt"), Priorität, Frist, Zuweisung, Planung (nach Bestätigung).', input_schema: {type: 'object', properties: {
+    id: {type: 'string'}, title: {type: 'string'}, description: {type: 'string'}, column: {type: 'string'}, priority: {type: 'string'}, type: {type: 'string'}, due_date: {type: 'string', description: 'YYYY-MM-DD, leer = entfernen'},
+    assignee: {type: 'string'}, project: {type: 'string'}, tags_add: {type: 'array', items: {type: 'string'}}, scheduled_at: {type: 'string', description: 'YYYY-MM-DDTHH:MM, leer = Planung aufheben'}, scheduled_minutes: {type: 'integer'}}, required: ['id']}},
+  {name: 'add_note', description: 'Fügt einem Task eine Notiz hinzu (nach Bestätigung).', input_schema: {type: 'object', properties: {id: {type: 'string'}, text: {type: 'string'}}, required: ['id', 'text']}},
+  {name: 'snooze_task', description: 'Setzt einen Task in Wiedervorlage bis zu einem Zeitpunkt (nach Bestätigung).', input_schema: {type: 'object', properties: {id: {type: 'string'}, until: {type: 'string', description: 'YYYY-MM-DDTHH:MM'}}, required: ['id', 'until']}},
+  {name: 'start_timer', description: 'Startet den Timer bei einem Task (nach Bestätigung).', input_schema: {type: 'object', properties: {id: {type: 'string'}}, required: ['id']}},
+  {name: 'stop_timer', description: 'Stoppt den laufenden Timer (nach Bestätigung).', input_schema: {type: 'object', properties: {}}}
+];
+function chatSystem(){
+  var colNames = state.columns.map(function(c){ return c.name; }).join(', ');
+  var projs = projectList().filter(function(p){ return p.active; }).map(projectLabel).join(', ');
+  var names = rulePersonChoices().join(', ');
+  var now = new Date();
+  return 'Du bist der Assistent in "Work Board", einem Kanban- und Zeiterfassungs-Tool für IT-Support. Heute ist ' + now.toLocaleDateString('de-CH', {weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'}) + ' (' + toDateInputValue(now) + '), ' + now.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'}) + ' Uhr. ' +
+    'Nutzer: ' + (currentUser ? currentUser.displayName : 'unbekannt') + '. Aktuelles Board: ' + currentBoardName() + (activeShared ? ' (geteilt)' : '') + '. Spalten: ' + colNames + '. Typen: ' + Object.keys(TYPES).map(function(k){ return k + ' (' + TYPES[k].label + ')'; }).join(', ') + '. Prioritäten: kritisch, hoch, mittel, niedrig. ' +
+    (projs ? 'Projekte: ' + projs + '. ' : '') + (names ? 'Personen: ' + names + '. ' : '') +
+    'Regeln: Antworte auf Deutsch (Schweizer Rechtschreibung, kein ß), kurz und konkret, ohne Tabellen. Schlage Fakten über Tasks, Zeiten und Planung IMMER mit den Werkzeugen nach und rate nie. Erfinde keine IDs. Nenne in Antworten die Titel der Tasks, nicht die IDs. Änderungen machst du nur mit den Schreib-Werkzeugen; der Nutzer bestätigt jede Änderung, kündige sie in einem Satz an. Zeiten gibst du in Stunden und Minuten an. Ist eine Anfrage unklar, frage kurz nach. Du kannst nichts löschen. Einfaches Markdown (**fett**, Listen mit - ) ist erlaubt.';
+}
+function colByName(name){
+  var n = String(name || '').trim().toLowerCase();
+  if(!n) return null;
+  return state.columns.find(function(c){ return c.id === name || c.name.toLowerCase() === n; }) || state.columns.find(function(c){ return c.name.toLowerCase().indexOf(n) >= 0; }) || null;
+}
+function prioByName(name){
+  var n = String(name || '').trim().toLowerCase();
+  var map = {kritisch: 'critical', critical: 'critical', hoch: 'high', high: 'high', dringend: 'high', mittel: 'medium', normal: 'medium', medium: 'medium', niedrig: 'low', low: 'low', tief: 'low'};
+  return map[n] || '';
+}
+function typeByName(name){
+  var n = String(name || '').trim().toLowerCase();
+  return Object.keys(TYPES).find(function(k){ return k === n || TYPES[k].label.toLowerCase() === n; }) || '';
+}
+function projByName(name){
+  var n = String(name || '').trim().toLowerCase();
+  if(!n) return null;
+  return findProjectByName(name) || projectList().find(function(p){ return projectLabel(p).toLowerCase().indexOf(n) >= 0; }) || null;
+}
+function chatLocal(iso){
+  if(!iso) return null;
+  var d = new Date(iso);
+  return toDateInputValue(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function chatParseDateTime(str){
+  str = String(str || '').trim();
+  if(!str) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str)) str += 'T09:00';
+  var d = new Date(str.replace(' ', 'T'));
+  if(isNaN(d.getTime())) throw new Error('Ungültige Zeitangabe "' + str + '" (erwartet YYYY-MM-DDTHH:MM)');
+  return d.toISOString();
+}
+function chatBrief(t){
+  return {id: t.id, title: t.title, type: (TYPES[t.type] || TYPES.adhoc).label, priority: PRIORITIES[t.priority].label, column: (state.columns.find(function(c){ return c.id === t.columnId; }) || {}).name || '',
+    due: t.dueDate || null, reporter: t.reporter || null, project: projectNameOf(t) || null, assignee: assigneeLabel(t) || null, tags: t.tags.length ? t.tags : undefined,
+    logged_min: Math.round(totalSeconds(t) / 60), estimate_min: t.estimatedMinutes || null, planned: t.scheduledAt ? {at: chatLocal(t.scheduledAt), minutes: plannedMinutes(t)} : null,
+    done: !!t.completedAt || undefined, archived: t.archived || undefined, running: isRunning(t) || undefined};
+}
+function chatDay(str, fallback){
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(str || '')) ? str : fallback;
+}
+function chatExecRead(u){
+  var i = u.input || {};
+  try{
+    if(u.name === 'board_overview'){
+      var today = toDateInputValue(new Date());
+      var open = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
+      var run = state.settings.activeTaskId ? getTask(state.settings.activeTaskId) : null;
+      var res = {
+        board: currentBoardName(), columns: state.columns.map(function(c){ return {name: c.name, tasks: state.tasks.filter(function(t){ return t.columnId === c.id && !t.archived; }).length}; }),
+        open: open.length, overdue: open.filter(function(t){ return t.dueDate && t.dueDate < today; }).length, due_today: open.filter(function(t){ return t.dueDate === today; }).map(chatBrief).slice(0, 10),
+        running_timer: run ? {title: run.title, since_min: Math.round((Date.now() - new Date((myOpenSession(run) || {start: nowIso()}).start).getTime()) / 60000)} : null,
+        logged_today_min: Math.round(state.tasks.reduce(function(s, t){ return s + secondsOnDate(t, today); }, 0) / 60),
+        planned_today: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).map(function(t){ return {title: t.title, at: chatLocal(t.scheduledAt), minutes: plannedMinutes(t)}; }),
+        sla_risk: state.tasks.filter(function(t){ return slaLevel(t); }).length
+      };
+      return {content: JSON.stringify(res), view: {k: 'step', text: '📋 Board-Überblick abgefragt'}};
+    }
+    if(u.name === 'search_tasks'){
+      var status = i.status || 'open';
+      var pool = state.tasks.filter(function(t){
+        var done = !!(t.completedAt || t.archived);
+        if(status === 'open' && done) return false;
+        if(status === 'done' && !done) return false;
+        if(i.type && t.type !== typeByName(i.type)) return false;
+        if(i.priority && t.priority !== prioByName(i.priority)) return false;
+        if(i.column){ var c = colByName(i.column); if(!c || t.columnId !== c.id) return false; }
+        if(i.assignee && String(assigneeLabel(t) || '').toLowerCase().indexOf(String(i.assignee).toLowerCase()) < 0) return false;
+        if(i.project && String(projectNameOf(t) || '').toLowerCase().indexOf(String(i.project).toLowerCase()) < 0) return false;
+        if(i.reporter && String(t.reporter || '').toLowerCase().indexOf(String(i.reporter).toLowerCase()) < 0) return false;
+        if(i.tag && t.tags.map(function(x){ return x.toLowerCase(); }).indexOf(String(i.tag).toLowerCase().replace(/^#/, '')) < 0) return false;
+        if(i.due_before && !(t.dueDate && t.dueDate <= i.due_before)) return false;
+        if(i.overdue && !(t.dueDate && t.dueDate < toDateInputValue(new Date()) && !done)) return false;
+        return true;
+      });
+      var list;
+      if(i.query){ var ids = {}; pool.forEach(function(t){ ids[t.id] = 1; }); list = kbSearch(i.query, {filter: function(t){ return ids[t.id]; }, limit: 40}).map(function(r){ return r.t; }); }
+      else list = pool.sort(function(a, b){ return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); });
+      var limit = Math.max(1, Math.min(40, parseInt(i.limit, 10) || 15));
+      var shown = list.slice(0, limit);
+      return {content: JSON.stringify({total: list.length, tasks: shown.map(chatBrief)}), view: {k: 'step', text: '🔎 ' + list.length + ' Task' + (list.length === 1 ? '' : 's') + ' gefunden' + (i.query ? ' für «' + i.query + '»' : ''), chips: shown.slice(0, 8).map(function(t){ return {id: t.id, title: t.title}; })}};
+    }
+    if(u.name === 'get_task'){
+      var t = getTask(i.id);
+      if(!t) return {content: JSON.stringify({error: 'Task nicht gefunden'})};
+      var det = chatBrief(t);
+      det.description = (t.description || '').slice(0, 1500);
+      det.notes = t.notes.slice(-10).map(function(n){ return {at: chatLocal(n.ts), text: String(n.text).slice(0, 300)}; });
+      det.checklist = t.checklist.map(function(c){ return (c.done ? '[x] ' : '[ ] ') + c.text; });
+      det.comments = (t.comments || []).slice(-5).map(function(c){ return {by: c.byName, text: c.text.slice(0, 300)}; });
+      det.solution = t.solution || undefined;
+      det.mail = t.mail ? {from: t.mail.from, subject: t.mail.subject, attachments: t.mail.attachments} : undefined;
+      det.sessions = t.timeSessions.slice(-6).map(function(s){ return {from: chatLocal(s.start), to: s.end ? chatLocal(s.end) : 'läuft'}; });
+      return {content: JSON.stringify(det), view: {k: 'step', text: '📄 Task gelesen', chips: [{id: t.id, title: t.title}]}};
+    }
+    if(u.name === 'time_report'){
+      var from = chatDay(i.from, toDateInputValue(startOfWeek(new Date()))), to = chatDay(i.to, toDateInputValue(new Date()));
+      var a = new Date(from + 'T00:00:00').getTime(), b = new Date(to + 'T00:00:00').getTime() + 86400000 - 1;
+      var rows = {}, total = 0;
+      state.tasks.forEach(function(t){
+        var sec = secondsInRange(t, a, b);
+        if(!sec) return;
+        total += sec;
+        if(i.group_by === 'day'){
+          var pd = sessionsPerDay(t, a, b, true);
+          Object.keys(pd).forEach(function(ds){ var s2 = Object.keys(pd[ds]).reduce(function(x, k){ return x + pd[ds][k]; }, 0); rows[ds] = rows[ds] || {sec: 0, n: 0}; rows[ds].sec += s2; rows[ds].n++; });
+          return;
+        }
+        var key = i.group_by === 'task' ? t.title : i.group_by === 'type' ? (TYPES[t.type] || TYPES.adhoc).label : i.group_by === 'project' ? (projectNameOf(t) || 'ohne Projekt') : (t.reporter || 'ohne Reporter');
+        rows[key] = rows[key] || {sec: 0, n: 0}; rows[key].sec += sec; rows[key].n++;
+      });
+      var out = Object.keys(rows).map(function(k){ return {group: k, hours: Math.round(rows[k].sec / 36) / 100, tasks: rows[k].n}; }).sort(function(x, y){ return i.group_by === 'day' ? (x.group < y.group ? -1 : 1) : y.hours - x.hours; }).slice(0, 40);
+      return {content: JSON.stringify({from: from, to: to, total_hours: Math.round(total / 36) / 100, rows: out}), view: {k: 'step', text: '⏱ Zeitbericht ' + from + ' bis ' + to + ' (' + fmtHM(total) + ')'}};
+    }
+    if(u.name === 'schedule_overview'){
+      var f2 = chatDay(i.from, toDateInputValue(new Date())), t2 = chatDay(i.to, f2);
+      var days = [];
+      for(var d = new Date(f2 + 'T00:00:00'); toDateInputValue(d) <= t2 && days.length < 14; d.setDate(d.getDate() + 1)){
+        var ds = toDateInputValue(d);
+        days.push({date: ds, weekday: d.toLocaleDateString('de-CH', {weekday: 'long'}),
+          planned: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds; }).map(function(t){ var st = new Date(t.scheduledAt); return {title: t.title, from: chatLocal(t.scheduledAt).slice(11), to: plMinToTime(plDayMinutes(st) + plannedMinutes(t))}; }).sort(function(x, y){ return x.from < y.from ? -1 : 1; }),
+          booked_min: Math.round(state.tasks.reduce(function(s, t){ return s + secondsOnDate(t, ds); }, 0) / 60)});
+      }
+      return {content: JSON.stringify({work_hours: (state.settings.dyceWorkStart || '08:00') + '–' + (state.settings.dyceWorkEnd || '17:00'), days: days}), view: {k: 'step', text: '🗓 Planung ' + f2 + ' bis ' + t2 + ' abgefragt'}};
+    }
+    return {content: JSON.stringify({error: 'Unbekanntes Werkzeug ' + u.name})};
+  }catch(err){ return {content: JSON.stringify({error: err.message})}; }
+}
+/* Beschreibung einer Änderung für die Bestätigungskarte */
+function chatDescribe(u){
+  var i = u.input || {}, t = i.id ? getTask(i.id) : null, tn = t ? '«' + t.title.slice(0, 50) + '»' : '(unbekannter Task)';
+  if(u.name === 'create_task') return '➕ Neuer Task «' + String(i.title || '').slice(0, 70) + '»' + [i.column && 'Spalte ' + i.column, i.priority && 'Priorität ' + i.priority, i.due_date && 'fällig ' + i.due_date, i.scheduled_at && 'geplant ' + String(i.scheduled_at).replace('T', ' '), i.project && 'Projekt ' + i.project].filter(Boolean).map(function(x){ return ' · ' + x; }).join('');
+  if(u.name === 'update_task'){
+    var ch = [];
+    ['title', 'column', 'priority', 'type', 'due_date', 'assignee', 'project', 'scheduled_at', 'scheduled_minutes'].forEach(function(k){ if(i[k] !== undefined) ch.push(k.replace('_', ' ') + ' → ' + (String(i[k]) || '(leer)').replace('T', ' ')); });
+    if(i.tags_add && i.tags_add.length) ch.push('Tag +' + i.tags_add.join(', '));
+    if(i.description !== undefined) ch.push('Beschreibung ändern');
+    return '✏️ ' + tn + ': ' + (ch.join(', ') || 'keine Änderung');
+  }
+  if(u.name === 'add_note') return '📝 Notiz zu ' + tn + ': „' + String(i.text || '').slice(0, 100) + '“';
+  if(u.name === 'snooze_task') return '😴 Wiedervorlage ' + tn + ' bis ' + String(i.until || '').replace('T', ' ');
+  if(u.name === 'start_timer') return '▶ Timer starten bei ' + tn;
+  if(u.name === 'stop_timer') return '⏸ Laufenden Timer stoppen';
+  return u.name;
+}
+function chatExecWrite(u){
+  var i = u.input || {};
+  try{
+    if(u.name === 'create_task'){
+      var title = String(i.title || '').trim();
+      if(!title) throw new Error('Titel fehlt');
+      var partial = {title: title.slice(0, 200)};
+      var col = i.column ? colByName(i.column) : null;
+      partial.columnId = col ? col.id : state.columns[0].id;
+      if(i.description) partial.description = String(i.description).slice(0, 4000);
+      if(i.type && typeByName(i.type)) partial.type = typeByName(i.type);
+      if(i.priority && prioByName(i.priority)) partial.priority = prioByName(i.priority);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(i.due_date || '')) partial.dueDate = i.due_date;
+      if(i.reporter) partial.reporter = String(i.reporter).slice(0, 80);
+      if(Array.isArray(i.tags)) partial.tags = i.tags.map(function(x){ return String(x).replace(/^#/, '').slice(0, 40); }).filter(Boolean);
+      if(i.estimated_minutes > 0) partial.estimatedMinutes = Math.round(i.estimated_minutes);
+      var pr = i.project ? projByName(i.project) : null;
+      if(pr){ partial.projectId = pr.id; partial.projectName = pr.name; }
+      if(i.scheduled_at){ partial.scheduledAt = chatParseDateTime(i.scheduled_at); if(i.scheduled_minutes >= 5) partial.scheduledMinutes = Math.round(i.scheduled_minutes); }
+      var nt = createTask(partial);
+      return JSON.stringify({ok: true, id: nt.id, title: nt.title});
+    }
+    var t = getTask(i.id);
+    if(u.name === 'stop_timer'){
+      var id = state.settings.activeTaskId;
+      if(!id) return JSON.stringify({ok: true, note: 'Es lief kein Timer.'});
+      stopTimer(id); return JSON.stringify({ok: true});
+    }
+    if(!t) throw new Error('Task nicht gefunden');
+    if(u.name === 'add_note'){
+      t.notes.push({ts: nowIso(), text: String(i.text || '').slice(0, 2000)}); t.updatedAt = nowIso(); save();
+      return JSON.stringify({ok: true});
+    }
+    if(u.name === 'snooze_task'){
+      updateTask(t.id, {snoozeUntil: chatParseDateTime(i.until)});
+      return JSON.stringify({ok: true});
+    }
+    if(u.name === 'start_timer'){ startTimer(t.id); return JSON.stringify({ok: true}); }
+    if(u.name === 'update_task'){
+      var patch = {}, notes = [];
+      if(i.title) patch.title = String(i.title).slice(0, 200);
+      if(i.description !== undefined) patch.description = String(i.description).slice(0, 4000);
+      if(i.column){ var c = colByName(i.column); if(c) patch.columnId = c.id; else notes.push('Spalte nicht gefunden'); }
+      if(i.priority){ var p = prioByName(i.priority); if(p) patch.priority = p; else notes.push('Priorität unbekannt'); }
+      if(i.type){ var ty = typeByName(i.type); if(ty) patch.type = ty; else notes.push('Typ unbekannt'); }
+      if(i.due_date !== undefined){ if(i.due_date === '' || /^\d{4}-\d{2}-\d{2}$/.test(i.due_date)) patch.dueDate = i.due_date; else notes.push('Frist ungültig'); }
+      if(i.project){ var pj = projByName(i.project); if(pj){ patch.projectId = pj.id; patch.projectName = pj.name; } else notes.push('Projekt nicht gefunden'); }
+      if(i.tags_add && i.tags_add.length){ var tags = t.tags.slice(); i.tags_add.forEach(function(x){ x = String(x).replace(/^#/, '').trim(); if(x && tags.indexOf(x) < 0) tags.push(x); }); patch.tags = tags; }
+      if(i.scheduled_at !== undefined) patch.scheduledAt = i.scheduled_at === '' ? '' : chatParseDateTime(i.scheduled_at);
+      if(i.scheduled_minutes >= 5) patch.scheduledMinutes = Math.round(i.scheduled_minutes);
+      if(i.assignee){
+        if(activeShared){ var m = sharedMembersWithNames().find(function(x){ return x.name.toLowerCase().indexOf(String(i.assignee).toLowerCase()) >= 0; }); if(m){ patch.assigneeId = m.id; patch.assignee = m.name; } else notes.push('Person nicht gefunden'); }
+        else patch.assignee = String(i.assignee).slice(0, 80);
+      }
+      updateTask(t.id, patch);
+      return JSON.stringify({ok: true, hinweise: notes.length ? notes : undefined});
+    }
+    return JSON.stringify({error: 'Unbekanntes Werkzeug'});
+  }catch(err){ return JSON.stringify({error: err.message}); }
+}
+function callAIMessages(body){
+  var key = state.settings.aiApiKey;
+  body.model = state.settings.aiModel || 'claude-haiku-4-5-20251001';
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'},
+    body: JSON.stringify(body)
+  }).then(function(res){
+    if(!res.ok) return res.text().then(function(t){ throw new Error(res.status === 401 ? 'API-Key ungültig (401).' : 'HTTP ' + res.status + ' ' + t.slice(0, 160)); });
+    return res.json();
+  });
+}
+function chatTrim(){
+  while(chat.msgs.length > 36) chat.msgs.shift();
+  while(chat.msgs.length && !(chat.msgs[0].role === 'user' && typeof chat.msgs[0].content === 'string')) chat.msgs.shift();
+}
+function chatRun(iter){
+  iter = iter || 0;
+  if(iter > 8){ chat.busy = false; chat.view.push({k: 'error', text: 'Zu viele Schritte – bitte die Frage einfacher stellen.'}); renderChat(); return; }
+  chat.busy = true; renderChat();
+  chatTrim();
+  callAIMessages({system: chatSystem(), tools: CHAT_TOOLS, messages: chat.msgs, max_tokens: 1500}).then(function(res){
+    var content = res.content || [];
+    chat.msgs.push({role: 'assistant', content: content});
+    var text = content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('\n').trim();
+    if(text) chat.view.push({k: 'assistant', text: text});
+    var uses = content.filter(function(b){ return b.type === 'tool_use'; });
+    if(!uses.length){ chat.busy = false; renderChat(); return; }
+    var results = {}, writes = [];
+    uses.forEach(function(u){
+      if(CHAT_WRITE[u.name]) writes.push(u);
+      else { var r = chatExecRead(u); results[u.id] = r.content; if(r.view) chat.view.push(r.view); }
+    });
+    if(writes.length){
+      chat.pending = {uses: uses, writes: writes, results: results, iter: iter};
+      chat.view.push({k: 'confirm', actions: writes.map(chatDescribe)});
+      chat.busy = false; renderChat(); return;
+    }
+    chatToolsDone(uses, results, iter, null);
+  }).catch(function(err){
+    /* Gespräch auf den Stand vor der fehlgeschlagenen Frage zurücksetzen, damit die nächste Anfrage gültig bleibt. */
+    for(var k = chat.msgs.length - 1; k >= 0; k--){
+      var m = chat.msgs[k];
+      if(m.role === 'user' && (typeof m.content === 'string' || m.content.some(function(b){ return b.type === 'text'; }))){ chat.msgs.length = k; break; }
+    }
+    chat.busy = false; chat.view.push({k: 'error', text: err.message + ' (Frage bitte erneut senden)'}); renderChat();
+  });
+}
+function chatToolsDone(uses, results, iter, extraText){
+  var blocks = uses.map(function(u){ return {type: 'tool_result', tool_use_id: u.id, content: results[u.id] || JSON.stringify({error: 'kein Ergebnis'})}; });
+  if(extraText) blocks.push({type: 'text', text: extraText});
+  chat.msgs.push({role: 'user', content: blocks});
+  chatRun(iter + 1);
+}
+function chatDecide(ok){
+  var p = chat.pending;
+  if(!p) return;
+  chat.pending = null;
+  chat.view = chat.view.filter(function(v){ return v.k !== 'confirm'; });
+  if(ok){
+    pushUndoSnapshot();
+    var lines = [];
+    p.writes.forEach(function(u){ p.results[u.id] = chatExecWrite(u); lines.push(chatDescribe(u)); });
+    chat.view.push({k: 'step', text: '✅ Ausgeführt: ' + lines.join(' | ')});
+    renderAll();
+  } else {
+    p.writes.forEach(function(u){ p.results[u.id] = JSON.stringify({ok: false, note: 'Der Nutzer hat die Änderung abgelehnt.'}); });
+    chat.view.push({k: 'step', text: '✋ Änderung abgelehnt'});
+  }
+  chatToolsDone(p.uses, p.results, p.iter, null);
+}
+function chatSend(text){
+  text = String(text || '').trim();
+  if(!text || chat.busy) return;
+  if(!aiReady()) return;
+  chat.view.push({k: 'user', text: text});
+  if(chat.pending){
+    var p = chat.pending; chat.pending = null;
+    chat.view = chat.view.filter(function(v){ return v.k !== 'confirm'; });
+    p.writes.forEach(function(u){ p.results[u.id] = JSON.stringify({ok: false, note: 'Nicht ausgeführt (der Nutzer hat stattdessen eine neue Nachricht geschrieben).'}); });
+    var blocks = p.uses.map(function(u){ return {type: 'tool_result', tool_use_id: u.id, content: p.results[u.id]}; });
+    blocks.push({type: 'text', text: text});
+    chat.msgs.push({role: 'user', content: blocks});
+  } else chat.msgs.push({role: 'user', content: text});
+  renderChat();
+  chatRun(0);
+}
+function mdLite(src){
+  function inline(s){ return s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
+  var lines = escapeHtml(src).split('\n'), html = '', list = '';
+  function close(){ if(list){ html += '</' + list + '>'; list = ''; } }
+  lines.forEach(function(line){
+    var ul = line.match(/^\s*[-•*]\s+(.*)$/), ol = line.match(/^\s*\d+[.)]\s+(.*)$/), h = line.match(/^#{1,4}\s+(.*)$/);
+    if(ul || ol){
+      var want = ul ? 'ul' : 'ol';
+      if(list !== want){ close(); html += '<' + want + '>'; list = want; }
+      html += '<li>' + inline((ul || ol)[1]) + '</li>';
+    } else {
+      close();
+      if(h) html += '<div class="md-h">' + inline(h[1]) + '</div>';
+      else if(!line.trim()) html += '<div class="md-gap"></div>';
+      else html += '<div>' + inline(line) + '</div>';
+    }
+  });
+  close();
+  return html;
+}
+function renderChat(){
+  var box = document.getElementById('aiMsgs');
+  if(!box) return;
+  var html = '';
+  if(!chat.ack){
+    html += '<div class="ai-note"><b>Hinweis zum Datenschutz</b><br>Der Assistent fragt Daten aus deinem Board ab (Titel, Notizen, Zeiten) und sendet sie an Anthropic, mit deinem eigenen API-Key. Nichts davon geht an Supabase. Änderungen führt er nur nach deiner Bestätigung aus.<br><button class="btn primary" id="aiAck" style="margin-top:8px;">Verstanden</button></div>';
+  } else if(!chat.view.length){
+    html += '<div class="ai-empty"><div style="font-size:30px;">🤖</div><b>Frag mich zu deinem Board</b><div class="hint">z.B. Zeiten, offene Tickets, Planung – oder lass mich Tasks anlegen und verschieben.</div></div>';
+  }
+  chat.view.forEach(function(v, idx){
+    if(v.k === 'user') html += '<div class="ai-msg user">' + escapeHtml(v.text).replace(/\n/g, '<br>') + '</div>';
+    else if(v.k === 'assistant') html += '<div class="ai-msg bot">' + mdLite(v.text) + '<div class="ai-msg-tools"><button class="btn ghost" data-ai-copy="' + idx + '">Kopieren</button></div></div>';
+    else if(v.k === 'step') html += '<div class="ai-step">' + escapeHtml(v.text) + (v.chips ? '<div class="ai-chips">' + v.chips.map(function(c){ return '<button class="chip" data-open-task="' + c.id + '">' + escapeHtml(c.title.slice(0, 36)) + '</button>'; }).join('') + '</div>' : '') + '</div>';
+    else if(v.k === 'error') html += '<div class="ai-msg err">⚠️ ' + escapeHtml(v.text) + '</div>';
+    else if(v.k === 'confirm') html += '<div class="ai-confirm"><b>Der Assistent möchte:</b><ul>' + v.actions.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join('') + '</ul><div class="ai-confirm-btns"><button class="btn primary" id="aiDoIt">Ausführen</button><button class="btn" id="aiNo">Ablehnen</button></div></div>';
+  });
+  if(chat.busy) html += '<div class="ai-step"><span class="ai-dots"><i></i><i></i><i></i></span> denkt nach…</div>';
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+  var quick = document.getElementById('aiQuick');
+  quick.innerHTML = chat.ack && !chat.view.length ? CHAT_QUICK.map(function(q, i){ return '<button class="chip" data-ai-quick="' + i + '">' + q[0] + '</button>'; }).join('') : '';
+  var ack = document.getElementById('aiAck');
+  if(ack) ack.addEventListener('click', function(){ chat.ack = true; try{ localStorage.setItem('wb-ai-chat-ok', '1'); }catch(e){} renderChat(); document.getElementById('aiInput').focus(); });
+  var yes = document.getElementById('aiDoIt'); if(yes) yes.addEventListener('click', function(){ chatDecide(true); });
+  var no = document.getElementById('aiNo'); if(no) no.addEventListener('click', function(){ chatDecide(false); });
+  document.getElementById('aiSend').disabled = chat.busy;
+}
+function openAiChat(prefill){
+  var el = document.getElementById('aiChat');
+  chat.open = true;
+  try{ chat.ack = localStorage.getItem('wb-ai-chat-ok') === '1'; }catch(e){}
+  el.classList.add('open');
+  document.getElementById('aiFab').classList.add('hidden');
+  var mdl = AI_MODELS.find(function(m){ return m.id === (state.settings.aiModel || AI_MODELS[0].id); });
+  document.getElementById('aiModel').textContent = mdl ? mdl.label.split(' (')[0] : '';
+  renderChat();
+  var inp = document.getElementById('aiInput');
+  if(prefill){ inp.value = prefill; }
+  setTimeout(function(){ inp.focus(); }, 60);
+}
+function closeAiChat(){
+  chat.open = false;
+  document.getElementById('aiChat').classList.remove('open');
+  document.getElementById('aiFab').classList.remove('hidden');
+}
+function toggleAiChat(){ if(chat.open) closeAiChat(); else openAiChat(); }
+(function(){
+  document.getElementById('aiFab').addEventListener('click', function(){ openAiChat(); });
+  document.getElementById('aiClose').addEventListener('click', closeAiChat);
+  document.getElementById('aiNew').addEventListener('click', function(){ chat.msgs = []; chat.view = []; chat.pending = null; chat.busy = false; renderChat(); });
+  document.getElementById('aiForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var inp = document.getElementById('aiInput');
+    var v = inp.value;
+    if(!v.trim()) return;
+    inp.value = ''; inp.style.height = '';
+    chatSend(v);
+  });
+  document.getElementById('aiInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('aiForm').requestSubmit(); }
+    if(e.key === 'Escape'){ closeAiChat(); return; }
+    if(!(e.ctrlKey || e.metaKey)) e.stopPropagation();
+  });
+  document.getElementById('aiInput').addEventListener('input', function(){ this.style.height = 'auto'; this.style.height = Math.min(120, this.scrollHeight) + 'px'; });
+  document.getElementById('aiChat').addEventListener('click', function(e){
+    var q = e.target.closest('[data-ai-quick]');
+    if(q){ if(!chat.ack){ chat.ack = true; try{ localStorage.setItem('wb-ai-chat-ok', '1'); }catch(err){} } chatSend(CHAT_QUICK[parseInt(q.dataset.aiQuick, 10)][1]); return; }
+    var c = e.target.closest('[data-ai-copy]');
+    if(c){ var v = chat.view[parseInt(c.dataset.aiCopy, 10)]; if(v){ copyToClipboard(v.text); toast('Kopiert.'); } return; }
+    var o = e.target.closest('[data-open-task]');
+    if(o) openTaskModal(o.dataset.openTask);
+  });
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && (e.key === 'j' || e.key === 'J')){ e.preventDefault(); toggleAiChat(); }
+  });
+})();
 
 /*@@EXTRA-JS@@*/
 
