@@ -4,6 +4,16 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Einstellungsmenü neu aufgebaut
+
+Nutzer fand das Menü "schrecklich". Neu: Seitenleiste (auf dem Handy horizontale Tab-Leiste) mit
+5 Tabs statt 6: Konto & Daten (Konto, Cloud-Speicher, Lokale Sicherung, Sichtschutz/PIN), Darstellung,
+Zeit (Erinnerungen, Pomodoro, SLA, Auswertung), Board (einklappbar: Spalten, Boards, Team, Vorlagen,
+Textbausteine, Typen), Integrationen (Jira/Confluence, ntfy, KI, Read-only-Link/GitHub-Token) + Admin.
+Aufbau über Helfer `sCard/sRow/sMore/sCollapsible/sNum/sCheck` (vor `openSettings()`), CSS `.s-*`.
+Lange Erklärungstexte stehen in aufklappbaren "Mehr erfahren"-Bereichen. **Alle Element-IDs blieben
+unverändert**, damit die Verdrahtung unterhalb von `openSettings()` nicht angepasst werden musste.
+
 ## ✅ Stand 2026-10-07: Board-Daten jetzt in Supabase (pro Person, Ende-zu-Ende-verschlüsselt)
 
 Nutzer-Erwartung war, dass die Daten nach dem Login in Supabase liegen (vorher nur Identität via

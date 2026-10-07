@@ -282,10 +282,6 @@ button.icon-btn.recording{color:var(--danger); animation:pulse 1s infinite;}
 .modal-header h2{margin:0; font-size:16px; flex:1;}
 .modal-body{padding:16px 18px; overflow-y:auto;}
 .modal-footer{padding:14px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px;}
-.settings-tabs{display:flex; gap:4px; flex-wrap:wrap; padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--border);}
-.settings-tab-btn{padding:7px 12px; border-radius:var(--radius-sm); border:1px solid transparent; background:transparent; color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;}
-.settings-tab-btn:hover{background:var(--surface-2);}
-.settings-tab-btn.active{background:var(--accent); color:#fff;}
 .modal-footer:has(.modal-footer-danger){justify-content:space-between;}
 .modal-footer-danger{display:flex;}
 .modal-footer-actions{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px;}
@@ -311,6 +307,55 @@ textarea{resize:vertical; min-height:70px;}
 .columns-list .col-row{display:flex; align-items:center; gap:6px;}
 .columns-list input{flex:1;}
 .settings-grid{display:flex; flex-direction:column; gap:0;}
+/* ---- Einstellungsmenü: Seitenleiste + Karten ---- */
+.modal.wide:has(.s-layout){max-width:880px;}
+.s-body{padding-top:14px;}
+.s-layout{display:grid; grid-template-columns:168px minmax(0,1fr); gap:22px; align-items:start;}
+.settings-tabs{display:flex; flex-direction:column; gap:2px; position:sticky; top:0;}
+.settings-tab-btn{padding:9px 12px; border-radius:var(--radius-sm); border:none; background:transparent; color:var(--text-dim); font-size:13.5px; font-weight:600; cursor:pointer; text-align:left; white-space:nowrap; transition:background-color var(--t-fast), color var(--t-fast);}
+.settings-tab-btn:hover{background:var(--surface-2); color:var(--text);}
+.settings-tab-btn.active{background:var(--accent-glow); color:var(--accent); }
+.s-content{min-width:0;}
+.s-card{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:14px;}
+.s-card > h3{margin:0 0 4px; font-size:14.5px; font-weight:700; color:var(--text);}
+.s-desc{margin:0 0 8px; font-size:12.5px; color:var(--text-dim); line-height:1.45;}
+.s-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 0; border-top:1px solid var(--border);}
+.s-card > h3 + .s-row, .s-card > .s-desc + .s-row{border-top:none;}
+.s-label{font-size:13.5px; font-weight:600; color:var(--text); min-width:0;}
+.s-sub{font-size:12px; font-weight:400; color:var(--text-faint); margin-top:2px; line-height:1.4;}
+.s-control{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+.s-control input[type=number]{width:86px; text-align:right;}
+.s-control input[type=text], .s-control input[type=password], .s-control input:not([type]){width:210px;}
+.s-control select{min-width:130px;}
+.s-inline{display:flex; align-items:center; gap:6px;}
+.s-inline input[type=password], .s-inline input[type=text], .s-inline input:not([type]){min-width:0;}
+.s-unit{font-size:12px; color:var(--text-faint); min-width:34px;}
+.s-check{width:18px; height:18px; accent-color:var(--accent); cursor:pointer;}
+.s-status{font-size:12.5px; display:flex; align-items:center; gap:6px; max-width:300px; text-align:right;}
+.s-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.s-actions .btn{margin:0;}
+.s-chips{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 8px;}
+.s-chips a.bkm{background:var(--accent); color:#fff !important; padding:7px 13px; border-radius:var(--radius-sm); font-weight:600; font-size:13px; text-decoration:none; white-space:nowrap;}
+.s-more{margin-top:10px; border-top:1px solid var(--border); padding-top:8px;}
+.s-more summary, .s-collapsible > summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--text-dim); list-style:none; display:flex; align-items:center; gap:6px; user-select:none;}
+.s-more summary::-webkit-details-marker, .s-collapsible > summary::-webkit-details-marker{display:none;}
+.s-more summary::before, .s-collapsible > summary::before{content:'▸'; display:inline-block; transition:transform var(--t-fast); font-size:11px;}
+.s-more[open] > summary::before, .s-collapsible[open] > summary::before{transform:rotate(90deg);}
+.s-more summary:hover{color:var(--text);}
+.s-more-body{padding-top:8px; font-size:12.5px; color:var(--text-dim); line-height:1.5;}
+.s-more-body p{margin:0 0 8px;}
+.s-collapsible{padding:0;}
+.s-collapsible > summary{padding:13px 16px; font-size:14px; color:var(--text); font-weight:700;}
+.s-collapsible-body{padding:0 16px 16px;}
+@media (max-width:700px){
+  .s-layout{grid-template-columns:1fr; gap:12px;}
+  .settings-tabs{flex-direction:row; overflow-x:auto; position:static; padding-bottom:6px; border-bottom:1px solid var(--border); scrollbar-width:none;}
+  .settings-tab-btn{padding:8px 12px; flex-shrink:0;}
+  .s-row{flex-direction:column; align-items:stretch; gap:8px;}
+  .s-control{flex-shrink:1; flex-wrap:wrap;}
+  .s-control input[type=text], .s-control input[type=password], .s-control input:not([type]), .s-inline input{width:100%; flex:1;}
+  .s-status{max-width:none; text-align:left;}
+}
 .storage-status{display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); font-size:12.5px; margin-bottom:8px;}
 .dot{width:8px; height:8px; border-radius:50%; background:var(--text-faint);}
 .dot.ok{background:var(--ok);}
@@ -4880,206 +4925,149 @@ function renderCloudSyncStatus(){
    SETTINGS MODAL
    ========================================================= */
 var SETTINGS_TABS = [
-  {id:'storage', label:'💾 Speicher & Team'},
+  {id:'account', label:'👤 Konto & Daten'},
   {id:'design', label:'🎨 Darstellung'},
-  {id:'time', label:'⏱️ Zeiterfassung'},
-  {id:'customize', label:'🧩 Anpassung'},
-  {id:'integrations', label:'🔌 Integrationen'},
-  {id:'security', label:'🔒 Sicherheit'}
+  {id:'time', label:'⏱️ Zeit'},
+  {id:'board', label:'🗂️ Board'},
+  {id:'integrations', label:'🔌 Integrationen'}
 ];
-var settingsActiveTab = 'storage';
+var settingsActiveTab = 'account';
+
+/* Bausteine für ein aufgeräumtes Einstellungsmenü: Karte (mit Titel und
+   optionaler Kurzbeschreibung), Zeile (Beschriftung links, Bedienelement
+   rechts), aufklappbarer Zusatztext und einklappbare Karte. Lange
+   Erklärungstexte wandern in "Mehr erfahren", damit die Standardansicht
+   kurz bleibt. */
+function sCard(title, desc, body){
+  return '<div class="s-card"><h3>' + title + '</h3>' + (desc ? '<p class="s-desc">' + desc + '</p>' : '') + body + '</div>';
+}
+function sRow(label, control, sub){
+  return '<div class="s-row"><div class="s-label">' + label + (sub ? '<div class="s-sub">' + sub + '</div>' : '') + '</div><div class="s-control">' + control + '</div></div>';
+}
+function sMore(summary, body){
+  return '<details class="s-more"><summary>' + summary + '</summary><div class="s-more-body">' + body + '</div></details>';
+}
+function sCollapsible(title, body, open){
+  return '<details class="s-card s-collapsible"' + (open ? ' open' : '') + '><summary>' + title + '</summary><div class="s-collapsible-body">' + body + '</div></details>';
+}
+function sNum(id, value, min, extra){
+  return '<input type="number" id="' + id + '" value="' + value + '" min="' + min + '"' + (extra || '') + '>';
+}
+function sCheck(id, checked){
+  return '<input type="checkbox" class="s-check" id="' + id + '"' + (checked ? ' checked' : '') + '>';
+}
+
 function openSettings(){
+  var cloudCfg = getCloudSyncConfig();
   var visibleSettingsTabs = SETTINGS_TABS.concat(isCurrentUserAdmin ? [{id:'admin', label:'🛡️ Admin'}] : []);
-  var html =
-    '<div class="modal-header"><h2>⚙️ Einstellungen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
 
-      '<div class="settings-tabs">' +
-        visibleSettingsTabs.map(function(tb){ return '<button type="button" class="settings-tab-btn" data-settings-tab="'+tb.id+'">'+tb.label+'</button>'; }).join('') +
+  /* ---------- Konto & Daten ---------- */
+  var accountTab =
+    sCard('Konto', '',
+      sRow(escapeHtml(currentUser ? currentUser.displayName : '–'), '<button class="btn" id="btnAuthSignOut">🚪 Abmelden</button>', escapeHtml(currentUser ? currentUser.email : '')) +
+      '<div class="s-sub" style="margin-top:6px;">Der Name erscheint bei Zuweisungen und im Aktivitäts-Verlauf.</div>'
+    ) +
+    sCard('☁️ Cloud-Speicher', 'Dein Board wird automatisch verschlüsselt in Supabase gespeichert – lesen kann es nur, wer deine Passphrase kennt.',
+      sRow('Status', '<div id="cloudSyncStatus" class="s-status"></div>') +
+      sRow('Passphrase', '<div class="s-inline"><input type="password" id="sCloudPassphrase" value="'+escapeAttr(cloudCfg.passphrase)+'" placeholder="Eigene, sichere Passphrase"><button type="button" class="btn icon-btn" id="btnTogglePassphraseVisible" title="Anzeigen/Verbergen">👁</button></div>', 'Auf allen deinen Geräten identisch.') +
+      '<div class="s-actions"><button class="btn primary" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button></div>' +
+      sMore('Passphrase ändern oder übernehmen',
+        '<p>Trage oben die gewünschte Passphrase ein und wähle dann:</p>' +
+        '<div class="s-actions">' +
+          '<button class="btn" id="btnCloudUsePassphrase" title="Nutze das, wenn du die Passphrase auf einem anderen Gerät geändert hast">🔑 Auf diesem Gerät übernehmen</button>' +
+          '<button class="btn" id="btnCloudChangePassphrase" title="Verschlüsselt den Cloud-Stand neu; andere Geräte müssen danach die neue Passphrase eingeben">🔐 Ändern &amp; neu verschlüsseln</button>' +
+        '</div>' +
+        '<p class="s-sub"><strong>Übernehmen</strong>, wenn du sie auf einem anderen Gerät geändert hast. <strong>Ändern</strong>, um den Cloud-Stand mit einer neuen Passphrase zu verschlüsseln.</p>'
+      ) +
+      sMore('So funktioniert\'s',
+        '<p>Dein Board wird in diesem Browser verschlüsselt (AES-256), bevor es hochgeladen wird. Weder Supabase noch Admins können es lesen, und jede Person hat ihr eigenes Board. Neues Gerät: anmelden und einmalig dieselbe Passphrase eingeben.</p>' +
+        '<p>Einmal täglich wird ein Snapshot abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage), falls mal ein fehlerhafter Stand hochgeladen wird.</p>' +
+        '<p><strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg.</strong> Dein lokales Backup bleibt davon unberührt.</p>'
+      )
+    ) +
+    sCard('💾 Lokale Sicherung', 'Zusätzlich als Datei sichern, z.B. in deinen OneDrive- oder iCloud-Ordner.',
+      '<div class="s-actions">' +
+        '<button class="btn primary" id="btnExportJson">💾 Jetzt sichern</button>' +
+        '<label class="btn">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
       '</div>' +
+      sMore('Erweitert: Live-Datei & Cloud-Ordner',
+        renderStorageStatusHtml() +
+        '<p>Tasks werden laufend im Browser gespeichert. „Jetzt sichern“ (oder Strg+S) lädt <code>work-board-daten.json</code> herunter. Damit das Backup automatisch im Cloud-Ordner landet: Browser-Einstellungen → Downloads → Speicherort auf deinen OneDrive-/iCloud-Ordner ändern und „Vor dem Herunterladen jedes Mal fragen“ aktivieren.</p>' +
+        (FS_SUPPORTED ?
+          '<div class="s-actions">' +
+            '<button class="btn" id="btnPickNewFile">📄 Mit neuer Datei verbinden…</button>' +
+            '<button class="btn" id="btnPickExistingFile">📂 Bestehende Datei öffnen…</button>' +
+          '</div>'
+          : '')
+      )
+    ) +
+    sCard('🔒 Sichtschutz', 'Blendet beim Start eine PIN-Abfrage ein. Kein echter Schutz, nur gegen neugierige Blicke.',
+      sRow('PIN', '<div class="s-inline"><input type="password" id="sPinCode" value="'+escapeAttr(state.settings.pinCode||'')+'" placeholder="Leer = aus" maxlength="12"><button class="btn" id="savePinBtn">Speichern</button></div>')
+    );
 
-      '<div class="settings-section" data-tab="storage">' +
-      '<div class="section-title">👤 Konto</div>' +
-      '<div class="hint" style="margin-bottom:10px;">Angemeldet als <strong>'+escapeHtml(currentUser ? (currentUser.displayName + ' (' + currentUser.email + ')') : '–')+'</strong>. Dieser Name wird bei Zuweisungen und im Aktivitäts-Verlauf verwendet.</div>' +
-      '<button class="btn ghost" id="btnAuthSignOut" style="margin-bottom:10px;">🚪 Abmelden</button>' +
-      '<div class="section-title">☁️ Cloud-Speicher (Ende-zu-Ende-verschlüsselt)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Dein Board wird automatisch im Hintergrund in Supabase gespeichert – <strong>in diesem Browser mit deiner Passphrase verschlüsselt</strong>, bevor es hochgeladen wird. Weder Supabase noch Admins können es lesen, und jede Person hat ihr eigenes Board. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich ein Snapshot abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
-      '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
-      '<div class="form-row"><label>Passphrase (auf allen deinen Geräten identisch)</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudPassphrase" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"><button type="button" class="btn icon-btn" id="btnTogglePassphraseVisible" title="Anzeigen/Verbergen – hilfreich um z.B. ein versehentlich mitkopiertes Leerzeichen zu erkennen">👁</button></div></div>' +
-      '<div class="hint" style="margin-bottom:10px;">Neues Gerät: einfach anmelden und einmalig dieselbe Passphrase eingeben – mehr ist nicht nötig.</div>' +
-      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
-        '<button class="btn primary" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
-        '<button class="btn" id="btnCloudUsePassphrase" title="Nutze das, wenn du die Passphrase auf einem anderen Gerät geändert hast">🔑 Eingetragene Passphrase auf diesem Gerät übernehmen</button>' +
-        '<button class="btn" id="btnCloudChangePassphrase" title="Verschlüsselt den Cloud-Stand neu; andere Geräte müssen danach die neue Passphrase eingeben">🔐 Passphrase ändern &amp; neu verschlüsseln</button>' +
-      '</div>' +
-      '<div class="form-row"><label>GitHub-Token (optional – nur für "🔗 Read-only-Link teilen", Scope: nur "gist")</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudToken" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div></div>' +
-
-      '<div class="section-title">💾 Lokale Sicherung (optional)</div>' +
-      renderStorageStatusHtml() +
-      '<div class="hint" style="margin-bottom:10px;">Deine Tasks werden laufend automatisch im Browser gespeichert (bleiben erhalten, solange du Browser-Daten nicht löschst). Für eine Sicherung in OneDrive/iCloud Drive – und damit Zugriff von einem zweiten Gerät – klicke oben rechts jederzeit auf <strong>💾 Sichern</strong> (oder Strg+S). Das lädt eine Datei <code>work-board-daten.json</code> herunter.</div>' +
-      '<div class="hint" style="margin-bottom:10px;"><strong>Einmalige Einrichtung für automatisches Ablegen im Cloud-Ordner:</strong> Browser-Einstellungen → Downloads → Standard-Speicherort auf deinen OneDrive- oder iCloud-Drive-Ordner ändern (und "Vor dem Herunterladen jedes Mal fragen" aktivieren, damit du beim Ersetzen bestätigen kannst). Danach landet jedes Backup automatisch synchron in der Cloud.</div>' +
-      (FS_SUPPORTED ?
-        '<div style="display:flex; gap:8px; margin-bottom:6px;">' +
-          '<button class="btn" id="btnPickNewFile">📄 Direkt mit Datei verbinden (neu, live auto-speichernd)…</button>' +
-          '<button class="btn" id="btnPickExistingFile">📂 Bestehende Datei öffnen…</button>' +
-        '</div>'
-        : '') +
-      '<div style="display:flex; gap:8px; margin:10px 0;">' +
-        '<button class="btn primary" id="btnExportJson">💾 Jetzt sichern (.json herunterladen)</button>' +
-        '<label class="btn" style="margin:0;">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
-      '</div>' +
-
-      '<div class="section-title">🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Für Team-Momente wie Aufgabenvergabe – ohne eigenen Server über den kostenlosen Relay-Dienst <strong>ntfy.sh</strong>: Einrichtung einmalig die kostenlose <strong>ntfy-App</strong> (Android/iOS) installieren und ein <strong>privates, geheimes Thema</strong> (z.B. eine lange zufällige Zeichenfolge) abonnieren, denselben Namen unten eintragen – fertig, beide Personen abonnieren dasselbe Thema. Benachrichtigungstexte sind bewusst generisch (kein Task-Titel/Kundenname), da sie kurz über ntfys Server laufen und <strong>nicht</strong> Ende-zu-Ende-verschlüsselt sind wie dein Cloud-Board.</div>' +
-      '<label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:10px;"><input type="checkbox" id="sNtfyEnabled" '+(state.settings.ntfyEnabled?'checked':'')+'> Aktiviert</label>' +
-      '<div class="form-row"><label>ntfy-Thema (privat, geheim halten)</label><input id="sNtfyTopic" value="'+escapeAttr(state.settings.ntfyTopic)+'" placeholder="z.B. wb-team-a1b2c3d4"></div>' +
-      '<div class="hint" style="margin-bottom:8px;">Löst aus bei: Task zugewiesen, neues Hotline-Ticket, SLA kritisch, Task erledigt.</div>' +
-      '<div style="margin-bottom:10px;"><button class="btn" id="btnNtfyTest">🔔 Test senden</button></div>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="design">' +
-      '<div class="section-title">Darstellung</div>' +
-      '<div class="form-row"><label>Theme</label><select id="sTheme">' +
+  /* ---------- Darstellung ---------- */
+  var designTab =
+    sCard('Darstellung', '',
+      sRow('Theme', '<select id="sTheme">' +
         '<option value="system"'+(state.settings.theme==='system'?' selected':'')+'>System</option>' +
         '<option value="light"'+(state.settings.theme==='light'?' selected':'')+'>Hell</option>' +
         '<option value="dark"'+(state.settings.theme==='dark'?' selected':'')+'>Dunkel</option>' +
-      '</select></div>' +
-      '<div class="form-row"><label>Sprache / Language</label><select id="sLanguage">' +
+      '</select>') +
+      sRow('Sprache', '<select id="sLanguage">' +
         '<option value="de"'+(state.settings.language==='de'?' selected':'')+'>Deutsch</option>' +
         '<option value="en"'+(state.settings.language==='en'?' selected':'')+'>English</option>' +
-      '</select></div>' +
-      '<div class="hint" style="margin-bottom:10px;">Übersetzt die Hauptnavigation. Menüs/Formulare bleiben auf Deutsch. / Translates main navigation only; menus/forms stay in German.</div>' +
-      '<label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:14px;"><input type="checkbox" id="sSoundEnabled" '+(state.settings.soundEnabled?'checked':'')+'> 🔊 Sound-Effekte (Timer-Start, Task erledigt)</label>' +
-      '<div class="section-title">Hintergrundbild</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Eigenes Bild als Board-Hintergrund (wird automatisch verkleinert).</div>' +
-      '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">' +
-        '<label class="btn" style="margin:0;">🖼️ Bild wählen<input type="file" id="bgImageInput" accept="image/*" style="display:none;"></label>' +
-        (state.settings.backgroundImage ? '<button class="btn ghost" id="removeBgBtn">✕ Entfernen</button>' : '') +
-      '</div>' +
-      '<div class="form-row"><label>Akzentfarbe</label><div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
-        ACCENT_PRESETS.map(function(c){
-          return '<button type="button" class="accent-swatch" data-color="'+c+'" style="width:26px; height:26px; border-radius:50%; background:'+c+'; border:2px solid '+(state.settings.accentColor===c?'var(--text)':'transparent')+'; cursor:pointer;"></button>';
-        }).join('') +
-        '<button type="button" class="btn ghost" id="accentResetBtn">Standard</button>' +
-      '</div></div>' +
-      '</div>' +
+      '</select>', 'Übersetzt nur die Hauptnavigation.') +
+      sRow('🔊 Sound-Effekte', sCheck('sSoundEnabled', state.settings.soundEnabled), 'Timer-Start und Task erledigt')
+    ) +
+    sCard('Hintergrund & Farbe', '',
+      sRow('Hintergrundbild',
+        '<div class="s-inline"><label class="btn">🖼️ Bild wählen<input type="file" id="bgImageInput" accept="image/*" style="display:none;"></label>' +
+        (state.settings.backgroundImage ? '<button class="btn ghost" id="removeBgBtn">✕ Entfernen</button>' : '') + '</div>',
+        'Wird automatisch verkleinert.') +
+      sRow('Akzentfarbe',
+        '<div class="s-inline" style="flex-wrap:wrap;">' +
+          ACCENT_PRESETS.map(function(c){
+            return '<button type="button" class="accent-swatch" data-color="'+c+'" style="width:24px; height:24px; border-radius:50%; background:'+c+'; border:2px solid '+(state.settings.accentColor===c?'var(--text)':'transparent')+'; cursor:pointer;"></button>';
+          }).join('') +
+          '<button type="button" class="btn ghost" id="accentResetBtn">Standard</button>' +
+        '</div>')
+    );
 
-      '<div class="settings-section" data-tab="integrations">' +
-      '<div class="section-title">Jira- & Confluence-Import per Bookmarklet</div>' +
-      '<div class="hint">Ziehe diese Links in deine Browser-Lesezeichenleiste. Auf einem offenen Jira-Ticket bzw. einer Confluence-Seite auf das passende Lesezeichen klicken – die Daten landen automatisch in der Zwischenablage, bereit zum Einfügen im Board.</div>' +
-      '<div class="bookmarklet-box">' +
-        '<a class="bkm" id="bkmLink" href="#">📌 Jira → Board</a>' +
-        '<span class="hint">Ziehen statt klicken!</span>' +
-      '</div>' +
-      '<div class="bookmarklet-box">' +
-        '<a class="bkm" id="bkmConfluenceLink" href="#">📘 Confluence → Board</a>' +
-        '<span class="hint">Ziehen statt klicken!</span>' +
-      '</div>' +
-      '<div class="hint" style="margin-top:10px;">Zusätzlich: Status direkt zurückschreiben, bzw. mehrere Tickets von einer Jira-Suchergebnisliste auf einmal importieren. Beides ist Best-Effort und hängt von deiner Jira-Version/-Berechtigung ab.</div>' +
-      '<div class="bookmarklet-box">' +
-        '<a class="bkm" id="bkmStatusLink" href="#">🔄 Jira-Status setzen</a>' +
-        '<span class="hint">Ziehen statt klicken!</span>' +
-      '</div>' +
-      '<div class="bookmarklet-box">' +
-        '<a class="bkm" id="bkmBulkLink" href="#">📦 Jira-Suchliste → Board (Bulk)</a>' +
-        '<span class="hint">Ziehen statt klicken!</span>' +
-      '</div>' +
-
-      '<div class="section-title">KI-Schnellerfassung</div>' +
-      '<div class="hint">Optional: Mit einem eigenen Anthropic-API-Key erstellt die Schnellerfassung Tasks automatisch aus eingefügtem Mail-/Ticket-Text. Ohne Key funktioniert die Schnellerfassung weiterhin, aber mit einfacherer Texterkennung. Der Key wird nur lokal in deiner Datendatei gespeichert und nur direkt an Anthropic gesendet.</div>' +
-      '<div class="form-row"><label>Anthropic API Key</label><input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…"></div>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="time">' +
-      '<div class="section-title">Zeiterfassung</div>' +
-      '<div class="form-row"><label>Erinnerung nach ununterbrochener Laufzeit (Minuten)</label><input type="number" id="sIdle" value="'+state.settings.idleReminderMinutes+'" min="10" style="max-width:120px;"></div>' +
-      '<div class="form-row"><label>Pausen-Erinnerung nach (Minuten)</label><input type="number" id="sBreakMinutes" value="'+state.settings.cumulativeBreakReminderMinutes+'" min="30" style="max-width:120px;"></div>' +
-      '<div class="form-row"><label>Fokus-Block-Dauer (Minuten)</label><input type="number" id="sFocusMinutes" value="'+state.settings.focusModeMinutes+'" min="5" style="max-width:120px;"></div>' +
-      '<label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px;"><input type="checkbox" id="sPomodoroEnabled" '+(state.settings.pomodoroEnabled?'checked':'')+'> 🍅 Pomodoro-Modus (Fokus-Modus reiht automatisch Pausen zwischen den Blöcken ein)</label>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Kurze Pause (Min.)</label><input type="number" id="sPomodoroBreak" value="'+state.settings.pomodoroBreakMinutes+'" min="1" style="max-width:100px;"></div>' +
-        '<div class="form-row"><label>Lange Pause (Min.)</label><input type="number" id="sPomodoroLongBreak" value="'+state.settings.pomodoroLongBreakMinutes+'" min="1" style="max-width:100px;"></div>' +
-        '<div class="form-row"><label>Blöcke bis lange Pause</label><input type="number" id="sPomodoroCycles" value="'+state.settings.pomodoroCyclesUntilLongBreak+'" min="2" style="max-width:100px;"></div>' +
-      '</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><label>Hotline-SLA: Warnung ab (Std.)</label><input type="number" id="sSlaWarn" value="'+state.settings.slaWarnHours+'" min="1" style="max-width:120px;"></div>' +
-        '<div class="form-row"><label>Hotline-SLA: kritisch ab (Std.)</label><input type="number" id="sSlaCritical" value="'+state.settings.slaCriticalHours+'" min="1" style="max-width:120px;"></div>' +
-      '</div>' +
-      '<div style="display:flex; gap:8px;">' +
+  /* ---------- Zeit ---------- */
+  var timeTab =
+    sCard('Erinnerungen', '',
+      sRow('Erinnerung nach Laufzeit', sNum('sIdle', state.settings.idleReminderMinutes, 10) + '<span class="s-unit">Min.</span>', 'Wenn ein Timer so lange ununterbrochen läuft.') +
+      sRow('Pausen-Erinnerung nach', sNum('sBreakMinutes', state.settings.cumulativeBreakReminderMinutes, 30) + '<span class="s-unit">Min.</span>', 'Summe der Arbeitszeit seit der letzten Pause.') +
+      sRow('Fokus-Block', sNum('sFocusMinutes', state.settings.focusModeMinutes, 5) + '<span class="s-unit">Min.</span>') +
+      '<div class="s-actions">' +
         '<button class="btn" id="btnNotifPerm">🔔 Desktop-Benachrichtigungen erlauben</button>' +
         '<button class="btn" id="btnMarkBreak">☕ Pause jetzt markieren</button>' +
-      '</div>' +
+      '</div>'
+    ) +
+    sCard('🍅 Pomodoro', 'Der Fokus-Modus reiht automatisch Pausen zwischen die Blöcke ein.',
+      sRow('Pomodoro-Modus', sCheck('sPomodoroEnabled', state.settings.pomodoroEnabled)) +
+      sRow('Kurze Pause', sNum('sPomodoroBreak', state.settings.pomodoroBreakMinutes, 1) + '<span class="s-unit">Min.</span>') +
+      sRow('Lange Pause', sNum('sPomodoroLongBreak', state.settings.pomodoroLongBreakMinutes, 1) + '<span class="s-unit">Min.</span>') +
+      sRow('Blöcke bis zur langen Pause', sNum('sPomodoroCycles', state.settings.pomodoroCyclesUntilLongBreak, 2))
+    ) +
+    sCard('Hotline-SLA', 'Ab wann ein Hotline-Ticket als Warnung bzw. kritisch markiert wird.',
+      sRow('Warnung ab', sNum('sSlaWarn', state.settings.slaWarnHours, 1) + '<span class="s-unit">Std.</span>') +
+      sRow('Kritisch ab', sNum('sSlaCritical', state.settings.slaCriticalHours, 1) + '<span class="s-unit">Std.</span>')
+    ) +
+    sCard('Auswertung', 'Optional – für die Statistik.',
+      sRow('Stundensatz', sNum('sHourlyRate', state.settings.hourlyRate||'', 0, ' placeholder="z.B. 95"') + '<span class="s-unit">CHF</span>', 'Zeigt den erarbeiteten Wert pro Zeitraum.') +
+      sRow('Zielarbeitszeit', sNum('sTargetHours', state.settings.targetHoursPerDay||'', 0, ' step="0.1" placeholder="z.B. 8.4"') + '<span class="s-unit">Std./Tag</span>', 'Soll/Ist-Vergleich ohne Wochenenden.') +
+      sRow('Archivieren nach', sNum('sArchiveDays', state.settings.autoArchiveDays, 0) + '<span class="s-unit">Tagen</span>', 'Erledigte Tasks, 0 = nie.')
+    );
 
-      '<div class="section-title">Archiv</div>' +
-      '<div class="form-row"><label>Erledigte Tasks automatisch archivieren nach (Tage, 0 = nie)</label><input type="number" id="sArchiveDays" value="'+state.settings.autoArchiveDays+'" min="0" style="max-width:120px;"></div>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="customize">' +
-      '<div class="section-title">Spalten</div>' +
+  /* ---------- Board ---------- */
+  var boardTab =
+    sCollapsible('Spalten',
       '<div class="columns-list">' + state.columns.map(function(c){
         return '<div class="col-row"><input value="'+escapeAttr(c.name)+'" data-col-id="'+c.id+'" class="settingsColName"></div>';
-      }).join('') + '</div>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="time">' +
-      '<div class="section-title">Zeit-Preis-Rechner</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Optionaler Stundensatz – zeigt in der Statistik den erarbeiteten Wert für den gewählten Zeitraum.</div>' +
-      '<div class="form-row"><label>Stundensatz (CHF)</label><input type="number" id="sHourlyRate" value="'+(state.settings.hourlyRate||'')+'" min="0" style="max-width:120px;" placeholder="z.B. 95"></div>' +
-
-      '<div class="section-title">Soll-/Ist-Zeitvergleich</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Optionale Ziel-Arbeitszeit pro Tag – die Statistik zeigt dann Soll vs. Ist für Heute/Woche/Monat (Wochenenden werden nicht mitgezählt).</div>' +
-      '<div class="form-row"><label>Zielarbeitszeit (Std./Tag)</label><input type="number" id="sTargetHours" value="'+(state.settings.targetHoursPerDay||'')+'" min="0" step="0.1" style="max-width:120px;" placeholder="z.B. 8.4"></div>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="security">' +
-      '<div class="section-title">Sichtschutz (PIN)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Blendet beim Start eine PIN-Abfrage ein, damit vorbeigehende Kolleg:innen nicht sofort alles sehen. <strong>Kein echter Schutz</strong> – die Daten liegen weiterhin unverschlüsselt in der Datei.</div>' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row"><input type="password" id="sPinCode" value="'+escapeAttr(state.settings.pinCode||'')+'" placeholder="PIN (leer = aus)" maxlength="12" style="max-width:160px;"></div>' +
-        '<div class="form-row"><button class="btn" id="savePinBtn">Speichern</button></div>' +
-      '</div>' +
-
-      '<div class="section-title">Zwischenablage-Überwachung</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Prüft alle paar Sekunden, ob ein Jira-/Confluence-Bookmarklet-Ergebnis in der Zwischenablage liegt, und erinnert dich dann per Hinweis (liest keine anderen Inhalte, nur nach Klick auf ein Bookmarklet relevant).</div>' +
-      '<label style="display:flex; align-items:center; gap:8px; font-size:13px;"><input type="checkbox" id="sClipboardWatch" '+(state.settings.clipboardWatchEnabled?'checked':'')+'> Automatisch auf Bookmarklet-Daten prüfen</label>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="customize">' +
-      '<div class="section-title">Task-Vorlagen</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Komplette Task-Vorlagen (Typ, Priorität, Tags, Beschreibung) für wiederkehrende Aufgaben. Über Strg+K → "Aus Vorlage" nutzbar, oder in einem Task auf "Als Vorlage speichern".</div>' +
-      '<div class="columns-list">' + state.settings.taskTemplates.map(function(tpl, idx){
-        return '<div class="col-row"><span style="flex:1;">'+(TYPES[tpl.type]||TYPES.adhoc).icon+' '+escapeHtml(tpl.name)+'</span><button class="icon-btn" data-remove-template="'+idx+'">✕</button></div>';
-      }).join('') + '</div>' +
-      (!state.settings.taskTemplates.length ? '<div class="hint">Noch keine Vorlagen.</div>' : '') +
-
-      '<div class="section-title">Textbausteine</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Wiederkehrende Antworten/Notizen, per 📎-Button in Notizen und Schnellerfassung einfügbar.</div>' +
-      '<div class="columns-list" id="snippetsList">' + state.settings.snippets.map(function(s, idx){
-        return '<div class="col-row"><input value="'+escapeAttr(s.label)+'" data-snippet-idx="'+idx+'" data-snippet-field="label" style="max-width:140px;" placeholder="Name"><input value="'+escapeAttr(s.text)+'" data-snippet-idx="'+idx+'" data-snippet-field="text" style="flex:1;" placeholder="Text"><button class="icon-btn" data-remove-snippet="'+idx+'">✕</button></div>';
-      }).join('') + '</div>' +
-      '<button class="btn" id="addSnippetBtn">+ Textbaustein</button>' +
-
-      '<div class="section-title">Eigene Task-Typen</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Zusätzlich zu Jira/Mail/Hotline/Meeting/Ad-hoc eigene Typen mit Icon definieren.</div>' +
-      '<div class="columns-list">' + state.settings.customTypes.map(function(ct, idx){
-        return '<div class="col-row">' +
-          '<input value="'+escapeAttr(ct.icon)+'" data-ctype-idx="'+idx+'" data-ctype-field="icon" style="max-width:50px; text-align:center;" placeholder="🔧">' +
-          '<input value="'+escapeAttr(ct.label)+'" data-ctype-idx="'+idx+'" data-ctype-field="label" style="flex:1;" placeholder="Name">' +
-          '<button class="icon-btn" data-remove-ctype="'+idx+'">✕</button></div>';
-      }).join('') + '</div>' +
-      '<button class="btn" id="addCustomTypeBtn">+ Eigener Typ</button>' +
-
-      '<div class="section-title">Team</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Namen hinterlegen, um Tasks zuzuweisen und nach Person zu gruppieren ("👥 Nach Person"-Ansicht).</div>' +
-      '<div class="columns-list">' + state.settings.teamMembers.map(function(m, idx){
-        return '<div class="col-row"><input value="'+escapeAttr(m)+'" data-member-idx="'+idx+'"><button class="icon-btn" data-remove-member="'+idx+'">✕</button></div>';
-      }).join('') + '</div>' +
-      '<button class="btn" id="addMemberBtn">+ Teammitglied</button>' +
-      '</div>' +
-
-      '<div class="settings-section" data-tab="storage">' +
-      '<div class="section-title">Boards</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Getrennte Boards für z.B. "Arbeit" und "Privat". Beim Wechseln bleiben alle Daten erhalten.</div>' +
+      }).join('') + '</div>', true) +
+    sCollapsible('Boards',
+      '<p class="s-sub" style="margin:0 0 8px;">Getrennte Boards, z.B. „Arbeit“ und „Privat“. Beim Wechseln bleiben alle Daten erhalten.</p>' +
       '<div class="columns-list">' +
         ([state.settings.activeBoardName].concat(state.boards.map(function(b){return b.name;}))).map(function(name){
           var active = name === state.settings.activeBoardName;
@@ -5088,26 +5076,95 @@ function openSettings(){
           '</div>';
         }).join('') +
       '</div>' +
-      '<div class="form-row-inline" style="margin-top:8px;">' +
-        '<div class="form-row" style="flex:1"><input id="newBoardName" placeholder="Name für neues Board"></div>' +
-        '<div class="form-row"><button class="btn" id="addBoardBtn">+ Neues Board</button></div>' +
-      '</div>' +
-      '</div>' +
+      '<div class="s-inline" style="margin-top:10px;"><input id="newBoardName" placeholder="Name für neues Board" style="flex:1;"><button class="btn" id="addBoardBtn">+ Neues Board</button></div>', false) +
+    sCollapsible('Team',
+      '<p class="s-sub" style="margin:0 0 8px;">Namen zum Zuweisen von Tasks und für die Ansicht „👥 Nach Person“.</p>' +
+      '<div class="columns-list">' + state.settings.teamMembers.map(function(m, idx){
+        return '<div class="col-row"><input value="'+escapeAttr(m)+'" data-member-idx="'+idx+'"><button class="icon-btn" data-remove-member="'+idx+'">✕</button></div>';
+      }).join('') + '</div>' +
+      '<div class="s-actions"><button class="btn" id="addMemberBtn">+ Teammitglied</button></div>', false) +
+    sCollapsible('Task-Vorlagen',
+      '<p class="s-sub" style="margin:0 0 8px;">Vorlagen für wiederkehrende Aufgaben. Nutzbar über Strg+K → „Aus Vorlage“ oder in einem Task über „Als Vorlage speichern“.</p>' +
+      '<div class="columns-list">' + state.settings.taskTemplates.map(function(tpl, idx){
+        return '<div class="col-row"><span style="flex:1;">'+(TYPES[tpl.type]||TYPES.adhoc).icon+' '+escapeHtml(tpl.name)+'</span><button class="icon-btn" data-remove-template="'+idx+'">✕</button></div>';
+      }).join('') + '</div>' +
+      (!state.settings.taskTemplates.length ? '<div class="s-sub">Noch keine Vorlagen.</div>' : ''), false) +
+    sCollapsible('Textbausteine',
+      '<p class="s-sub" style="margin:0 0 8px;">Wiederkehrende Antworten und Notizen, per 📎-Button einfügbar.</p>' +
+      '<div class="columns-list" id="snippetsList">' + state.settings.snippets.map(function(s, idx){
+        return '<div class="col-row"><input value="'+escapeAttr(s.label)+'" data-snippet-idx="'+idx+'" data-snippet-field="label" style="max-width:140px;" placeholder="Name"><input value="'+escapeAttr(s.text)+'" data-snippet-idx="'+idx+'" data-snippet-field="text" style="flex:1;" placeholder="Text"><button class="icon-btn" data-remove-snippet="'+idx+'">✕</button></div>';
+      }).join('') + '</div>' +
+      '<div class="s-actions"><button class="btn" id="addSnippetBtn">+ Textbaustein</button></div>', false) +
+    sCollapsible('Eigene Task-Typen',
+      '<p class="s-sub" style="margin:0 0 8px;">Zusätzlich zu Jira, Mail, Hotline, Meeting und Ad-hoc.</p>' +
+      '<div class="columns-list">' + state.settings.customTypes.map(function(ct, idx){
+        return '<div class="col-row">' +
+          '<input value="'+escapeAttr(ct.icon)+'" data-ctype-idx="'+idx+'" data-ctype-field="icon" style="max-width:50px; text-align:center;" placeholder="🔧">' +
+          '<input value="'+escapeAttr(ct.label)+'" data-ctype-idx="'+idx+'" data-ctype-field="label" style="flex:1;" placeholder="Name">' +
+          '<button class="icon-btn" data-remove-ctype="'+idx+'">✕</button></div>';
+      }).join('') + '</div>' +
+      '<div class="s-actions"><button class="btn" id="addCustomTypeBtn">+ Eigener Typ</button></div>', false);
 
-      (isCurrentUserAdmin ?
-      '<div class="settings-section" data-tab="admin">' +
-      '<div class="section-title">🛡️ Benutzerverwaltung</div>' +
-      '<div class="hint" style="margin-bottom:10px;">Zeigt alle registrierten Personen. <strong>Passwort-Reset</strong> schickt denselben E-Mail-Link wie "Passwort vergessen" beim Login – funktioniert ohne das Passwort der Person zu kennen. <strong>Neue Personen</strong> brauchen keinen Admin: die Registrierung ist offen, einfach den App-Link weitergeben. <strong>Admin-Rechte vergeben/entziehen</strong> geht aus Sicherheitsgründen bewusst nicht über die App, sondern nur manuell im Supabase-Dashboard (Table Editor → Tabelle "admins" → Zeile mit der User-ID hinzufügen/löschen; die User-ID findest du unter Authentication → Users).</div>' +
+  /* ---------- Integrationen ---------- */
+  var integrationsTab =
+    sCard('Jira & Confluence', 'Die Links in die Lesezeichenleiste ziehen und auf einer offenen Seite anklicken – die Daten landen in der Zwischenablage.',
+      '<div class="s-chips">' +
+        '<a class="bkm" id="bkmLink" href="#">📌 Jira → Board</a>' +
+        '<a class="bkm" id="bkmConfluenceLink" href="#">📘 Confluence → Board</a>' +
+        '<a class="bkm" id="bkmStatusLink" href="#">🔄 Jira-Status setzen</a>' +
+        '<a class="bkm" id="bkmBulkLink" href="#">📦 Jira-Suchliste (Bulk)</a>' +
+      '</div>' +
+      '<div class="s-sub">Ziehen statt klicken! „Status setzen“ und „Bulk“ sind Best-Effort und hängen von deiner Jira-Version und -Berechtigung ab.</div>' +
+      sRow('Zwischenablage automatisch prüfen', sCheck('sClipboardWatch', state.settings.clipboardWatchEnabled), 'Meldet sich, wenn ein Bookmarklet-Ergebnis bereitliegt.')
+    ) +
+    sCard('🔔 Push aufs Handy (ntfy.sh)', 'Benachrichtigung bei: Task zugewiesen, neues Hotline-Ticket, SLA kritisch, Task erledigt.',
+      sRow('Aktiviert', sCheck('sNtfyEnabled', state.settings.ntfyEnabled)) +
+      sRow('Thema', '<input id="sNtfyTopic" value="'+escapeAttr(state.settings.ntfyTopic)+'" placeholder="z.B. wb-team-a1b2c3d4">', 'Privat und geheim halten.') +
+      '<div class="s-actions"><button class="btn" id="btnNtfyTest">🔔 Test senden</button></div>' +
+      sMore('Einrichtung',
+        '<p>Kostenlose <strong>ntfy-App</strong> (Android/iOS) installieren und ein privates, geheimes Thema abonnieren (z.B. eine lange zufällige Zeichenfolge). Denselben Namen oben eintragen.</p>' +
+        '<p>Die Texte sind bewusst generisch (kein Task-Titel, kein Kundenname), da sie über ntfys Server laufen und nicht verschlüsselt sind.</p>'
+      )
+    ) +
+    sCard('KI-Schnellerfassung', 'Optional: erstellt Tasks automatisch aus eingefügtem Mail- oder Ticket-Text.',
+      sRow('Anthropic API-Key', '<input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…">', 'Ohne Key gibt es eine einfachere Texterkennung.') +
+      sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert und direkt an Anthropic gesendet.</p>')
+    ) +
+    sCard('🔗 Read-only-Link teilen', 'Optional: Ein GitHub-Token (Scope nur „gist“) wird für den Button „Read-only-Link teilen“ gebraucht.',
+      sRow('GitHub-Token', '<div class="s-inline"><input type="password" id="sCloudToken" value="'+escapeAttr(cloudCfg.token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div>')
+    );
+
+  /* ---------- Admin ---------- */
+  var adminTab = isCurrentUserAdmin ?
+    sCard('🛡️ Benutzerverwaltung', 'Alle registrierten Personen. Passwort-Reset schickt den Link per E-Mail, ohne das Passwort zu kennen.',
       '<div class="columns-list" id="adminUserList">' +
         (registeredProfileRows.length ? registeredProfileRows.map(function(p){
           var isAdmin = adminUserIds.indexOf(p.id) >= 0;
-          return '<div class="col-row"><span style="flex:1;">'+(isAdmin?'🛡️ ':'')+escapeHtml(p.display_name)+' <span class="hint">('+escapeHtml(p.email||'–')+')</span></span>' +
+          return '<div class="col-row"><span style="flex:1;">'+(isAdmin?'🛡️ ':'')+escapeHtml(p.display_name)+' <span class="s-sub">('+escapeHtml(p.email||'–')+')</span></span>' +
             '<button class="btn" data-admin-reset-email="'+escapeAttr(p.email||'')+'">🔑 Passwort-Reset</button></div>';
-        }).join('') : '<div class="hint">Noch keine registrierten Profile geladen.</div>') +
+        }).join('') : '<div class="s-sub">Noch keine registrierten Profile geladen.</div>') +
       '</div>' +
-      '<button class="btn" id="btnAdminRefreshUsers" style="margin-top:8px;">🔄 Liste aktualisieren</button>' +
-      '</div>' : '') +
+      '<div class="s-actions"><button class="btn" id="btnAdminRefreshUsers">🔄 Liste aktualisieren</button></div>' +
+      sMore('Hinweise',
+        '<p><strong>Neue Personen</strong> brauchen keinen Admin: Die Registrierung ist offen, einfach den App-Link weitergeben.</p>' +
+        '<p><strong>Admin-Rechte</strong> vergibst du bewusst nur manuell im Supabase-Dashboard (Table Editor → Tabelle „admins“ → Zeile mit der User-ID; zu finden unter Authentication → Users).</p>'
+      )
+    ) : '';
 
+  var tabBodies = {account:accountTab, design:designTab, time:timeTab, board:boardTab, integrations:integrationsTab, admin:adminTab};
+  if(!tabBodies[settingsActiveTab] || (settingsActiveTab === 'admin' && !isCurrentUserAdmin)) settingsActiveTab = 'account';
+
+  var html =
+    '<div class="modal-header"><h2>⚙️ Einstellungen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body s-body">' +
+      '<div class="s-layout">' +
+        '<nav class="settings-tabs">' +
+          visibleSettingsTabs.map(function(tb){ return '<button type="button" class="settings-tab-btn" data-settings-tab="'+tb.id+'">'+tb.label+'</button>'; }).join('') +
+        '</nav>' +
+        '<div class="s-content">' +
+          visibleSettingsTabs.map(function(tb){ return '<div class="settings-section" data-tab="'+tb.id+'">' + tabBodies[tb.id] + '</div>'; }).join('') +
+        '</div>' +
+      '</div>' +
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn primary" data-close-modal>Fertig</button>' +
