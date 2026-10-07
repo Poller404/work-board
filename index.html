@@ -863,6 +863,25 @@ button.mobile-only{display:none;}
 .week-table .st-warn{color:var(--warn); font-weight:600;}
 .week-table .st-bad{color:var(--danger); font-weight:600;}
 .week-hints{margin-top:10px; display:flex; flex-direction:column; gap:6px; font-size:13px;}
+/* ---- Wissensdatenbank ---- */
+.kb-search{display:flex; gap:8px; margin-bottom:10px;}
+.kb-search input{flex:1; font-size:15px; padding:10px 12px;}
+.kb-filters{display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;}
+.kb{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:14px; align-items:start;}
+.kb-list{display:flex; flex-direction:column; gap:8px;}
+.kb-item{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; cursor:pointer;}
+.kb-item:hover{border-color:var(--border-strong);}
+.kb-item.on{border-color:var(--accent); background:var(--accent-soft);}
+.kb-item-top{display:flex; align-items:center; gap:8px;}
+.kb-item-title{flex:1; font-weight:600; min-width:0;}
+.kb-snip{font-size:12.5px; color:var(--text-dim); margin:4px 0;}
+.kb-detail{position:sticky; top:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;}
+.kb-art-head{display:flex; align-items:center; gap:10px;}
+.kb-art-head h2{margin:0; font-size:17px;}
+.kb-text{font-size:13px; white-space:pre-wrap; margin-bottom:3px;}
+mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0 1px;}
+.sim-sol{font-size:12px; color:var(--ok); margin-top:2px;}
+@media (max-width:900px){ .kb{grid-template-columns:1fr;} .kb-detail{position:static;} }
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -919,6 +938,7 @@ button.mobile-only{display:none;}
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
     <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
+    <button class="sb-item" data-view="kb"><svg class="i"><use href="#i-book"/></svg><span class="lbl" data-i18n="navKb">Wissen</span></button>
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
@@ -930,7 +950,7 @@ button.mobile-only{display:none;}
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -1434,6 +1454,9 @@ function updateTask(id, patch){
       awardXp(t);
       spawnRecurrenceIfDue(t);
       sendNtfyPush('✅ Task erledigt', 'Ein Task wurde als erledigt markiert' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + '.');
+      if(!kbHasSolution(t) && (t.type === 'hotline' || (t.notes && t.notes.length >= 2))){
+        setTimeout(function(){ toast('💡 Erledigt – Lösung für die Wissensdatenbank festhalten?', 9000, 'Festhalten', function(){ openSolutionDialog(t.id); }); }, 700);
+      }
     } else if(toCol && !DONE_COLUMN_RE.test(toCol.name) && t.completedAt){
       patch.completedAt = null;
     }
@@ -1622,7 +1645,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navViews:'Ansichten', navSettings:'Einstellungen',
+    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -1631,7 +1654,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navViews:'Views', navSettings:'Settings',
+    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -2539,7 +2562,7 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects'];
+var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects', 'kb'];
 var quickFilters = {};
 var filterTag = '';
 var filterProject = '';
@@ -2833,6 +2856,7 @@ function renderBoard(){
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
   if(boardViewMode === 'dyce'){ renderDyceView(); return; }
   if(boardViewMode === 'projects'){ renderProjectsView(); return; }
+  if(boardViewMode === 'kb'){ renderKbView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -2999,47 +3023,6 @@ function slaLevel(t){
   if(ageHours >= (state.settings.slaCriticalHours||24)) return 'critical';
   if(ageHours >= (state.settings.slaWarnHours||4)) return 'warn';
   return null;
-}
-function openKnowledgeBase(query){
-  query = (query||'').toLowerCase();
-  var results = [];
-  if(query){
-    results = state.tasks.filter(function(t){
-      if(!(t.completedAt || t.archived)) return false;
-      var haystack = (t.title+' '+t.description+' '+(t.jiraKey||'')+' '+t.notes.map(function(n){return n.text;}).join(' ')).toLowerCase();
-      return haystack.indexOf(query) >= 0;
-    }).sort(function(a,b){ return new Date(b.updatedAt) - new Date(a.updatedAt); }).slice(0,30);
-  }
-  var html =
-    '<div class="modal-header"><h2>🔍 Lösungs-Wissensdatenbank</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="hint" style="margin-bottom:8px;">Durchsucht erledigte/archivierte Tasks (Titel, Beschreibung, Notizen) – "das hatten wir schon mal".</div>' +
-      '<input id="kbSearchInput" value="'+escapeAttr(query)+'" placeholder="z.B. VPN, Drucker, Passwort-Reset…" style="width:100%; margin-bottom:12px;">' +
-      '<div id="kbResults">' +
-        (!query ? '<div class="empty-state">Suchbegriff eingeben…</div>' :
-          (results.length ? results.map(function(t){
-            var lastNote = t.notes.length ? t.notes[t.notes.length-1].text : '';
-            return '<div class="note-item" data-open-task="'+t.id+'" style="cursor:pointer; margin-bottom:6px;">' +
-              '<div class="ts">'+(TYPES[t.type]||TYPES.adhoc).icon+' '+escapeHtml(t.jiraKey||'')+' · '+new Date(t.updatedAt).toLocaleDateString('de-CH')+'</div>' +
-              '<div style="font-weight:600;">'+escapeHtml(t.title)+'</div>' +
-              (lastNote ? '<div class="hint" style="margin-top:3px;">💬 '+escapeHtml(lastNote.slice(0,150))+'</div>' : '') +
-            '</div>';
-          }).join('') : '<div class="empty-state">Keine Treffer in erledigten/archivierten Tasks.</div>')
-        ) +
-      '</div>' +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
-  openModal(html, {wide:true});
-  document.querySelectorAll('[data-open-task]').forEach(function(el){
-    el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); });
-  });
-  var input = document.getElementById('kbSearchInput');
-  input.focus();
-  var kbDebounce = null;
-  input.addEventListener('input', function(){
-    clearTimeout(kbDebounce);
-    kbDebounce = setTimeout(function(){ openKnowledgeBase(input.value); }, 300);
-  });
 }
 function openSlaDashboard(){
   var slaTasks = state.tasks.filter(function(t){ return !t.archived && slaLevel(t); })
@@ -4289,6 +4272,11 @@ function openTaskModal(taskId){
             '<div class="hint">Tipp: Screenshots mit Strg+V einfügen.</div>' +
           '</div>' +
 
+          '<div class="task-block"><div class="task-block-title">Lösung<span class="task-block-sub">was hat geholfen? (Wissensdatenbank)</span></div>' +
+            '<textarea id="fSolution" rows="3" placeholder="Problem, Ursache, Lösung in Schritten…">'+escapeHtml(t.solution||'')+'</textarea>' +
+            '<div class="ai-row"><button type="button" class="btn ghost" id="solAiBtn">✨ Aus dem Fall formulieren</button></div>' +
+          '</div>' +
+
           '<div class="task-block"><div class="task-block-title">Checkliste'+(t.checklist.length ? '<span class="task-block-sub">'+checklistDone+' von '+t.checklist.length+'</span>' : '')+'</div>' +
             '<div class="notes-log" id="checklistLog">' + (t.checklist.map(function(c, idx){
               return '<div class="note-item" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" data-checklist-idx="'+idx+'" '+(c.done?'checked':'')+'><span style="flex:1; '+(c.done?'text-decoration:line-through; color:var(--text-faint);':'')+'">'+escapeHtml(c.text)+'</span><button class="icon-btn" data-remove-checklist="'+idx+'" aria-label="Entfernen">✕</button></div>';
@@ -4505,6 +4493,18 @@ function openTaskModal(taskId){
   var followUpEl = document.getElementById('fFollowUp');
   if(followUpEl) followUpEl.addEventListener('change', function(e){
     updateTask(t.id, {followUp: e.target.value});
+  });
+  document.getElementById('fSolution').addEventListener('change', function(e){
+    var v = e.target.value.trim().slice(0, 8000);
+    if(v !== (t.solution || '')) updateTask(t.id, {solution: v});
+  });
+  document.getElementById('solAiBtn').addEventListener('click', function(){
+    if(!aiReady()) return;
+    var btn = this; btn.disabled = true; btn.textContent = '✨ KI arbeitet…';
+    kbAiDraft(t).then(function(txt){
+      document.getElementById('fSolution').value = txt;
+      updateTask(t.id, {solution: txt.slice(0, 8000)});
+    }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✨ Aus dem Fall formulieren'; });
   });
   var mailReplyBtn = document.getElementById('mailReplyBtn');
   if(mailReplyBtn) mailReplyBtn.addEventListener('click', function(){
@@ -4854,9 +4854,15 @@ function findSimilarTasks(text, excludeId){
     if(m >= need) found.push({t: t, score: m / qwords.length});
   });
   found.sort(function(a, b){ return b.score - a.score || new Date(b.t.updatedAt || 0) - new Date(a.t.updatedAt || 0); });
-  return found.slice(0, 5).map(function(f){ return f.t; });
+  var out = found.slice(0, 5).map(function(f){ return f.t; });
+  if(out.length < 5){
+    kbSearch(text, {filter: function(t){ return t.id !== excludeId; }, limit: 8}).forEach(function(r){
+      if(out.length < 5 && r.coverage >= 0.6 && r.score >= 0.5 && out.indexOf(r.t) < 0) out.push(r.t);
+    });
+  }
+  return out;
 }
-function similarRowsHtml(list, withUse, noOpen){
+function similarRowsHtml(list, withUse, noOpen, withSol){
   return list.map(function(t){
     var status = t.archived ? 'archiviert' : (t.completedAt ? 'erledigt' : 'offen');
     var notes = (t.notes || []).slice(-3).reverse().map(function(n){ return '<li>'+escapeHtml(String(n.text || '').slice(0, 160))+'</li>'; }).join('');
@@ -4865,8 +4871,10 @@ function similarRowsHtml(list, withUse, noOpen){
       '<div class="sim-main" data-sim-toggle>' +
         '<div class="sim-title-line"><span class="sim-title">'+escapeHtml(t.title)+'</span><span class="sim-status '+status+'">'+status+'</span></div>' +
         '<div class="sim-meta">'+(t.reporter ? escapeHtml(t.reporter)+' · ' : '')+new Date(t.updatedAt || t.createdAt).toLocaleDateString('de-CH')+'</div>' +
+        (kbHasSolution(t) ? '<div class="sim-sol">💡 '+escapeHtml(t.solution.replace(/\s+/g, ' ').slice(0, 150))+'</div>' : '') +
       '</div>' +
       '<div class="sim-actions">' +
+        (withSol && kbHasSolution(t) ? '<button type="button" class="btn ghost" data-sim-sol="'+t.id+'" title="Die festgehaltene Lösung als Notiz übernehmen">Lösung übernehmen</button>' : '') +
         (withUse ? '<button type="button" class="btn ghost" data-sim-use="'+t.id+'">Übernehmen</button>' : '') +
         (noOpen ? '' : '<button type="button" class="btn ghost" data-sim-open="'+t.id+'">Öffnen</button>') +
       '</div>' +
@@ -4874,7 +4882,10 @@ function similarRowsHtml(list, withUse, noOpen){
     '</div>';
   }).join('');
 }
-function wireSimilarRows(container, onUse){
+function wireSimilarRows(container, onUse, onSol){
+  if(onSol) container.querySelectorAll('[data-sim-sol]').forEach(function(b){
+    b.addEventListener('click', function(){ onSol(getTask(b.dataset.simSol)); });
+  });
   container.querySelectorAll('[data-sim-toggle]').forEach(function(el){
     el.addEventListener('click', function(){
       var d = el.parentNode.querySelector('.sim-detail');
@@ -4896,8 +4907,12 @@ function renderSimilarHint(taskId){
   var list = /^Neuer Task$/i.test(t.title.trim()) ? [] : findSimilarTasks(t.title, t.id);
   if(!list.length){ el.innerHTML = ''; return; }
   el.innerHTML = '<details class="s-more sim-hint"><summary>'+list.length+' ähnliche'+(list.length === 1 ? 'r Task' : ' Tasks')+' gefunden</summary>' +
-    '<div class="s-more-body">'+similarRowsHtml(list, false)+'</div></details>';
-  wireSimilarRows(el, null);
+    '<div class="s-more-body">'+similarRowsHtml(list, false, false, true)+'</div></details>';
+  wireSimilarRows(el, null, function(src){
+    t.notes.push({ts: nowIso(), text: 'Mögliche Lösung (aus „' + src.title + '“): ' + src.solution.trim()});
+    t.updatedAt = nowIso(); save(); openTaskModal(t.id);
+    toast('💡 Lösung als Notiz übernommen.');
+  });
 }
 
 /* =========================================================
@@ -4985,7 +5000,7 @@ function openHotlineDialog(){
         .sort(function(a, b){ return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); }).slice(0, 4);
       head = list.length ? 'Bisherige Tickets von ' + rep : '';
     }
-    simEl.innerHTML = list.length ? '<div class="sim-head">' + escapeHtml(head) + '</div>' + similarRowsHtml(list, true, true) : '';
+    simEl.innerHTML = list.length ? '<div class="sim-head">' + escapeHtml(head) + '</div>' + similarRowsHtml(list, true, true, true) : '';
     wireSimilarRows(simEl, function(src){
       var title = src.title;
       if(src.reporter && title.indexOf(src.reporter + ' – ') === 0) title = title.slice((src.reporter + ' – ').length);
@@ -4994,6 +5009,9 @@ function openHotlineDialog(){
       if(!phoneEl.value.trim() && src.phone) phoneEl.value = src.phone;
       if(src.priority && PRIORITIES[src.priority]) setPrio(src.priority);
       refreshSuggestions();
+    }, function(src){
+      notesEl.value = (notesEl.value.trim() ? notesEl.value.trim() + '\n' : '') + 'Mögliche Lösung (aus „' + src.title + '“): ' + src.solution.trim();
+      toast('💡 Lösung in die Notizen übernommen.');
     });
   }
   function scheduleSuggestions(){ clearTimeout(simTimer); simTimer = setTimeout(refreshSuggestions, 180); }
@@ -10184,6 +10202,254 @@ setInterval(function(){
   if(!line){ line = document.createElement('div'); line.className = 'pl-now'; col.appendChild(line); }
   line.style.top = ((nm - axS) / 60 * PL_HPX) + 'px';
 }, 60000);
+
+/* =========================================================
+   WISSENSDATENBANK
+   Erledigte Tasks werden zu Lösungsartikeln: Das Feld "Lösung" im Task hält fest, was geholfen hat.
+   Die Suche arbeitet lokal (gewichtete Stichwortsuche mit einfacher Wortstamm-Erkennung, ähnlich
+   TF-IDF), optional beantwortet die KI Fragen anhand der besten Treffer. Bei neuen Hotline-Anrufen
+   und im Task erscheinen ähnliche Fälle samt Lösung als Vorschlag.
+   ========================================================= */
+var kbQuery = '';
+var kbSelected = '';
+var kbOnlySolved = true;
+var kbFilterType = '';
+var kbAnswerHtml = '';
+
+function kbNorm(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss');
+}
+var KB_SUFFIXES = ['ungen', 'ung', 'keit', 'heit', 'lich', 'ern', 'en', 'er', 'es', 'e', 'n', 's'];
+function kbStem(w){
+  for(var i = 0; i < KB_SUFFIXES.length; i++){
+    var s = KB_SUFFIXES[i];
+    if(w.length - s.length >= 4 && w.slice(-s.length) === s) return w.slice(0, -s.length);
+  }
+  return w;
+}
+function kbTokens(s){
+  return (kbNorm(s).match(/[a-z0-9]{2,}/g) || []).filter(function(w){ return !SIM_STOP[w]; }).map(kbStem);
+}
+function kbDocFields(t){
+  return [
+    [3, t.title], [3, t.solution || ''], [2, (t.tags || []).join(' ')], [2, t.jiraKey || ''],
+    [1, t.description || ''], [1, (t.notes || []).map(function(n){ return n.text; }).join(' ')],
+    [1, (t.checklist || []).map(function(c){ return c.text; }).join(' ')], [0.5, (t.reporter || '') + ' ' + projectNameOf(t)]
+  ];
+}
+/* Gibt [{t, score, coverage}] absteigend nach Relevanz zurück. */
+function kbSearch(query, opts){
+  opts = opts || {};
+  var q = kbTokens(query);
+  var seen = {};
+  q = q.filter(function(w){ if(seen[w]) return false; seen[w] = 1; return true; });
+  if(!q.length) return [];
+  var docs = state.tasks.filter(opts.filter || function(){ return true; }).map(function(t){
+    var tf = {};
+    kbDocFields(t).forEach(function(f){ kbTokens(f[1]).forEach(function(tok){ tf[tok] = (tf[tok] || 0) + f[0]; }); });
+    return {t: t, tf: tf};
+  });
+  function weight(d, w){
+    if(d.tf[w]) return d.tf[w];
+    if(w.length < 4) return 0;
+    var best = 0;
+    for(var k in d.tf){ if(k.indexOf(w) === 0 || (k.length >= 4 && w.indexOf(k) === 0)) best = Math.max(best, d.tf[k] * 0.6); }
+    return best;
+  }
+  var N = docs.length || 1, df = {};
+  q.forEach(function(w){ df[w] = docs.filter(function(d){ return weight(d, w) > 0; }).length; });
+  var res = [];
+  docs.forEach(function(d){
+    var score = 0, hits = 0;
+    q.forEach(function(w){
+      var tfw = weight(d, w);
+      if(tfw > 0){ hits++; score += Math.log(1 + N / (1 + df[w])) * (tfw / (tfw + 1.2)); }
+    });
+    if(!hits) return;
+    var coverage = hits / q.length;
+    score *= 0.4 + 0.6 * coverage;
+    if(d.t.solution) score *= 1.15;
+    if(d.t.completedAt) score *= 1.05;
+    res.push({t: d.t, score: score, coverage: coverage});
+  });
+  res.sort(function(a, b){ return b.score - a.score; });
+  return res.slice(0, opts.limit || 30);
+}
+function kbHasSolution(t){ return !!(t.solution && t.solution.trim()); }
+/* Text, der als "Lösung" gilt: explizit, sonst die letzten Notizen eines erledigten Tasks. */
+function kbSolutionText(t){
+  if(kbHasSolution(t)) return t.solution.trim();
+  if((t.completedAt || t.archived) && t.notes && t.notes.length) return t.notes.slice(-3).map(function(n){ return n.text; }).join(' · ');
+  return '';
+}
+function kbSnippet(t, qWords){
+  var text = kbSolutionText(t) || t.description || '';
+  if(!text) return '';
+  text = text.replace(/\s+/g, ' ');
+  var idx = -1;
+  qWords.forEach(function(w){ if(idx < 0){ var i = text.toLowerCase().indexOf(w); if(i >= 0) idx = i; } });
+  var start = Math.max(0, idx - 40);
+  return (start > 0 ? '…' : '') + text.slice(start, start + 200) + (start + 200 < text.length ? '…' : '');
+}
+function kbHighlight(text, qWords){
+  var h = escapeHtml(text);
+  qWords.filter(function(w){ return w.length >= 3; }).forEach(function(w){
+    h = h.replace(new RegExp('(' + w.replace(/[^a-z0-9äöüß]/gi, '') + ')', 'ig'), '<mark>$1</mark>');
+  });
+  return h;
+}
+function kbMissing(){
+  return state.tasks.filter(function(t){
+    return (t.completedAt || t.archived) && t.type === 'hotline' && !kbHasSolution(t) && ((t.notes && t.notes.length) || totalSeconds(t) >= 300);
+  }).sort(function(a, b){ return new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0); });
+}
+function openKnowledgeBase(query){
+  kbQuery = query || '';
+  kbSelected = '';
+  kbAnswerHtml = '';
+  switchToView('kb');
+}
+function kbAiDraft(t){
+  return callAIRaw('Fasse die Lösung dieses abgeschlossenen Supportfalls als kurzen Wissensartikel zusammen: Problem (1 Satz), Ursache (nur falls bekannt), Lösung als nummerierte Schritte. Höchstens 150 Wörter, Deutsch (Schweizer Rechtschreibung, kein ß), kein Markdown ausser der Nummerierung. Erfinde nichts, was nicht aus dem Fall hervorgeht.', taskAiContext(t), 700).then(function(s){ return s.trim(); });
+}
+function openSolutionDialog(taskId){
+  var t = getTask(taskId);
+  if(!t) return;
+  var initial = t.solution || (t.notes.length ? t.notes.slice(-3).map(function(n){ return n.text; }).join('\n') : '');
+  var html = '<div class="modal-header"><h2>💡 Lösung festhalten</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body"><div class="hint" style="margin:0 0 8px;">Was hat geholfen? Beim nächsten ähnlichen Fall wird die Lösung vorgeschlagen.</div>' +
+    '<div style="font-weight:600; margin-bottom:8px;">' + escapeHtml(t.title) + '</div>' +
+    '<textarea id="solText" rows="8" style="width:100%;" placeholder="Problem, Ursache, Lösung in Schritten…">' + escapeHtml(initial) + '</textarea>' +
+    '<div class="ai-row"><button type="button" class="btn ghost" id="solAi">✨ Aus dem Fall formulieren</button></div></div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Später</button><button class="btn primary" id="solSave">Speichern</button></div>';
+  openModal(html, {wide: true});
+  document.getElementById('solText').focus();
+  document.getElementById('solAi').addEventListener('click', function(){
+    if(!aiReady()) return;
+    var btn = this; btn.disabled = true; btn.textContent = '✨ KI arbeitet…';
+    kbAiDraft(t).then(function(txt){ document.getElementById('solText').value = txt; }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✨ Aus dem Fall formulieren'; });
+  });
+  document.getElementById('solSave').addEventListener('click', function(){
+    var v = document.getElementById('solText').value.trim();
+    if(!v){ toast('Bitte einen Text eingeben.'); return; }
+    updateTask(t.id, {solution: v.slice(0, 8000)});
+    closeModal(); renderAll();
+    toast('💡 Lösung gespeichert.');
+  });
+}
+function kbArticleHtml(t){
+  var proj = projectNameOf(t);
+  var sol = kbSolutionText(t);
+  return '<div class="kb-article">' +
+    '<div class="kb-art-head"><span class="type-badge' + (BASE_TYPES[t.type] ? ' ty-' + t.type : '') + '">' + typeIconHtml(t.type) + '</span><h2>' + escapeHtml(t.title) + '</h2></div>' +
+    '<div class="hint">' + [t.jiraKey, t.reporter ? 'Reporter: ' + t.reporter : '', proj, new Date(t.completedAt || t.updatedAt || t.createdAt).toLocaleDateString('de-CH'), totalSeconds(t) ? fmtHM(totalSeconds(t)) + ' Aufwand' : ''].filter(Boolean).map(escapeHtml).join(' · ') + '</div>' +
+    (t.tags.length ? '<div class="tags" style="margin:6px 0;">' + t.tags.map(function(tag){ return '<span class="tag">#' + escapeHtml(tag) + '</span>'; }).join('') + '</div>' : '') +
+    (t.description ? '<div class="task-block-title" style="margin-top:12px;">Problem</div><div class="kb-text">' + escapeHtml(t.description) + '</div>' : '') +
+    '<div class="task-block-title" style="margin-top:12px;">Lösung' + (!kbHasSolution(t) && sol ? '<span class="task-block-sub">aus den Notizen, noch nicht festgehalten</span>' : '') + '</div>' +
+    '<textarea id="kbSolText" rows="6" style="width:100%;" placeholder="Was hat geholfen?">' + escapeHtml(kbHasSolution(t) ? t.solution : sol) + '</textarea>' +
+    '<div class="ai-row"><button class="btn primary" id="kbSolSave">Lösung speichern</button><button class="btn ghost" id="kbSolAi">✨ Formulieren (KI)</button><button class="btn ghost" id="kbSolCopy">Kopieren</button><button class="btn ghost" id="kbSolSnippet" title="Als Textbaustein ablegen">📎 Als Textbaustein</button></div>' +
+    (t.checklist.length ? '<div class="task-block-title" style="margin-top:12px;">Schritte</div>' + t.checklist.map(function(c){ return '<div class="kb-text">' + (c.done ? '✓ ' : '☐ ') + escapeHtml(c.text) + '</div>'; }).join('') : '') +
+    (t.notes.length ? '<div class="task-block-title" style="margin-top:12px;">Notizen</div>' + t.notes.slice(-6).map(function(n){ return '<div class="note-item" style="margin-bottom:4px;"><div class="ts">' + new Date(n.ts).toLocaleDateString('de-CH') + '</div>' + escapeHtml(n.text) + '</div>'; }).join('') : '') +
+    '<div style="margin-top:12px; display:flex; gap:8px;"><button class="btn" id="kbOpenTask">Task öffnen</button></div>' +
+  '</div>';
+}
+function renderKbView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var qWords = (kbQuery.toLowerCase().match(/[a-zäöüß0-9]{3,}/g) || []);
+  var filter = function(t){
+    if(kbFilterType && t.type !== kbFilterType) return false;
+    if(kbOnlySolved && !kbHasSolution(t) && !((t.completedAt || t.archived) && t.notes.length)) return false;
+    return true;
+  };
+  var results = kbQuery.trim() ? kbSearch(kbQuery, {filter: filter, limit: 40}) : [];
+  var recent = !kbQuery.trim() ? state.tasks.filter(function(t){ return filter(t) && (kbHasSolution(t) || t.completedAt || t.archived); })
+    .sort(function(a, b){ return new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0); }).slice(0, 25).map(function(t){ return {t: t}; }) : [];
+  var list = kbQuery.trim() ? results : recent;
+  var solvedCount = state.tasks.filter(kbHasSolution).length;
+  var missing = kbMissing();
+  var sel = kbSelected && getTask(kbSelected) ? getTask(kbSelected) : (list[0] ? list[0].t : null);
+  if(sel) kbSelected = sel.id;
+
+  var listHtml = list.map(function(r){
+    var t = r.t;
+    return '<div class="kb-item' + (sel && sel.id === t.id ? ' on' : '') + '" data-kb="' + t.id + '">' +
+      '<div class="kb-item-top"><span class="type-badge' + (BASE_TYPES[t.type] ? ' ty-' + t.type : '') + '">' + typeIconHtml(t.type) + '</span><span class="kb-item-title">' + kbHighlight(t.title, qWords) + '</span>' +
+        (kbHasSolution(t) ? '<span class="pill low" title="Lösung festgehalten">💡 Lösung</span>' : '') + '</div>' +
+      '<div class="kb-snip">' + kbHighlight(kbSnippet(t, qWords) || 'Keine Beschreibung.', qWords) + '</div>' +
+      '<div class="hint">' + escapeHtml([t.jiraKey, t.reporter, new Date(t.completedAt || t.updatedAt || t.createdAt).toLocaleDateString('de-CH')].filter(Boolean).join(' · ')) + '</div></div>';
+  }).join('') || '<div class="empty-state">' + (kbQuery.trim() ? 'Keine Treffer. Tipp: weniger oder allgemeinere Suchbegriffe, oder „Nur mit Lösung“ ausschalten.' : 'Noch keine abgeschlossenen Fälle. Erledigte Tasks erscheinen hier.') + '</div>';
+
+  var missHtml = missing.length ? '<section class="dcard" style="margin-bottom:12px;"><div class="dcard-head"><h3>Lösung nachtragen <span class="count">' + missing.length + '</span></h3></div>' +
+    '<div class="hint" style="margin:-4px 0 6px;">Erledigte Hotline-Tickets ohne festgehaltene Lösung:</div>' +
+    missing.slice(0, 5).map(function(t){ return '<div class="dash-row" style="cursor:default;"><span class="dash-row-title">' + escapeHtml(t.title) + '</span><button class="btn" data-kb-sol="' + t.id + '">💡 Festhalten</button></div>'; }).join('') + '</section>' : '';
+
+  var html = '<div class="dash kb-wrap">' +
+    '<div class="dash-head"><div><h1>Wissen</h1><p>' + solvedCount + ' festgehaltene Lösung' + (solvedCount === 1 ? '' : 'en') + ' · durchsucht erledigte und archivierte Fälle</p></div></div>' +
+    '<div class="kb-search"><input id="kbSearch" type="search" value="' + escapeAttr(kbQuery) + '" placeholder="Problem beschreiben, z.B. VPN verbindet nicht, Drucker, Passwort-Reset…" autocomplete="off">' +
+      '<button class="btn primary" id="kbAsk" title="Die KI beantwortet die Frage anhand der besten Treffer">🤖 Antwort</button></div>' +
+    '<div class="kb-filters"><label class="pl-check"><input type="checkbox" id="kbOnlySolved"' + (kbOnlySolved ? ' checked' : '') + '> Nur Fälle mit Lösung/Notizen</label>' +
+      '<select id="kbType"><option value="">Alle Typen</option>' + Object.keys(TYPES).map(function(k){ return '<option value="' + k + '"' + (kbFilterType === k ? ' selected' : '') + '>' + TYPES[k].label + '</option>'; }).join('') + '</select></div>' +
+    (kbAnswerHtml ? '<section class="dcard kb-answer" style="margin-bottom:12px;">' + kbAnswerHtml + '</section>' : '') +
+    missHtml +
+    '<div class="kb"><div class="kb-list">' + listHtml + '</div><div class="kb-detail">' + (sel ? kbArticleHtml(sel) : '<div class="empty-state">Wähle links einen Fall.</div>') + '</div></div>' +
+  '</div>';
+  board.innerHTML = html;
+
+  var input = document.getElementById('kbSearch');
+  var deb = null;
+  input.addEventListener('input', function(){
+    clearTimeout(deb);
+    deb = setTimeout(function(){ kbQuery = input.value; kbSelected = ''; kbAnswerHtml = ''; renderKbView(); var i2 = document.getElementById('kbSearch'); i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); }, 260);
+  });
+  document.getElementById('kbOnlySolved').addEventListener('change', function(e){ kbOnlySolved = e.target.checked; renderKbView(); });
+  document.getElementById('kbType').addEventListener('change', function(e){ kbFilterType = e.target.value; renderKbView(); });
+  board.querySelectorAll('[data-kb]').forEach(function(el){ el.addEventListener('click', function(){ kbSelected = el.dataset.kb; renderKbView(); }); });
+  board.querySelectorAll('[data-kb-sol]').forEach(function(b){ b.addEventListener('click', function(){ openSolutionDialog(b.dataset.kbSol); }); });
+  document.getElementById('kbAsk').addEventListener('click', function(){ kbAskAi(results); });
+  if(sel){
+    document.getElementById('kbSolSave').addEventListener('click', function(){
+      var v = document.getElementById('kbSolText').value.trim();
+      updateTask(sel.id, {solution: v.slice(0, 8000)});
+      toast(v ? '💡 Lösung gespeichert.' : 'Lösung entfernt.');
+      renderKbView();
+    });
+    document.getElementById('kbSolCopy').addEventListener('click', function(){ copyToClipboard(document.getElementById('kbSolText').value); toast('Kopiert.'); });
+    document.getElementById('kbSolSnippet').addEventListener('click', function(){
+      var v = document.getElementById('kbSolText').value.trim();
+      if(!v){ toast('Keine Lösung vorhanden.'); return; }
+      state.settings.snippets.push({label: sel.title.slice(0, 24), text: v.slice(0, 600)});
+      save(); toast('📎 Als Textbaustein gespeichert.');
+    });
+    document.getElementById('kbSolAi').addEventListener('click', function(){
+      if(!aiReady()) return;
+      var btn = this; btn.disabled = true; btn.textContent = '✨ KI arbeitet…';
+      kbAiDraft(sel).then(function(txt){ document.getElementById('kbSolText').value = txt; }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✨ Formulieren (KI)'; });
+    });
+    document.getElementById('kbOpenTask').addEventListener('click', function(){ openTaskModal(sel.id); });
+  }
+}
+function kbAskAi(results){
+  if(!aiReady()) return;
+  var q = kbQuery.trim();
+  if(!q){ toast('Bitte zuerst die Frage oder das Problem eintragen.'); return; }
+  var top = (results && results.length ? results : kbSearch(q, {limit: 6})).slice(0, 6);
+  if(!top.length){ toast('Keine passenden Fälle gefunden – die KI hat nichts, worauf sie sich stützen kann.'); return; }
+  var ctx = top.map(function(r, i){
+    var t = r.t;
+    return 'Fall ' + (i + 1) + ': ' + t.title + (t.jiraKey ? ' (' + t.jiraKey + ')' : '') + '\nProblem: ' + (t.description || '–').slice(0, 500) + '\nLösung: ' + (kbSolutionText(t) || 'nicht festgehalten').slice(0, 800);
+  }).join('\n\n');
+  kbAnswerHtml = '<div class="hint">🤖 Die KI antwortet anhand von ' + top.length + ' Fällen…</div>';
+  renderKbView();
+  callAIRaw('Du beantwortest Fragen eines IT-Supports ausschliesslich anhand der gelieferten früheren Fälle. Nenne die wahrscheinlichste Lösung in kurzen, konkreten Schritten und verweise auf die Fallnummern ("Fall 2"). Ist keine passende Lösung enthalten, sage das offen. Höchstens 150 Wörter, Deutsch (Schweizer Rechtschreibung, kein ß), kein Markdown ausser Nummerierung.', 'Frage: ' + q + '\n\n' + ctx, 700).then(function(ans){
+    kbAnswerHtml = '<div class="dcard-head"><h3>🤖 Antwort</h3><button class="btn ghost" id="kbAnsClose">✕</button></div><div class="kb-text" style="white-space:pre-wrap;">' + escapeHtml(ans.trim()) + '</div>' +
+      '<div class="hint" style="margin-top:8px;">Quellen: ' + top.map(function(r, i){ return '<a href="#" data-kb-src="' + r.t.id + '">Fall ' + (i + 1) + ': ' + escapeHtml(r.t.title.slice(0, 40)) + '</a>'; }).join(' · ') + '</div>';
+    renderKbView();
+    var c = document.getElementById('kbAnsClose'); if(c) c.addEventListener('click', function(){ kbAnswerHtml = ''; renderKbView(); });
+    document.querySelectorAll('[data-kb-src]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); kbSelected = a.dataset.kbSrc; renderKbView(); }); });
+  }).catch(function(err){ kbAnswerHtml = '<div class="hint" style="color:var(--danger);">KI-Fehler: ' + escapeHtml(err.message) + '</div>'; renderKbView(); });
+}
 
 /*@@EXTRA-JS@@*/
 
