@@ -580,6 +580,13 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .type-bar-track i.ty-hotline{background:var(--ty-hotline);} .type-bar-track i.ty-meeting{background:var(--ty-meeting);}
 .type-bar-val{width:48px; text-align:right; font-variant-numeric:tabular-nums; font-weight:500;}
 .dash-foot{margin-top:14px;}
+.dash-actions{display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;}
+.dash-actions .form-row{margin:0;}
+.seg{display:inline-flex; border:1px solid var(--border); border-radius:var(--radius-sm); padding:2px; background:var(--surface);}
+.seg-btn{border:0; background:transparent; padding:6px 13px; border-radius:6px; font-weight:500; font-size:13px; color:var(--text-dim);}
+.seg-btn:hover{color:var(--text);}
+.seg-btn.on{background:var(--accent-soft); color:var(--accent);}
+.dcard .dyce-table{margin:0;}
 @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .dash-grid{grid-template-columns:1fr;} }
 @media (max-width:680px){ #board.dashboard-mode{padding:16px 14px 30px;} }
 
@@ -723,9 +730,9 @@ button.mobile-only{display:none;}
     <div class="sb-brand"><span class="sb-logo">W</span><div><div class="sb-name">Work Board</div><div class="sb-board" id="boardNameLabel"></div></div></div>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Kalender</span></button>
-    <button class="sb-item" id="btnStats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
+    <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
-    <button class="sb-item" id="btnDyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
+    <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
     <div class="sb-label" data-i18n="navViews">Ansichten</div>
     <button class="sb-item" data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg><span class="lbl" data-i18n="viewDashboard">Dashboard</span></button>
     <button class="sb-item" data-view="priority"><svg class="i"><use href="#i-flag"/></svg><span class="lbl" data-i18n="viewPriority">Nach Priorität</span></button>
@@ -734,7 +741,7 @@ button.mobile-only{display:none;}
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Kalender</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Kalender</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -2389,7 +2396,7 @@ function anyFilterActive(){
 function renderFilterBar(){
   var bar = document.getElementById('filterBar');
   if(!bar) return;
-  var show = !showArchive && boardViewMode !== 'dashboard' && boardViewMode !== 'calendar';
+  var show = !showArchive && ['dashboard','calendar','stats','dyce'].indexOf(boardViewMode) < 0;
   var html = '';
   if(show){
     var pool = state.tasks.filter(function(t){ return !t.archived && !isSnoozed(t); });
@@ -2795,8 +2802,10 @@ function renderBoard(){
   var board = document.getElementById('board');
   renderSidebarActive();
   renderFilterBar();
-  board.classList.toggle('dashboard-mode', boardViewMode === 'dashboard');
+  board.classList.toggle('dashboard-mode', boardViewMode === 'dashboard' || boardViewMode === 'stats' || boardViewMode === 'dyce');
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
+  if(boardViewMode === 'stats'){ renderStatsView(); return; }
+  if(boardViewMode === 'dyce'){ renderDyceView(); return; }
   if(boardViewMode === 'calendar'){ renderCalendarView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -3825,6 +3834,12 @@ function populateBulkColumnSelect(){
 /* =========================================================
    SWIMLANE-TOGGLE
    ========================================================= */
+function switchToView(view){
+  if(showArchive) toggleArchiveView();
+  var sel = document.getElementById('boardViewSelect');
+  if(sel) sel.value = view;
+  setBoardViewMode(view);
+}
 function setBoardViewMode(mode){
   boardViewMode = mode;
   swimlaneMode = (mode !== 'status');
@@ -4805,17 +4820,23 @@ var BOOKMARKLET_BULK_SRC = "(function(){try{if(document.querySelector('#login-fo
 /* =========================================================
    DYCE EXPORT
    ========================================================= */
+var dyceDateStr = '';
 function openDyceExport(){
-  var today = new Date();
-  var dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  renderDyceModal(dateStr);
+  dyceDateStr = '';
+  switchToView('dyce');
 }
 function roundSeconds(sec, roundingMinutes){
   if(!roundingMinutes) return sec;
   var chunk = roundingMinutes * 60;
   return Math.round(sec / chunk) * chunk;
 }
-function renderDyceModal(dateStr){
+function renderDyceView(){
+  var dateStr = dyceDateStr || toDateInputValue(new Date());
+  dyceDateStr = dateStr;
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  board.classList.add('dashboard-mode');
   var roundingMinutes = state.settings.dyceRoundingMinutes || 0;
   var rows = state.tasks.map(function(t){
     var sec = secondsOnDate(t, dateStr);
@@ -4832,32 +4853,32 @@ function renderDyceModal(dateStr){
   }).join('') || '<tr><td colspan="3" class="empty-state">Keine erfasste Zeit an diesem Tag.</td></tr>';
 
   var html =
-    '<div class="modal-header"><h2>🧾 Tagesabschluss für Dyce</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="form-row-inline">' +
-        '<div class="form-row" style="max-width:200px;"><label>Datum</label><input type="date" id="dyceDate" value="'+dateStr+'"></div>' +
-        '<div class="form-row" style="max-width:200px;"><label>Rundung</label><select id="dyceRounding">' +
-          '<option value="0"'+(roundingMinutes===0?' selected':'')+'>Keine</option>' +
-          '<option value="5"'+(roundingMinutes===5?' selected':'')+'>Auf 5 Minuten</option>' +
-          '<option value="15"'+(roundingMinutes===15?' selected':'')+'>Auf 15 Minuten</option>' +
-        '</select></div>' +
-      '</div>' +
-      '<table class="dyce-table"><thead><tr><th>Ticket/Task</th><th>Titel</th><th>Zeit</th></tr></thead>' +
-      '<tbody>'+bodyRows+'</tbody>' +
-      '<tfoot><tr><td></td><td>Total</td><td>'+fmtHM(roundedTotal)+'</td></tr></tfoot></table>' +
-    '</div>' +
-    '<div class="modal-footer">' +
-      '<button class="btn" id="copyDyceTsvBtn">📋 Als Tabelle kopieren (Excel/Dyce)</button>' +
-      '<button class="btn primary" data-close-modal>Fertig</button>' +
+    '<div class="dash">' +
+      '<div class="dash-head"><div><h1>Tagesabschluss</h1><p>Erfasste Zeit pro Task, bereit für die Übernahme in Dyce.</p></div>' +
+        '<div class="dash-actions">' +
+          '<div class="form-row"><label>Datum</label><input type="date" id="dyceDate" value="'+dateStr+'"></div>' +
+          '<div class="form-row"><label>Rundung</label><select id="dyceRounding">' +
+            '<option value="0"'+(roundingMinutes===0?' selected':'')+'>Keine</option>' +
+            '<option value="5"'+(roundingMinutes===5?' selected':'')+'>Auf 5 Minuten</option>' +
+            '<option value="15"'+(roundingMinutes===15?' selected':'')+'>Auf 15 Minuten</option>' +
+          '</select></div>' +
+          '<button class="btn primary" id="copyDyceTsvBtn">'+svgIcon('clipboard')+'<span>Als Tabelle kopieren</span></button>' +
+        '</div></div>' +
+      '<section class="dcard">' +
+        '<table class="dyce-table"><thead><tr><th>Ticket/Task</th><th>Titel</th><th>Zeit</th></tr></thead>' +
+        '<tbody>'+bodyRows+'</tbody>' +
+        '<tfoot><tr><td></td><td>Total</td><td>'+fmtHM(roundedTotal)+'</td></tr></tfoot></table>' +
+      '</section>' +
     '</div>';
-  openModal(html, {wide:true});
+  board.innerHTML = html;
   document.getElementById('dyceDate').addEventListener('change', function(e){
-    renderDyceModal(e.target.value);
+    dyceDateStr = e.target.value || dyceDateStr;
+    renderDyceView();
   });
   document.getElementById('dyceRounding').addEventListener('change', function(e){
     state.settings.dyceRoundingMinutes = parseInt(e.target.value, 10) || 0;
     save();
-    renderDyceModal(dateStr);
+    renderDyceView();
   });
   document.getElementById('copyDyceTsvBtn').addEventListener('click', function(){
     var lines = ['Ticket\tTitel\tStunden'];
@@ -4873,7 +4894,8 @@ function renderDyceModal(dateStr){
 /* =========================================================
    STATISTIK (Zeit nach Typ)
    ========================================================= */
-function openStats(){ renderStatsModal('week'); }
+var statsRange = 'week';
+function openStats(){ statsRange = 'week'; switchToView('stats'); }
 function countWeekdays(startMs, endMsInclusive){
   var d = new Date(startMs); d.setHours(0,0,0,0);
   var end = new Date(endMsInclusive); end.setHours(0,0,0,0);
@@ -4885,7 +4907,7 @@ function countWeekdays(startMs, endMsInclusive){
   }
   return count;
 }
-var DONUT_COLORS = ['#0052cc','#ff8b00','#de350b','#00875a','#6554c0','#8993a4'];
+var DONUT_COLORS = ['#2f5bea','#d97706','#d9383e','#0e8f80','#7c5cdb','#98a0ae'];
 function buildDonutChart(totals, grand){
   var size = 140, r = 52, cx = size/2, cy = size/2, circumference = 2*Math.PI*r;
   var offset = 0;
@@ -4914,7 +4936,13 @@ function buildDonutChart(totals, grand){
     '<div style="display:flex; flex-direction:column; gap:6px;">'+(legend || '<span class="hint">Keine Daten.</span>')+'</div>' +
   '</div>';
 }
-function renderStatsModal(range){
+function renderStatsView(range){
+  range = range || statsRange;
+  statsRange = range;
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  board.classList.add('dashboard-mode');
   var now = new Date();
   var startMs, label;
   if(range === 'today'){ startMs = startOfDay(now).getTime(); label = 'Heute'; }
@@ -5016,7 +5044,7 @@ function renderStatsModal(range){
   function heatColor(sec){
     if(!sec) return 'var(--surface-2)';
     var alpha = 0.15 + 0.75 * Math.min(1, sec/heatMax);
-    return 'rgba(0,82,204,'+alpha.toFixed(2)+')';
+    return 'rgba(47,91,234,'+alpha.toFixed(2)+')';
   }
   var heatHtml = '<div style="display:grid; grid-template-columns:repeat(12,1fr); grid-auto-flow:column; gap:3px; grid-template-rows:repeat(7,1fr);">' +
     heatCells.map(function(c){
@@ -5051,36 +5079,32 @@ function renderStatsModal(range){
     '<div style="flex:1; text-align:center;"><div style="height:'+Math.round(completedCount/burndownMax*50)+'px; background:var(--ok); border-radius:3px 3px 0 0;"></div><div style="font-size:11px; margin-top:4px;">✅ '+completedCount+' erledigt ('+label+')</div></div>' +
   '</div>';
 
+  function pcard(title, body){
+    return '<section class="dcard"><div class="dcard-head"><h3>'+title+'</h3></div>'+body+'</section>';
+  }
   var html =
-    '<div class="modal-header"><h2>📊 Statistik</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div style="display:flex; gap:6px; margin-bottom:16px;">' +
-        '<button class="btn'+(range==='today'?' primary':'')+'" data-range="today">Heute</button>' +
-        '<button class="btn'+(range==='week'?' primary':'')+'" data-range="week">Diese Woche</button>' +
-        '<button class="btn'+(range==='month'?' primary':'')+'" data-range="month">Dieser Monat</button>' +
+    '<div class="dash">' +
+      '<div class="dash-head"><div><h1>Statistik</h1>' +
+        '<p>'+label+' · Total <strong style="color:var(--text);">'+fmtHM(grand)+'</strong> · '+completedCount+' erledigt' +
+          (state.settings.hourlyRate ? ' · <strong style="color:var(--text);">'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong> erarbeitet' : '') + '</p></div>' +
+        '<div class="seg" role="group" aria-label="Zeitraum">' +
+          '<button class="seg-btn'+(range==='today'?' on':'')+'" data-range="today">Heute</button>' +
+          '<button class="seg-btn'+(range==='week'?' on':'')+'" data-range="week">Diese Woche</button>' +
+          '<button class="seg-btn'+(range==='month'?' on':'')+'" data-range="month">Dieser Monat</button>' +
+        '</div></div>' +
+      (targetHtml ? '<section class="dcard" style="margin-bottom:14px;">'+targetHtml+'</section>' : '') +
+      '<div class="dash-grid">' +
+        pcard('Zeitverteilung', donutHtml + rows) +
+        pcard('Zeit pro Projekt/Kunde', projectRows) +
+        pcard('Letzte 7 Tage', sparkHtml) +
+        pcard('Verlauf (12 Wochen)', heatHtml) +
+        pcard('Offen und erledigt', burndownHtml) +
+        pcard('Diese Woche', badgesHtml) +
       '</div>' +
-      '<div style="font-size:13px; color:var(--text-dim); margin-bottom:14px;">'+label+' · Total: <strong style="color:var(--text);">'+fmtHM(grand)+'</strong> · ✅ '+completedCount+' erledigt (Durchsatz)' +
-        (state.settings.hourlyRate ? ' · 💰 <strong style="color:var(--text);">'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong> erarbeitet' : '') +
-      '</div>' +
-      targetHtml +
-      '<div class="section-title">Zeitverteilung</div>' +
-      donutHtml +
-      rows +
-      '<div class="section-title">🏷️ Zeit pro Projekt/Kunde</div>' +
-      projectRows +
-      '<div class="section-title">Letzte 7 Tage</div>' +
-      sparkHtml +
-      '<div class="section-title">Verlauf (12 Wochen)</div>' +
-      heatHtml +
-      '<div class="section-title">📉 Offen vs. erledigt</div>' +
-      burndownHtml +
-      '<div class="section-title">🏆 Diese Woche</div>' +
-      badgesHtml +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
-  openModal(html, {wide:true});
-  document.querySelectorAll('[data-range]').forEach(function(btn){
-    btn.addEventListener('click', function(){ renderStatsModal(btn.dataset.range); });
+    '</div>';
+  board.innerHTML = html;
+  board.querySelectorAll('[data-range]').forEach(function(btn){
+    btn.addEventListener('click', function(){ renderStatsView(btn.dataset.range); });
   });
 }
 
@@ -6775,8 +6799,6 @@ document.getElementById('bulkClearBtn').addEventListener('click', function(){
   document.getElementById('bulkCount').textContent = '0 ausgewählt';
   renderBoard();
 });
-document.getElementById('btnDyce').addEventListener('click', openDyceExport);
-document.getElementById('btnStats').addEventListener('click', openStats);
 document.getElementById('btnArchive').addEventListener('click', toggleArchiveView);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
 document.getElementById('btnQuickSave').addEventListener('click', exportBackup);
@@ -6800,9 +6822,8 @@ function renderSidebarUser(){
 }
 document.querySelectorAll('#sidebar [data-view]').forEach(function(btn){
   btn.addEventListener('click', function(){
-    if(showArchive) toggleArchiveView();
-    document.getElementById('boardViewSelect').value = btn.dataset.view;
-    setBoardViewMode(btn.dataset.view);
+    if(btn.dataset.view === 'dyce') dyceDateStr = '';
+    switchToView(btn.dataset.view);
   });
 });
 document.getElementById('sidebar').addEventListener('click', function(e){
