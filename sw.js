@@ -2,7 +2,7 @@ var CACHE_NAME = 'work-board-v3';
 var ASSETS = ['./', './index.html', './manifest.json'];
 
 /* Nur Dateien der App selbst sowie die fest versionierten Bibliotheken und Schriften
-   (CDN, Google Fonts) werden zwischengespeichert. API-Antworten (Supabase, GitHub,
+   (CDN, Google Fonts) werden zwischengespeichert. API-Antworten (Supabase,
    Anthropic, ntfy) werden bewusst NIE gecacht, damit keine Nutzerdaten im Cache liegen. */
 var CACHEABLE_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

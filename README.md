@@ -1,14 +1,15 @@
 # Work Board – Kanban & Zeiterfassung
 
-Ein einziges lokales HTML-File, keine Installation, kein Server, keine Admin-Rechte nötig.
-Funktioniert offline im Browser – ideal fürs Arbeitsgerät.
+Ein einziges HTML-File (plus Service Worker und Manifest), keine Installation, kein eigener Server.
+Läuft als Webseite (GitHub Pages) im Browser und lässt sich auf dem Handy oder Desktop als App ablegen.
+Die Daten liegen **Ende-zu-Ende-verschlüsselt in Supabase**, zusätzlich lokal im Browser für den Offline-Betrieb.
 
 ## Start
 
-Doppelklick auf `index.html` (öffnet sich im Standardbrowser, idealerweise Edge oder Chrome).
-
-Am besten die Datei selbst gleich in deinen OneDrive- oder iCloud-Drive-Ordner legen, dann hast du
-sie automatisch auf allen Geräten verfügbar.
+Den App-Link im Browser öffnen (idealerweise Edge oder Chrome) und anmelden bzw. registrieren.
+Für die Entwicklung lässt sich `index.html` auch über einen lokalen Webserver starten
+(`python -m http.server`); direkt per Doppelklick (`file://`) funktionieren Service Worker und
+Anmeldung nicht zuverlässig.
 
 **Login ist Pflicht** – beim ersten Öffnen erscheint ein Anmelde-Bildschirm statt des Boards, siehe
 nächster Abschnitt zur Einrichtung.
@@ -131,31 +132,20 @@ wieder).
 
 ## Wie werden meine Daten gespeichert?
 
-Da die Datei per Doppelklick (`file://`) geöffnet wird, kann sie aus Sicherheitsgründen nicht
-direkt und automatisch in eine beliebige Cloud-Datei schreiben (das würde nur mit einem echten
-Server/`https://` funktionieren – auf einem Arbeitsgerät meist nicht möglich). Deshalb funktioniert
-die Speicherung zweistufig:
+1. **Cloud (Hauptspeicher):** Dein Board liegt automatisch und verschlüsselt in Supabase
+   (siehe "☁️ Cloud-Speicher" unten). Auf jedem Gerät, auf dem du angemeldet bist, ist derselbe Stand.
+2. **Lokal im Browser (laufend):** Jede Änderung wird sofort im Browser gespeichert (localStorage), damit
+   die App auch offline funktioniert. Beim nächsten Online-Moment wird abgeglichen.
+3. **Lokale Sicherung als Datei (optional):** **💾 Sichern** oben (oder `Strg+S`) lädt eine Datei
+   `work-board-daten.json` herunter, z.B. als zusätzliches Backup. Über ⚙️ Einstellungen → Konto →
+   **📂 Datei laden** liest du sie wieder ein. Der Anthropic-API-Key ist nicht enthalten.
 
-1. **Automatisch, laufend:** Jede Änderung wird sofort im Browser gespeichert (localStorage).
-   Solange du die Browserdaten nicht löschst, bleibt alles erhalten – auch nach Neustart.
-2. **Cloud-Backup, 1 Klick:** Oben rechts auf **💾 Sichern** klicken (oder `Strg+S`). Das lädt eine
-   Datei `work-board-daten.json` herunter. Über **📂 Datei laden** kannst du sie (z.B. auf einem
-   zweiten Gerät) wieder einlesen.
-
-**Empfohlene Einmal-Einrichtung**, damit das Backup automatisch im Cloud-Ordner landet:
-Browser-Einstellungen → Downloads → Standard-Speicherort auf deinen OneDrive- oder
-iCloud-Drive-Ordner ändern, und "Vor dem Herunterladen jedes Mal fragen" aktivieren. Dann zeigt
-`💾 Sichern` jedes Mal den Speicherort mit der Option "Ersetzen" – ein Klick, und OneDrive/iCloud
-synchronisiert den Rest von selbst.
-
-Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten Cloud-Backup
-angefallen sind – und, falls eingerichtet, auch den aktuellen Cloud-Sync-Status (aktiv, Fehler,
-oder nicht eingerichtet).
+Die Statusleiste unten zeigt den Cloud-Status (aktiv, Fehler, nicht eingerichtet) und die Zahl der aktiven Tasks.
 
 ## ☁️ Cloud-Speicher (automatisch, Ende-zu-Ende-verschlüsselt)
 
 Nach der Anmeldung liegt dein Board automatisch in Supabase – **pro Person ein eigenes Board**, ganz
-ohne manuelles Sichern/Laden und ohne GitHub-Token.
+ohne manuelles Sichern/Laden und ohne Token.
 
 **Wie es funktioniert:** Deine Daten werden direkt in deinem Browser mit einer selbst gewählten
 **Passphrase** verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Supabase speichert
@@ -165,19 +155,15 @@ ersetzt Supabase (Passwort-Reset), die Passphrase verlässt dein Gerät nie.
 
 **Einrichtung (pro Person, einmalig):**
 1. Anmelden bzw. registrieren. Beim ersten Mal erscheint **"🔐 Verschlüsselung einrichten"** – eine
-   Passphrase (mind. 8 Zeichen) festlegen, am besten im Passwort-Manager ablegen.
+   Passphrase (mind. 12 Zeichen) festlegen, am besten im Passwort-Manager ablegen.
 2. **Auf jedem weiteren Gerät:** anmelden, einmalig **dieselbe Passphrase** eingeben ("🔑 Passphrase
    eingeben") – danach wird sie auf dem Gerät gemerkt, das Board lädt automatisch. Kein Token, keine
    ID, kein QR-Code nötig.
-3. **Bisher den Gist-Sync genutzt?** Die bisherige Passphrase ist beim ersten Mal vorausgefüllt; der
-   Stand dieses Geräts wird einfach in die neue Cloud übernommen. Der alte Gist wird nicht mehr
-   benutzt und kann in GitHub gelöscht werden.
 
-Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
-Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
-falls ja, erscheint ein Hinweisbanner zum Nachladen (dein aktueller Stand wird dabei **nicht**
-automatisch überschrieben). Oben rechts gibt es neben **💾 Sichern** den Button **☁️ Sync** für
-einen sofortigen Abgleich.
+Danach läuft alles automatisch: Änderungen werden verzögert (ca. 8 Sek.) hochgeladen, und beim Öffnen
+bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas geändert hat. Änderungen werden dabei
+**Task für Task zusammengeführt**; was du löschst, bleibt gelöscht. Oben gibt es den Button **☁️ Sync**
+für einen sofortigen Abgleich.
 
 In ⚙️ Einstellungen → **☁️ Cloud-Speicher** siehst du den Status und kannst
 - die Passphrase **auf diesem Gerät übernehmen** (nötig, wenn du sie auf einem anderen Gerät
@@ -188,7 +174,7 @@ In ⚙️ Einstellungen → **☁️ Cloud-Speicher** siehst du den Status und k
 - **Passphrase verloren = Cloud-Daten unwiederbringlich weg.** Es gibt keine
   Wiederherstellungsmöglichkeit (auch Admins können nichts tun) – das ist der Preis für echte
   Verschlüsselung. Wer sie vergisst, kann beim Login "Passphrase vergessen?" wählen und ein
-  **neues, leeres** Board anlegen (das alte wird dabei gelöscht). Dein lokales "💾 Sichern"-Backup
+  **neues, leeres** Board anlegen (das alte wird dabei gelöscht). Eine lokale "💾 Sichern"-Datei
   ist davon nicht betroffen.
 - **Eigene Boards:** Tasks sind nur für die jeweilige Person sichtbar; eine Zuweisung an andere
   Personen landet daher nur als Name/Hinweis im eigenen Board.
@@ -198,8 +184,6 @@ In ⚙️ Einstellungen → **☁️ Cloud-Speicher** siehst du den Status und k
 - Das Anlegen der Tabellen `boards`/`board_snapshots` (SQL oben, Schritt 3) ist Voraussetzung;
   fehlen sie, zeigt die App beim Login "Cloud-Speicher nicht erreichbar" mit der Option, vorerst nur
   lokal weiterzumachen.
-- Der optionale **GitHub-Token** in den Einstellungen (Scope `gist`) wird nur noch für
-  "🔗 Read-only-Link teilen" gebraucht.
 
 ## 👥 Geteilte Boards (Zusammenarbeit)
 
@@ -308,11 +292,11 @@ grant select, insert, update, delete on user_keys to authenticated;
 - **Ende-zu-Ende-Verschlüsselung:** Board und geteilte Boards liegen nur verschlüsselt in Supabase (AES-256-GCM, Schlüssel aus der
   Passphrase mit PBKDF2, 600'000 Durchläufe; ältere Daten mit 100'000 werden weiter gelesen und beim nächsten Speichern neu verschlüsselt).
   Die Passphrase muss mindestens 12 Zeichen haben (ein Satz aus mehreren Wörtern ist ideal), das Login-Passwort mindestens 10.
-- **Schutz vor Schadcode (XSS):** Alle Daten aus Importen, Backups, geteilten Boards und dem Read-only-Link werden beim Einlesen geprüft
+- **Schutz vor Schadcode (XSS):** Alle Daten aus Importen, Backups, und geteilten Boards werden beim Einlesen geprüft
   (IDs, Farben, Links, Bilder, Prioritäten) und beim Anzeigen maskiert. Links sind nur mit `http`, `https` oder `mailto` erlaubt
   (kein `javascript:`). Bilder in Notizen müssen echte `data:image/…`-Daten sein.
 - **Content-Security-Policy:** Skripte, Verbindungen und Schriften dürfen nur von den freigegebenen Adressen geladen werden
-  (eigene Seite, jsDelivr, Google Fonts, dein Supabase-Projekt, Anthropic, GitHub-API, ntfy). Selbst bei einem Fehler könnten Daten
+  (eigene Seite, jsDelivr, Google Fonts, dein Supabase-Projekt, Anthropic, ntfy). Selbst bei einem Fehler könnten Daten
   so nicht an fremde Server geschickt werden. **Wer eine andere Supabase-Instanz verwendet, muss deren Adresse in `index.html`
   im `Content-Security-Policy`-Tag (`connect-src`) eintragen.**
 - **Bibliothek mit Prüfsumme:** Die Supabase-Bibliothek ist auf eine feste Version gesetzt und wird nur geladen, wenn ihre
@@ -363,7 +347,6 @@ alter table user_keys add constraint user_keys_size check (length(private_key_en
 - Aufgaben liegen auf dem Gerät im Browser-Speicher unverschlüsselt (nötig für den Offline-Betrieb). Wer Zugriff auf dein entsperrtes
   Gerät hat, sieht sie. Die PIN ist nur ein Sichtschutz.
 - Die Passphrase wird auf dem Gerät im Browser-Speicher gemerkt, damit du sie nicht ständig eingeben musst.
-- Der Read-only-Link legt einen **unverschlüsselten** Snapshot (nur Titel, Typ, Priorität, Spalte, Fälligkeit) in einem GitHub-Gist ab.
 - Mitglieder eines geteilten Boards können dessen Inhalt vollständig bearbeiten und löschen.
 
 ## 🗑️ Eigenes Konto löschen
@@ -540,8 +523,8 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 Die Oberfläche ist responsiv (schmale Spalten, grössere Touch-Ziele) und lässt sich auf dem Handy
 per "Zum Home-Bildschirm hinzufügen" ablegen (`manifest.json` liegt bei). Für automatischen Sync
 zwischen PC und Handy: siehe **☁️ Cloud-Speicher** oben – damit läuft es im Hintergrund, ganz ohne
-manuelles Exportieren/Importieren. Alternativ weiterhin **💾 Sichern** über OneDrive/iCloud, oder
-das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
+manuelles Exportieren/Importieren. Einzelne Tasks lassen sich zusätzlich über das
+**📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 
 ## Struktur-Ansichten
 
@@ -648,9 +631,6 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
   VPN-Wechsel oder WLAN-Aussetzer), synchronisiert Cloud-Sync sofort statt bis zu 45s auf das
   nächste Poll-Intervall zu warten.
 - **🖨️ Wochenbericht als PDF**: formatierter Report über den nativen "Als PDF speichern"-Druckdialog.
-- **🔗 Read-only-Link teilen**: erstellt einen separaten, unverschlüsselten Snapshot-Link (offene
-  Tasks, ohne Notizen) zum reinen Ansehen – z.B. für den Chef. Kein Live-Sync, jede Änderung
-  braucht einen neuen Snapshot; wer den Link kennt, kann ihn lesen (wie ein unlisted Link).
 - **📱 Kurzbefehle (iOS Shortcuts)**: die App reagiert auf `?action=hotline`, `?action=meeting`,
   `?action=timeentry&title=…`, `?action=pause`, `?action=whatnow` in der URL. In der
   Kurzbefehle-App: Aktion "URL öffnen" mit z.B. `https://DEINE-PAGES-URL/index.html?action=hotline`,
@@ -660,7 +640,7 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 
 - `N` – neuen Task erstellen
 - `Leertaste` – laufenden Timer pausieren
-- `Strg+S` – Cloud-Backup herunterladen
+- `Strg+S` – lokale Sicherung herunterladen
 - `Strg+K` – Command Palette öffnen
 - `Strg+Z` – letzte Aktion rückgängig
 - Pfeiltasten (bei fokussierter Karte) – navigieren; `Shift`+Pfeil – Karte verschieben

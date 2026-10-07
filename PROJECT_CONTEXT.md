@@ -4,6 +4,28 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Aufräumen nach der Supabase-Umstellung
+
+Nutzer: "nochmals durch den ganzen Code gehen und prüfen, ob Sachen mit der Supabase-Änderung nicht mehr benötigt werden, z.B. Gist".
+
+**Entfernt (alles obsolet, weil Supabase der einzige Speicher ist):**
+- **Read-only-Link / GitHub-Gist** komplett: `openShareLinkModal`, `renderViewerMode` (`?view=<gistId>`), `cloudGistHeaders`,
+  GitHub-Token-Feld in den Einstellungen, Befehlspalette-Eintrag, `api.github.com` aus der CSP, README-Abschnitte.
+- **Dateianbindung (File System Access API)**: `pickNewFile/pickExistingFile/tryReconnect/checkExternalChange/writeStateToHandle`,
+  IndexedDB-Handle-Speicher (`kanban-fs-db`, wird beim Start einmalig gelöscht), `externalChangeBanner`, `storageMode`, `fileHandle`.
+- Statusleisten-Texte "Nur Browser-Speicher" und "N Änderungen seit letztem Cloud-Backup" (`changesSinceBackup/lastBackupAt/dirtyLabel`)
+  samt 20-Minuten-Erinnerung: irrelevant, da automatisch synchronisiert wird.
+- Willkommens-Hinweis `showOnboardingIfNeeded` ("Board-Daten verbinden: Einstellungen → Speicher").
+- Vorschlag der alten Gist-Passphrase bei der Einrichtung. `getCloudSyncConfig` übernimmt nur noch bekannte Felder (kein `token`/`gistId`);
+  Konfiguration mit anderem Backend als `supabase` wird in `ensureBoardSetup` verworfen.
+- `init()` ohne `tryReconnect`-Promise; alle Intervalle direkt gestartet.
+
+**Bleibt bewusst:** 💾 Sichern / 📂 Datei laden (lokales JSON-Backup, Strg+S), QR-Task-Übertragung, `?action=…`-Kurzbefehle,
+ntfy-Push, Service Worker. `cloudChangeBanner` bleibt für den Fall, dass auf einem anderen Gerät ein anderes persönliches Board aktiv ist.
+
+**Getestet** (Mock-Supabase): Start, Einstellungen (Konto/Integrationen), Hotline anlegen, Sync, Strg+S, Altkonfiguration mit
+Gist-Backend wird verworfen (Passphrase-Abfrage ohne Vorbelegung), Neueinrichtung für neuen Benutzer, keine JS-Fehler.
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Sicherheitsprüfung und Abgleich-Fix
 
 **Gefunden und behoben (siehe README "Sicherheit"):**

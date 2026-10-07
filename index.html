@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://kxrnwdzxypfepnaafdfn.supabase.co https://api.anthropic.com https://api.github.com https://ntfy.sh; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://kxrnwdzxypfepnaafdfn.supabase.co https://api.anthropic.com https://ntfy.sh; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>if(window.top !== window.self){ document.documentElement.style.display = 'none'; try{ window.top.location = window.self.location; }catch(e){} }</script>
 <title>Work Board</title>
@@ -187,11 +187,6 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 button.btn.primary svg.i{color:inherit;}
 
 /* ---- reload banner ---- */
-#externalChangeBanner{
-  display:none; align-items:center; gap:10px; padding:8px 20px;
-  background:var(--warn-bg); color:var(--warn); border-bottom:1px solid var(--border); font-weight:600;
-}
-#externalChangeBanner.show{display:flex;}
 #cloudChangeBanner{
   display:none; align-items:center; gap:10px; padding:8px 20px;
   background:var(--accent-soft); color:var(--accent); border-bottom:1px solid var(--border); font-weight:600;
@@ -441,7 +436,6 @@ textarea{resize:vertical; min-height:70px;}
   .s-control input[type=text], .s-control input[type=password], .s-control input:not([type]), .s-inline input{width:100%; flex:1;}
   .s-status{max-width:none; text-align:left;}
 }
-.storage-status{display:flex; align-items:center; gap:8px; padding:9px 11px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); font-size:12.5px; margin-bottom:8px;}
 .dot{width:8px; height:8px; border-radius:50%; background:var(--text-faint);}
 .dot.ok{background:var(--ok);}
 .dot.warn{background:var(--warn);}
@@ -907,7 +901,7 @@ button.mobile-only{display:none;}
         <button class="btn" id="btnSelectMode" title="Mehrere Tasks auswählen"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="btnSelectMode">Auswahl</span></button>
         <button class="btn" id="btnCompactToggle" title="Kompaktansicht umschalten"><svg class="i"><use href="#i-rows"/></svg><span class="lbl" data-i18n="btnCompact">Kompaktansicht</span></button>
         <div class="sep"></div>
-        <button class="btn" id="btnQuickSave" title="Backup in OneDrive/iCloud-Ordner speichern (Strg+S)"><svg class="i"><use href="#i-save"/></svg><span class="lbl" data-i18n="btnQuickSave">Sichern</span><span class="menu-hint">Strg S</span></button>
+        <button class="btn" id="btnQuickSave" title="Lokale Sicherung als Datei herunterladen (Strg+S)"><svg class="i"><use href="#i-save"/></svg><span class="lbl" data-i18n="btnQuickSave">Sichern</span><span class="menu-hint">Strg S</span></button>
       </div>
     </div>
   </div>
@@ -930,12 +924,6 @@ button.mobile-only{display:none;}
     <button class="btn ghost" id="bulkClearBtn">Auswahl aufheben</button>
   </div>
 
-  <div id="externalChangeBanner">
-    <span>⚠️ Die Datei wurde extern verändert (evtl. von einem anderen Gerät synchronisiert).</span>
-    <button class="btn" id="btnReloadExternal">Neu laden</button>
-    <button class="btn ghost" id="btnDismissExternal">Ignorieren</button>
-  </div>
-
   <div id="cloudChangeBanner">
     <span>☁️ Neuere Daten in der Cloud-Synchronisation gefunden (vermutlich von einem anderen Gerät).</span>
     <button class="btn" id="btnReloadCloud">Cloud-Stand laden</button>
@@ -945,10 +933,8 @@ button.mobile-only{display:none;}
   <div id="board"></div>
 
   <div id="statusbar">
-    <span id="storageLabel">–</span>
     <span id="cloudStatusLabel"></span>
     <span id="saveLabel"></span>
-    <span id="dirtyLabel"></span>
     <div class="spacer"></div>
     <span id="taskCountLabel"></span>
   </div>
@@ -1025,8 +1011,6 @@ var PRIORITIES = {
   medium:  {label:'Mittel',   order:2},
   low:     {label:'Niedrig',  order:3}
 };
-var FS_SUPPORTED = ('showSaveFilePicker' in window);
-var DB_NAME = 'kanban-fs-db', STORE = 'handles';
 
 /* =========================================================
    STATE
@@ -1107,7 +1091,6 @@ function defaultState(){
       aiApiKey: '',
       aiModel: 'claude-haiku-4-5-20251001',
       idleReminderMinutes: 90,
-      storageMode: 'browser',
       accentColor: '',
       snippets: [],
       recentMeetingTitles: [],
@@ -1229,8 +1212,6 @@ var isCurrentUserAdmin = false;
 var adminUserIds = [];
 var supabaseClient = null;
 var appStarted = false;
-var fileHandle = null;
-var lastWriteAt = 0;
 var saveTimer = null;
 var tickInterval = null;
 var draggedTaskId = null;
@@ -1240,8 +1221,6 @@ var searchQuery = '';
 var filterType = '';
 var filterPriority = '';
 var showArchive = false;
-var changesSinceBackup = 0;
-var lastBackupAt = null;
 var selectMode = false;
 var selectedTaskIds = [];
 var lastSelectedTaskId = null;
@@ -1251,128 +1230,10 @@ var boardViewMode = 'status';
 var openTaskModalId = null;
 
 /* =========================================================
-   INDEXEDDB — persist file handle across reloads
-   ========================================================= */
-function idbOpen(){
-  return new Promise(function(resolve,reject){
-    var req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = function(){ req.result.createObjectStore(STORE); };
-    req.onsuccess = function(){ resolve(req.result); };
-    req.onerror = function(){ reject(req.error); };
-  });
-}
-function idbSet(key, val){
-  return idbOpen().then(function(db){
-    return new Promise(function(resolve,reject){
-      var tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(val, key);
-      tx.oncomplete = function(){ resolve(); };
-      tx.onerror = function(){ reject(tx.error); };
-    });
-  });
-}
-function idbGet(key){
-  return idbOpen().then(function(db){
-    return new Promise(function(resolve,reject){
-      var tx = db.transaction(STORE, 'readonly');
-      var req = tx.objectStore(STORE).get(key);
-      req.onsuccess = function(){ resolve(req.result); };
-      req.onerror = function(){ reject(req.error); };
-    });
-  });
-}
-
-/* =========================================================
-   FILE SYSTEM ACCESS
-   ========================================================= */
-function ensurePermission(handle){
-  var opts = {mode:'readwrite'};
-  return handle.queryPermission(opts).then(function(p){
-    if(p === 'granted') return true;
-    return handle.requestPermission(opts).then(function(p2){ return p2 === 'granted'; });
-  });
-}
-function writeStateToHandle(handle){
-  return handle.createWritable().then(function(writable){
-    return writable.write(serializePersonalState(2)).then(function(){
-      return writable.close();
-    });
-  }).then(function(){
-    lastWriteAt = Date.now();
-  });
-}
-function pickNewFile(){
-  return window.showSaveFilePicker({
-    suggestedName: 'work-board-daten.json',
-    types: [{description:'JSON', accept:{'application/json':['.json']}}]
-  }).then(function(handle){
-    fileHandle = handle;
-    return writeStateToHandle(handle).then(function(){
-      return idbSet('fileHandle', handle);
-    });
-  }).then(function(){
-    state.settings.storageMode = 'file';
-    save();
-    toast('Datei verbunden. Änderungen werden automatisch gespeichert.');
-    renderStatusbar();
-  });
-}
-function pickExistingFile(){
-  return window.showOpenFilePicker({
-    types: [{description:'JSON', accept:{'application/json':['.json']}}]
-  }).then(function(handles){
-    var handle = handles[0];
-    return ensurePermission(handle).then(function(ok){
-      if(!ok) throw new Error('Keine Berechtigung erteilt.');
-      return handle.getFile();
-    }).then(function(file){
-      return file.text();
-    }).then(function(text){
-      var data = text ? safeJsonParse(text) : null;
-      fileHandle = handle;
-      return idbSet('fileHandle', handle).then(function(){
-        withPersonalState(function(){ state = migrateState(data); state.settings.storageMode = 'file'; });
-        lastWriteAt = Date.now();
-        renderAll();
-        toast('Datei geladen und verbunden.');
-      });
-    });
-  });
-}
-function tryReconnect(){
-  return idbGet('fileHandle').then(function(handle){
-    if(!handle) return false;
-    return ensurePermission(handle).then(function(ok){
-      if(!ok) return false;
-      fileHandle = handle;
-      return handle.getFile().then(function(file){
-        return file.text();
-      }).then(function(text){
-        var data = text ? safeJsonParse(text) : null;
-        if(data) state = migrateState(data);
-        lastWriteAt = Date.now();
-        return true;
-      });
-    });
-  }).catch(function(){ return false; });
-}
-function checkExternalChange(){
-  if(!fileHandle) return;
-  fileHandle.getFile().then(function(file){
-    if(file.lastModified > lastWriteAt + 1500){
-      document.getElementById('externalChangeBanner').classList.add('show');
-    }
-  }).catch(function(){});
-}
-
-/* =========================================================
    SAVE / LOAD
    ========================================================= */
 function save(){
   state.meta.updatedAt = nowIso();
-  changesSinceBackup++;
-  var dirtyLabel = document.getElementById('dirtyLabel');
-  if(dirtyLabel) dirtyLabel.textContent = '· ' + changesSinceBackup + ' Änderung' + (changesSinceBackup===1?'':'en') + ' seit letztem Cloud-Backup';
   if(saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
     doSave();
@@ -1382,19 +1243,11 @@ function save(){
 }
 function doSave(){
   var label = document.getElementById('saveLabel');
-  if(fileHandle){
-    writeStateToHandle(fileHandle).then(function(){
-      if(label) label.textContent = 'Gespeichert ' + new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    }).catch(function(err){
-      if(label) label.textContent = 'Fehler beim Speichern: ' + err.message;
-    });
-  } else {
-    try{
-      localStorage.setItem('kanban-state-backup', serializePersonalState());
-      if(activeShared) sharedCacheSave();
-      if(label) label.textContent = 'Im Browser gespeichert ' + new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
-    }catch(e){}
-  }
+  try{
+    localStorage.setItem('kanban-state-backup', serializePersonalState());
+    if(activeShared) sharedCacheSave();
+    if(label) label.textContent = 'Lokal gespeichert ' + new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){}
 }
 
 /* =========================================================
@@ -2282,7 +2135,7 @@ function openQrShare(t){
     '<div class="modal-body" style="text-align:center;">' +
       (result ?
         '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
-        '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen. Öffnet auf dem Handy dieselbe Work-Board-Datei (z.B. über OneDrive/iCloud) und importiert den Task über "📋 Aus Zwischenablage" – die App fragt beim Scannen automatisch nach Kopieren in die Zwischenablage, falls die Kamera-App das anbietet; sonst Text manuell in die Schnellerfassung einfügen.</p>'
+        '<p class="hint" style="margin-top:10px;">Mit der Handy-Kamera scannen. Öffne auf dem Handy Work Board und importiere den Task über "📋 Aus Zwischenablage" – die App fragt beim Scannen automatisch nach Kopieren in die Zwischenablage, falls die Kamera-App das anbietet; sonst Text manuell in die Schnellerfassung einfügen.</p>'
         : '<p class="hint">Der Task-Inhalt ist leider zu lang für einen QR-Code. Bitte Beschreibung kürzen oder Text manuell teilen.</p>') +
     '</div>' +
     '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
@@ -2360,7 +2213,7 @@ function openShortcutsCheatsheet(){
   var shortcuts = [
     ['N', 'Neuen Task erstellen'],
     ['Leertaste', 'Laufenden Timer pausieren'],
-    ['Strg + S', 'Cloud-Backup herunterladen'],
+    ['Strg + S', 'Lokale Sicherung herunterladen'],
     ['Strg + K', 'Command Palette öffnen'],
     ['Strg + V (auf dem Board)', 'Text einfügen: Ticket aus Text erstellen (KI)'],
     ['/', 'Suche fokussieren'],
@@ -4279,28 +4132,10 @@ function setBoardViewMode(mode){
    STATUS BAR
    ========================================================= */
 function renderStatusbar(){
-  var storageLabel = document.getElementById('storageLabel');
-  var mode = state.settings.storageMode;
-  if(mode === 'file' && fileHandle){
-    storageLabel.textContent = '📁 Verbunden mit: ' + (fileHandle.name || 'Datei');
-  } else if(!FS_SUPPORTED){
-    storageLabel.textContent = '💾 Browser-Speicher (Datei-Anbindung in diesem Browser nicht unterstützt)';
-  } else {
-    storageLabel.textContent = '💾 Nur Browser-Speicher';
-  }
   renderCloudSyncStatus();
   var count = state.tasks.filter(function(t){ return !t.archived; }).length;
   document.getElementById('taskCountLabel').textContent = count + ' aktive Tasks';
   renderBoardSwitcher();
-
-  var dirtyLabel = document.getElementById('dirtyLabel');
-  if(changesSinceBackup > 0){
-    dirtyLabel.textContent = '· ' + changesSinceBackup + ' Änderung' + (changesSinceBackup===1?'':'en') + ' seit letztem Cloud-Backup';
-  } else if(lastBackupAt){
-    dirtyLabel.textContent = '· Backup aktuell (' + lastBackupAt.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'}) + ')';
-  } else {
-    dirtyLabel.textContent = '· noch kein Cloud-Backup erstellt';
-  }
 }
 
 /* =========================================================
@@ -6038,7 +5873,7 @@ function renderStatsView(range){
 }
 
 /* =========================================================
-   BACKUP EXPORT / IMPORT (primary sync path for file:// usage)
+   LOKALE SICHERUNG (Export / Import als Datei)
    ========================================================= */
 function exportBackup(){
   var blob = new Blob([serializePersonalState(2)], {type:'application/json'});
@@ -6046,18 +5881,13 @@ function exportBackup(){
   a.href = URL.createObjectURL(blob);
   a.download = 'work-board-daten.json';
   document.body.appendChild(a); a.click(); a.remove();
-  changesSinceBackup = 0;
-  lastBackupAt = new Date();
-  renderStatusbar();
-  toast('Backup wird heruntergeladen. Falls dein Browser nachfragt: im OneDrive/iCloud-Ordner speichern und "Ersetzen" bestätigen.');
+  toast('Lokale Sicherung heruntergeladen (work-board-daten.json).');
 }
 function importBackupFile(file){
   var reader = new FileReader();
   reader.onload = function(){
     try{
       withPersonalState(function(){ state = migrateState(safeJsonParse(reader.result)); });
-      changesSinceBackup = 0;
-      lastBackupAt = new Date();
       save();
       renderAll();
       closeModal();
@@ -6085,15 +5915,17 @@ var cloudSyncPushTimer = null;
 var cloudSyncBusy = false;
 
 function cloudSyncConfigDefaults(){
-  /* token: optionaler GitHub-Token, nur noch für "Read-only-Link teilen". */
-  return {enabled:false, backend:'', userId:'', token:'', passphrase:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
+  return {enabled:false, backend:'', userId:'', passphrase:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
 }
 function getCloudSyncConfig(){
   try{
     var raw = localStorage.getItem(CLOUD_SYNC_KEY);
     if(!raw) return cloudSyncConfigDefaults();
-    var cfg = JSON.parse(raw);
-    return Object.assign(cloudSyncConfigDefaults(), cfg);
+    var stored = JSON.parse(raw);
+    var cfg = cloudSyncConfigDefaults();
+    /* Nur bekannte Felder übernehmen: Reste aus früheren Versionen (GitHub-Token, Gist-ID) fallen so weg. */
+    Object.keys(cfg).forEach(function(k){ if(stored && stored[k] !== undefined) cfg[k] = stored[k]; });
+    return cfg;
   }catch(e){
     return cloudSyncConfigDefaults();
   }
@@ -6107,14 +5939,6 @@ function setCloudSyncConfig(cfg){
 function personalTaskCount(){ return withPersonalState(function(){ return state.tasks.length; }); }
 function cloudIsReady(cfg){
   return !!(cfg.enabled && cfg.passphrase && cfg.backend === 'supabase' && currentUser && cfg.userId === currentUser.id && getSupabaseClient());
-}
-/* Nur noch für den optionalen "Read-only-Link teilen" (separater, öffentlicher Gist). */
-function cloudGistHeaders(token){
-  return {
-    'Authorization': 'token ' + token,
-    'Accept': 'application/vnd.github+json',
-    'Content-Type': 'application/json'
-  };
 }
 function cloudErrorText(err){
   if(err && err.name === 'OperationError') return 'Passphrase passt nicht zu den Cloud-Daten (auf einem anderen Gerät geändert?). Unter ⚙️ Einstellungen → Cloud-Speicher die aktuelle Passphrase eintragen.';
@@ -7350,7 +7174,7 @@ function openDeleteAccountDialog(){
         else if(/delete_own_account/.test(m) && /(find|exist|function)/i.test(m)) m = 'Die SQL-Funktion delete_own_account fehlt in Supabase (siehe README, „Konto löschen“).';
         throw new Error(m);
       }
-      ['kanban-state-backup','wb-cloud-sync-config','wb-board-owner','wb-onboarding-shown','wb-sb-collapsed'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+      ['kanban-state-backup','wb-cloud-sync-config','wb-board-owner','wb-sb-collapsed'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
       try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('wb-sb-') === 0) localStorage.removeItem(k); }); }catch(e){}
       return getSupabaseClient().auth.signOut().catch(function(){});
     }).then(function(){
@@ -7533,21 +7357,11 @@ function openSettings(){
         '<p><strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg.</strong> Dein lokales Backup bleibt davon unberührt.</p>'
       )
     ) +
-    sCard('💾 Lokale Sicherung', 'Zusätzlich als Datei sichern, z.B. in deinen OneDrive- oder iCloud-Ordner.',
+    sCard('💾 Lokale Sicherung', 'Dein Board liegt bereits verschlüsselt in der Cloud. Zusätzlich kannst du es als Datei sichern (Strg+S) und wieder laden.',
       '<div class="s-actions">' +
         '<button class="btn primary" id="btnExportJson">💾 Jetzt sichern</button>' +
         '<label class="btn">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
-      '</div>' +
-      sMore('Erweitert: Live-Datei & Cloud-Ordner',
-        renderStorageStatusHtml() +
-        '<p>Tasks werden laufend im Browser gespeichert. „Jetzt sichern“ (oder Strg+S) lädt <code>work-board-daten.json</code> herunter. Damit das Backup automatisch im Cloud-Ordner landet: Browser-Einstellungen → Downloads → Speicherort auf deinen OneDrive-/iCloud-Ordner ändern und „Vor dem Herunterladen jedes Mal fragen“ aktivieren.</p>' +
-        (FS_SUPPORTED ?
-          '<div class="s-actions">' +
-            '<button class="btn" id="btnPickNewFile">📄 Mit neuer Datei verbinden…</button>' +
-            '<button class="btn" id="btnPickExistingFile">📂 Bestehende Datei öffnen…</button>' +
-          '</div>'
-          : '')
-      )
+      '</div>'
     ) +
     sCard('🔒 Sichtschutz', 'Blendet beim Start eine PIN-Abfrage ein. Kein echter Schutz, nur gegen neugierige Blicke.',
       sRow('PIN', '<div class="s-inline"><input type="password" id="sPinCode" value="'+escapeAttr(state.settings.pinCode||'')+'" placeholder="Leer = aus" maxlength="12"><button class="btn" id="savePinBtn">Speichern</button></div>')
@@ -7672,9 +7486,6 @@ function openSettings(){
       sRow('KI-Modell', '<select id="sAiModel">' + AI_MODELS.map(function(m){ return '<option value="'+m.id+'"'+((state.settings.aiModel||AI_MODELS[0].id)===m.id?' selected':'')+'>'+m.label+'</option>'; }).join('') + '</select>', 'Haiku ist schnell und günstig, Sonnet und Opus erkennen mehr.') +
       sMore('Wofür die KI genutzt wird', '<p><strong>Ticket aus Text:</strong> E-Mail oder Notiz einfügen (auch direkt mit Strg+V auf dem Board), die KI legt einen oder mehrere Tasks an. <strong>Im Task:</strong> Beschreibung verbessern, zusammenfassen, Checkliste vorschlagen, Antwort entwerfen. <strong>Hotline-Anruf:</strong> Notizen auswerten und Felder ausfüllen.</p>') +
       sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert. Beim Auswerten werden der eingefügte Text bzw. die Inhalte des gewählten Tasks direkt an Anthropic gesendet, nicht an Supabase oder andere Dienste.</p>')
-    ) +
-    sCard('🔗 Read-only-Link teilen', 'Optional: Ein GitHub-Token (Scope nur „gist“) wird für den Button „Read-only-Link teilen“ gebraucht.',
-      sRow('GitHub-Token', '<div class="s-inline"><input type="password" id="sCloudToken" value="'+escapeAttr(cloudCfg.token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div>')
     );
 
   /* ---------- Admin ---------- */
@@ -7689,7 +7500,7 @@ function openSettings(){
       '</div>' +
       '<div class="s-actions"><button class="btn" id="btnAdminRefreshUsers">🔄 Liste aktualisieren</button></div>' +
       sMore('Hinweise',
-        '<p><strong>Neue Personen</strong> brauchen keinen Admin: Die Registrierung ist offen, einfach den App-Link weitergeben.</p>' +
+        '<p><strong>Neue Personen</strong> brauchen keinen Admin: Sie registrieren sich selbst über den App-Link (solange die Registrierung in Supabase offen ist).</p>' +
         '<p><strong>Admin-Rechte</strong> vergibst du bewusst nur manuell im Supabase-Dashboard (Table Editor → Tabelle „admins“ → Zeile mit der User-ID; zu finden unter Authentication → Users).</p>'
       )
     ) : '';
@@ -7741,15 +7552,6 @@ function openSettings(){
   bkmBulkLink.href = 'javascript:' + BOOKMARKLET_BULK_SRC;
   bkmBulkLink.addEventListener('click', function(e){ e.preventDefault(); toast('Bitte den Link in die Lesezeichenleiste ziehen, nicht anklicken.'); });
 
-  if(FS_SUPPORTED){
-    document.getElementById('btnPickNewFile').addEventListener('click', function(){
-      pickNewFile().then(function(){ openSettings(); }).catch(function(err){ if(err.name!=='AbortError') toast('Fehler: '+err.message); });
-    });
-    document.getElementById('btnPickExistingFile').addEventListener('click', function(){
-      pickExistingFile().then(function(){ closeModal(); renderAll(); openSettings(); }).catch(function(err){ if(err.name!=='AbortError') toast('Fehler: '+err.message); });
-    });
-  }
-
   document.getElementById('btnExportJson').addEventListener('click', exportBackup);
   document.getElementById('importFileInput').addEventListener('change', function(e){
     var file = e.target.files[0];
@@ -7789,13 +7591,7 @@ function openSettings(){
       btn.textContent = showing ? '👁' : '🙈';
     });
   }
-  wireVisibilityToggle('btnToggleTokenVisible', 'sCloudToken');
   wireVisibilityToggle('btnTogglePassphraseVisible', 'sCloudPassphrase');
-  document.getElementById('sCloudToken').addEventListener('change', function(e){
-    var cfg = getCloudSyncConfig();
-    cfg.token = e.target.value.trim();
-    setCloudSyncConfig(cfg);
-  });
   document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
     if(!cloudIsReady(getCloudSyncConfig())){ toast('☁️ Cloud-Speicher ist auf diesem Gerät noch nicht eingerichtet.'); return; }
     toast('☁️ Synchronisiere…');
@@ -8075,14 +7871,6 @@ function openSettings(){
   });
   wireSettingsBoards();
 }
-function renderStorageStatusHtml(){
-  var mode = state.settings.storageMode;
-  var connected = mode === 'file' && fileHandle;
-  return '<div class="storage-status"><span class="dot '+(connected?'ok':'warn')+'"></span>' +
-    (connected ? ('Verbunden mit: <strong>'+escapeHtml(fileHandle.name)+'</strong>') : 'Nicht mit einer Cloud-Datei verbunden – Daten liegen nur im Browser.') +
-    '</div>';
-}
-
 /* =========================================================
    TAGES-RECAP & WOCHENBERICHT
    ========================================================= */
@@ -8450,7 +8238,6 @@ function cmdActionsList(){
     {icon:'📊', label:'Statistik', run: openStats},
     {icon:'😴', label:'Wiedervorlage anzeigen', run: openSnoozedList},
     {icon:'🚨', label:'SLA-/Fälligkeits-Dashboard', run: openSlaDashboard},
-    {icon:'🔗', label:'Read-only-Link teilen', run: openShareLinkModal},
     {icon:'🔍', label:'Lösungs-Wissensdatenbank durchsuchen', run: function(){ openKnowledgeBase(''); }},
     {icon:'📓', label:'Journal öffnen', run: openJournal},
     {icon:'⏰', label:'Erinnerungen', run: openReminders},
@@ -8924,20 +8711,6 @@ document.getElementById('tbPause').addEventListener('click', function(){
 });
 document.getElementById('tbPip').addEventListener('click', toggleControlCenter);
 document.getElementById('btnControlCenter').addEventListener('click', toggleControlCenter);
-document.getElementById('btnReloadExternal').addEventListener('click', function(){
-  if(!fileHandle) return;
-  fileHandle.getFile().then(function(file){ return file.text(); }).then(function(text){
-    withPersonalState(function(){ state = migrateState(text ? safeJsonParse(text) : null); });
-    lastWriteAt = Date.now();
-    document.getElementById('externalChangeBanner').classList.remove('show');
-    renderAll();
-    toast('Neu geladen.');
-  });
-});
-document.getElementById('btnDismissExternal').addEventListener('click', function(){
-  document.getElementById('externalChangeBanner').classList.remove('show');
-  lastWriteAt = Date.now();
-});
 document.getElementById('btnReloadCloud').addEventListener('click', function(){
   if(window.__pendingCloudState){
     withPersonalState(function(){ state = migrateState(window.__pendingCloudState); });
@@ -9062,17 +8835,6 @@ function handleCardKeyNav(e){
 /* =========================================================
    INIT
    ========================================================= */
-function showOnboardingIfNeeded(){
-  /* Kein Willkommens-Dialog mehr: Die Anmeldung (Supabase) ersetzt die
-     frühere Einrichtung als Einstiegspunkt. Nur falls noch keine Datenquelle
-     verbunden ist, gibt es einmalig einen kurzen Hinweis statt eines Dialogs. */
-  var alreadyHinted = false;
-  try{ alreadyHinted = localStorage.getItem('wb-onboarding-shown') === '1'; }catch(e){}
-  if(alreadyHinted || state.tasks.length > 0 || state.settings.storageMode === 'file' || cloudIsReady(getCloudSyncConfig())) return;
-  try{ localStorage.setItem('wb-onboarding-shown', '1'); }catch(e){}
-  toast('👋 Willkommen' + (currentUser ? ', ' + currentUser.displayName : '') + '! Board-Daten verbinden: ⚙️ Einstellungen → Speicher.', 9000);
-}
-
 /* =========================================================
    KURZBEFEHLE / SIRI-INTEGRATION (iOS Shortcuts öffnen die App
    mit einem "action"-URL-Parameter, z.B. index.html?action=hotline)
@@ -9227,7 +8989,6 @@ function resetLocalBoardIfOtherUser(){
   if(owner && owner !== currentUser.id){
     try{
       localStorage.removeItem('kanban-state-backup');
-      localStorage.removeItem('wb-onboarding-shown');
     }catch(e){}
     setCloudSyncConfig(cloudSyncConfigDefaults());
   }
@@ -9236,6 +8997,8 @@ function resetLocalBoardIfOtherUser(){
 function ensureBoardSetup(){
   resetLocalBoardIfOtherUser();
   var cfg = getCloudSyncConfig();
+  /* Konfiguration aus der früheren Gist-Synchronisation (anderes Backend) wird verworfen. */
+  if(cfg.backend !== 'supabase' && (cfg.passphrase || cfg.enabled)){ cfg = cloudSyncConfigDefaults(); setCloudSyncConfig(cfg); }
   if(cloudIsReady(cfg)) return Promise.resolve();
   document.getElementById('authOverlay').classList.remove('hidden');
   renderAuthLoading();
@@ -9271,17 +9034,12 @@ function wireAuthPwToggle(btnId, inputIds){
   });
 }
 function renderBoardPassphraseCreate(done){
-  var legacy = getCloudSyncConfig();
-  /* Wer bisher den Gist-Sync genutzt hat, behält seine bisherige Passphrase
-     als Vorschlag - der lokale Stand wird einfach in die neue Cloud übernommen. */
-  var suggestion = (legacy.backend !== 'supabase' && legacy.passphrase) ? legacy.passphrase : '';
   document.getElementById('authContent').innerHTML =
     '<h3 style="margin:0 0 8px;">🔐 Verschlüsselung einrichten</h3>' +
     '<p class="hint" style="margin-bottom:10px;">Dein Board wird in der Cloud <strong>verschlüsselt</strong> gespeichert. Lege dafür eine eigene Passphrase fest (nicht dein Login-Passwort). Sie verlässt dieses Gerät nie – weder Supabase noch Admins können sie sehen oder zurücksetzen.</p>' +
     '<p class="hint" style="margin-bottom:10px; color:var(--danger);">⚠️ Passphrase verloren = Cloud-Daten unwiederbringlich weg. Am besten im Passwort-Manager ablegen.</p>' +
-    (suggestion ? '<p class="hint" style="margin-bottom:10px;">Deine bisherige Sync-Passphrase ist vorausgefüllt – du kannst sie behalten oder ändern.</p>' : '') +
-    '<div class="form-row"><label>Passphrase (mind. 12 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
-    '<div class="form-row"><label>Passphrase wiederholen</label><input type="password" id="bpPass2" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"></div>' +
+    '<div class="form-row"><label>Passphrase (mind. 12 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="new-password"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<div class="form-row"><label>Passphrase wiederholen</label><input type="password" id="bpPass2" autocomplete="new-password"></div>' +
     '<button class="btn primary" id="bpSave" style="width:100%;">Verschlüsselung aktivieren</button>' +
     '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
     '<div style="margin-top:14px; text-align:center;"><a href="#" id="bpSkip">Ohne Cloud-Speicher fortfahren (nur lokal)</a></div>';
@@ -9480,6 +9238,9 @@ function adminSendPasswordReset(email){
 
 function init(){
   applyTheme();
+  /* Reste früherer Versionen (Dateianbindung, Willkommens-Hinweis) aufräumen. */
+  try{ indexedDB.deleteDatabase('kanban-fs-db'); }catch(e){}
+  try{ localStorage.removeItem('wb-onboarding-shown'); }catch(e){}
   var localBackup = null;
   try{ localBackup = localStorage.getItem('kanban-state-backup'); }catch(e){}
   if(localBackup){
@@ -9487,147 +9248,26 @@ function init(){
   }
   applyLanguage();
   showLockScreenIfNeeded();
-  tryReconnect().then(function(reconnected){
-    renderAll();
-    applyLanguage();
-    handleUrlShortcutAction();
-    tickInterval = setInterval(function(){
-      tick();
-      checkExternalChange();
-    }, 1000);
-    setInterval(runAutoArchive, 60000);
-    setInterval(function(){
-      if(changesSinceBackup >= 20){
-        toast('💾 Viele Änderungen seit dem letzten Cloud-Backup. Kurz "Sichern" klicken (Strg+S)?', 7000);
-      }
-    }, 20*60*1000);
-    setInterval(checkCumulativeBreak, 60000);
-    setInterval(checkWakeSnoozed, 60000);
-    setInterval(checkDueReminders, 30000);
-    setInterval(checkSlaCriticalPush, 60000);
-    runAutoArchive();
-    setTimeout(checkOvernightTimers, 1200);
-    captureDailySnapshotIfNeeded();
-    if(state.settings.clipboardWatchEnabled) startClipboardWatch();
-    /* Erst den initialen Cloud-Pull abwarten, dann erst ggf. den Willkommens-
-       Dialog zeigen - sonst poppt er bei jedem Start kurz auf, bevor die
-       (asynchron geladenen) Cloud-Daten überhaupt eintreffen, obwohl Cloud-
-       Sync korrekt eingerichtet ist und state.tasks gleich befüllt wird. */
-    if(cloudIsReady(getCloudSyncConfig())){
-      cloudPullNow().then(function(){
-        if(!reconnected) showOnboardingIfNeeded();
-      });
-      setInterval(cloudPullNow, 45000);
-    } else if(!reconnected){
-      showOnboardingIfNeeded();
-    }
-  });
-}
-
-function openShareLinkModal(){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.token){
-    toast('Dafür wird ein GitHub Personal Access Token benötigt – unter ⚙️ Einstellungen → Cloud-Speicher eintragen.');
-    return;
+  renderAll();
+  applyLanguage();
+  handleUrlShortcutAction();
+  tickInterval = setInterval(tick, 1000);
+  setInterval(runAutoArchive, 60000);
+  setInterval(checkCumulativeBreak, 60000);
+  setInterval(checkWakeSnoozed, 60000);
+  setInterval(checkDueReminders, 30000);
+  setInterval(checkSlaCriticalPush, 60000);
+  runAutoArchive();
+  setTimeout(checkOvernightTimers, 1200);
+  captureDailySnapshotIfNeeded();
+  if(state.settings.clipboardWatchEnabled) startClipboardWatch();
+  if(cloudIsReady(getCloudSyncConfig())){
+    cloudPullNow();
+    setInterval(cloudPullNow, 45000);
   }
-  var openTasks = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
-  var html =
-    '<div class="modal-header"><h2>🔗 Read-only-Link teilen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<div class="hint" style="margin-bottom:10px;">Erstellt einen <strong>unverschlüsselten</strong>, separaten Snapshot (nicht dein verschlüsseltes Cloud-Board) mit '+openTasks.length+' offenen Task(s): Titel, Typ, Priorität, Spalte, Jira-Key, Fälligkeitsdatum. <strong>Keine</strong> Notizen/Beschreibungen/Zeiterfassung. Wer den Link kennt, kann das lesen – wie ein unlisted Google-Doc-Link. Kein Live-Sync: jede Änderung braucht einen neuen Snapshot.</div>' +
-      '<button class="btn primary" id="genShareLinkBtn" style="width:100%;">🔗 Snapshot erstellen & Link generieren</button>' +
-      '<div id="shareLinkResult" style="margin-top:14px;"></div>' +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
-  openModal(html);
-  document.getElementById('genShareLinkBtn').addEventListener('click', function(){
-    var btn = document.getElementById('genShareLinkBtn');
-    btn.disabled = true; btn.textContent = 'Erstelle…';
-    var snapshot = {
-      boardName: currentBoardName(),
-      generatedAt: nowIso(),
-      columns: state.columns.map(function(c){ return {id:c.id, name:c.name}; }),
-      tasks: openTasks.map(function(t){
-        return {title:t.title, type:t.type, priority:t.priority, columnId:t.columnId, jiraKey:t.jiraKey||'', dueDate:t.dueDate||''};
-      })
-    };
-    fetch('https://api.github.com/gists', {
-      method:'POST',
-      headers: cloudGistHeaders(cfg.token),
-      body: JSON.stringify({description:'Work Board – Read-only Snapshot (unverschlüsselt, bewusst zum Teilen)', public:false,
-        files:{'workboard-view.json.txt':{content: JSON.stringify(snapshot)}}})
-    }).then(function(r){
-      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t.slice(0,150)); });
-      return r.json();
-    }).then(function(json){
-      var url = window.location.origin + window.location.pathname + '?view=' + json.id;
-      document.getElementById('shareLinkResult').innerHTML =
-        '<div class="form-row"><label>Link (kopieren & teilen)</label><input readonly value="'+escapeAttr(url)+'" id="shareLinkOutput"></div>' +
-        '<button class="btn" id="copyShareLinkBtn">📋 Link kopieren</button>';
-      document.getElementById('copyShareLinkBtn').addEventListener('click', function(){
-        copyToClipboard(url);
-        toast('📋 Link kopiert.');
-      });
-      btn.style.display = 'none';
-    }).catch(function(err){
-      toast('Fehler: ' + err.message);
-      btn.disabled = false; btn.textContent = '🔗 Snapshot erstellen & Link generieren';
-    });
-  });
 }
 
-/* =========================================================
-   READ-ONLY TEILEN-LINK (?view=<gistId>)
-   Komplett getrennt vom normalen App-Start: läuft NIE mit den
-   lokalen (verschlüsselten) Daten, sondern lädt einen bewusst
-   unverschlüsselten, separaten Snapshot-Gist (siehe openShareLinkModal).
-   ========================================================= */
-function renderViewerMode(gistId){
-  if(!/^[A-Za-z0-9]{8,64}$/.test(String(gistId))){ document.body.innerHTML = '<p style="padding:20px;">Ungültiger Link.</p>'; return; }
-  document.body.innerHTML =
-    '<div style="min-height:100vh; background:var(--bg); color:var(--text); padding:20px;">' +
-      '<div id="viewerRoot" style="max-width:900px; margin:0 auto;">⏳ Lade geteiltes Board…</div>' +
-    '</div>';
-  fetch('https://api.github.com/gists/' + gistId)
-    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(json){
-      var fname = Object.keys(json.files || {})[0];
-      if(!fname) throw new Error('Keine Datei im Gist gefunden.');
-      var data = safeJsonParse(json.files[fname].content);
-      var byCol = {};
-      data.columns = normalizeColumns(data.columns);
-      (data.columns||[]).forEach(function(c){ byCol[c.id] = []; });
-      (data.tasks||[]).forEach(function(t){ if(byCol[t.columnId]) byCol[t.columnId].push(t); });
-      var colsHtml = (data.columns||[]).map(function(c){
-        var tasks = byCol[c.id] || [];
-        return '<div class="column" style="display:inline-block; vertical-align:top; margin-right:12px; width:260px;">' +
-          '<div class="column-header"><span style="flex:1;">'+escapeHtml(c.name)+'</span><span class="count">'+tasks.length+'</span></div>' +
-          '<div class="column-body" style="max-height:none;">' +
-            (tasks.map(function(t){
-              return '<div class="card priority-'+(PRIORITIES[t.priority] ? t.priority : 'medium')+'" style="cursor:default;">' +
-                '<div class="card-top"><span class="type-badge">'+escapeHtml((TYPES[t.type]||TYPES.adhoc||{}).icon||'📌')+'</span><span class="card-title">'+escapeHtml(t.title)+'</span></div>' +
-                (t.jiraKey ? '<span class="jira-key">'+escapeHtml(t.jiraKey)+'</span>' : '') +
-                (t.dueDate ? '<div class="due" style="margin-top:6px;">📆 '+escapeHtml(t.dueDate)+'</div>' : '') +
-              '</div>';
-            }).join('') || '<div class="empty-state">Keine Tasks.</div>') +
-          '</div>' +
-        '</div>';
-      }).join('');
-      document.getElementById('viewerRoot').innerHTML =
-        '<h1 style="display:flex; align-items:center; gap:8px;">👁️ '+escapeHtml(data.boardName||'Work Board')+' <span style="font-size:12px; font-weight:400; color:var(--text-faint);">(Nur-Lesen-Ansicht)</span></h1>' +
-        '<div class="hint" style="margin-bottom:16px;">Statischer Snapshot vom '+escapeHtml(new Date(data.generatedAt).toLocaleString('de-CH'))+' – keine Live-Synchronisation. Für einen aktuellen Stand muss der Link-Ersteller einen neuen Snapshot teilen.</div>' +
-        '<div style="overflow-x:auto; white-space:nowrap; padding-bottom:10px;">' + colsHtml + '</div>';
-    })
-    .catch(function(err){
-      document.getElementById('viewerRoot').innerHTML = '<h1>👁️ Geteiltes Board</h1><div class="hint">Konnte nicht geladen werden: '+escapeHtml(err.message)+' – evtl. wurde der Link zurückgezogen.</div>';
-    });
-}
-var viewerGistId = new URLSearchParams(window.location.search).get('view');
-if(viewerGistId){
-  renderViewerMode(viewerGistId);
-} else {
-  startAuthGate();
-}
+startAuthGate();
 
 if('serviceWorker' in navigator && location.protocol !== 'file:'){
   window.addEventListener('load', function(){
