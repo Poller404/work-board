@@ -16,9 +16,10 @@ nächster Abschnitt zur Einrichtung.
 ## 👤 Login & Registrierung (Supabase) – einmalige Einrichtung
 
 Damit jede Person mit einer echten, eigenen Identität arbeitet (statt eines geteilten Passworts),
-läuft die Anmeldung über **[Supabase](https://supabase.com)** – einen kostenlosen Dienst, der nur
-Login/Registrierung übernimmt. Die eigentlichen Board-Daten laufen weiterhin unverändert über den
-Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
+läuft die Anmeldung über **[Supabase](https://supabase.com)** – einen kostenlosen Dienst. Supabase
+übernimmt Login/Registrierung und speichert zusätzlich **pro Person ein eigenes Board, Ende-zu-Ende-
+verschlüsselt** (siehe "☁️ Cloud-Speicher" weiter unten); lesen kann es nur, wer die Passphrase kennt –
+weder Supabase noch Admins.
 
 **Einrichtung (einmalig, durch eine Person):**
 1. Kostenloses Konto auf [supabase.com](https://supabase.com) anlegen, neues Projekt erstellen
@@ -27,8 +28,7 @@ Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
    **`anon` `public`-Key** kopieren (nicht den `service_role`-Key – der ist geheim und wird hier
    nicht gebraucht).
 3. **SQL Editor** im Supabase-Dashboard öffnen, neue Query, folgendes einfügen und ausführen – legt
-   die Tabelle an, in der sich registrierte Personen mit ihrem Namen eintragen (für die
-   "Zugewiesen an"-Auswahl im Board):
+   die Tabellen für Profile, Admins und die verschlüsselten Boards an:
    ```sql
    create table profiles (
      id uuid primary key references auth.users(id) on delete cascade,
@@ -52,6 +52,40 @@ Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
    -- Bewusst KEINE insert/update/delete-Policy auf "admins": Admin-Rechte
    -- lassen sich dadurch nur manuell im Table Editor vergeben, nie über
    -- die App selbst (siehe Abschnitt "🛡️ Admin-Bereich" weiter unten).
+
+   -- Verschlüsseltes Cloud-Board: eine Zeile pro Person. "payload" enthält nur
+   -- Chiffretext (im Browser verschlüsselt), RLS erlaubt jeder Person nur die eigene Zeile.
+   create table boards (
+     user_id uuid primary key references auth.users(id) on delete cascade,
+     payload text not null,
+     updated_at timestamptz not null default now()
+   );
+   alter table boards enable row level security;
+   create policy "Eigenes Board lesen" on boards
+     for select to authenticated using (auth.uid() = user_id);
+   create policy "Eigenes Board anlegen" on boards
+     for insert to authenticated with check (auth.uid() = user_id);
+   create policy "Eigenes Board aktualisieren" on boards
+     for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   create policy "Eigenes Board löschen" on boards
+     for delete to authenticated using (auth.uid() = user_id);
+
+   -- Tägliche Snapshots (letzte 7 Tage), ebenfalls nur Chiffretext:
+   create table board_snapshots (
+     user_id uuid not null references auth.users(id) on delete cascade,
+     day date not null,
+     payload text not null,
+     primary key (user_id, day)
+   );
+   alter table board_snapshots enable row level security;
+   create policy "Eigene Snapshots lesen" on board_snapshots
+     for select to authenticated using (auth.uid() = user_id);
+   create policy "Eigene Snapshots anlegen" on board_snapshots
+     for insert to authenticated with check (auth.uid() = user_id);
+   create policy "Eigene Snapshots aktualisieren" on board_snapshots
+     for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   create policy "Eigene Snapshots löschen" on board_snapshots
+     for delete to authenticated using (auth.uid() = user_id);
    ```
 4. **Authentication → URL Configuration**: **Site URL** auf deine echte Adresse setzen, z.B.
    `https://poller404.github.io/work-board/` (steht standardmässig auf `localhost:3000` – lässt man
@@ -66,8 +100,9 @@ Ende-zu-Ende-verschlüsselten Cloud-Sync weiter unten; Supabase sieht sie nie.
    **Authentication → Users**, Spalte "UID", nachdem du dich einmal im Work Board registriert hast)
    → speichern. Danach siehst du in der App unter ⚙️ Einstellungen einen neuen Tab "🛡️ Admin".
 
-**Im Work Board:** beim ersten Öffnen Project URL und anon-Key eintragen → "Verbinden". Danach kann
-sich jede Person selbst mit E-Mail/Passwort registrieren (Name wird dabei einmalig festgelegt und
+**Im Work Board:** Project URL und `anon`/publishable-Key sind in `index.html` hinterlegt
+(`DEFAULT_SUPABASE_URL`/`DEFAULT_SUPABASE_ANON_KEY`), niemand muss sie eintragen. Jede Person kann
+sich selbst mit E-Mail/Passwort registrieren (Name wird dabei einmalig festgelegt und
 taucht danach bei Zuweisungen sowie im Aktivitäts-Verlauf jedes Tasks auf). Abmelden geht über
 ⚙️ Einstellungen → 👤 Konto.
 
@@ -112,80 +147,54 @@ Die Statusleiste unten zeigt jederzeit, wie viele Änderungen seit dem letzten C
 angefallen sind – und, falls eingerichtet, auch den aktuellen Cloud-Sync-Status (aktiv, Fehler,
 oder nicht eingerichtet).
 
-## ☁️ Cloud-Sync (automatisch, Ende-zu-Ende-verschlüsselt)
+## ☁️ Cloud-Speicher (automatisch, Ende-zu-Ende-verschlüsselt)
 
-Läuft die App über `https://` (z.B. via GitHub Pages), kannst du dir das manuelle
-Sichern/Laden komplett sparen: **⚙️ Einstellungen → Cloud-Sync** synchronisiert automatisch im
-Hintergrund über einen **privaten GitHub Gist** – ohne dass GitHub oder sonst jemand deine Daten
-lesen kann.
+Nach der Anmeldung liegt dein Board automatisch in Supabase – **pro Person ein eigenes Board**, ganz
+ohne manuelles Sichern/Laden und ohne GitHub-Token.
 
 **Wie es funktioniert:** Deine Daten werden direkt in deinem Browser mit einer selbst gewählten
-Passphrase verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Erst danach geht die
-verschlüsselte Datei an GitHub. Entschlüsselt wird ebenfalls nur lokal im Browser des jeweiligen
-Geräts – nie unterwegs oder auf einem Server.
+**Passphrase** verschlüsselt (AES-256-GCM), bevor irgendetwas hochgeladen wird. Supabase speichert
+nur den unlesbaren Chiffretext (Tabelle `boards`); entschlüsselt wird ausschliesslich lokal im
+Browser. Die Passphrase ist bewusst **nicht** dein Login-Passwort: Das Login-Passwort kennt bzw.
+ersetzt Supabase (Passwort-Reset), die Passphrase verlässt dein Gerät nie.
 
-**Einrichtung:**
-1. Einen GitHub **Personal Access Token** erstellen: GitHub → Settings → Developer settings →
-   Personal access tokens → **nur die Berechtigung `gist`** aktivieren (keine anderen Rechte
-   nötig).
-2. **Auf dem ersten Gerät:** In ⚙️ Einstellungen → Cloud-Sync: Token einfügen, eine
-   **Passphrase** wählen, Gist-ID-Feld leer lassen → **"☁️ Neuen Speicher erstellen (1. Gerät)"**.
-   Das legt einen neuen, privaten ("secret") Gist an. Die neu erzeugte Gist-ID erscheint danach
-   im Gist-ID-Feld, daneben ein **"📋 Kopieren"**-Button.
-3. **Auf jedem weiteren Gerät** – am einfachsten fürs Handy per QR-Code, siehe unten. Alternativ
-   manuell: gleicher Token (oder ein eigener mit `gist`-Recht), **dieselbe Passphrase**, und die
-   kopierte **Gist-ID** ins Gist-ID-Feld einfügen → **"🔗 Mit bestehendem Speicher verbinden
-   (weiteres Gerät)"** klicken.
-
-   ⚠️ Wichtig: Auf dem zweiten (und jedem weiteren) Gerät **nicht** erneut "Neuen Speicher
-   erstellen" klicken – das würde einen zweiten, komplett getrennten Speicher anlegen, der nicht
-   mit dem ersten synchronisiert (die App warnt davor, falls auf einem Gerät schon Sync aktiv
-   ist, aber zwischen zwei brandneuen Geräten kann sie das nicht automatisch erkennen).
-
-### 📱 Handy per QR-Code koppeln (wie z.B. bei 1Password)
-
-**Auf dem bereits eingerichteten Gerät:** in ⚙️ Einstellungen → Cloud-Sync auf **"📱 Gerät per
-QR-Code koppeln"** klicken. Das zeigt einen QR-Code mit Token und Gist-ID dieses Geräts (**ohne**
-Passphrase – die wird aus Sicherheitsgründen nie im QR-Code übertragen).
-
-**Auf dem neuen Gerät (z.B. Smartphone):** beim Willkommensbildschirm (oder später in
-⚙️ Einstellungen → Cloud-Sync) auf **"📷 Mit QR-Code verbinden"** tippen. Das öffnet die
-Handy-Kamera direkt in der App (nutzt die native Scan-Funktion des Browsers, ohne zusätzliche
-Kamera-App). Code scannen → Token und Gist-ID werden automatisch übernommen, danach fragt die App
-nach der **Passphrase** – die muss man einmalig selbst eingeben (zweite Sicherheitsebene: wer nur
-den QR-Code sieht/fotografiert, kommt ohne Passphrase trotzdem nicht an die Daten).
-
-🔒 Der QR-Code enthält deinen GitHub-Token im Klartext (Design-bedingt) – trotzdem nicht
-fotografieren/weiterleiten, Fenster nach dem Koppeln schliessen. Die Passphrase steckt bewusst
-nicht mit drin, damit ein blosses Foto des QR-Codes allein nicht reicht, um an die Daten zu
-kommen.
-
-Unterstützt der Browser keinen Kamera-Scan direkt in der App (z.B. iPhone/Safari – dort gibt es
-die nötige Browser-Funktion `BarcodeDetector` bislang nicht), zeigt die App das automatisch an und
-verweist auf die Alternative: mit der normalen Kamera-App scannen, erkannten Text kopieren, in
-Work Board auf **"📋 Aus Zwischenablage"** tippen – landet ebenfalls bei der Passphrase-Abfrage.
+**Einrichtung (pro Person, einmalig):**
+1. Anmelden bzw. registrieren. Beim ersten Mal erscheint **"🔐 Verschlüsselung einrichten"** – eine
+   Passphrase (mind. 8 Zeichen) festlegen, am besten im Passwort-Manager ablegen.
+2. **Auf jedem weiteren Gerät:** anmelden, einmalig **dieselbe Passphrase** eingeben ("🔑 Passphrase
+   eingeben") – danach wird sie auf dem Gerät gemerkt, das Board lädt automatisch. Kein Token, keine
+   ID, kein QR-Code nötig.
+3. **Bisher den Gist-Sync genutzt?** Die bisherige Passphrase ist beim ersten Mal vorausgefüllt; der
+   Stand dieses Geräts wird einfach in die neue Cloud übernommen. Der alte Gist wird nicht mehr
+   benutzt und kann in GitHub gelöscht werden.
 
 Danach läuft alles automatisch: jede Änderung wird verzögert (ca. 8 Sek.) hochgeladen, und beim
 Öffnen bzw. alle 45 Sekunden wird geprüft, ob ein anderes Gerät etwas Neueres hochgeladen hat –
 falls ja, erscheint ein Hinweisbanner zum Nachladen (dein aktueller Stand wird dabei **nicht**
-automatisch überschrieben).
+automatisch überschrieben). Oben rechts gibt es neben **💾 Sichern** den Button **☁️ Sync** für
+einen sofortigen Abgleich.
 
-Für den manuellen Fall zwischendurch gibt es oben rechts direkt neben **💾 Sichern** den Button
-**☁️ Sync** – ein Klick stößt sofort ein Hoch- und Herunterladen an, ohne die Einstellungen zu
-öffnen (ist Cloud-Sync noch nicht eingerichtet, öffnet der Button stattdessen direkt die
-Einstellungen dafür).
+In ⚙️ Einstellungen → **☁️ Cloud-Speicher** siehst du den Status und kannst
+- die Passphrase **auf diesem Gerät übernehmen** (nötig, wenn du sie auf einem anderen Gerät
+  geändert hast), oder
+- die Passphrase **ändern & neu verschlüsseln** (andere Geräte müssen danach die neue eingeben).
 
 **Wichtig:**
 - **Passphrase verloren = Cloud-Daten unwiederbringlich weg.** Es gibt keine
-  Wiederherstellungsmöglichkeit – das ist der Preis für echte Verschlüsselung. Dein lokales
-  "💾 Sichern"-Backup ist davon nicht betroffen.
-- Der Token braucht wirklich nur die Berechtigung `gist`, sonst nichts.
-- Cloud-Sync ist optional und komplett unabhängig vom manuellen Sichern/Laden – du kannst
-  jederzeit beides parallel nutzen oder Cloud-Sync über "⏸ Sync deaktivieren" wieder ausschalten.
-- **Zugriff für eine zweite Person** funktioniert genauso wie ein zweites eigenes Gerät: Token,
-  Passphrase und Gist-ID mit ihr teilen (am einfachsten per **📷 QR-Code**, siehe oben – Passphrase
-  aus Sicherheitsgründen separat mitteilen). Beide nutzen dann denselben Zugang; das ist für zwei
-  vertraute Personen der mit Abstand einfachste Weg, ganz ohne zusätzliche Einrichtung.
+  Wiederherstellungsmöglichkeit (auch Admins können nichts tun) – das ist der Preis für echte
+  Verschlüsselung. Wer sie vergisst, kann beim Login "Passphrase vergessen?" wählen und ein
+  **neues, leeres** Board anlegen (das alte wird dabei gelöscht). Dein lokales "💾 Sichern"-Backup
+  ist davon nicht betroffen.
+- **Eigene Boards:** Tasks sind nur für die jeweilige Person sichtbar; eine Zuweisung an andere
+  Personen landet daher nur als Name/Hinweis im eigenen Board.
+- **Gerätewechsel der Person:** Meldet sich auf demselben Gerät jemand anderes an, werden die
+  lokalen Daten der vorherigen Person verworfen (sie liegen verschlüsselt in deren Cloud-Board).
+- Ohne Verbindung arbeitet die App lokal weiter und gleicht beim nächsten Online-Moment ab.
+- Das Anlegen der Tabellen `boards`/`board_snapshots` (SQL oben, Schritt 3) ist Voraussetzung;
+  fehlen sie, zeigt die App beim Login "Cloud-Speicher nicht erreichbar" mit der Option, vorerst nur
+  lokal weiterzumachen.
+- Der optionale **GitHub-Token** in den Einstellungen (Scope `gist`) wird nur noch für
+  "🔗 Read-only-Link teilen" gebraucht.
 
 ## 🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)
 
@@ -333,7 +342,7 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 
 Die Oberfläche ist responsiv (schmale Spalten, grössere Touch-Ziele) und lässt sich auf dem Handy
 per "Zum Home-Bildschirm hinzufügen" ablegen (`manifest.json` liegt bei). Für automatischen Sync
-zwischen PC und Handy: siehe **☁️ Cloud-Sync** oben – damit läuft es im Hintergrund, ganz ohne
+zwischen PC und Handy: siehe **☁️ Cloud-Speicher** oben – damit läuft es im Hintergrund, ganz ohne
 manuelles Exportieren/Importieren. Alternativ weiterhin **💾 Sichern** über OneDrive/iCloud, oder
 das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
 
@@ -436,7 +445,7 @@ das **📱 QR-Code**-Feature für einzelne Tasks (siehe unten).
   Wochenberichte als E-Mail-Entwurf statt nur Kopieren.
 
 **Daten & Zugriff**
-- Cloud-Sync legt automatisch täglich einen **Snapshot** im selben Gist ab (letzte 7 Tage) –
+- Der Cloud-Speicher legt automatisch täglich einen **Snapshot** (Tabelle `board_snapshots`) ab (letzte 7 Tage) –
   zusätzliche Absicherung gegen einen fehlerhaft hochgeladenen Stand.
 - **Automatischer Sync-Retry**: meldet der Browser die Internetverbindung zurück (z.B. nach
   VPN-Wechsel oder WLAN-Aussetzer), synchronisiert Cloud-Sync sofort statt bis zu 45s auf das

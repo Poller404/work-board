@@ -473,7 +473,7 @@ button.mobile-only{display:none;}
     <button class="btn topbar-more" id="btnStats">📊 Statistik</button>
     <button class="btn topbar-more" id="btnArchive">🗄️ Archiv</button>
     <button class="btn primary" id="btnQuickSave" title="Backup in OneDrive/iCloud-Ordner speichern (Strg+S)">💾 Sichern</button>
-    <button class="btn" id="btnCloudSyncTopbar" title="Cloud-Sync jetzt anstoßen">☁️ Sync</button>
+    <button class="btn" id="btnCloudSyncTopbar" title="Cloud-Speicher jetzt synchronisieren">☁️ Sync</button>
     <button class="btn icon-btn" id="btnSettings" title="Einstellungen">⚙️</button>
   </div>
 
@@ -1762,120 +1762,6 @@ function openQrShare(t){
     '</div>' +
     '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
   openModal(html, {wide:true});
-}
-
-/* =========================================================
-   CLOUD-SYNC GERÄTE-KOPPLUNG PER QR (wie z.B. bei 1Password)
-   Der QR-Code enthält NUR Token+Gist-ID (nicht die Passphrase – die
-   wird aus Sicherheitsgründen auf dem neuen Gerät separat von Hand
-   eingegeben). Format: "WBP1:<token>:<gistId>" ("WBP1:" als
-   Erkennungs-Präfix, damit Scanner/Zwischenablage-Import den
-   Kopplungs-Code von normalem Task-Import unterscheiden können).
-   ========================================================= */
-function openCloudPairQr(){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.enabled || !cfg.gistId){ toast('Bitte zuerst auf diesem Gerät Cloud-Sync einrichten.'); return; }
-  var text = 'WBP1:' + cfg.token + ':' + cfg.gistId;
-  var result = encodeQR(text);
-  var html =
-    '<div class="modal-header"><h2>📱 Gerät koppeln</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body" style="text-align:center;">' +
-      (result ?
-        '<div style="display:inline-block; padding:10px;">'+qrToSvg(result, 10)+'</div>' +
-        '<p class="hint" style="margin-top:10px;">Auf dem Handy in Work Board beim Start (oder ⚙️ Einstellungen → Cloud-Sync) <strong>"📷 Mit QR-Code verbinden"</strong> wählen und diesen Code scannen – Token und Gist-ID werden automatisch übernommen. Die <strong>Passphrase</strong> musst du danach zur Sicherheit selbst eingeben, sie steckt nicht im QR-Code.</p>' +
-        '<p class="hint" style="margin-top:8px; color:var(--danger);">🔒 Dieser QR-Code enthält deinen GitHub-Token im Klartext – wie ein Passwort behandeln, nicht fotografieren/weiterleiten. Fenster nach dem Koppeln schliessen.</p>'
-        : '<p class="hint">Token und Gist-ID sind leider zu lang für einen QR-Code. Bitte auf dem Handy manuell unter ⚙️ Einstellungen → Cloud-Sync → "Mit bestehendem Speicher verbinden" eintragen (Gist-ID lässt sich oben mit 📋 Kopieren übernehmen).</p>') +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
-  openModal(html, {wide:true});
-}
-
-/* ---- Passphrase-Abfrage nach QR-Scan/Zwischenablage-Kopplung ---- */
-function promptPassphraseAndJoin(token, gistId){
-  var html =
-    '<div class="modal-header"><h2>🔑 Passphrase eingeben</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body">' +
-      '<p class="hint" style="margin-bottom:10px;">Kopplungs-Code erkannt. Aus Sicherheitsgründen wird die Passphrase nicht im QR-Code übertragen – bitte auf diesem Gerät einmalig eingeben (dieselbe wie auf dem anderen Gerät).</p>' +
-      '<div class="form-row"><label>Passphrase</label><input type="password" id="pairPassphraseInput" placeholder="Eigene, sichere Passphrase"></div>' +
-    '</div>' +
-    '<div class="modal-footer"><button class="btn ghost" data-close-modal>Abbrechen</button><button class="btn primary" id="pairConfirmBtn">Verbinden</button></div>';
-  openModal(html);
-  var input = document.getElementById('pairPassphraseInput');
-  input.focus();
-  function submit(){
-    var passphrase = input.value;
-    if(!passphrase){ toast('Bitte Passphrase eingeben.'); return; }
-    closeModal();
-    var cfg = getCloudSyncConfig();
-    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
-    setCloudSyncConfig(cfg);
-    toast('☁️ Verbinde und lade Cloud-Stand…');
-    cloudJoinExisting().catch(function(){});
-  }
-  document.getElementById('pairConfirmBtn').addEventListener('click', submit);
-  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); });
-}
-
-/* ---- Kamera-QR-Scanner (nutzt die native BarcodeDetector-API des Browsers,
-   keine externe Library). Fällt bei fehlender Unterstützung (v.a. iOS Safari)
-   auf den Hinweis zurück, stattdessen mit der Kamera-App zu scannen und über
-   "📋 Aus Zwischenablage" zu importieren. ---- */
-function openQrScanner(){
-  if(!('BarcodeDetector' in window)){
-    toast('Kamera-Scan wird von diesem Browser nicht unterstützt. Bitte stattdessen mit der normalen Kamera-App scannen, Text kopieren und "📋 Aus Zwischenablage" verwenden.');
-    return;
-  }
-  var html =
-    '<div class="modal-header"><h2>📷 QR-Code scannen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
-    '<div class="modal-body" style="text-align:center;">' +
-      '<video id="qrScanVideo" playsinline autoplay muted style="width:100%; max-width:400px; border-radius:8px; background:#000;"></video>' +
-      '<p class="hint" id="qrScanStatus" style="margin-top:10px;">Kamera wird gestartet…</p>' +
-    '</div>';
-  openModal(html);
-  var video = document.getElementById('qrScanVideo');
-  var statusEl = document.getElementById('qrScanStatus');
-  var stream = null;
-  var stopped = false;
-  modalCloseCleanup = function(){
-    stopped = true;
-    if(stream){ stream.getTracks().forEach(function(tr){ tr.stop(); }); stream = null; }
-  };
-  var detector;
-  try{ detector = new BarcodeDetector({formats:['qr_code']}); }
-  catch(e){ statusEl.textContent = 'QR-Scanner konnte nicht gestartet werden: ' + e.message; return; }
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){
-    if(stopped){ s.getTracks().forEach(function(tr){ tr.stop(); }); return; }
-    stream = s;
-    video.srcObject = s;
-    statusEl.textContent = 'Kamera auf den QR-Code richten…';
-    function scanLoop(){
-      if(stopped) return;
-      detector.detect(video).then(function(codes){
-        if(stopped) return;
-        if(codes && codes.length){
-          var text = codes[0].rawValue || '';
-          if(text.indexOf('WBP1:') === 0){
-            var parts = text.slice(5).split(':');
-            var token = parts[0] || '';
-            var gistId = parts[1] || '';
-            if(token && gistId){
-              modalCloseCleanup && modalCloseCleanup();
-              closeModal();
-              promptPassphraseAndJoin(token, gistId);
-              return;
-            }
-          }
-          statusEl.textContent = 'QR-Code erkannt, aber kein gültiger Work-Board-Kopplungs-Code – weiter versuchen…';
-        }
-        requestAnimationFrame(scanLoop);
-      }).catch(function(){
-        requestAnimationFrame(scanLoop);
-      });
-    }
-    requestAnimationFrame(scanLoop);
-  }).catch(function(err){
-    statusEl.textContent = 'Kamera-Zugriff nicht möglich (' + err.message + '). Bitte stattdessen mit der normalen Kamera-App scannen und über "📋 Aus Zwischenablage" importieren.';
-  });
 }
 
 /* =========================================================
@@ -4299,13 +4185,6 @@ function tryParseImportPayload(text){
   }
   return null;
 }
-function handleCloudPairPayload(text){
-  var parts = text.slice(5).split(':');
-  var token = parts[0] || '';
-  var gistId = parts[1] || '';
-  if(!token || !gistId){ toast('Ungültiger Kopplungs-Code.'); return; }
-  promptPassphraseAndJoin(token, gistId);
-}
 function handleJiraBulkImport(items){
   if(!items || !items.length){ toast('Keine Tickets im Import gefunden.'); return; }
   var col = state.columns[0];
@@ -4327,10 +4206,6 @@ function importFromClipboard(){
     return;
   }
   navigator.clipboard.readText().then(function(text){
-    if(text && text.indexOf('WBP1:') === 0){
-      handleCloudPairPayload(text);
-      return;
-    }
     try{
       var maybeBulk = JSON.parse(text);
       if(maybeBulk && maybeBulk.source === 'jira-bulk' && Array.isArray(maybeBulk.items)){
@@ -4673,19 +4548,25 @@ function importBackupFile(file){
 }
 
 /* =========================================================
-   CLOUD-SYNC (Ende-zu-Ende-verschlüsselt via privatem GitHub Gist)
-   Token/Passphrase/Gist-ID leben bewusst NICHT in state.settings,
-   damit sie nie in Sichern-Exports, Ausdrucken oder der Gist-Nutzlast
-   selbst landen — nur in einem eigenen, nicht synchronisierten
+   CLOUD-SYNC (Ende-zu-Ende-verschlüsselt in Supabase)
+   Pro Person ein eigenes Board: Tabelle "boards" (eine Zeile pro user_id,
+   per Row-Level-Security nur für die Person selbst les-/schreibbar). Der
+   Board-Stand wird IN DIESEM BROWSER mit einer Passphrase verschlüsselt
+   (AES-256-GCM + PBKDF2), bevor er hochgeladen wird - Supabase und Admins
+   sehen nur unlesbaren Text. Die Passphrase ist unabhängig vom Login-
+   Passwort und lebt bewusst NICHT in state.settings, damit sie nie in
+   Sichern-Exports oder der Cloud-Nutzlast landet - nur in einem eigenen
    localStorage-Schlüssel pro Browser/Gerät.
    ========================================================= */
 var CLOUD_SYNC_KEY = 'wb-cloud-sync-config';
-var CLOUD_SYNC_FILE = 'workboard-sync.json.txt';
+var BOARD_OWNER_KEY = 'wb-board-owner';
+var CLOUD_SNAPSHOT_RETENTION_DAYS = 7;
 var cloudSyncPushTimer = null;
 var cloudSyncBusy = false;
 
 function cloudSyncConfigDefaults(){
-  return {enabled:false, token:'', passphrase:'', gistId:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
+  /* token: optionaler GitHub-Token, nur noch für "Read-only-Link teilen". */
+  return {enabled:false, backend:'', userId:'', token:'', passphrase:'', lastSyncedAt:'', lastError:'', lastSnapshotDate:''};
 }
 function getCloudSyncConfig(){
   try{
@@ -4699,6 +4580,26 @@ function getCloudSyncConfig(){
 }
 function setCloudSyncConfig(cfg){
   try{ localStorage.setItem(CLOUD_SYNC_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+/* Sync läuft nur, wenn die gespeicherte Konfiguration zur aktuell
+   angemeldeten Person gehört (verhindert, dass auf einem geteilten Gerät
+   die Passphrase/das Board der vorherigen Person verwendet wird). */
+function cloudIsReady(cfg){
+  return !!(cfg.enabled && cfg.passphrase && cfg.backend === 'supabase' && currentUser && cfg.userId === currentUser.id && getSupabaseClient());
+}
+/* Nur noch für den optionalen "Read-only-Link teilen" (separater, öffentlicher Gist). */
+function cloudGistHeaders(token){
+  return {
+    'Authorization': 'token ' + token,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+}
+function cloudErrorText(err){
+  if(err && err.name === 'OperationError') return 'Passphrase passt nicht zu den Cloud-Daten (auf einem anderen Gerät geändert?). Unter ⚙️ Einstellungen → Cloud-Speicher die aktuelle Passphrase eintragen.';
+  var msg = (err && err.message) || String(err);
+  if(/boards/i.test(msg) && /(find|exist|relation|schema)/i.test(msg)) return 'Tabelle "boards" fehlt in Supabase – bitte das SQL aus der README ausführen.';
+  return msg;
 }
 
 /* ---- Verschlüsselung (Web Crypto API, AES-256-GCM + PBKDF2) ---- */
@@ -4752,83 +4653,45 @@ function cloudDecryptPayload(payloadText, passphrase){
   });
 }
 
-/* ---- GitHub Gist API ---- */
-function cloudGistHeaders(token){
-  return {
-    'Authorization': 'token ' + token,
-    'Accept': 'application/vnd.github+json',
-    'Content-Type': 'application/json'
-  };
-}
-function cloudCreateGist(){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.token || !cfg.passphrase){ toast('Bitte zuerst Token und Passphrase eingeben.'); return Promise.reject(); }
-  return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-    return fetch('https://api.github.com/gists', {
-      method:'POST',
-      headers: cloudGistHeaders(cfg.token),
-      body: JSON.stringify({
-        description: 'Work Board Sync (verschlüsselt – nicht lesbar ohne Passphrase)',
-        public: false,
-        files: (function(){ var o={}; o[CLOUD_SYNC_FILE] = {content: encrypted}; return o; })()
-      })
-    });
-  }).then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    return res.json();
-  }).then(function(json){
-    cfg.gistId = json.id;
-    cfg.enabled = true;
-    cfg.lastSyncedAt = nowIso();
-    cfg.lastError = '';
-    setCloudSyncConfig(cfg);
-    toast('☁️ Neuer verschlüsselter Sync-Speicher erstellt.');
-    renderCloudSyncStatus();
-    return cfg;
-  }).catch(function(err){
-    cfg.lastError = err.message || String(err);
-    setCloudSyncConfig(cfg);
-    toast('Fehler beim Erstellen: ' + cfg.lastError);
-    renderCloudSyncStatus();
-    throw err;
+/* ---- Supabase-Zugriff (Tabellen "boards" und "board_snapshots") ---- */
+/* Löst zu dem (verschlüsselten) Payload-Text auf oder zu null, wenn für
+   diese Person noch kein Board in der Cloud liegt. */
+function cloudRemoteGet(){
+  return getSupabaseClient().from('boards').select('payload').eq('user_id', currentUser.id).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    return res.data ? res.data.payload : null;
   });
 }
-var CLOUD_SNAPSHOT_RETENTION_DAYS = 7;
-/* Einmal pro Tag zusätzlich zur laufenden Sync-Datei einen datierten
-   Snapshot im selben Gist ablegen (eigene Datei pro Tag) und Snapshots
-   älter als CLOUD_SNAPSHOT_RETENTION_DAYS wieder entfernen. Gibt die
-   zusätzlichen Dateien zurück, die im selben PATCH-Request mitgeschickt
-   werden (kein zusätzlicher API-Call/Gist nötig). */
+function cloudRemotePut(payloadText){
+  return getSupabaseClient().from('boards').upsert({user_id: currentUser.id, payload: payloadText, updated_at: nowIso()}).then(function(res){
+    if(res.error) throw new Error(res.error.message);
+  });
+}
+/* Einmal pro Tag zusätzlich zur laufenden Board-Zeile einen datierten
+   Snapshot ablegen und Snapshots älter als CLOUD_SNAPSHOT_RETENTION_DAYS
+   wieder entfernen. Best effort: fehlt die Tabelle "board_snapshots" oder
+   schlägt der Aufruf fehl, läuft der normale Sync trotzdem weiter. */
 function cloudMaybeSnapshot(encrypted, cfg){
   var today = toDateInputValue(new Date());
-  if(cfg.lastSnapshotDate === today) return Promise.resolve({});
-  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
-    .then(function(r){ return r.ok ? r.json() : {files:{}}; })
-    .catch(function(){ return {files:{}}; })
-    .then(function(json){
-      var files = {};
-      files['snapshot-' + today + '.json.txt'] = {content: encrypted};
-      var cutoff = Date.now() - CLOUD_SNAPSHOT_RETENTION_DAYS*86400000;
-      Object.keys(json.files || {}).forEach(function(fname){
-        var m = fname.match(/^snapshot-(\d{4}-\d{2}-\d{2})\.json\.txt$/);
-        if(m && new Date(m[1]).getTime() < cutoff) files[fname] = null;
-      });
-      cfg.lastSnapshotDate = today;
-      return files;
-    });
+  if(cfg.lastSnapshotDate === today) return Promise.resolve();
+  var client = getSupabaseClient();
+  return client.from('board_snapshots').upsert({user_id: currentUser.id, day: today, payload: encrypted}).then(function(res){
+    if(res.error) return;
+    cfg.lastSnapshotDate = today;
+    var cutoff = toDateInputValue(new Date(Date.now() - CLOUD_SNAPSHOT_RETENTION_DAYS*86400000));
+    return client.from('board_snapshots').delete().eq('user_id', currentUser.id).lt('day', cutoff);
+  }).catch(function(){});
 }
-/* GET des aktuellen Sync-Datei-Inhalts, backend-unabhängig. Löst zu
-   {payloadText, sha} auf (sha nur beim Repo-Backend gesetzt/benötigt, für
-   den PUT), zu null wenn die Datei (noch) nicht existiert, oder rejected
-   bei einem echten HTTP-Fehler (Auth, falsche ID, Netzwerk). */
-function cloudPushNow(){
+
+/* skipSafety=true nur bei der bewussten Passphrase-Änderung. */
+function cloudPushNow(skipSafety){
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
+  if(!cloudIsReady(cfg)) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
 
   var safetyCheck = Promise.resolve(true);
-  if(state.tasks.length === 0){
+  if(state.tasks.length === 0 && skipSafety !== true){
     /* Sicherheits-Check: nie ein leeres lokales Board pushen, wenn die Cloud
        noch echte Tasks enthalten könnte (z.B. lokal gerade erst
        zurückgesetzt/neu installiert, automatischer Pull noch nicht
@@ -4836,16 +4699,13 @@ function cloudPushNow(){
        einem frischen, leeren Gerät aus den echten Cloud-Stand mit "nichts"
        überschreiben. Im Zweifel (Netzwerkfehler bei der Prüfung selbst)
        lieber NICHT pushen. */
-    safetyCheck = fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(json){
-        var file = json && json.files && json.files[CLOUD_SYNC_FILE];
-        if(!file) return true;
-        return cloudDecryptPayload(file.content, cfg.passphrase).then(function(result){
-          var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
-          return !remoteHasTasks;
-        });
-      }).catch(function(){ return false; });
+    safetyCheck = cloudRemoteGet().then(function(text){
+      if(!text) return true;
+      return cloudDecryptPayload(text, cfg.passphrase).then(function(result){
+        var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
+        return !remoteHasTasks;
+      });
+    }).catch(function(){ return false; });
   }
 
   return safetyCheck.then(function(safeToPush){
@@ -4857,24 +4717,16 @@ function cloudPushNow(){
       return;
     }
     return cloudEncryptState(cfg.passphrase).then(function(encrypted){
-      return cloudMaybeSnapshot(encrypted, cfg).then(function(extraFiles){
-        extraFiles[CLOUD_SYNC_FILE] = {content: encrypted};
-        return fetch('https://api.github.com/gists/' + cfg.gistId, {
-          method:'PATCH',
-          headers: cloudGistHeaders(cfg.token),
-          body: JSON.stringify({files: extraFiles})
-        });
+      return cloudMaybeSnapshot(encrypted, cfg).then(function(){
+        return cloudRemotePut(encrypted);
       });
-    }).then(function(res){
-      if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-      return res.json();
     }).then(function(){
       cfg.lastSyncedAt = nowIso();
       cfg.lastError = '';
       setCloudSyncConfig(cfg);
       renderCloudSyncStatus();
     }).catch(function(err){
-      cfg.lastError = err.message || String(err);
+      cfg.lastError = cloudErrorText(err);
       setCloudSyncConfig(cfg);
       renderCloudSyncStatus();
     }).finally(function(){ cloudSyncBusy = false; });
@@ -4888,21 +4740,18 @@ function scheduleCloudPush(){
 }
 function cloudPullNow(showToastIfUpToDate){
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled || !cfg.token || !cfg.passphrase || !cfg.gistId) return Promise.resolve();
+  if(!cloudIsReady(cfg)) return Promise.resolve();
   if(cloudSyncBusy) return Promise.resolve();
   cloudSyncBusy = true;
-  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
-  .then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    return res.json();
-  }).then(function(json){
-    var file = json.files && json.files[CLOUD_SYNC_FILE];
-    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden.'); }
-    return cloudDecryptPayload(file.content, cfg.passphrase);
+  var remoteMissing = false;
+  return cloudRemoteGet().then(function(text){
+    if(!text){ remoteMissing = true; return null; }
+    return cloudDecryptPayload(text, cfg.passphrase);
   }).then(function(result){
     cfg.lastSyncedAt = nowIso();
     cfg.lastError = '';
     setCloudSyncConfig(cfg);
+    if(!result){ renderCloudSyncStatus(); return; }
     var remoteTime = new Date(result.updatedAt).getTime();
     var localTime = new Date(state.meta.updatedAt).getTime();
     var remoteHasTasks = result.state && Array.isArray(result.state.tasks) && result.state.tasks.length > 0;
@@ -4913,12 +4762,9 @@ function cloudPullNow(showToastIfUpToDate){
          initialisierter lokaler Stand bekommt sein updatedAt auf "jetzt"
          gesetzt (siehe defaultState()) und wirkt dadurch fast immer
          "neuer" als der zuletzt gepushte Cloud-Stand, obwohl er inhaltlich
-         leer ist - genau das gleiche Problem, das cloudJoinExisting beim
-         expliziten Verbinden schon umgeht. Ausserdem: nicht nur den
-         cloudChangeBanner einblenden (der im normalen Dokumentfluss liegt
-         und z.B. vom volldeckenden Willkommens-Dialog komplett verdeckt
-         werden kann, sodass Nutzer:innen ihn nie sehen), sondern direkt
-         laden. */
+         leer ist. Ausserdem: nicht nur den cloudChangeBanner einblenden
+         (der im normalen Dokumentfluss liegt und von Dialogen komplett
+         verdeckt werden kann), sondern direkt laden. */
       state = migrateState(result.state);
       renderAll();
       save();
@@ -4931,10 +4777,15 @@ function cloudPullNow(showToastIfUpToDate){
     }
     renderCloudSyncStatus();
   }).catch(function(err){
-    cfg.lastError = err.message || String(err);
+    cfg.lastError = cloudErrorText(err);
     setCloudSyncConfig(cfg);
     renderCloudSyncStatus();
-  }).finally(function(){ cloudSyncBusy = false; });
+  }).finally(function(){ cloudSyncBusy = false; })
+  .then(function(){
+    /* Noch kein Board in der Cloud (erstes Gerät nach der Einrichtung) →
+       aktuellen lokalen Stand gleich hochladen. */
+    if(remoteMissing) return cloudPushNow();
+  });
 }
 /* Sofortiger Sync-Versuch, sobald der Browser die Verbindung zurückmeldet
    (z.B. nach VPN-Wechsel, Meetingraum ohne WLAN, Tunnel im Zug) - statt bis
@@ -4944,64 +4795,10 @@ function cloudPullNow(showToastIfUpToDate){
    verhindert dabei weiterhin, dass ein leeres lokales Board echte
    Cloud-Daten überschreibt. */
 window.addEventListener('online', function(){
-  if(getCloudSyncConfig().enabled){
+  if(cloudIsReady(getCloudSyncConfig())){
     cloudPushNow().then(function(){ return cloudPullNow(); });
   }
 });
-/* Explizites "Mit bestehender Sync verbinden" (z.B. auf einem zweiten Gerät):
-   hier NICHT nach Zeitstempel entscheiden — ein frisch geöffnetes, leeres Board
-   hat immer einen ganz aktuellen Zeitstempel und würde den echten Cloud-Stand
-   sonst fälschlich als "schon aktuell" ignorieren. Bei explizitem Verbinden ist
-   die Absicht klar: den vorhandenen Cloud-Stand übernehmen. */
-function cloudJoinExisting(){
-  var cfg = getCloudSyncConfig();
-  if(!cfg.token || !cfg.passphrase || !cfg.gistId){ toast('Bitte Token, Passphrase und Gist-ID ausfüllen.'); return Promise.reject(); }
-  cloudSyncBusy = true;
-  return fetch('https://api.github.com/gists/' + cfg.gistId, {headers: cloudGistHeaders(cfg.token)})
-  .then(function(res){
-    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+': '+t.slice(0,150)); });
-    return res.json();
-  }).then(function(json){
-    var file = json.files && json.files[CLOUD_SYNC_FILE];
-    if(!file){ throw new Error('Sync-Datei im Gist nicht gefunden. Stimmt die Gist-ID?'); }
-    return cloudDecryptPayload(file.content, cfg.passphrase);
-  }).then(function(result){
-    cfg.enabled = true;
-    cfg.lastSyncedAt = nowIso();
-    cfg.lastError = '';
-    setCloudSyncConfig(cfg);
-    function adopt(){
-      state = migrateState(result.state);
-      renderAll();
-      save();
-      toast('☁️ Verbunden – Cloud-Stand geladen.');
-      renderCloudSyncStatus();
-      openSettings();
-    }
-    var localHasData = state.tasks.length > 0;
-    if(localHasData){
-      confirmDialog(
-        'Es liegen bereits lokale Tasks auf diesem Gerät. Durch den Cloud-Stand ersetzen? (Dein aktueller lokaler Stand geht dabei verloren, ausser du hast vorher "💾 Sichern" gemacht.)',
-        'Ersetzen',
-        function(){ closeModal(); adopt(); },
-        function(){
-          closeModal();
-          toast('Lokaler Stand behalten. Wird beim nächsten Speichern in die Cloud hochgeladen (überschreibt dort den bisherigen Stand).');
-          renderCloudSyncStatus();
-          openSettings();
-        }
-      );
-    } else {
-      adopt();
-    }
-  }).catch(function(err){
-    cfg.lastError = err.message || String(err);
-    setCloudSyncConfig(cfg);
-    renderCloudSyncStatus();
-    toast('Fehler: ' + cfg.lastError);
-    openSettings();
-  }).finally(function(){ cloudSyncBusy = false; });
-}
 /* =========================================================
    PUSH-BENACHRICHTIGUNGEN AUFS HANDY (via ntfy.sh)
    Eine reine GitHub-Pages-Seite kann selbst keine Push-Nachrichten
@@ -5053,6 +4850,7 @@ function checkSlaCriticalPush(){
 }
 function renderCloudSyncStatus(){
   var cfg = getCloudSyncConfig();
+  cfg.enabled = cloudIsReady(cfg);
   var el = document.getElementById('cloudSyncStatus');
   if(el){
     if(!cfg.enabled){
@@ -5104,7 +4902,19 @@ function openSettings(){
       '<div class="section-title">👤 Konto</div>' +
       '<div class="hint" style="margin-bottom:10px;">Angemeldet als <strong>'+escapeHtml(currentUser ? (currentUser.displayName + ' (' + currentUser.email + ')') : '–')+'</strong>. Dieser Name wird bei Zuweisungen und im Aktivitäts-Verlauf verwendet.</div>' +
       '<button class="btn ghost" id="btnAuthSignOut" style="margin-bottom:10px;">🚪 Abmelden</button>' +
-      '<div class="section-title">Speicherort</div>' +
+      '<div class="section-title">☁️ Cloud-Speicher (Ende-zu-Ende-verschlüsselt)</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Dein Board wird automatisch im Hintergrund in Supabase gespeichert – <strong>in diesem Browser mit deiner Passphrase verschlüsselt</strong>, bevor es hochgeladen wird. Weder Supabase noch Admins können es lesen, und jede Person hat ihr eigenes Board. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich ein Snapshot abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
+      '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
+      '<div class="form-row"><label>Passphrase (auf allen deinen Geräten identisch)</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudPassphrase" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"><button type="button" class="btn icon-btn" id="btnTogglePassphraseVisible" title="Anzeigen/Verbergen – hilfreich um z.B. ein versehentlich mitkopiertes Leerzeichen zu erkennen">👁</button></div></div>' +
+      '<div class="hint" style="margin-bottom:10px;">Neues Gerät: einfach anmelden und einmalig dieselbe Passphrase eingeben – mehr ist nicht nötig.</div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
+        '<button class="btn primary" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
+        '<button class="btn" id="btnCloudUsePassphrase" title="Nutze das, wenn du die Passphrase auf einem anderen Gerät geändert hast">🔑 Eingetragene Passphrase auf diesem Gerät übernehmen</button>' +
+        '<button class="btn" id="btnCloudChangePassphrase" title="Verschlüsselt den Cloud-Stand neu; andere Geräte müssen danach die neue Passphrase eingeben">🔐 Passphrase ändern &amp; neu verschlüsseln</button>' +
+      '</div>' +
+      '<div class="form-row"><label>GitHub-Token (optional – nur für "🔗 Read-only-Link teilen", Scope: nur "gist")</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudToken" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div></div>' +
+
+      '<div class="section-title">💾 Lokale Sicherung (optional)</div>' +
       renderStorageStatusHtml() +
       '<div class="hint" style="margin-bottom:10px;">Deine Tasks werden laufend automatisch im Browser gespeichert (bleiben erhalten, solange du Browser-Daten nicht löschst). Für eine Sicherung in OneDrive/iCloud Drive – und damit Zugriff von einem zweiten Gerät – klicke oben rechts jederzeit auf <strong>💾 Sichern</strong> (oder Strg+S). Das lädt eine Datei <code>work-board-daten.json</code> herunter.</div>' +
       '<div class="hint" style="margin-bottom:10px;"><strong>Einmalige Einrichtung für automatisches Ablegen im Cloud-Ordner:</strong> Browser-Einstellungen → Downloads → Standard-Speicherort auf deinen OneDrive- oder iCloud-Drive-Ordner ändern (und "Vor dem Herunterladen jedes Mal fragen" aktivieren, damit du beim Ersetzen bestätigen kannst). Danach landet jedes Backup automatisch synchron in der Cloud.</div>' +
@@ -5119,26 +4929,8 @@ function openSettings(){
         '<label class="btn" style="margin:0;">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
       '</div>' +
 
-      '<div class="section-title">☁️ Cloud-Sync (Ende-zu-Ende-verschlüsselt)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Synchronisiert automatisch im Hintergrund über einen privaten GitHub Gist – kein manuelles Exportieren/Importieren mehr. Deine Daten werden <strong>in diesem Browser</strong> mit deiner Passphrase verschlüsselt, bevor sie hochgeladen werden; weder GitHub noch sonst jemand kann sie ohne Passphrase lesen. <strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg</strong> (dein lokales "💾 Sichern"-Backup bleibt davon unberührt). Zusätzlich wird einmal täglich automatisch ein datierter Snapshot im selben Gist abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage) – falls mal ein fehlerhafter Stand hochgeladen wird, ist der Vortag noch da.</div>' +
-      '<div id="cloudSyncStatus" style="margin-bottom:8px; font-size:12.5px;"></div>' +
-      '<div class="form-row"><label>GitHub Personal Access Token (Scope: nur "gist")</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudToken" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().token)+'" placeholder="ghp_…"><button type="button" class="btn icon-btn" id="btnToggleTokenVisible" title="Anzeigen/Verbergen">👁</button></div></div>' +
-      '<div class="form-row"><label>Passphrase (auf allen Geräten identisch)</label><div style="display:flex; gap:6px;"><input type="password" id="sCloudPassphrase" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().passphrase)+'" placeholder="Eigene, sichere Passphrase"><button type="button" class="btn icon-btn" id="btnTogglePassphraseVisible" title="Anzeigen/Verbergen – hilfreich um z.B. ein versehentlich mitkopiertes Leerzeichen zu erkennen">👁</button></div></div>' +
-      '<div class="form-row"><label>Gist-ID' + (getCloudSyncConfig().gistId ? ' (dieses Gerät)' : '') + '</label><div style="display:flex; gap:6px;"><input id="sCloudGistId" style="flex:1;" value="'+escapeAttr(getCloudSyncConfig().gistId)+'" placeholder="Nur ausfüllen, um dich mit einem bereits bestehenden Speicher zu verbinden">' +
-        (getCloudSyncConfig().gistId ? '<button type="button" class="btn" id="btnCopyGistId" title="Gist-ID kopieren, um sie auf einem anderen Gerät einzufügen">📋 Kopieren</button>' : '') +
-      '</div></div>' +
-      '<div class="hint" style="margin-bottom:10px;">⚠️ <strong>Wichtig bei mehreren Geräten:</strong> Nur auf dem <em>ersten</em> Gerät "Neuen Speicher erstellen" klicken. Auf jedem weiteren Gerät entweder die Gist-ID von dort oben eintragen (📋 Kopieren-Button) und "Mit bestehendem Speicher verbinden" klicken, oder – am einfachsten fürs Handy – <strong>📷 Mit QR-Code verbinden</strong> verwenden (auf dem bereits eingerichteten Gerät dafür <strong>📱 Gerät per QR-Code koppeln</strong> antippen, um den Code anzuzeigen). Sonst entstehen zwei getrennte, nicht miteinander synchronisierte Speicher. Das funktioniert genauso, um einer <strong>zweiten Person</strong> Zugriff zu geben – einfach Token/Gist-ID/Passphrase mit ihr teilen.</div>' +
-      '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
-        '<button class="btn primary" id="btnCloudCreateNew">☁️ Neuen Speicher erstellen (1. Gerät)</button>' +
-        '<button class="btn primary" id="btnCloudJoin">🔗 Mit bestehendem Speicher verbinden (weiteres Gerät)</button>' +
-        '<button class="btn" id="btnCloudScanQr">📷 Mit QR-Code verbinden</button>' +
-        (getCloudSyncConfig().enabled && getCloudSyncConfig().gistId ? '<button class="btn" id="btnCloudPairQr">📱 Gerät per QR-Code koppeln</button>' : '') +
-        '<button class="btn" id="btnCloudSyncNow">🔄 Jetzt synchronisieren</button>' +
-        (getCloudSyncConfig().enabled ? '<button class="btn ghost" id="btnCloudDisable">⏸ Sync deaktivieren</button>' : '') +
-      '</div>' +
-
       '<div class="section-title">🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)</div>' +
-      '<div class="hint" style="margin-bottom:8px;">Für Team-Momente wie Aufgabenvergabe – ohne eigenen Server über den kostenlosen Relay-Dienst <strong>ntfy.sh</strong>: Einrichtung einmalig die kostenlose <strong>ntfy-App</strong> (Android/iOS) installieren und ein <strong>privates, geheimes Thema</strong> (z.B. eine lange zufällige Zeichenfolge) abonnieren, denselben Namen unten eintragen – fertig, beide Personen abonnieren dasselbe Thema. Benachrichtigungstexte sind bewusst generisch (kein Task-Titel/Kundenname), da sie kurz über ntfys Server laufen und <strong>nicht</strong> Ende-zu-Ende-verschlüsselt sind wie der Cloud-Sync-Inhalt.</div>' +
+      '<div class="hint" style="margin-bottom:8px;">Für Team-Momente wie Aufgabenvergabe – ohne eigenen Server über den kostenlosen Relay-Dienst <strong>ntfy.sh</strong>: Einrichtung einmalig die kostenlose <strong>ntfy-App</strong> (Android/iOS) installieren und ein <strong>privates, geheimes Thema</strong> (z.B. eine lange zufällige Zeichenfolge) abonnieren, denselben Namen unten eintragen – fertig, beide Personen abonnieren dasselbe Thema. Benachrichtigungstexte sind bewusst generisch (kein Task-Titel/Kundenname), da sie kurz über ntfys Server laufen und <strong>nicht</strong> Ende-zu-Ende-verschlüsselt sind wie dein Cloud-Board.</div>' +
       '<label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:10px;"><input type="checkbox" id="sNtfyEnabled" '+(state.settings.ntfyEnabled?'checked':'')+'> Aktiviert</label>' +
       '<div class="form-row"><label>ntfy-Thema (privat, geheim halten)</label><input id="sNtfyTopic" value="'+escapeAttr(state.settings.ntfyTopic)+'" placeholder="z.B. wb-team-a1b2c3d4"></div>' +
       '<div class="hint" style="margin-bottom:8px;">Löst aus bei: Task zugewiesen, neues Hotline-Ticket, SLA kritisch, Task erledigt.</div>' +
@@ -5393,63 +5185,52 @@ function openSettings(){
   }
   wireVisibilityToggle('btnToggleTokenVisible', 'sCloudToken');
   wireVisibilityToggle('btnTogglePassphraseVisible', 'sCloudPassphrase');
-  document.getElementById('btnCloudCreateNew').addEventListener('click', function(){
-    var token = document.getElementById('sCloudToken').value.trim();
-    var passphrase = document.getElementById('sCloudPassphrase').value;
-    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
+  document.getElementById('sCloudToken').addEventListener('change', function(e){
     var cfg = getCloudSyncConfig();
-    function doCreate(){
-      cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = '';
-      setCloudSyncConfig(cfg);
-      toast('☁️ Erstelle neuen Sync-Speicher…');
-      cloudCreateGist().then(function(){ openSettings(); }).catch(function(){});
-    }
-    if(cfg.enabled && cfg.gistId){
-      confirmDialog(
-        'Auf diesem Gerät ist bereits ein Sync-Speicher aktiv (ID: ' + cfg.gistId + '). Jetzt "Neuen Speicher erstellen" legt einen ZWEITEN, komplett getrennten Speicher an, der nicht mit dem bisherigen synchronisiert – das ist meistens nicht das, was du willst. Trotzdem einen zweiten, separaten Speicher erstellen?',
-        'Ja, zweiten Speicher erstellen',
-        function(){ closeModal(); doCreate(); },
-        function(){ closeModal(); openSettings(); }
-      );
-    } else {
-      doCreate();
-    }
-  });
-  document.getElementById('btnCloudJoin').addEventListener('click', function(){
-    var token = document.getElementById('sCloudToken').value.trim();
-    var passphrase = document.getElementById('sCloudPassphrase').value;
-    var gistId = document.getElementById('sCloudGistId').value.trim();
-    if(!token || !passphrase){ toast('Bitte Token und Passphrase ausfüllen.'); return; }
-    if(!gistId){ toast('Bitte zuerst die Gist-ID des ersten Geräts eintragen (siehe Hinweis oben).'); return; }
-    var cfg = getCloudSyncConfig();
-    cfg.token = token; cfg.passphrase = passphrase; cfg.gistId = gistId;
+    cfg.token = e.target.value.trim();
     setCloudSyncConfig(cfg);
-    toast('☁️ Verbinde und lade Cloud-Stand…');
-    cloudJoinExisting().catch(function(){});
   });
-  document.getElementById('btnCloudScanQr').addEventListener('click', function(){
-    openQrScanner();
-  });
-  var copyGistBtn = document.getElementById('btnCopyGistId');
-  if(copyGistBtn) copyGistBtn.addEventListener('click', function(){
-    var id = getCloudSyncConfig().gistId;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(id).then(function(){ toast('📋 Gist-ID kopiert.'); }).catch(function(){ fallbackCopy(id); });
-    } else { fallbackCopy(id); }
-  });
-  var pairQrBtn = document.getElementById('btnCloudPairQr');
-  if(pairQrBtn) pairQrBtn.addEventListener('click', openCloudPairQr);
   document.getElementById('btnCloudSyncNow').addEventListener('click', function(){
+    if(!cloudIsReady(getCloudSyncConfig())){ toast('☁️ Cloud-Speicher ist auf diesem Gerät noch nicht eingerichtet.'); return; }
     toast('☁️ Synchronisiere…');
     cloudPushNow().then(function(){ return cloudPullNow(true); });
   });
-  var cloudDisableBtn = document.getElementById('btnCloudDisable');
-  if(cloudDisableBtn) cloudDisableBtn.addEventListener('click', function(){
+  document.getElementById('btnCloudUsePassphrase').addEventListener('click', function(){
+    var passphrase = document.getElementById('sCloudPassphrase').value;
+    if(!passphrase){ toast('Bitte Passphrase eintragen.'); return; }
     var cfg = getCloudSyncConfig();
-    cfg.enabled = false;
+    cfg.passphrase = passphrase;
+    cfg.enabled = true; cfg.backend = 'supabase'; cfg.userId = currentUser.id;
+    cfg.lastError = '';
     setCloudSyncConfig(cfg);
-    toast('Cloud-Sync deaktiviert (Konfiguration bleibt gespeichert).');
-    openSettings();
+    toast('☁️ Lade Cloud-Stand mit dieser Passphrase…');
+    cloudPullNow(true).then(function(){
+      var err = getCloudSyncConfig().lastError;
+      toast(err ? ('Fehler: ' + err) : '🔑 Passphrase übernommen.');
+      renderCloudSyncStatus();
+    });
+  });
+  document.getElementById('btnCloudChangePassphrase').addEventListener('click', function(){
+    var passphrase = document.getElementById('sCloudPassphrase').value;
+    if(passphrase.length < 8){ toast('Neue Passphrase bitte mit mindestens 8 Zeichen eintragen.'); return; }
+    confirmDialog(
+      'Den Cloud-Stand jetzt mit der eingetragenen Passphrase NEU verschlüsseln? Auf allen anderen Geräten musst du danach die neue Passphrase eingeben (⚙️ Einstellungen → Cloud-Speicher). Die alte Passphrase funktioniert für den Cloud-Stand dann nicht mehr.',
+      'Neu verschlüsseln',
+      function(){
+        closeModal();
+        var cfg = getCloudSyncConfig();
+        cfg.passphrase = passphrase;
+        cfg.enabled = true; cfg.backend = 'supabase'; cfg.userId = currentUser.id;
+        cfg.lastError = '';
+        setCloudSyncConfig(cfg);
+        cloudPushNow(true).then(function(){
+          var err = getCloudSyncConfig().lastError;
+          toast(err ? ('Fehler: ' + err) : '🔐 Neu verschlüsselt und hochgeladen.');
+          openSettings();
+        });
+      },
+      function(){ closeModal(); openSettings(); }
+    );
   });
 
   document.getElementById('sTheme').addEventListener('change', function(e){
@@ -6064,8 +5845,8 @@ function cmdActionsList(){
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
     {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
-    {icon:'☁️', label:'Cloud-Sync jetzt ausführen', run: function(){
-      if(!getCloudSyncConfig().enabled){ toast('Cloud-Sync ist nicht eingerichtet (⚙️ Einstellungen).'); return; }
+    {icon:'☁️', label:'Cloud-Speicher jetzt synchronisieren', run: function(){
+      if(!cloudIsReady(getCloudSyncConfig())){ toast('Cloud-Speicher ist nicht eingerichtet (⚙️ Einstellungen).'); return; }
       toast('☁️ Synchronisiere…');
       cloudPushNow().then(function(){ return cloudPullNow(true); });
     }},
@@ -6421,8 +6202,8 @@ document.getElementById('btnMoreToggle').addEventListener('click', function(){
 });
 document.getElementById('btnCloudSyncTopbar').addEventListener('click', function(){
   var cfg = getCloudSyncConfig();
-  if(!cfg.enabled){
-    toast('☁️ Cloud-Sync ist noch nicht eingerichtet – siehe Einstellungen.');
+  if(!cloudIsReady(cfg)){
+    toast('☁️ Cloud-Speicher ist noch nicht eingerichtet – siehe Einstellungen.');
     openSettings();
     return;
   }
@@ -6575,7 +6356,7 @@ function showOnboardingIfNeeded(){
      verbunden ist, gibt es einmalig einen kurzen Hinweis statt eines Dialogs. */
   var alreadyHinted = false;
   try{ alreadyHinted = localStorage.getItem('wb-onboarding-shown') === '1'; }catch(e){}
-  if(alreadyHinted || state.tasks.length > 0 || state.settings.storageMode === 'file' || getCloudSyncConfig().enabled) return;
+  if(alreadyHinted || state.tasks.length > 0 || state.settings.storageMode === 'file' || cloudIsReady(getCloudSyncConfig())) return;
   try{ localStorage.setItem('wb-onboarding-shown', '1'); }catch(e){}
   toast('👋 Willkommen' + (currentUser ? ', ' + currentUser.displayName : '') + '! Board-Daten verbinden: ⚙️ Einstellungen → Speicher.', 9000);
 }
@@ -6614,14 +6395,14 @@ function handleUrlShortcutAction(){
 }
 /* =========================================================
    LOGIN / REGISTRIERUNG (Supabase Auth)
-   Reines Identitäts-Gate vor der App - WER benutzt das Board, nicht WAS
-   gespeichert wird. Die eigentlichen Board-Daten laufen weiterhin über den
-   bestehenden Ende-zu-Ende-verschlüsselten Cloud-Sync (Gist); Supabase
-   sieht sie nie. Pflicht-Login: ohne gültige Anmeldung wird init() (und
-   damit das Board) gar nicht erst gestartet. Der Supabase "anon public
-   key" ist laut Supabase-Design für den Client gedacht (kein Geheimnis -
-   Zugriffsschutz läuft über Row-Level-Security in der Datenbank), darf
-   also wie der Gist-Token einfach in localStorage liegen.
+   Identitäts-Gate vor der App: WER benutzt das Board. Die Board-Daten
+   selbst liegen pro Person als Ende-zu-Ende-verschlüsseltes Cloud-Board
+   (Tabelle "boards", siehe Abschnitt CLOUD-SYNC) in Supabase; Supabase
+   sieht den Inhalt nie. Pflicht-Login: ohne gültige Anmeldung wird init()
+   (und damit das Board) gar nicht erst gestartet. Der Supabase "anon
+   public key" ist laut Supabase-Design für den Client gedacht (kein
+   Geheimnis - Zugriffsschutz läuft über Row-Level-Security in der
+   Datenbank), darf also im Client-Code stehen.
    ========================================================= */
 var AUTH_CONFIG_KEY = 'wb-auth-config';
 /* Standard-Verbindung, damit sie nicht auf jedem Gerät neu eingetippt werden
@@ -6672,11 +6453,23 @@ function startAuthGate(){
         email: session.user.email,
         displayName: (session.user.user_metadata && session.user.user_metadata.display_name) || session.user.email.split('@')[0]
       };
-      document.getElementById('authOverlay').classList.add('hidden');
       upsertProfile();
       fetchProfiles();
       checkIsAdmin();
-      if(!appStarted){ appStarted = true; init(); }
+      if(!appStarted){
+        appStarted = true;
+        /* Supabase-Aufrufe nicht synchron im Auth-Callback starten (kann dessen
+           internen Lock blockieren) - daher einen Tick später. */
+        setTimeout(function(){
+          ensureBoardSetup().then(function(){
+            boardReady = true;
+            document.getElementById('authOverlay').classList.add('hidden');
+            init();
+          });
+        }, 0);
+      } else if(boardReady){
+        document.getElementById('authOverlay').classList.add('hidden');
+      }
     } else {
       currentUser = null;
       document.getElementById('authOverlay').classList.remove('hidden');
@@ -6700,6 +6493,150 @@ function renderAuthSetup(){
     supabaseClient = null;
     startAuthGate();
   });
+}
+/* ---- Board-Verschlüsselung einrichten (direkt nach dem Login, vor init()) ----
+   Pro Person liegt ein eigenes, Ende-zu-Ende-verschlüsseltes Board in der
+   Supabase-Tabelle "boards". Ohne konfigurierte Passphrase auf diesem Gerät
+   wird hier entweder eine neue festgelegt (noch kein Board in der Cloud)
+   oder die bestehende abgefragt (Board existiert schon, z.B. neues Gerät).
+   Bewusst eine eigene Passphrase statt des Login-Passworts: Supabase
+   kennt das Login-Passwort bzw. kann es per Reset ersetzen - dann wären
+   die Daten entweder lesbar oder nach einem Reset verloren. */
+var boardReady = false;
+function resetLocalBoardIfOtherUser(){
+  /* Lokale Daten gehören der Person, die sie zuletzt geöffnet hat. Meldet
+     sich auf demselben Gerät jemand anderes an, wird der lokale Stand samt
+     Sync-Konfiguration verworfen, damit nichts davon in das fremde Board
+     hochgeladen wird. Fehlt die Markierung (Daten aus der Zeit vor dem
+     Login), gehören die Daten der aktuell angemeldeten Person. */
+  var owner = '';
+  try{ owner = localStorage.getItem(BOARD_OWNER_KEY) || ''; }catch(e){}
+  if(owner && owner !== currentUser.id){
+    try{
+      localStorage.removeItem('kanban-state-backup');
+      localStorage.removeItem('wb-onboarding-shown');
+    }catch(e){}
+    setCloudSyncConfig(cloudSyncConfigDefaults());
+  }
+  try{ localStorage.setItem(BOARD_OWNER_KEY, currentUser.id); }catch(e){}
+}
+function ensureBoardSetup(){
+  resetLocalBoardIfOtherUser();
+  var cfg = getCloudSyncConfig();
+  if(cloudIsReady(cfg)) return Promise.resolve();
+  document.getElementById('authOverlay').classList.remove('hidden');
+  renderAuthLoading();
+  return new Promise(function(resolve){
+    function attempt(){
+      renderAuthLoading();
+      cloudRemoteGet().then(function(payloadText){
+        if(payloadText) renderBoardPassphraseEnter(payloadText, resolve);
+        else renderBoardPassphraseCreate(resolve);
+      }).catch(function(err){
+        renderBoardSetupError(cloudErrorText(err), attempt, resolve);
+      });
+    }
+    attempt();
+  });
+}
+function finishBoardSetup(passphrase, done){
+  var cfg = Object.assign(cloudSyncConfigDefaults(), getCloudSyncConfig());
+  cfg.enabled = true;
+  cfg.backend = 'supabase';
+  cfg.userId = currentUser.id;
+  cfg.passphrase = passphrase;
+  cfg.lastError = '';
+  setCloudSyncConfig(cfg);
+  done();
+}
+function wireAuthPwToggle(btnId, inputIds){
+  document.getElementById(btnId).addEventListener('click', function(){
+    var btn = document.getElementById(btnId);
+    var showing = document.getElementById(inputIds[0]).type === 'text';
+    inputIds.forEach(function(id){ document.getElementById(id).type = showing ? 'password' : 'text'; });
+    btn.textContent = showing ? '👁' : '🙈';
+  });
+}
+function renderBoardPassphraseCreate(done){
+  var legacy = getCloudSyncConfig();
+  /* Wer bisher den Gist-Sync genutzt hat, behält seine bisherige Passphrase
+     als Vorschlag - der lokale Stand wird einfach in die neue Cloud übernommen. */
+  var suggestion = (legacy.backend !== 'supabase' && legacy.passphrase) ? legacy.passphrase : '';
+  document.getElementById('authContent').innerHTML =
+    '<h3 style="margin:0 0 8px;">🔐 Verschlüsselung einrichten</h3>' +
+    '<p class="hint" style="margin-bottom:10px;">Dein Board wird in der Cloud <strong>verschlüsselt</strong> gespeichert. Lege dafür eine eigene Passphrase fest (nicht dein Login-Passwort). Sie verlässt dieses Gerät nie – weder Supabase noch Admins können sie sehen oder zurücksetzen.</p>' +
+    '<p class="hint" style="margin-bottom:10px; color:var(--danger);">⚠️ Passphrase verloren = Cloud-Daten unwiederbringlich weg. Am besten im Passwort-Manager ablegen.</p>' +
+    (suggestion ? '<p class="hint" style="margin-bottom:10px;">Deine bisherige Sync-Passphrase ist vorausgefüllt – du kannst sie behalten oder ändern.</p>' : '') +
+    '<div class="form-row"><label>Passphrase (mind. 8 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<div class="form-row"><label>Passphrase wiederholen</label><input type="password" id="bpPass2" autocomplete="new-password" value="'+escapeAttr(suggestion)+'"></div>' +
+    '<button class="btn primary" id="bpSave" style="width:100%;">Verschlüsselung aktivieren</button>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
+    '<div style="margin-top:14px; text-align:center;"><a href="#" id="bpSkip">Ohne Cloud-Speicher fortfahren (nur lokal)</a></div>';
+  wireAuthPwToggle('bpToggle', ['bpPass1','bpPass2']);
+  function submit(){
+    var p1 = document.getElementById('bpPass1').value;
+    var p2 = document.getElementById('bpPass2').value;
+    var err = document.getElementById('authErrorMsg');
+    if(p1.length < 8){ err.textContent = 'Bitte mindestens 8 Zeichen.'; return; }
+    if(p1 !== p2){ err.textContent = 'Die beiden Eingaben sind nicht identisch.'; return; }
+    finishBoardSetup(p1, done);
+  }
+  document.getElementById('bpSave').addEventListener('click', submit);
+  document.getElementById('bpPass2').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); done(); });
+}
+function renderBoardPassphraseEnter(payloadText, done){
+  document.getElementById('authContent').innerHTML =
+    '<h3 style="margin:0 0 8px;">🔑 Passphrase eingeben</h3>' +
+    '<p class="hint" style="margin-bottom:10px;">Dein verschlüsseltes Board liegt bereits in der Cloud. Bitte einmalig die Passphrase eingeben, die du bei der Einrichtung festgelegt hast – sie wird danach auf diesem Gerät gemerkt.</p>' +
+    '<div class="form-row"><label>Passphrase</label><div style="display:flex; gap:6px;"><input type="password" id="bpPass1" style="flex:1;" autocomplete="current-password"><button type="button" class="btn icon-btn" id="bpToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<button class="btn primary" id="bpUnlock" style="width:100%;">Entschlüsseln</button>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
+    '<div style="margin-top:14px; display:flex; justify-content:space-between; gap:10px;">' +
+      '<a href="#" id="bpForgot">Passphrase vergessen?</a>' +
+      '<a href="#" id="bpSkip">Ohne Cloud fortfahren</a>' +
+    '</div>';
+  wireAuthPwToggle('bpToggle', ['bpPass1']);
+  var input = document.getElementById('bpPass1');
+  input.focus();
+  function submit(){
+    var pass = input.value;
+    var err = document.getElementById('authErrorMsg');
+    if(!pass){ err.textContent = 'Bitte Passphrase eingeben.'; return; }
+    err.textContent = '';
+    cloudDecryptPayload(payloadText, pass).then(function(){
+      finishBoardSetup(pass, done);
+    }).catch(function(e){
+      err.textContent = (e && e.name === 'OperationError') ? 'Passphrase falsch.' : ('Fehler: ' + ((e && e.message) || e));
+    });
+  }
+  document.getElementById('bpUnlock').addEventListener('click', submit);
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); done(); });
+  document.getElementById('bpForgot').addEventListener('click', function(e){
+    e.preventDefault();
+    if(!window.confirm('Ohne Passphrase lassen sich die verschlüsselten Cloud-Daten nicht wiederherstellen. Du kannst nur ein NEUES, leeres Cloud-Board anlegen – das bisherige Cloud-Board und seine Snapshots werden dabei gelöscht. Wirklich fortfahren?')) return;
+    var client = getSupabaseClient();
+    renderAuthLoading();
+    Promise.all([
+      client.from('boards').delete().eq('user_id', currentUser.id),
+      client.from('board_snapshots').delete().eq('user_id', currentUser.id)
+    ]).then(function(results){
+      if(results[0].error) throw new Error(results[0].error.message);
+      renderBoardPassphraseCreate(done);
+    }).catch(function(err){
+      renderBoardSetupError(cloudErrorText(err), function(){ renderBoardPassphraseEnter(payloadText, done); }, done);
+    });
+  });
+}
+function renderBoardSetupError(msg, retry, skip){
+  document.getElementById('authContent').innerHTML =
+    '<h3 style="margin:0 0 8px;">☁️ Cloud-Speicher nicht erreichbar</h3>' +
+    '<p class="hint" style="margin-bottom:12px; color:var(--danger);">' + escapeHtml(msg) + '</p>' +
+    '<button class="btn primary" id="bpRetry" style="width:100%; margin-bottom:10px;">Erneut versuchen</button>' +
+    '<div style="text-align:center;"><a href="#" id="bpSkip">Ohne Cloud-Speicher fortfahren (nur lokal)</a></div>';
+  document.getElementById('bpRetry').addEventListener('click', retry);
+  document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); skip(); });
 }
 function renderAuthLoading(){
   document.getElementById('authContent').innerHTML = '<p class="hint" style="text-align:center;">Lade…</p>';
@@ -6853,7 +6790,7 @@ function init(){
        Dialog zeigen - sonst poppt er bei jedem Start kurz auf, bevor die
        (asynchron geladenen) Cloud-Daten überhaupt eintreffen, obwohl Cloud-
        Sync korrekt eingerichtet ist und state.tasks gleich befüllt wird. */
-    if(getCloudSyncConfig().enabled){
+    if(cloudIsReady(getCloudSyncConfig())){
       cloudPullNow().then(function(){
         if(!reconnected) showOnboardingIfNeeded();
       });
@@ -6867,14 +6804,14 @@ function init(){
 function openShareLinkModal(){
   var cfg = getCloudSyncConfig();
   if(!cfg.token){
-    toast('Dafür wird ein GitHub Personal Access Token benötigt – unter ⚙️ Einstellungen → Cloud-Sync eintragen (auch ohne aktiven Cloud-Sync nutzbar).');
+    toast('Dafür wird ein GitHub Personal Access Token benötigt – unter ⚙️ Einstellungen → Cloud-Speicher eintragen.');
     return;
   }
   var openTasks = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
   var html =
     '<div class="modal-header"><h2>🔗 Read-only-Link teilen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
-      '<div class="hint" style="margin-bottom:10px;">Erstellt einen <strong>unverschlüsselten</strong>, separaten Snapshot (nicht das Cloud-Sync-Gist) mit '+openTasks.length+' offenen Task(s): Titel, Typ, Priorität, Spalte, Jira-Key, Fälligkeitsdatum. <strong>Keine</strong> Notizen/Beschreibungen/Zeiterfassung. Wer den Link kennt, kann das lesen – wie ein unlisted Google-Doc-Link. Kein Live-Sync: jede Änderung braucht einen neuen Snapshot.</div>' +
+      '<div class="hint" style="margin-bottom:10px;">Erstellt einen <strong>unverschlüsselten</strong>, separaten Snapshot (nicht dein verschlüsseltes Cloud-Board) mit '+openTasks.length+' offenen Task(s): Titel, Typ, Priorität, Spalte, Jira-Key, Fälligkeitsdatum. <strong>Keine</strong> Notizen/Beschreibungen/Zeiterfassung. Wer den Link kennt, kann das lesen – wie ein unlisted Google-Doc-Link. Kein Live-Sync: jede Änderung braucht einen neuen Snapshot.</div>' +
       '<button class="btn primary" id="genShareLinkBtn" style="width:100%;">🔗 Snapshot erstellen & Link generieren</button>' +
       '<div id="shareLinkResult" style="margin-top:14px;"></div>' +
     '</div>' +

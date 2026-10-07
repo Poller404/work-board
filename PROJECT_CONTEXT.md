@@ -4,6 +4,35 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07: Board-Daten jetzt in Supabase (pro Person, Ende-zu-Ende-verschlüsselt)
+
+Nutzer-Erwartung war, dass die Daten nach dem Login in Supabase liegen (vorher nur Identität via
+Supabase, Daten im Gist). Entscheidungen des Nutzers: **pro Person ein eigenes Board** (kein
+gemeinsames), **verschlüsselt, nicht im Klartext**. Umsetzung:
+- Neue Tabellen `boards` (user_id PK, payload text = Chiffretext-JSON, updated_at) und
+  `board_snapshots` (user_id, day, payload; letzte 7 Tage) – SQL in der README. RLS: nur eigene Zeile.
+  **Der Nutzer muss dieses SQL einmalig im Supabase-SQL-Editor ausführen** (sonst Fehlerscreen
+  "Cloud-Speicher nicht erreichbar" mit Option "nur lokal fortfahren").
+- Verschlüsselung unverändert (AES-256-GCM + PBKDF2, `cloudEncryptState`/`cloudDecryptPayload`), aber
+  Transport statt Gist jetzt `cloudRemoteGet/Put` (Supabase). Bewusst EIGENE Passphrase statt
+  Login-Passwort (Reset würde sonst Daten unlesbar machen). Passphrase nur in localStorage
+  (`wb-cloud-sync-config`, jetzt mit `backend:'supabase'`, `userId`).
+- Neuer Ablauf direkt nach Login, vor `init()`: `ensureBoardSetup()` (im Auth-Overlay): kein Board in
+  der Cloud → Passphrase festlegen (alte Gist-Passphrase wird vorgeschlagen), Board vorhanden →
+  Passphrase eingeben (Entschlüsselungstest), "Passphrase vergessen?" → Board löschen + neu anlegen.
+  `resetLocalBoardIfOtherUser()` (Marker `wb-board-owner`) verwirft lokale Daten, wenn auf demselben
+  Gerät eine andere Person anmeldet.
+- Entfernt: Gist-Sync (Create/Join/Snapshot im Gist), QR-Kopplung (WBP1), Willkommens-Dialog (jetzt
+  nur einmaliger Toast). Gist-Token bleibt optional NUR für "Read-only-Link teilen" (`cloudGistHeaders`).
+- Einstellungen → Speicher: Cloud-Speicher-Block steht jetzt oben; "Speicherort" heisst
+  "Lokale Sicherung (optional)".
+- Standard-URL/Key sind in `DEFAULT_SUPABASE_URL`/`DEFAULT_SUPABASE_ANON_KEY` (publishable key) hinterlegt.
+- Konsequenz pro-Person-Board: Zuweisen an andere Personen wirkt nur als Namensfeld im eigenen Board;
+  ntfy-Push/Teamfunktionen sind damit nur noch begrenzt sinnvoll (ggf. später gemeinsames Board).
+- Getestet nur gegen gemocktes Supabase (In-Memory-DB): Erst-Setup, Verifikation Chiffretext,
+  zweites Gerät mit falscher/richtiger Passphrase, Personenwechsel, Vergessen-Flow, Passphrase-Fehler
+  in Einstellungen. Echter Supabase-Test steht aus.
+
 ## ✅ Stand 2026-10-01 (Fortsetzung): Admin-Bereich für Benutzerverwaltung
 
 Direkt im Anschluss an den Pflicht-Login (siehe Eintrag unten) gewünscht: "Admin Login, mit welchem
