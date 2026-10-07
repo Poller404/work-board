@@ -3553,10 +3553,19 @@ function ccBuild(root, withClose){
     m.textContent = msg;
     setTimeout(function(){ if(m.textContent === msg) m.textContent = ''; }, 3500);
   }
-  function showForm(kind){
+  function showForm(kind, arg){
     var host = q('[data-cc-formhost]');
     if(host.dataset.kind === kind){ host.innerHTML = ''; host.dataset.kind = ''; return; }
     host.dataset.kind = kind;
+    if(kind === 'meeting'){
+      host.innerHTML =
+        '<form class="cc-form" data-cc-meetingform data-task="'+arg+'">' +
+          '<input class="cc-field" name="subject" placeholder="Betreff des Meetings" autocomplete="off">' +
+          '<button class="cc-btn primary" type="submit">Betreff speichern</button>' +
+        '</form>';
+      host.querySelector('[name="subject"]').focus();
+      return;
+    }
     if(kind === 'hotline'){
       host.innerHTML =
         '<form class="cc-form" data-cc-hotline>' +
@@ -3603,8 +3612,10 @@ function ccBuild(root, withClose){
     else if(el.dataset.cc === 'time'){ showForm('time'); }
     else if(el.dataset.cc === 'meeting'){
       var tm = new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
-      createTimerTask('meeting', 'Meeting ' + tm);
-      say('Meeting läuft.');
+      var mt = createTimerTask('meeting', 'Meeting ' + tm);
+      q('[data-cc-formhost]').dataset.kind = '';
+      showForm('meeting', mt.id);
+      say('Meeting läuft. Betreff unten eintragen.');
     }
   });
   root.addEventListener('submit', function(e){
@@ -3634,6 +3645,11 @@ function ccBuild(root, withClose){
       createHotlineTask({reporter: form.reporter.value, issue: form.issue.value, notes: form.notes.value, start: true});
       clearForm();
       say('Hotline-Task angelegt, Timer läuft.');
+    } else if(form.hasAttribute('data-cc-meetingform')){
+      var subject = form.subject.value.trim();
+      if(subject){ updateTask(form.dataset.task, {title: subject}); rememberMeetingTitle(subject); renderAll(); }
+      clearForm();
+      say(subject ? 'Betreff gespeichert.' : 'Meeting läuft.');
     } else if(form.hasAttribute('data-cc-timeform')){
       var title = form.title.value.trim() || ('Zeiterfassung ' + new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'}));
       createTimerTask('adhoc', title);
@@ -5089,6 +5105,52 @@ function openHotlineDialog(){
   document.getElementById('hlOnly').addEventListener('click', function(){ submit(false); });
   reporterEl.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); issueEl.focus(); } });
   issueEl.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); submit(true); } });
+}
+
+/* =========================================================
+   MEETING: Timer startet sofort, der Betreff darf danach (oder später) ergänzt werden
+   ========================================================= */
+function rememberMeetingTitle(title){
+  var clean = String(title || '').trim().replace(/\s+\d{1,2}[:.]\d{2}\s*$/, '');
+  if(clean.length < 3) return;
+  var list = state.settings.recentMeetingTitles.filter(function(mt){ return mt !== clean; });
+  list.unshift(clean);
+  state.settings.recentMeetingTitles = list.slice(0, 8);
+}
+function startMeeting(){
+  var tm = new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
+  var t = createTimerTask('meeting', 'Meeting ' + tm);
+  openMeetingSubjectDialog(t.id);
+}
+function openMeetingSubjectDialog(taskId){
+  var t = getTask(taskId);
+  if(!t) return;
+  var recents = state.settings.recentMeetingTitles || [];
+  var html =
+    '<div class="modal-header"><h2>'+svgIcon('cal')+' Meeting läuft</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin:0 0 10px;">Der Timer läuft bereits. Du kannst den Betreff jetzt eintragen oder später im Task ergänzen.</div>' +
+      '<div class="form-row"><label for="mtSubject">Betreff</label><input id="mtSubject" autocomplete="off" placeholder="Worum geht es im Meeting?"></div>' +
+      (recents.length ? '<div class="meeting-chip-row">' + recents.map(function(mt){ return '<span class="meeting-chip" data-mt-recent="'+escapeAttr(mt)+'">'+escapeHtml(mt)+'</span>'; }).join('') + '</div>' : '') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Später</button><button class="btn primary" id="mtSave">Betreff speichern</button></div>';
+  openModal(html);
+  var input = document.getElementById('mtSubject');
+  input.focus();
+  function save(){
+    var v = input.value.trim();
+    if(v){
+      updateTask(taskId, {title: v});
+      rememberMeetingTitle(v);
+    }
+    closeModal();
+    renderAll();
+  }
+  document.getElementById('mtSave').addEventListener('click', save);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); save(); } });
+  document.querySelectorAll('[data-mt-recent]').forEach(function(chip){
+    chip.addEventListener('click', function(){ input.value = chip.dataset.mtRecent; input.focus(); });
+  });
 }
 
 function quickStart(type, defaultTitlePrefix){
@@ -7072,6 +7134,62 @@ function wireSettingsBoards(){
 }
 
 /* ---- Anzeigename ändern ---- */
+/* =========================================================
+   EIGENES KONTO LÖSCHEN
+   Der Browser darf Konten nicht direkt löschen (dafür bräuchte es den geheimen
+   service_role-Schlüssel). Stattdessen ruft die App die SQL-Funktion
+   delete_own_account() auf (siehe README), die nur das EIGENE Konto entfernt und
+   per Cascade auch Profil, Schlüssel, Cloud-Board und Mitgliedschaften löscht.
+   ========================================================= */
+function openDeleteAccountDialog(){
+  var html =
+    '<div class="modal-header"><h2>Konto löschen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-top:0;">Dein Konto <strong>'+escapeHtml(currentUser ? currentUser.email : '')+'</strong> wird <strong>endgültig</strong> gelöscht. Das kann nicht rückgängig gemacht werden.</p>' +
+      '<ul class="s-more-body" style="margin:0 0 12px 18px; padding:0;">' +
+        '<li>Dein Login, Profil und deine Schlüssel</li>' +
+        '<li>Dein verschlüsseltes Cloud-Board mit allen Snapshots</li>' +
+        '<li>Deine Mitgliedschaften in geteilten Boards (die Boards bleiben für die anderen bestehen)</li>' +
+        '<li>Alle lokalen Daten auf diesem Gerät</li>' +
+      '</ul>' +
+      '<div class="hint" style="margin-bottom:12px;">Bist du Eigentümer:in eines geteilten Boards mit weiteren Mitgliedern, musst du es vorher löschen oder die Mitglieder entfernen.</div>' +
+      '<button class="btn" id="delAccBackup" style="margin-bottom:14px;">Vorher eine Sicherung herunterladen</button>' +
+      '<div class="form-row"><label for="delAccConfirm">Zur Bestätigung „LÖSCHEN“ eintippen</label><input id="delAccConfirm" autocomplete="off" placeholder="LÖSCHEN"></div>' +
+      '<div id="delAccMsg" class="hint" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn danger" id="delAccGo">Konto endgültig löschen</button></div>';
+  openModal(html);
+  var input = document.getElementById('delAccConfirm');
+  var msg = document.getElementById('delAccMsg');
+  var go = document.getElementById('delAccGo');
+  document.getElementById('delAccBackup').addEventListener('click', exportBackup);
+  function run(){
+    if(input.value.trim().toUpperCase() !== 'LÖSCHEN'){ msg.textContent = 'Bitte „LÖSCHEN“ eintippen, um zu bestätigen.'; return; }
+    msg.textContent = '';
+    go.disabled = true; go.textContent = 'Lösche…';
+    if(activeShared){ try{ leaveSharedBoard(true); }catch(e){} }
+    getSupabaseClient().rpc('delete_own_account').then(function(res){
+      if(res.error){
+        var m = res.error.message || String(res.error);
+        if(/OWNS_SHARED_BOARDS/.test(m)) m = 'Du bist Eigentümer:in eines geteilten Boards mit weiteren Mitgliedern. Lösche das Board oder entferne die Mitglieder zuerst.';
+        else if(/delete_own_account/.test(m) && /(find|exist|function)/i.test(m)) m = 'Die SQL-Funktion delete_own_account fehlt in Supabase (siehe README, „Konto löschen“).';
+        throw new Error(m);
+      }
+      ['kanban-state-backup','wb-cloud-sync-config','wb-board-owner','wb-onboarding-shown','wb-sb-collapsed'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+      try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('wb-sb-') === 0) localStorage.removeItem(k); }); }catch(e){}
+      return getSupabaseClient().auth.signOut().catch(function(){});
+    }).then(function(){
+      document.getElementById('modalRoot').innerHTML = '<div class="modal-body" style="text-align:center; padding:30px;"><p>Dein Konto wurde gelöscht.</p></div>';
+      setTimeout(function(){ location.reload(); }, 1500);
+    }).catch(function(err){
+      go.disabled = false; go.textContent = 'Konto endgültig löschen';
+      msg.textContent = err.message;
+    });
+  }
+  go.addEventListener('click', run);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') run(); });
+}
+
 function updateOwnDisplayName(name){
   var client = getSupabaseClient();
   return client.auth.updateUser({data: {display_name: name}}).then(function(res){
@@ -7258,6 +7376,9 @@ function openSettings(){
     ) +
     sCard('🔒 Sichtschutz', 'Blendet beim Start eine PIN-Abfrage ein. Kein echter Schutz, nur gegen neugierige Blicke.',
       sRow('PIN', '<div class="s-inline"><input type="password" id="sPinCode" value="'+escapeAttr(state.settings.pinCode||'')+'" placeholder="Leer = aus" maxlength="12"><button class="btn" id="savePinBtn">Speichern</button></div>')
+    ) +
+    sCard('Konto löschen', 'Entfernt dein Konto, deine Cloud-Daten und deine Schlüssel endgültig.',
+      '<div class="s-actions"><button class="btn danger" id="btnDeleteAccount">Mein Konto löschen…</button></div>'
     );
 
   /* ---------- Darstellung ---------- */
@@ -7461,6 +7582,7 @@ function openSettings(){
     importBackupFile(file);
   });
 
+  document.getElementById('btnDeleteAccount').addEventListener('click', openDeleteAccountDialog);
   document.getElementById('btnSaveDisplayName').addEventListener('click', function(){
     var n = document.getElementById('sDisplayName').value.trim();
     if(n.length < 2){ toast('Bitte einen Namen mit mindestens 2 Zeichen eingeben.'); return; }
@@ -8143,7 +8265,7 @@ function cmdActionsList(){
     {icon:'📞', label:'Hotline-Anruf starten', run:openHotlineDialog},
     {icon:'🪟', label:'Control-Center öffnen (schwebendes Fenster)', run:toggleControlCenter},
     {icon:'✨', label:'Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
-    {icon:'📅', label:'Meeting starten', run:function(){ quickStart('meeting','📅 Meeting'); }},
+    {icon:'📅', label:'Meeting starten', run:startMeeting},
     {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
@@ -8461,7 +8583,7 @@ function openSnoozedList(){
    EVENT WIRING
    ========================================================= */
 document.getElementById('btnHotline').addEventListener('click', openHotlineDialog);
-document.getElementById('btnMeeting').addEventListener('click', function(){ quickStart('meeting', '📅 Meeting'); });
+document.getElementById('btnMeeting').addEventListener('click', startMeeting);
 document.getElementById('btnQuickTimeEntry').addEventListener('click', openQuickTimeEntry);
 document.getElementById('btnQuickCapture').addEventListener('click', function(){ openQuickCapture(''); });
 document.getElementById('btnClipboardImport').addEventListener('click', importFromClipboard);
@@ -8786,7 +8908,7 @@ function handleUrlShortcutAction(){
   if(action === 'hotline'){
     openHotlineDialog();
   } else if(action === 'meeting'){
-    quickStart('meeting', '📅 Meeting');
+    startMeeting();
   } else if(action === 'timeentry'){
     var title = params.get('title');
     if(title){

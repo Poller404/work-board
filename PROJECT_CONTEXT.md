@@ -4,6 +4,13 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-07 (Fortsetzung): Konto löschen, Meeting-Betreff
+
+- **Konto löschen** (Einstellungen → Konto, `openDeleteAccountDialog()`): ruft die SQL-Funktion `delete_own_account()` (SQL in der README, Abschnitt "Eigenes Konto löschen") auf,
+  die nur das eigene Konto entfernt und bei Eigentümer:innen geteilter Boards mit weiteren Mitgliedern `OWNS_SHARED_BOARDS` meldet. Danach lokale Daten löschen und neu laden.
+- **Meeting:** `startMeeting()` startet Task und Timer sofort und öffnet nur einen kleinen Betreff-Dialog (`openMeetingSubjectDialog`, mit den letzten Betreffs als Chips);
+  im Control-Center erscheint nach "Meeting" ein Betreff-Feld. `rememberMeetingTitle()` pflegt `recentMeetingTitles`.
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Zusammenarbeit mit geteilten Boards
 
 Umgesetzt (README-Abschnitt "Geteilte Boards" enthält das einmalige SQL):

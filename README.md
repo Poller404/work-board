@@ -302,6 +302,33 @@ grant select, insert, update, delete on user_keys to authenticated;
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
 
+## 🗑️ Eigenes Konto löschen
+
+Unter ⚙️ Einstellungen → Konto gibt es **"Mein Konto löschen…"**. Der Browser darf Konten nicht direkt löschen
+(das bräuchte den geheimen `service_role`-Schlüssel), deshalb ruft die App eine kleine SQL-Funktion auf, die
+**nur das eigene Konto** entfernt. Einmalig im Supabase SQL-Editor ausführen:
+
+```sql
+create or replace function delete_own_account() returns void
+  language plpgsql security definer set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null then raise exception 'NOT_SIGNED_IN'; end if;
+  -- Eigentümer:innen geteilter Boards mit weiteren Mitgliedern müssen diese zuerst löschen oder leeren
+  if exists (select 1 from shared_boards b where b.owner_id = auth.uid()
+             and exists (select 1 from board_members m where m.board_id = b.id and m.user_id <> auth.uid())) then
+    raise exception 'OWNS_SHARED_BOARDS';
+  end if;
+  delete from auth.users where id = auth.uid();
+end $$;
+revoke all on function delete_own_account() from public, anon;
+grant execute on function delete_own_account() to authenticated;
+```
+
+Gelöscht werden Login, Profil, Schlüssel, das verschlüsselte Cloud-Board samt Snapshots und alle Mitgliedschaften
+(Cascade). Geteilte Boards, in denen du nur Mitglied warst, bleiben für die anderen bestehen. Lokale Daten auf dem
+Gerät werden ebenfalls entfernt; vorher kann man eine Sicherung herunterladen.
+
 ## 🔔 Push-Benachrichtigungen aufs Handy (ntfy.sh)
 
 Für Momente, in denen zwei Personen als Management schnell mitbekommen sollen, dass sich etwas
