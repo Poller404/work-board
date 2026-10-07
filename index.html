@@ -893,6 +893,24 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 .rule-sec-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); margin-bottom:6px;}
 .rule-line{display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;}
 .rule-line select, .rule-line input{min-width:0;}
+/* ---- Team & Kommentare ---- */
+.team-live{display:flex; gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--border);}
+.team-live:first-of-type{border-top:none;}
+.live-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:4px;}
+.live-dot.off{background:var(--border-strong);}
+.team-load{padding:8px 0; border-top:1px solid var(--border);}
+.team-load-top{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+.team-issue{padding:6px 0; border-top:1px solid var(--border); font-size:13px;}
+.dcard-head + .team-issue{border-top:none;}
+.cm-item{display:flex; gap:8px; margin-bottom:8px;}
+.cm-body{flex:1; min-width:0;}
+.cm-meta{font-size:11.5px; color:var(--text-faint);}
+.cm-meta .icon-btn{font-size:10px; padding:0 3px;}
+.cm-text{white-space:pre-wrap; font-size:13px;}
+.mention{color:var(--accent); font-weight:600; background:var(--accent-soft); border-radius:4px; padding:0 3px;}
+.mention.me{background:var(--warn-bg); color:var(--warn);}
+.cm-actions{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:6px;}
+.cm-badge{font-size:11px; color:var(--text-dim);}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -950,6 +968,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
     <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
     <button class="sb-item" data-view="kb"><svg class="i"><use href="#i-book"/></svg><span class="lbl" data-i18n="navKb">Wissen</span></button>
+    <button class="sb-item" data-view="teamdash"><svg class="i"><use href="#i-pulse"/></svg><span class="lbl" data-i18n="navTeamDash">Team</span></button>
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
@@ -961,7 +980,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -1666,7 +1685,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navViews:'Ansichten', navSettings:'Einstellungen',
+    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -1675,7 +1694,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navViews:'Views', navSettings:'Settings',
+    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -2583,7 +2602,7 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects', 'kb'];
+var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash'];
 var quickFilters = {};
 var filterTag = '';
 var filterProject = '';
@@ -2878,6 +2897,7 @@ function renderBoard(){
   if(boardViewMode === 'dyce'){ renderDyceView(); return; }
   if(boardViewMode === 'projects'){ renderProjectsView(); return; }
   if(boardViewMode === 'kb'){ renderKbView(); return; }
+  if(boardViewMode === 'teamdash'){ renderTeamView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -3228,6 +3248,7 @@ function renderCard(t){
     budgetHtml +
     '<div class="card-bottom">' +
       '<span class="time-badge'+(running?' running':'')+'" data-time-for="'+t.id+'">'+svgIcon('clock')+'<span class="tv">'+fmtHMS(tsec)+'</span></span>' +
+      (t.comments && t.comments.length ? '<span class="cm-badge" title="Kommentare">💬 '+t.comments.length+'</span>' : '') +
       dueHtml +
       (!showArchive ? '<button class="timer-toggle'+(running?' running':'')+'" data-action="toggle-timer" data-task-id="'+t.id+'" title="'+(running?'Pause':'Start')+'" aria-label="'+(running?'Pause':'Start')+'">'+svgIcon(running?'pause':'play')+'</button>' : '') +
     '</div>';
@@ -4293,6 +4314,8 @@ function openTaskModal(taskId){
             '<div class="hint">Tipp: Screenshots mit Strg+V einfügen.</div>' +
           '</div>' +
 
+          (activeShared ? commentsBlockHtml(t) : '') +
+
           '<div class="task-block"><div class="task-block-title">Lösung<span class="task-block-sub">was hat geholfen? (Wissensdatenbank)</span></div>' +
             '<textarea id="fSolution" rows="3" placeholder="Problem, Ursache, Lösung in Schritten…">'+escapeHtml(t.solution||'')+'</textarea>' +
             '<div class="ai-row"><button type="button" class="btn ghost" id="solAiBtn">✨ Aus dem Fall formulieren</button></div>' +
@@ -4515,6 +4538,7 @@ function openTaskModal(taskId){
   if(followUpEl) followUpEl.addEventListener('change', function(e){
     updateTask(t.id, {followUp: e.target.value});
   });
+  wireComments(t);
   document.getElementById('fSolution').addEventListener('change', function(e){
     var v = e.target.value.trim().slice(0, 8000);
     if(v !== (t.solution || '')) updateTask(t.id, {solution: v});
@@ -7012,6 +7036,7 @@ function mergeTask(L, R){
   m.timeSessions = unionBy(newer.timeSessions, other.timeSessions, function(s){ return s.start + '|' + (s.by || ''); });
   m.notes = unionBy(newer.notes, other.notes, function(n){ return n.ts + '|' + n.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
   m.activityLog = unionBy(newer.activityLog, other.activityLog, function(a){ return a.ts + '|' + a.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
+  if(newer.comments || other.comments) m.comments = unionBy(newer.comments, other.comments, function(c){ return c.id; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
   m.updatedAt = nowIso();
   return m;
 }
@@ -7150,6 +7175,7 @@ function sharedSync(attempt, sbParam){
     var merged = mergeContent(sb.base, local, remote);
     var changed = applyMergedToState(sb, merged);
     notifyAssignments(sb.base, remote.tasks);
+    notifyMentions(sb.base, remote.tasks);
     var needsPush = canon({n: merged.name, c: merged.columns, t: merged.tasks}) !== canon({n: remote.name, c: remote.columns, t: remote.tasks});
     var after = function(){ sharedCacheSave(sb); sharedSetStatus(sb, ''); if(changed && activeShared === sb){ renderAll(); } };
     if(!needsPush){
@@ -8663,6 +8689,7 @@ function cmdActionsList(){
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'🗓️', label:'Planer (Wochenansicht)', run: function(){ switchToView('calendar'); }},
     {icon:'📊', label:'Statistik', run: openStats},
+    {icon:'👥', label:'Team-Ansicht', run: function(){ switchToView('teamdash'); }},
     {icon:'🤖', label:'Automatisierung (Regeln)', run: function(){ settingsActiveTab = 'automation'; openSettings(); }},
     {icon:'📁', label:'Projekte & Abrechnung', run: function(){ projDetailId = ''; switchToView('projects'); }},
     {icon:'➕', label:'Neues Projekt anlegen', run: function(){ openProjectDialog(''); }},
@@ -10841,6 +10868,219 @@ function openRuleDialog(id){
     });
   }
   render();
+}
+
+/* =========================================================
+   KOMMENTARE MIT @ERWÄHNUNGEN (geteilte Boards)
+   ========================================================= */
+function mentionCandidates(){
+  if(activeShared) return sharedMembersWithNames().map(function(m){ return {id: m.id, name: m.name}; });
+  return registeredProfileRows.map(function(p){ return {id: p.id, name: p.display_name}; }).filter(function(p){ return p.name; });
+}
+function commentHtml(c){
+  var cands = mentionCandidates().slice().sort(function(a, b){ return b.name.length - a.name.length; });
+  var h = escapeHtml(c.text);
+  cands.forEach(function(m){
+    var re = new RegExp('@' + escapeHtml(m.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+    h = h.replace(re, function(x){ return '<span class="mention' + (m.id === myUserId() ? ' me' : '') + '">' + x + '</span>'; });
+  });
+  return h;
+}
+function commentsBlockHtml(t){
+  var list = (t.comments || []);
+  var cands = mentionCandidates().filter(function(m){ return m.id !== myUserId(); });
+  return '<div class="task-block"><div class="task-block-title">Kommentare' + (list.length ? '<span class="task-block-sub">' + list.length + '</span>' : '') + '<span class="task-block-sub">für das Team, mit @Erwähnung</span></div>' +
+    '<div class="cm-list">' + (list.map(function(c){
+      var mine = c.by && c.by === myUserId();
+      return '<div class="cm-item' + (mine ? ' mine' : '') + '"><span class="sb-avatar">' + escapeHtml(personInitials(c.byName || personName(c.by))) + '</span><div class="cm-body"><div class="cm-meta"><b>' + escapeHtml(c.byName || personName(c.by)) + '</b> · ' +
+        new Date(c.ts).toLocaleString('de-CH', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) + (mine ? ' <button class="icon-btn" data-cm-del="' + c.id + '" title="Löschen">✕</button>' : '') + '</div><div class="cm-text">' + commentHtml(c) + '</div></div></div>';
+    }).join('') || '<div class="hint">Noch keine Kommentare.</div>') + '</div>' +
+    '<textarea id="cmText" rows="2" placeholder="Kommentar schreiben… (Strg+Enter sendet)" style="width:100%;"></textarea>' +
+    '<div class="cm-actions">' + (cands.length ? '<span class="hint">Erwähnen:</span>' + cands.slice(0, 8).map(function(m){ return '<button type="button" class="chip" data-cm-mention="' + escapeAttr(m.name) + '">@' + escapeHtml(m.name) + '</button>'; }).join('') : '') +
+    '<button class="btn primary" id="cmSend" style="margin-left:auto;">Senden</button></div></div>';
+}
+function wireComments(t){
+  var box = document.getElementById('cmText');
+  if(!box) return;
+  document.querySelectorAll('[data-cm-mention]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v = box.value; box.value = v + (v && !/\s$/.test(v) ? ' ' : '') + '@' + b.dataset.cmMention + ' ';
+      box.focus();
+    });
+  });
+  function send(){
+    var text = box.value.trim();
+    if(!text) return;
+    var ments = [];
+    mentionCandidates().forEach(function(m){ if(m.id !== myUserId() && text.toLowerCase().indexOf('@' + m.name.toLowerCase()) >= 0) ments.push(m.id); });
+    t.comments = t.comments || [];
+    t.comments.push({id: 'cm-' + uid(), ts: nowIso(), by: myUserId(), byName: currentUser ? currentUser.displayName : '', text: text.slice(0, 4000), mentions: ments});
+    if(t.comments.length > 200) t.comments.shift();
+    t.updatedAt = nowIso();
+    save();
+    openTaskModal(t.id);
+    renderBoard();
+  }
+  document.getElementById('cmSend').addEventListener('click', send);
+  box.addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); send(); } });
+  document.querySelectorAll('[data-cm-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      t.comments = (t.comments || []).filter(function(c){ return c.id !== b.dataset.cmDel; });
+      if(!t.comments.length) delete t.comments;
+      t.updatedAt = nowIso(); save(); openTaskModal(t.id); renderBoard();
+    });
+  });
+}
+/* Beim Abgleich: neue Kommentare, die mich erwähnen oder einen mir zugewiesenen Task betreffen. */
+function notifyMentions(base, remoteTasks){
+  var me = myUserId();
+  if(!me) return;
+  remoteTasks.forEach(function(r){
+    if(!r.comments || !r.comments.length) return;
+    var b = base.tasks[r.id];
+    if(b === undefined) return;
+    var known = {};
+    try{ (JSON.parse(b).comments || []).forEach(function(c){ known[c.id] = 1; }); }catch(e){}
+    r.comments.forEach(function(c){
+      if(known[c.id] || c.by === me) return;
+      var mentioned = (c.mentions || []).indexOf(me) >= 0;
+      if(!mentioned && r.assigneeId !== me) return;
+      toast('💬 ' + (c.byName || 'Jemand') + (mentioned ? ' hat dich erwähnt' : ' hat kommentiert') + ': «' + r.title.slice(0, 40) + '»', 10000, 'Öffnen', function(){ openTaskModal(r.id); });
+    });
+  });
+}
+
+/* =========================================================
+   TEAM-ANSICHT: Live-Status, Auslastung, Zeit pro Person, Engpässe, Aktivität
+   ========================================================= */
+var teamRange = 'week';
+function teamPeople(){
+  if(activeShared){
+    var m = sharedMembersWithNames();
+    if(m.length) return m.map(function(x){ return {id: x.id, name: x.name}; });
+  }
+  return [{id: myUserId(), name: currentUser ? currentUser.displayName : 'Ich'}];
+}
+function teamRangeBounds(range){
+  var now = new Date();
+  if(range === 'today') return {start: startOfDay(now).getTime(), end: Date.now(), label: 'Heute'};
+  if(range === 'month') return {start: startOfMonth(now).getTime(), end: Date.now(), label: 'Dieser Monat'};
+  return {start: startOfWeek(now).getTime(), end: Date.now(), label: 'Diese Woche'};
+}
+function secondsBy(task, who, a, b){
+  var sum = 0;
+  task.timeSessions.forEach(function(s){
+    var sw = s.by || myUserId();
+    if(sw !== who) return;
+    var s0 = Math.max(new Date(s.start).getTime(), a), s1 = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), b);
+    if(s1 > s0) sum += (s1 - s0) / 1000;
+  });
+  return sum;
+}
+function renderTeamView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var people = teamPeople();
+  var b = teamRangeBounds(teamRange);
+  var shared = !!activeShared;
+  var open = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
+  var today = toDateInputValue(new Date());
+  function remainingMin(t){
+    var est = t.estimatedMinutes || 60;
+    return Math.max(0, est - totalSeconds(t) / 60);
+  }
+  var weeklyCap = (parseFloat(state.settings.targetHoursPerDay) || 8.4) * 60 * 5;
+
+  /* Live */
+  var liveHtml = people.map(function(p){
+    var running = null, lastTs = 0;
+    state.tasks.forEach(function(t){
+      t.timeSessions.forEach(function(s){
+        if((s.by || myUserId()) !== p.id) return;
+        var st = new Date(s.start).getTime(), en = s.end ? new Date(s.end).getTime() : Date.now();
+        if(!s.end && (!running || st > running.start)) running = {t: t, start: st};
+        lastTs = Math.max(lastTs, en);
+      });
+    });
+    var status = running ? '<span class="live-dot"></span> arbeitet an «' + escapeHtml(running.t.title.slice(0, 44)) + '» seit ' + fmtClock(running.start) + ' (' + fmtHM((Date.now() - running.start) / 1000) + ')'
+      : '<span class="live-dot off"></span> ' + (lastTs ? 'zuletzt aktiv ' + (new Date(lastTs).toDateString() === new Date().toDateString() ? 'um ' + fmtClock(lastTs) : new Date(lastTs).toLocaleDateString('de-CH', {weekday: 'short', day: 'numeric', month: 'numeric'})) : 'noch keine Zeit gebucht');
+    return '<div class="team-live" ' + (running ? 'data-open-task="' + running.t.id + '" style="cursor:pointer;"' : '') + '><span class="sb-avatar">' + escapeHtml(personInitials(p.name)) + '</span><div><b>' + escapeHtml(p.name) + (p.id === myUserId() ? ' (ich)' : '') + '</b><div class="hint">' + status + '</div></div></div>';
+  }).join('');
+
+  /* Auslastung */
+  var rowsLoad = people.concat(shared ? [{id: '', name: 'Nicht zugewiesen'}] : []).map(function(p){
+    var mine = open.filter(function(t){ return shared ? (t.assigneeId || '') === p.id : true; });
+    if(!shared && p.id === '') return '';
+    var rem = mine.reduce(function(s, t){ return s + remainingMin(t); }, 0);
+    var overdue = mine.filter(function(t){ return t.dueDate && t.dueDate < today; }).length;
+    var crit = mine.filter(function(t){ return t.priority === 'critical' || t.priority === 'high'; }).length;
+    var pct = Math.round(rem / weeklyCap * 100);
+    return '<div class="team-load"><div class="team-load-top"><b>' + escapeHtml(p.name) + '</b><span class="hint">' + mine.length + ' offen · ca. ' + fmtHM(rem * 60) + ' Restaufwand' + (overdue ? ' · <span style="color:var(--danger)">' + overdue + ' überfällig</span>' : '') + (crit ? ' · ' + crit + ' dringend' : '') + '</span></div>' +
+      budgetBar(Math.min(150, pct)) + '<div class="hint">' + pct + ' % einer Arbeitswoche</div></div>';
+  }).join('');
+
+  /* Zeit pro Person und Projekt */
+  var projKeys = {};
+  var cell = {};
+  people.forEach(function(p){ cell[p.id] = {}; });
+  state.tasks.forEach(function(t){
+    var pk = projectNameOf(t) || '– ohne Projekt –';
+    people.forEach(function(p){
+      var sec = secondsBy(t, p.id, b.start, b.end);
+      if(sec > 0){ cell[p.id][pk] = (cell[p.id][pk] || 0) + sec; projKeys[pk] = (projKeys[pk] || 0) + sec; }
+    });
+  });
+  var pks = Object.keys(projKeys).sort(function(a, c){ return projKeys[c] - projKeys[a]; }).slice(0, 6);
+  var timeHtml = pks.length ? '<table class="dyce-table"><thead><tr><th>Person</th>' + pks.map(function(k){ return '<th>' + escapeHtml(k) + '</th>'; }).join('') + '<th>Total</th></tr></thead><tbody>' +
+    people.map(function(p){
+      var tot = Object.keys(cell[p.id]).reduce(function(s, k){ return s + cell[p.id][k]; }, 0);
+      return '<tr><td>' + escapeHtml(p.name) + '</td>' + pks.map(function(k){ return '<td>' + (cell[p.id][k] ? fmtHM(cell[p.id][k]) : '–') + '</td>'; }).join('') + '<td><b>' + fmtHM(tot) + '</b></td></tr>';
+    }).join('') + '</tbody></table>' : '<div class="empty-state">Keine erfasste Zeit in diesem Zeitraum.</div>';
+
+  /* Engpässe */
+  var issues = [];
+  state.columns.forEach(function(c){
+    if(c.wipLimit){ var n = open.filter(function(t){ return t.columnId === c.id; }).length; if(n > c.wipLimit) issues.push('🚧 Spalte «' + escapeHtml(c.name) + '» hat ' + n + ' Tasks (Limit ' + c.wipLimit + ').'); }
+  });
+  if(shared){
+    var unassigned = open.filter(function(t){ return !t.assigneeId; });
+    if(unassigned.length) issues.push('👤 ' + unassigned.length + ' offene Task' + (unassigned.length === 1 ? '' : 's') + ' ohne Zuweisung.');
+  }
+  var overdueAll = open.filter(function(t){ return t.dueDate && t.dueDate < today; }).sort(function(a, c){ return a.dueDate < c.dueDate ? -1 : 1; });
+  overdueAll.slice(0, 4).forEach(function(t){ issues.push('📆 Überfällig seit ' + escapeHtml(t.dueDate) + ': <a href="#" data-open-task="' + t.id + '">' + escapeHtml(t.title.slice(0, 50)) + '</a>' + (assigneeLabel(t) ? ' (' + escapeHtml(assigneeLabel(t)) + ')' : '')); });
+  if(overdueAll.length > 4) issues.push('… und ' + (overdueAll.length - 4) + ' weitere überfällige Tasks.');
+  var blocked = open.filter(function(t){ return (t.blockedBy || []).some(function(id){ var bt = getTask(id); return bt && !bt.completedAt; }); });
+  if(blocked.length) issues.push('🔗 ' + blocked.length + ' Task' + (blocked.length === 1 ? ' ist' : 's sind') + ' blockiert.');
+  var stale = open.filter(function(t){ return !isSnoozed(t) && Date.now() - new Date(t.updatedAt || t.createdAt).getTime() > 7 * 86400000; }).sort(function(a, c){ return new Date(a.updatedAt) - new Date(c.updatedAt); });
+  stale.slice(0, 3).forEach(function(t){ issues.push('💤 Seit über 7 Tagen unverändert: <a href="#" data-open-task="' + t.id + '">' + escapeHtml(t.title.slice(0, 50)) + '</a>'); });
+  var sla = state.tasks.filter(function(t){ return slaLevel(t); }).length;
+  if(sla) issues.push('🚨 ' + sla + ' Hotline-Ticket' + (sla === 1 ? '' : 's') + ' im SLA-Risiko.');
+
+  /* Aktivität */
+  var feed = [];
+  state.tasks.forEach(function(t){
+    (t.activityLog || []).forEach(function(a){ if(!/^Task erstellt/.test(a.text) || true) feed.push({ts: a.ts, html: escapeHtml(a.text) + ' – <a href="#" data-open-task="' + t.id + '">' + escapeHtml(t.title.slice(0, 40)) + '</a>', icon: '•'}); });
+    (t.comments || []).forEach(function(c){ feed.push({ts: c.ts, html: '<b>' + escapeHtml(c.byName || '') + '</b>: ' + commentHtml({text: String(c.text).slice(0, 200)}) + ' – <a href="#" data-open-task="' + t.id + '">' + escapeHtml(t.title.slice(0, 40)) + '</a>', icon: '💬'}); });
+  });
+  feed.sort(function(a, c){ return new Date(c.ts) - new Date(a.ts); });
+  var feedHtml = feed.slice(0, 14).map(function(f){
+    return '<div class="session-row"><span>' + f.icon + ' ' + f.html + '</span><span>' + new Date(f.ts).toLocaleString('de-CH', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) + '</span></div>';
+  }).join('') || '<div class="empty-state">Noch keine Aktivität.</div>';
+
+  var html = '<div class="dash">' +
+    '<div class="dash-head"><div><h1>Team</h1><p>' + (shared ? 'Geteiltes Board «' + escapeHtml(currentBoardName()) + '» · ' + people.length + ' Person' + (people.length === 1 ? '' : 'en') : 'Persönliches Board – in einem geteilten Board siehst du hier das ganze Team.') + '</p></div>' +
+      '<div class="seg" role="group" aria-label="Zeitraum">' + [['today', 'Heute'], ['week', 'Woche'], ['month', 'Monat']].map(function(r){ return '<button class="seg-btn' + (teamRange === r[0] ? ' on' : '') + '" data-trange="' + r[0] + '">' + r[1] + '</button>'; }).join('') + '</div></div>' +
+    '<div class="dash-grid">' +
+      '<section class="dcard"><div class="dcard-head"><h3>Live</h3></div>' + liveHtml + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Auslastung</h3></div>' + rowsLoad + '</section>' +
+      '<section class="dcard wide"><div class="dcard-head"><h3>Zeit pro Person und Projekt</h3><span class="hint">' + b.label + '</span></div>' + timeHtml + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Engpässe &amp; Hinweise</h3></div>' + (issues.length ? issues.map(function(i){ return '<div class="team-issue">' + i + '</div>'; }).join('') : '<div class="empty-state">Alles im grünen Bereich. ✅</div>') + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Letzte Aktivität</h3></div>' + feedHtml + '</section>' +
+    '</div></div>';
+  board.innerHTML = html;
+  board.querySelectorAll('[data-trange]').forEach(function(btn){ btn.addEventListener('click', function(){ teamRange = btn.dataset.trange; renderTeamView(); }); });
+  board.querySelectorAll('[data-open-task]').forEach(function(el){ el.addEventListener('click', function(e){ e.preventDefault(); openTaskModal(el.dataset.openTask); }); });
 }
 
 /*@@EXTRA-JS@@*/
