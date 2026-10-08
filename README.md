@@ -130,6 +130,12 @@ Abschnitt "Sicherheit"); Admin-Rechte vergeben/entziehen bleibt ein manueller Sc
 Supabase-Dashboard (Schritt 6 oben, dieselbe Zeile für eine andere Person entfernen entzieht sie
 wieder).
 
+**Passwort ändern oder zurücksetzen.** Auf dem Login-Bildschirm gibt es **"Passwort ändern"** (E-Mail, aktuelles und neues Passwort, mind. 10 Zeichen) und
+**"Passwort vergessen?"**. Der Link in der Reset-E-Mail führt zurück in die App und öffnet direkt die Maske "Neues Passwort festlegen". Angemeldet geht es unter
+⚙️ Einstellungen → Konto → "Passwort ändern". Das ist nur das Login-Passwort; die **Passphrase** des verschlüsselten Boards bleibt davon unberührt.
+Damit der Link der Reset-E-Mail wieder in der App landet, muss in Supabase unter *Authentication → URL Configuration* die Adresse der App als **Site URL** (bzw. unter
+*Redirect URLs*) eingetragen sein.
+
 ## Wie werden meine Daten gespeichert?
 
 1. **Cloud (Hauptspeicher):** Dein Board liegt automatisch und verschlüsselt in Supabase

@@ -1429,6 +1429,10 @@ var isCurrentUserAdmin = false;
 var adminUserIds = [];
 var supabaseClient = null;
 var appStarted = false;
+/* Solange gesetzt, startet die App nach einer Anmeldung noch nicht:
+   'recovery' = Link zum Zurücksetzen wurde geöffnet (neues Passwort wird abgefragt),
+   'change' = Passwort wird gerade geändert (Anmeldung dient nur der Prüfung des alten Passworts). */
+var authHold = /[#&?]type=recovery/.test(location.hash + location.search) ? 'recovery' : '';
 var saveTimer = null;
 var tickInterval = null;
 var draggedTaskId = null;
@@ -7841,6 +7845,7 @@ function openSettings(){
   var accountTab =
     sCard('Konto', '',
       sRow(escapeHtml(currentUser ? currentUser.displayName : '–'), '<button class="btn" id="btnAuthSignOut">🚪 Abmelden</button>', escapeHtml(currentUser ? currentUser.email : '')) +
+      sRow('Login-Passwort', '<button class="btn" id="btnChangePassword">🔑 Passwort ändern…</button>', 'Betrifft nur die Anmeldung, nicht die Passphrase des Boards.') +
       sRow('Anzeigename', '<div class="s-inline"><input id="sDisplayName" maxlength="60" value="'+escapeAttr(currentUser ? currentUser.displayName : '')+'"><button class="btn" id="btnSaveDisplayName">Speichern</button></div>', 'Erscheint bei Zuweisungen, in geteilten Boards und im Aktivitäts-Verlauf.')
     ) +
     sCard('☁️ Cloud-Speicher', 'Dein Board wird automatisch verschlüsselt in Supabase gespeichert – lesen kann es nur, wer deine Passphrase kennt.',
@@ -8069,6 +8074,7 @@ function openSettings(){
   });
 
   document.getElementById('btnDeleteAccount').addEventListener('click', openDeleteAccountDialog);
+  document.getElementById('btnChangePassword').addEventListener('click', openChangePasswordDialog);
   document.getElementById('btnSaveDisplayName').addEventListener('click', function(){
     var n = document.getElementById('sDisplayName').value.trim();
     if(n.length < 2){ toast('Bitte einen Namen mit mindestens 2 Zeichen eingeben.'); return; }
@@ -11986,7 +11992,11 @@ function getSupabaseClient(){
 function translateAuthError(msg){
   if(/Invalid login credentials/i.test(msg)) return 'E-Mail oder Passwort falsch.';
   if(/User already registered/i.test(msg)) return 'Für diese E-Mail existiert schon ein Konto – bitte anmelden.';
-  if(/Password should be at least/i.test(msg)) return 'Passwort zu kurz (mind. 6 Zeichen).';
+  if(/Password should be at least/i.test(msg)) return 'Passwort zu kurz (mind. 10 Zeichen).';
+  if(/different from the old password/i.test(msg)) return 'Das neue Passwort muss sich vom alten unterscheiden.';
+  if(/weak|pwned|easy to guess/i.test(msg)) return 'Dieses Passwort ist zu unsicher – bitte ein längeres, weniger gebräuchliches wählen.';
+  if(/session.*(missing|expired)|not authenticated|invalid.*(token|jwt)|expired/i.test(msg)) return 'Der Link ist abgelaufen oder wurde schon benutzt. Bitte unter „Passwort vergessen?“ einen neuen anfordern.';
+  if(/reauthentication/i.test(msg)) return 'Bitte zuerst neu anmelden und die Änderung wiederholen.';
   if(/Unable to validate email address/i.test(msg)) return 'Ungültige E-Mail-Adresse.';
   return msg;
 }
@@ -12001,36 +12011,53 @@ function startAuthGate(){
   renderAuthLoading();
   var client = getSupabaseClient();
   client.auth.onAuthStateChange(function(event, session){
-    if(session && session.user){
-      currentUser = {
-        id: session.user.id,
-        email: session.user.email,
-        displayName: (session.user.user_metadata && session.user.user_metadata.display_name) || session.user.email.split('@')[0]
-      };
-      upsertProfile();
-      fetchProfiles();
-      checkIsAdmin();
-      if(!appStarted){
-        appStarted = true;
-        /* Supabase-Aufrufe nicht synchron im Auth-Callback starten (kann dessen
-           internen Lock blockieren) - daher einen Tick später. */
-        setTimeout(function(){
-          ensureBoardSetup().then(function(){
-            boardReady = true;
-            document.getElementById('authOverlay').classList.add('hidden');
-            init();
-            setTimeout(initCollaboration, 1500);
-          });
-        }, 0);
-      } else if(boardReady){
-        document.getElementById('authOverlay').classList.add('hidden');
-      }
-    } else {
-      currentUser = null;
+    if(event === 'PASSWORD_RECOVERY'){
+      authHold = 'recovery';
       document.getElementById('authOverlay').classList.remove('hidden');
-      renderAuthLogin();
+      renderAuthNewPassword();
+      return;
     }
+    if(authHold === 'change') return;
+    if(authHold === 'recovery'){
+      if(session && session.user){
+        if(!document.getElementById('authNewPw1')){ document.getElementById('authOverlay').classList.remove('hidden'); renderAuthNewPassword(); }
+        return;
+      }
+      authHold = '';
+    }
+    handleAuthSession(session);
   });
+}
+function handleAuthSession(session){
+  if(session && session.user){
+    currentUser = {
+      id: session.user.id,
+      email: session.user.email,
+      displayName: (session.user.user_metadata && session.user.user_metadata.display_name) || session.user.email.split('@')[0]
+    };
+    upsertProfile();
+    fetchProfiles();
+    checkIsAdmin();
+    if(!appStarted){
+      appStarted = true;
+      /* Supabase-Aufrufe nicht synchron im Auth-Callback starten (kann dessen
+         internen Lock blockieren) - daher einen Tick später. */
+      setTimeout(function(){
+        ensureBoardSetup().then(function(){
+          boardReady = true;
+          document.getElementById('authOverlay').classList.add('hidden');
+          init();
+          setTimeout(initCollaboration, 1500);
+        });
+      }, 0);
+    } else if(boardReady){
+      document.getElementById('authOverlay').classList.add('hidden');
+    }
+  } else {
+    currentUser = null;
+    document.getElementById('authOverlay').classList.remove('hidden');
+    renderAuthLogin();
+  }
 }
 function renderAuthSetup(){
   var cfg = getAuthConfig();
@@ -12198,8 +12225,9 @@ function renderAuthLogin(){
     '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username"></div>' +
     '<div class="form-row"><label>Passwort</label><input type="password" id="authPassword" autocomplete="current-password"></div>' +
     '<button class="btn primary" id="authLoginBtn" style="width:100%; margin-bottom:10px;">Anmelden</button>' +
-    '<div style="display:flex; justify-content:space-between;">' +
+    '<div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">' +
       '<a href="#" id="authGoRegister">Registrieren</a>' +
+      '<a href="#" id="authChangePw">Passwort ändern</a>' +
       '<a href="#" id="authForgotPw">Passwort vergessen?</a>' +
     '</div>' +
     '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>' +
@@ -12217,17 +12245,136 @@ function renderAuthLogin(){
   document.getElementById('authEmail').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
   document.getElementById('authPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
   document.getElementById('authGoRegister').addEventListener('click', function(e){ e.preventDefault(); renderAuthRegister(); });
+  document.getElementById('authChangePw').addEventListener('click', function(e){ e.preventDefault(); renderAuthChangePassword(document.getElementById('authEmail').value.trim()); });
   document.getElementById('authForgotPw').addEventListener('click', function(e){
     e.preventDefault();
     var email = document.getElementById('authEmail').value.trim();
     var msgEl = document.getElementById('authErrorMsg');
     if(!email){ msgEl.style.color = 'var(--danger)'; msgEl.textContent = 'Bitte zuerst E-Mail eintragen, dann nochmal klicken.'; return; }
-    getSupabaseClient().auth.resetPasswordForEmail(email).then(function(res){
+    getSupabaseClient().auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname}).then(function(res){
       if(res.error){ msgEl.style.color = 'var(--danger)'; msgEl.textContent = translateAuthError(res.error.message); }
       else { msgEl.style.color = 'var(--ok)'; msgEl.textContent = '📧 E-Mail zum Zurücksetzen gesendet (falls ein Konto existiert).'; }
     });
   });
   document.getElementById('authChangeSupabase').addEventListener('click', function(e){ e.preventDefault(); renderAuthSetup(); });
+}
+/* ---- Passwort ändern ---- */
+function cleanAuthUrl(){
+  try{ history.replaceState({}, document.title, location.pathname); }catch(e){}
+}
+/* Prüft das alte Passwort durch eine Anmeldung und setzt dann das neue. Gibt die Sitzung zurück. */
+function doChangePassword(email, current, next){
+  var client = getSupabaseClient();
+  if(!email || !current || !next) return Promise.reject(new Error('Bitte alle Felder ausfüllen.'));
+  if(next.length < 10) return Promise.reject(new Error('Bitte ein neues Passwort mit mindestens 10 Zeichen wählen.'));
+  if(next === current) return Promise.reject(new Error('Das neue Passwort muss sich vom alten unterscheiden.'));
+  var prev = authHold;
+  authHold = 'change';
+  return client.auth.signInWithPassword({email: email, password: current}).then(function(res){
+    if(res.error || !res.data || !res.data.session) throw new Error(res.error ? translateAuthError(res.error.message) : 'E-Mail oder aktuelles Passwort falsch.');
+    return client.auth.updateUser({password: next}).then(function(r2){
+      if(r2.error) throw new Error(translateAuthError(r2.error.message));
+      return res.data.session;
+    });
+  }).then(function(session){ authHold = prev; return session; }, function(err){ authHold = prev; throw err; });
+}
+function renderAuthChangePassword(prefillEmail){
+  document.getElementById('authContent').innerHTML =
+    '<h3 style="margin:0 0 8px;">🔑 Passwort ändern</h3>' +
+    '<p class="hint" style="margin-bottom:10px;">Gib dein aktuelles Login-Passwort und das neue ein. Deine Passphrase für das verschlüsselte Board bleibt unverändert.</p>' +
+    '<div class="form-row"><label>E-Mail</label><input type="email" id="authEmail" autocomplete="username" value="' + escapeAttr(prefillEmail || '') + '"></div>' +
+    '<div class="form-row"><label>Aktuelles Passwort</label><div style="display:flex; gap:6px;"><input type="password" id="authOldPw" style="flex:1;" autocomplete="current-password"><button type="button" class="btn icon-btn" id="authPwToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<div class="form-row"><label>Neues Passwort (mind. 10 Zeichen)</label><input type="password" id="authNewPw1" autocomplete="new-password"></div>' +
+    '<div class="form-row"><label>Neues Passwort wiederholen</label><input type="password" id="authNewPw2" autocomplete="new-password"></div>' +
+    '<button class="btn primary" id="authChangePwBtn" style="width:100%; margin-bottom:10px;">Passwort ändern und anmelden</button>' +
+    '<a href="#" id="authBackLogin">Zurück zur Anmeldung</a>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>';
+  wireAuthPwToggle('authPwToggle', ['authOldPw', 'authNewPw1', 'authNewPw2']);
+  var msgEl = document.getElementById('authErrorMsg');
+  function submit(){
+    var email = document.getElementById('authEmail').value.trim();
+    var cur = document.getElementById('authOldPw').value;
+    var n1 = document.getElementById('authNewPw1').value, n2 = document.getElementById('authNewPw2').value;
+    msgEl.style.color = 'var(--danger)'; msgEl.textContent = '';
+    if(n1 !== n2){ msgEl.textContent = 'Die beiden neuen Passwörter sind nicht identisch.'; return; }
+    var btn = document.getElementById('authChangePwBtn'); btn.disabled = true;
+    doChangePassword(email, cur, n1).then(function(session){
+      toast('🔑 Passwort geändert.');
+      handleAuthSession(session);
+    }).catch(function(err){
+      btn.disabled = false;
+      msgEl.textContent = err.message;
+      /* Die Prüf-Anmeldung wieder beenden, falls sie geklappt hat, das neue Passwort aber abgelehnt wurde. */
+      authHold = 'change';
+      getSupabaseClient().auth.signOut().catch(function(){}).then(function(){ authHold = ''; });
+    });
+  }
+  document.getElementById('authChangePwBtn').addEventListener('click', submit);
+  ['authEmail', 'authOldPw', 'authNewPw1', 'authNewPw2'].forEach(function(id){ document.getElementById(id).addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); }); });
+  document.getElementById('authBackLogin').addEventListener('click', function(e){ e.preventDefault(); renderAuthLogin(); });
+  (prefillEmail ? document.getElementById('authOldPw') : document.getElementById('authEmail')).focus();
+}
+/* Nach dem Öffnen des Links aus der "Passwort vergessen"-E-Mail */
+function renderAuthNewPassword(){
+  document.getElementById('authContent').innerHTML =
+    '<h3 style="margin:0 0 8px;">🔑 Neues Passwort festlegen</h3>' +
+    '<p class="hint" style="margin-bottom:10px;">Wähle ein neues Login-Passwort. Deine Passphrase für das verschlüsselte Board bleibt unverändert.</p>' +
+    '<div class="form-row"><label>Neues Passwort (mind. 10 Zeichen)</label><div style="display:flex; gap:6px;"><input type="password" id="authNewPw1" style="flex:1;" autocomplete="new-password"><button type="button" class="btn icon-btn" id="authPwToggle" title="Anzeigen/Verbergen">👁</button></div></div>' +
+    '<div class="form-row"><label>Neues Passwort wiederholen</label><input type="password" id="authNewPw2" autocomplete="new-password"></div>' +
+    '<button class="btn primary" id="authSetPwBtn" style="width:100%; margin-bottom:10px;">Passwort speichern</button>' +
+    '<a href="#" id="authCancelRecovery">Abbrechen</a>' +
+    '<div id="authErrorMsg" class="hint" style="color:var(--danger); margin-top:10px;"></div>';
+  wireAuthPwToggle('authPwToggle', ['authNewPw1', 'authNewPw2']);
+  var msgEl = document.getElementById('authErrorMsg');
+  function submit(){
+    var n1 = document.getElementById('authNewPw1').value, n2 = document.getElementById('authNewPw2').value;
+    msgEl.textContent = '';
+    if(n1.length < 10){ msgEl.textContent = 'Bitte ein Passwort mit mindestens 10 Zeichen wählen.'; return; }
+    if(n1 !== n2){ msgEl.textContent = 'Die beiden Passwörter sind nicht identisch.'; return; }
+    var btn = document.getElementById('authSetPwBtn'); btn.disabled = true;
+    var client = getSupabaseClient();
+    client.auth.updateUser({password: n1}).then(function(res){
+      if(res.error){ btn.disabled = false; msgEl.textContent = translateAuthError(res.error.message); return; }
+      authHold = '';
+      cleanAuthUrl();
+      toast('🔑 Neues Passwort gespeichert.');
+      return client.auth.getSession().then(function(r){ handleAuthSession(r.data && r.data.session); });
+    });
+  }
+  document.getElementById('authSetPwBtn').addEventListener('click', submit);
+  document.getElementById('authNewPw2').addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); });
+  document.getElementById('authCancelRecovery').addEventListener('click', function(e){
+    e.preventDefault();
+    authHold = 'change';
+    cleanAuthUrl();
+    getSupabaseClient().auth.signOut().catch(function(){}).then(function(){ authHold = ''; renderAuthLogin(); });
+  });
+  document.getElementById('authNewPw1').focus();
+}
+/* Passwort ändern für Angemeldete (Einstellungen → Konto) */
+function openChangePasswordDialog(){
+  var html = '<div class="modal-header"><h2>🔑 Passwort ändern</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body"><div class="hint" style="margin:0 0 10px;">Das ist dein Login-Passwort für ' + escapeHtml(currentUser ? currentUser.email : '') + '. Die Passphrase für das verschlüsselte Board bleibt unverändert.</div>' +
+    '<div class="form-row"><label for="cpOld">Aktuelles Passwort</label><input type="password" id="cpOld" autocomplete="current-password"></div>' +
+    '<div class="form-row"><label for="cpNew1">Neues Passwort (mind. 10 Zeichen)</label><input type="password" id="cpNew1" autocomplete="new-password"></div>' +
+    '<div class="form-row"><label for="cpNew2">Neues Passwort wiederholen</label><input type="password" id="cpNew2" autocomplete="new-password"></div>' +
+    '<div id="cpMsg" class="hint" style="color:var(--danger);"></div></div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="cpSave">Passwort ändern</button></div>';
+  openModal(html);
+  document.getElementById('cpOld').focus();
+  function submit(){
+    var msgEl = document.getElementById('cpMsg');
+    var n1 = document.getElementById('cpNew1').value, n2 = document.getElementById('cpNew2').value;
+    msgEl.textContent = '';
+    if(n1 !== n2){ msgEl.textContent = 'Die beiden neuen Passwörter sind nicht identisch.'; return; }
+    var btn = document.getElementById('cpSave'); btn.disabled = true;
+    doChangePassword(currentUser.email, document.getElementById('cpOld').value, n1).then(function(){
+      closeModal();
+      toast('🔑 Passwort geändert.');
+    }).catch(function(err){ btn.disabled = false; msgEl.textContent = err.message; });
+  }
+  document.getElementById('cpSave').addEventListener('click', submit);
+  ['cpOld', 'cpNew1', 'cpNew2'].forEach(function(id){ document.getElementById(id).addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); }); });
 }
 function renderAuthRegister(){
   document.getElementById('authContent').innerHTML =
@@ -12310,7 +12457,7 @@ function checkIsAdmin(){
 function adminSendPasswordReset(email){
   var client = getSupabaseClient();
   if(!client) return;
-  client.auth.resetPasswordForEmail(email).then(function(res){
+  client.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname}).then(function(res){
     if(res.error){ toast('Fehler: ' + translateAuthError(res.error.message)); }
     else { toast('📧 Passwort-Reset-E-Mail an ' + email + ' gesendet.'); }
   });
