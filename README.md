@@ -338,6 +338,18 @@ gemacht?", "Offene Hotline-Tickets zusammenfassen", "Wochenbericht"). Der Assist
 Notizen schreiben, Wiedervorlagen setzen und Timer starten/stoppen; löschen kann er nichts. Er sendet nur die abgefragten Daten an Anthropic (dein
 eigener API-Key, ⚙️ Einstellungen → Integrationen), nichts an Supabase. Aktionen lassen sich mit Strg+Z zurücknehmen.
 
+## 🤖 KI-Anbieter: Anthropic oder Google Gemini
+
+⚙️ Einstellungen → Integrationen → **KI-Anbieter** wählen. Alle KI-Funktionen (Ticket aus Text, Task-Hilfen, Hotline-Auswertung, Tagesabschluss-Vorschläge,
+Wissens-Antwort, Assistent-Chat) laufen mit beiden.
+- **Anthropic (Claude):** API-Key aus der Anthropic-Konsole, kostenpflichtig nach Verbrauch (Haiku ist am günstigsten).
+- **Google Gemini:** API-Key kostenlos unter [aistudio.google.com](https://aistudio.google.com) ("Get API key"). Die Flash-Modelle haben ein Gratis-Kontingent.
+  Modellnamen ändern sich bei Google öfter: Wird eines nicht gefunden, die aktuelle ID in den Einstellungen eintragen.
+  **Datenschutz:** Laut Googles Preisübersicht darf Google im *kostenlosen* Kontingent Eingaben zur Verbesserung seiner Produkte verwenden, mit aktivierter Abrechnung nicht.
+  Die App weist beim Umschalten und im Assistenten darauf hin. Für Firmendaten vorher klären.
+
+Die Keys liegen nur auf dem jeweiligen Gerät (nie in Backups, Dateien oder der Cloud). Beim Wechsel des Anbieters beginnt der Assistent ein neues Gespräch.
+
 ## 🔒 Sicherheit
 
 **Was die App absichert:**
@@ -348,7 +360,7 @@ eigener API-Key, ⚙️ Einstellungen → Integrationen), nichts an Supabase. Ak
   (IDs, Farben, Links, Bilder, Prioritäten) und beim Anzeigen maskiert. Links sind nur mit `http`, `https` oder `mailto` erlaubt
   (kein `javascript:`). Bilder in Notizen müssen echte `data:image/…`-Daten sein.
 - **Content-Security-Policy:** Skripte, Verbindungen und Schriften dürfen nur von den freigegebenen Adressen geladen werden
-  (eigene Seite, jsDelivr, Google Fonts, dein Supabase-Projekt, Anthropic, ntfy). Selbst bei einem Fehler könnten Daten
+  (eigene Seite, jsDelivr, Google Fonts, dein Supabase-Projekt, Anthropic, Google Gemini, ntfy). Selbst bei einem Fehler könnten Daten
   so nicht an fremde Server geschickt werden. **Wer eine andere Supabase-Instanz verwendet, muss deren Adresse in `index.html`
   im `Content-Security-Policy`-Tag (`connect-src`) eintragen.**
 - **Bibliothek mit Prüfsumme:** Die Supabase-Bibliothek ist auf eine feste Version gesetzt und wird nur geladen, wenn ihre

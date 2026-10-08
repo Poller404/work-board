@@ -4,6 +4,15 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-08: Gemini als zweiter KI-Anbieter
+
+`aiProvider` ('anthropic'|'gemini') in den Einstellungen, Keys getrennt in localStorage (`wb-ai-key`, `wb-gemini-key`). `callAIRaw`/`callAIMessages` verzweigen;
+Gemini über `generateContent` direkt aus dem Browser (`x-goog-api-key`, CORS geprüft), der Assistent übersetzt sein internes (Anthropic-)Format in Geminis
+`functionCall`/`functionResponse` samt `thoughtSignature` (`callGeminiMessages`). CSP um `generativelanguage.googleapis.com` erweitert. Warnhinweis zur Datennutzung im
+Gratis-Kontingent (Bestätigung beim Umschalten, Hinweis im Chat). Modell-IDs laut Google-Doku vom 08.10.2026: gemini-3.8-flash, gemini-3.5-flash-lite (frei editierbar).
+Getestet nur mit simulierten Antworten, nicht mit echtem Gemini-Key.
+Ausserdem am 08.10.2026: Passwort ändern (Login-Bildschirm, Reset-Link-Maske, Einstellungen) und Supabase-Bereinigung (`supabase-aufraeumen.sql`, am Projekt angewendet).
+
 ## ✅ Stand 2026-10-07 (Fortsetzung): Acht grosse Funktionen
 
 Nutzer wollte aus einer Vorschlagsliste alles ausser Offline-App/Web-Push (9) und Jira-API (2) umgesetzt haben. Je Funktion ein Commit auf `main`.

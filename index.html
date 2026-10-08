@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://kxrnwdzxypfepnaafdfn.supabase.co https://api.anthropic.com https://ntfy.sh; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://kxrnwdzxypfepnaafdfn.supabase.co https://api.anthropic.com https://generativelanguage.googleapis.com https://ntfy.sh; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script>if(window.top !== window.self){ document.documentElement.style.display = 'none'; try{ window.top.location = window.self.location; }catch(e){} }</script>
 <title>Work Board</title>
@@ -1293,6 +1293,9 @@ function defaultState(){
       autoArchiveDays: 14,
       aiApiKey: '',
       aiModel: 'claude-haiku-4-5-20251001',
+      aiProvider: 'anthropic',
+      geminiApiKey: '',
+      geminiModel: 'gemini-3.8-flash',
       idleReminderMinutes: 90,
       accentColor: '',
       snippets: [],
@@ -1365,6 +1368,15 @@ function migrateState(data){
     try{ localStorage.setItem('wb-ai-key', storedAiKey); }catch(e){}
   }
   d.settings.aiApiKey = storedAiKey;
+  var storedGemini = '';
+  try{ storedGemini = localStorage.getItem('wb-gemini-key') || ''; }catch(e){}
+  if(!storedGemini && typeof d.settings.geminiApiKey === 'string' && d.settings.geminiApiKey){
+    storedGemini = d.settings.geminiApiKey;
+    try{ localStorage.setItem('wb-gemini-key', storedGemini); }catch(e){}
+  }
+  d.settings.geminiApiKey = storedGemini;
+  if(d.settings.aiProvider !== 'gemini') d.settings.aiProvider = 'anthropic';
+  d.settings.geminiModel = stripMarkup(d.settings.geminiModel, 60).replace(/[^A-Za-z0-9._-]/g, '') || 'gemini-3.8-flash';
   d.tasks.forEach(function(t){ normalizeTask(t); });
   d.boards.forEach(function(b){
     b.columns = normalizeColumns(b.columns);
@@ -5249,9 +5261,25 @@ var AI_MODELS = [
   {id:'claude-sonnet-5-5', label:'Sonnet 5.5 (ausgewogen)'},
   {id:'claude-opus-5-5', label:'Opus 5.5 (am genauesten)'}
 ];
+var GEMINI_MODELS = [
+  {id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (empfohlen)'},
+  {id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (schnell, sehr günstig)'},
+  {id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (älter)'}
+];
+function aiProvider(){ return state.settings.aiProvider === 'gemini' ? 'gemini' : 'anthropic'; }
+function aiProviderName(){ return aiProvider() === 'gemini' ? 'Google Gemini' : 'Anthropic'; }
+function aiKey(){ return aiProvider() === 'gemini' ? (state.settings.geminiApiKey || '') : (state.settings.aiApiKey || ''); }
+function aiModelId(){
+  return aiProvider() === 'gemini' ? (state.settings.geminiModel || GEMINI_MODELS[0].id) : (state.settings.aiModel || AI_MODELS[0].id);
+}
+function aiModelLabel(){
+  var list = aiProvider() === 'gemini' ? GEMINI_MODELS : AI_MODELS;
+  var m = list.find(function(x){ return x.id === aiModelId(); });
+  return m ? m.label.split(' (')[0] : aiModelId();
+}
 function aiReady(){
-  if(state.settings.aiApiKey) return true;
-  toast('Dafür braucht es einen Anthropic-API-Key (Einstellungen → Integrationen).', 7000, 'Einstellungen', function(){ settingsActiveTab = 'integrations'; openSettings(); });
+  if(aiKey()) return true;
+  toast('Dafür braucht es einen API-Key für ' + aiProviderName() + ' (Einstellungen → Integrationen).', 7000, 'Einstellungen', function(){ settingsActiveTab = 'integrations'; openSettings(); });
   return false;
 }
 function aiJson(systemPrompt, userText, maxTokens){
@@ -5340,7 +5368,7 @@ function heuristicParse(text){
   };
 }
 function processQuickCapture(text){
-  if(!state.settings.aiApiKey) return Promise.resolve([normalizeDraft(heuristicParse(text))]);
+  if(!aiKey()) return Promise.resolve([normalizeDraft(heuristicParse(text))]);
   return aiJson(AI_EXTRACT_SYSTEM + ' ' + aiContextHint(), text, 2000).then(function(json){
     var arr = Array.isArray(json) ? json : (Array.isArray(json.tasks) ? json.tasks : [json]);
     arr = arr.filter(function(o){ return o && typeof o === 'object'; }).slice(0, 8).map(normalizeDraft);
@@ -5349,7 +5377,7 @@ function processQuickCapture(text){
   });
 }
 function openQuickCapture(prefillText, autoProcess){
-  var hasKey = !!state.settings.aiApiKey;
+  var hasKey = !!aiKey();
   var html =
     '<div class="modal-header"><h2>✨ Ticket aus Text erstellen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
@@ -5387,6 +5415,7 @@ function openQuickCapture(prefillText, autoProcess){
   if(autoProcess && prefillText && prefillText.trim()) setTimeout(run, 0);
 }
 function callAIRaw(systemPrompt, userText, maxTokens){
+  if(aiProvider() === 'gemini') return callGeminiRaw(systemPrompt, userText, maxTokens);
   var key = state.settings.aiApiKey;
   var model = state.settings.aiModel || 'claude-haiku-4-5-20251001';
   return fetch('https://api.anthropic.com/v1/messages', {
@@ -5415,8 +5444,8 @@ function callAIRaw(systemPrompt, userText, maxTokens){
    KI-WOCHENANALYSE
    ========================================================= */
 function openAiWeeklyAnalysis(){
-  if(!state.settings.aiApiKey){
-    toast('Bitte zuerst einen Anthropic-API-Key in ⚙️ Einstellungen hinterlegen.');
+  if(!aiKey()){
+    toast('Bitte zuerst einen API-Key (' + aiProviderName() + ') in ⚙️ Einstellungen hinterlegen.');
     return;
   }
   var start = startOfWeek(new Date()).getTime();
@@ -7060,7 +7089,7 @@ function withPersonalState(fn){
   try{ return fn(); } finally { checkoutShared(); }
 }
 function serializePersonalState(indent){
-  return withPersonalState(function(){ return JSON.stringify(state, function(k, v){ return k === 'aiApiKey' ? '' : v; }, indent); });
+  return withPersonalState(function(){ return JSON.stringify(state, function(k, v){ return (k === 'aiApiKey' || k === 'geminiApiKey') ? '' : v; }, indent); });
 }
 function currentBoardName(){ return activeShared ? activeShared.name : state.settings.activeBoardName; }
 
@@ -7994,11 +8023,18 @@ function openSettings(){
         '<p>Die Texte sind bewusst generisch (kein Task-Titel, kein Kundenname), da sie über ntfys Server laufen und nicht verschlüsselt sind.</p>'
       )
     ) +
-    sCard('KI-Schnellerfassung', 'Optional: erstellt Tasks automatisch aus eingefügtem Mail- oder Ticket-Text.',
-      sRow('Anthropic API-Key', '<input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…">', 'Ohne Key gibt es eine einfachere Texterkennung.') +
-      sRow('KI-Modell', '<select id="sAiModel">' + AI_MODELS.map(function(m){ return '<option value="'+m.id+'"'+((state.settings.aiModel||AI_MODELS[0].id)===m.id?' selected':'')+'>'+m.label+'</option>'; }).join('') + '</select>', 'Haiku ist schnell und günstig, Sonnet und Opus erkennen mehr.') +
-      sMore('Wofür die KI genutzt wird', '<p><strong>Ticket aus Text:</strong> E-Mail oder Notiz einfügen (auch direkt mit Strg+V auf dem Board), die KI legt einen oder mehrere Tasks an. <strong>Im Task:</strong> Beschreibung verbessern, zusammenfassen, Checkliste vorschlagen, Antwort entwerfen. <strong>Hotline-Anruf:</strong> Notizen auswerten und Felder ausfüllen.</p>') +
-      sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert. Beim Auswerten werden der eingefügte Text bzw. die Inhalte des gewählten Tasks direkt an Anthropic gesendet, nicht an Supabase oder andere Dienste.</p>')
+    sCard('KI (Schnellerfassung, Assistent)', 'Optional: erstellt Tasks aus Text, hilft im Task und beantwortet Fragen zu deinem Board.',
+      sRow('KI-Anbieter', '<select id="sAiProvider"><option value="anthropic"' + (aiProvider() === 'anthropic' ? ' selected' : '') + '>Anthropic (Claude)</option><option value="gemini"' + (aiProvider() === 'gemini' ? ' selected' : '') + '>Google Gemini (auch gratis)</option></select>', 'Der Key wird nur auf diesem Gerät gespeichert.') +
+      (aiProvider() === 'gemini' ?
+        sRow('Gemini API-Key', '<input type="password" id="sGeminiKey" value="'+escapeAttr(state.settings.geminiApiKey||'')+'" placeholder="AIza…">', 'Kostenlos erstellen unter aistudio.google.com → „Get API key“. Ohne Key gibt es eine einfachere Texterkennung.') +
+        sRow('Gemini-Modell', '<input id="sGeminiModel" list="geminiModels" value="'+escapeAttr(state.settings.geminiModel || GEMINI_MODELS[0].id)+'" autocomplete="off"><datalist id="geminiModels">' + GEMINI_MODELS.map(function(m){ return '<option value="'+m.id+'">'+escapeHtml(m.label)+'</option>'; }).join('') + '</datalist>', 'Modellnamen ändern sich bei Google öfter; bei Fehlermeldung „nicht gefunden“ hier die aktuelle ID aus aistudio.google.com eintragen.') +
+        '<div class="hint" style="color:var(--warn); margin:8px 0;">⚠️ Im kostenlosen Gemini-Kontingent darf Google Eingaben (Tasks, Notizen, Mails) laut seiner Preisübersicht zur Verbesserung seiner Produkte verwenden. Mit aktivierter Abrechnung gilt das nicht. Für Firmendaten das vorher klären.</div>'
+      :
+        sRow('Anthropic API-Key', '<input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…">', 'Ohne Key gibt es eine einfachere Texterkennung.') +
+        sRow('KI-Modell', '<select id="sAiModel">' + AI_MODELS.map(function(m){ return '<option value="'+m.id+'"'+((state.settings.aiModel||AI_MODELS[0].id)===m.id?' selected':'')+'>'+m.label+'</option>'; }).join('') + '</select>', 'Haiku ist schnell und günstig, Sonnet und Opus erkennen mehr.')
+      ) +
+      sMore('Wofür die KI genutzt wird', '<p><strong>Ticket aus Text:</strong> E-Mail oder Notiz einfügen (auch direkt mit Strg+V auf dem Board), die KI legt einen oder mehrere Tasks an. <strong>Im Task:</strong> Beschreibung verbessern, zusammenfassen, Checkliste vorschlagen, Antwort entwerfen. <strong>Hotline-Anruf:</strong> Notizen auswerten und Felder ausfüllen. <strong>Assistent (Strg+J):</strong> Fragen zum Board, Wochenbericht, Planung.</p>') +
+      sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert. Beim Auswerten werden der eingefügte Text bzw. die abgefragten Inhalte direkt an ' + escapeHtml(aiProviderName()) + ' gesendet, nicht an Supabase oder andere Dienste.</p>')
     );
 
   /* ---------- Admin ---------- */
@@ -8227,13 +8263,43 @@ function openSettings(){
     save();
     openSettings();
   });
-  document.getElementById('sApiKey').addEventListener('change', function(e){
+  var providerSel = document.getElementById('sAiProvider');
+  if(providerSel) providerSel.addEventListener('change', function(e){
+    var next = e.target.value === 'gemini' ? 'gemini' : 'anthropic';
+    function apply(){
+      state.settings.aiProvider = next;
+      chat.msgs = []; chat.view = []; chat.pending = null; chat.busy = false;
+      save(); settingsActiveTab = 'integrations'; openSettings();
+    }
+    var acked = false;
+    try{ acked = localStorage.getItem('wb-gemini-ack') === '1'; }catch(err){}
+    if(next === 'gemini' && !acked){
+      confirmDialog('Gemini kann kostenlos genutzt werden. Im kostenlosen Kontingent darf Google die Eingaben (Tasks, Notizen, Mails, die du an die KI schickst) laut seiner Preisübersicht zur Verbesserung seiner Produkte verwenden. Mit aktivierter Abrechnung gilt das nicht. Gemini trotzdem verwenden?', 'Ja, verwenden', function(){
+        try{ localStorage.setItem('wb-gemini-ack', '1'); }catch(err){}
+        closeModal(); apply();
+      }, function(){ settingsActiveTab = 'integrations'; openSettings(); });
+    } else apply();
+  });
+  var apiKeyEl = document.getElementById('sApiKey');
+  if(apiKeyEl) apiKeyEl.addEventListener('change', function(e){
     state.settings.aiApiKey = e.target.value.trim();
     try{ if(state.settings.aiApiKey) localStorage.setItem('wb-ai-key', state.settings.aiApiKey); else localStorage.removeItem('wb-ai-key'); }catch(err){}
     save();
   });
-  document.getElementById('sAiModel').addEventListener('change', function(e){
+  var aiModelEl = document.getElementById('sAiModel');
+  if(aiModelEl) aiModelEl.addEventListener('change', function(e){
     state.settings.aiModel = e.target.value;
+    save();
+  });
+  var gKeyEl = document.getElementById('sGeminiKey');
+  if(gKeyEl) gKeyEl.addEventListener('change', function(e){
+    state.settings.geminiApiKey = e.target.value.trim();
+    try{ if(state.settings.geminiApiKey) localStorage.setItem('wb-gemini-key', state.settings.geminiApiKey); else localStorage.removeItem('wb-gemini-key'); }catch(err){}
+    save();
+  });
+  var gModelEl = document.getElementById('sGeminiModel');
+  if(gModelEl) gModelEl.addEventListener('change', function(e){
+    state.settings.geminiModel = e.target.value.trim().replace(/[^A-Za-z0-9._-]/g, '') || GEMINI_MODELS[0].id;
     save();
   });
   document.getElementById('sIdle').addEventListener('change', function(e){
@@ -11515,7 +11581,7 @@ function mailBlockHtml(t){
    Der Assistent beantwortet Fragen zu Tasks, Zeiten und Planung und kann nach deiner
    Bestätigung Änderungen vornehmen (Task anlegen, verschieben, planen, Notiz, Wiedervorlage,
    Timer). Er nutzt "Werkzeuge": kleine Funktionen, die lokal auf deinen Daten laufen. Zur
-   KI (Anthropic, dein eigener API-Key) gehen nur die Daten, die er dafür abfragt.
+   KI (Anthropic oder Google Gemini, dein eigener API-Key) gehen nur die Daten, die er dafür abfragt.
    Löschen kann der Assistent nichts.
    ========================================================= */
 var chat = {open: false, busy: false, msgs: [], view: [], pending: null, ack: false};
@@ -11767,7 +11833,121 @@ function chatExecWrite(u){
     return JSON.stringify({error: 'Unbekanntes Werkzeug'});
   }catch(err){ return JSON.stringify({error: err.message}); }
 }
+/* =========================================================
+   GOOGLE GEMINI (alternativer KI-Anbieter, auch mit kostenlosem Kontingent nutzbar)
+   Ruft die generateContent-Schnittstelle direkt aus dem Browser auf. Der Chat-Assistent
+   (Werkzeuge) wird dafür vom internen Format in Geminis Format übersetzt und zurück.
+   Hinweis von Google: Im kostenlosen Kontingent dürfen Eingaben zur Verbesserung der
+   Google-Produkte verwendet werden, mit aktivierter Abrechnung nicht.
+   ========================================================= */
+function geminiFetch(body){
+  var key = state.settings.geminiApiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(aiModelId()) + ':generateContent';
+  return fetch(url, {method: 'POST', headers: {'content-type': 'application/json', 'x-goog-api-key': key}, body: JSON.stringify(body)}).then(function(res){
+    if(res.ok) return res.json();
+    return res.text().then(function(t){
+      var msg = '';
+      try{ msg = JSON.parse(t).error.message || ''; }catch(e){ msg = t.slice(0, 160); }
+      if(res.status === 429) throw new Error('Gemini: Kontingent erschöpft oder zu viele Anfragen (429). Bitte kurz warten oder Abrechnung aktivieren.');
+      if(res.status === 400 && /API key/i.test(msg)) throw new Error('Gemini: API-Key ungültig.');
+      if(res.status === 403 || res.status === 401) throw new Error('Gemini: Zugriff verweigert (' + res.status + '). API-Key und Freigabe prüfen.');
+      if(res.status === 404) throw new Error('Gemini: Modell "' + aiModelId() + '" nicht gefunden. Unter Einstellungen → Integrationen ein anderes wählen.');
+      throw new Error('Gemini HTTP ' + res.status + ' ' + String(msg).slice(0, 180));
+    });
+  });
+}
+function geminiCandidate(json){
+  var cand = json.candidates && json.candidates[0];
+  if(!cand){
+    var br = json.promptFeedback && json.promptFeedback.blockReason;
+    throw new Error(br ? 'Gemini hat die Anfrage blockiert (' + br + ').' : 'Gemini hat keine Antwort geliefert.');
+  }
+  return cand;
+}
+function callGeminiRaw(systemPrompt, userText, maxTokens){
+  /* Reichlich Platz lassen: bei Denkmodellen zählen die "Gedanken" zum Limit. */
+  var body = {
+    systemInstruction: {parts: [{text: systemPrompt}]},
+    contents: [{role: 'user', parts: [{text: userText}]}],
+    generationConfig: {maxOutputTokens: Math.max(4096, (maxTokens || 800) * 4)}
+  };
+  return geminiFetch(body).then(function(json){
+    var cand = geminiCandidate(json);
+    var parts = (cand.content && cand.content.parts) || [];
+    var text = parts.filter(function(p){ return p.text && !p.thought; }).map(function(p){ return p.text; }).join('');
+    if(!text && cand.finishReason === 'MAX_TOKENS') throw new Error('Gemini: Antwort wurde abgeschnitten. Bitte erneut versuchen.');
+    return text;
+  });
+}
+/* Interne Nachrichten (Format wie bei Anthropic) → Gemini */
+function callGeminiMessages(body){
+  var calls = {};
+  var contents = [];
+  body.messages.forEach(function(m){
+    var blocks = typeof m.content === 'string' ? [{type: 'text', text: m.content}] : m.content;
+    if(m.role === 'assistant'){
+      var parts = [];
+      blocks.forEach(function(b){
+        if(b.type === 'text' && b.text){ var p = {text: b.text}; if(b.sig) p.thoughtSignature = b.sig; parts.push(p); }
+        else if(b.type === 'tool_use'){
+          calls[b.id] = {name: b.name, gid: b.gid};
+          var fc = {name: b.name, args: b.input || {}};
+          if(b.gid) fc.id = b.gid;
+          var p2 = {functionCall: fc};
+          if(b.sig) p2.thoughtSignature = b.sig;
+          parts.push(p2);
+        }
+      });
+      if(parts.length) contents.push({role: 'model', parts: parts});
+    } else {
+      var ps = [];
+      blocks.forEach(function(b){
+        if(b.type === 'tool_result'){
+          var r;
+          try{ r = JSON.parse(b.content); }catch(e){ r = b.content; }
+          var info = calls[b.tool_use_id] || {name: 'tool'};
+          var fr = {name: info.name, response: (r && typeof r === 'object' && !Array.isArray(r)) ? r : {result: r}};
+          if(info.gid) fr.id = info.gid;
+          ps.push({functionResponse: fr});
+        } else if(b.type === 'text' && b.text) ps.push({text: b.text});
+      });
+      if(ps.length) contents.push({role: 'user', parts: ps});
+    }
+  });
+  var req = {
+    systemInstruction: {parts: [{text: body.system}]},
+    contents: contents,
+    generationConfig: {maxOutputTokens: Math.max(8192, (body.max_tokens || 1500) * 4)}
+  };
+  if(body.tools && body.tools.length){
+    req.tools = [{functionDeclarations: body.tools.map(function(t){
+      var d = {name: t.name, description: t.description};
+      if(t.input_schema && t.input_schema.properties && Object.keys(t.input_schema.properties).length) d.parametersJsonSchema = t.input_schema;
+      return d;
+    })}];
+  }
+  return geminiFetch(req).then(function(json){
+    var cand = geminiCandidate(json);
+    var parts = (cand.content && cand.content.parts) || [];
+    var out = [];
+    parts.forEach(function(p){
+      if(p.thought) return;
+      if(p.functionCall){
+        out.push({type: 'tool_use', id: p.functionCall.id || 'g' + uid(), gid: p.functionCall.id || undefined, name: p.functionCall.name, input: p.functionCall.args || {}, sig: p.thoughtSignature || undefined});
+      } else if(p.text){
+        out.push({type: 'text', text: p.text, sig: p.thoughtSignature || undefined});
+      }
+    });
+    if(!out.length){
+      if(cand.finishReason === 'MALFORMED_FUNCTION_CALL') throw new Error('Gemini hat einen ungültigen Werkzeug-Aufruf erzeugt. Bitte die Frage erneut stellen.');
+      if(cand.finishReason === 'MAX_TOKENS') throw new Error('Gemini: Antwort wurde abgeschnitten. Bitte erneut versuchen.');
+      throw new Error('Gemini hat keine Antwort geliefert' + (cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '.');
+    }
+    return {content: out, stop_reason: out.some(function(b){ return b.type === 'tool_use'; }) ? 'tool_use' : 'end_turn'};
+  });
+}
 function callAIMessages(body){
+  if(aiProvider() === 'gemini') return callGeminiMessages(body);
   var key = state.settings.aiApiKey;
   body.model = state.settings.aiModel || 'claude-haiku-4-5-20251001';
   return fetch('https://api.anthropic.com/v1/messages', {
@@ -11874,12 +12054,13 @@ function mdLite(src){
   close();
   return html;
 }
+function chatAckKey(){ return 'wb-ai-chat-ok' + (aiProvider() === 'gemini' ? '-gemini' : ''); }
 function renderChat(){
   var box = document.getElementById('aiMsgs');
   if(!box) return;
   var html = '';
   if(!chat.ack){
-    html += '<div class="ai-note"><b>Hinweis zum Datenschutz</b><br>Der Assistent fragt Daten aus deinem Board ab (Titel, Notizen, Zeiten) und sendet sie an Anthropic, mit deinem eigenen API-Key. Nichts davon geht an Supabase. Änderungen führt er nur nach deiner Bestätigung aus.<br><button class="btn primary" id="aiAck" style="margin-top:8px;">Verstanden</button></div>';
+    html += '<div class="ai-note"><b>Hinweis zum Datenschutz</b><br>Der Assistent fragt Daten aus deinem Board ab (Titel, Notizen, Zeiten) und sendet sie an ' + escapeHtml(aiProviderName()) + ', mit deinem eigenen API-Key. Nichts davon geht an Supabase. Änderungen führt er nur nach deiner Bestätigung aus.' + (aiProvider() === 'gemini' ? '<br><b>Achtung:</b> Im kostenlosen Gemini-Kontingent darf Google Eingaben zur Verbesserung seiner Produkte verwenden. Mit aktivierter Abrechnung gilt das nicht.' : '') + '<br><button class="btn primary" id="aiAck" style="margin-top:8px;">Verstanden</button></div>';
   } else if(!chat.view.length){
     html += '<div class="ai-empty"><div style="font-size:30px;">🤖</div><b>Frag mich zu deinem Board</b><div class="hint">z.B. Zeiten, offene Tickets, Planung – oder lass mich Tasks anlegen und verschieben.</div></div>';
   }
@@ -11896,7 +12077,7 @@ function renderChat(){
   var quick = document.getElementById('aiQuick');
   quick.innerHTML = chat.ack && !chat.view.length ? CHAT_QUICK.map(function(q, i){ return '<button class="chip" data-ai-quick="' + i + '">' + q[0] + '</button>'; }).join('') : '';
   var ack = document.getElementById('aiAck');
-  if(ack) ack.addEventListener('click', function(){ chat.ack = true; try{ localStorage.setItem('wb-ai-chat-ok', '1'); }catch(e){} renderChat(); document.getElementById('aiInput').focus(); });
+  if(ack) ack.addEventListener('click', function(){ chat.ack = true; try{ localStorage.setItem(chatAckKey(), '1'); }catch(e){} renderChat(); document.getElementById('aiInput').focus(); });
   var yes = document.getElementById('aiDoIt'); if(yes) yes.addEventListener('click', function(){ chatDecide(true); });
   var no = document.getElementById('aiNo'); if(no) no.addEventListener('click', function(){ chatDecide(false); });
   document.getElementById('aiSend').disabled = chat.busy;
@@ -11904,11 +12085,10 @@ function renderChat(){
 function openAiChat(prefill){
   var el = document.getElementById('aiChat');
   chat.open = true;
-  try{ chat.ack = localStorage.getItem('wb-ai-chat-ok') === '1'; }catch(e){}
+  try{ chat.ack = localStorage.getItem(chatAckKey()) === '1'; }catch(e){}
   el.classList.add('open');
   document.getElementById('aiFab').classList.add('hidden');
-  var mdl = AI_MODELS.find(function(m){ return m.id === (state.settings.aiModel || AI_MODELS[0].id); });
-  document.getElementById('aiModel').textContent = mdl ? mdl.label.split(' (')[0] : '';
+  document.getElementById('aiModel').textContent = aiModelLabel();
   renderChat();
   var inp = document.getElementById('aiInput');
   if(prefill){ inp.value = prefill; }
@@ -11940,7 +12120,7 @@ function toggleAiChat(){ if(chat.open) closeAiChat(); else openAiChat(); }
   document.getElementById('aiInput').addEventListener('input', function(){ this.style.height = 'auto'; this.style.height = Math.min(120, this.scrollHeight) + 'px'; });
   document.getElementById('aiChat').addEventListener('click', function(e){
     var q = e.target.closest('[data-ai-quick]');
-    if(q){ if(!chat.ack){ chat.ack = true; try{ localStorage.setItem('wb-ai-chat-ok', '1'); }catch(err){} } chatSend(CHAT_QUICK[parseInt(q.dataset.aiQuick, 10)][1]); return; }
+    if(q){ if(!chat.ack){ chat.ack = true; try{ localStorage.setItem(chatAckKey(), '1'); }catch(err){} } chatSend(CHAT_QUICK[parseInt(q.dataset.aiQuick, 10)][1]); return; }
     var c = e.target.closest('[data-ai-copy]');
     if(c){ var v = chat.view[parseInt(c.dataset.aiCopy, 10)]; if(v){ copyToClipboard(v.text); toast('Kopiert.'); } return; }
     var o = e.target.closest('[data-open-task]');
