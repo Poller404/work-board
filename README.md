@@ -401,6 +401,13 @@ alter table user_keys add constraint user_keys_size check (length(private_key_en
 - Die Passphrase wird auf dem Gerät im Browser-Speicher gemerkt, damit du sie nicht ständig eingeben musst.
 - Mitglieder eines geteilten Boards können dessen Inhalt vollständig bearbeiten und löschen.
 
+## 🧹 Supabase aufräumen (Rechte, Policies, Funktionen)
+
+Die Datei [`supabase-aufraeumen.sql`](supabase-aufraeumen.sql) bringt ein bestehendes Projekt auf den sauberen Stand: Tabellenrechte nur noch so weit nötig
+(u. a. fehlten Rechte zum Anlegen von Profilen und zum Speichern geteilter Boards), Hilfsfunktionen nicht mehr anonym aufrufbar, `delete_own_account()`,
+automatisches Profil bei der Registrierung, einheitliche Policies mit `(select auth.uid())`, Grössenlimits und Indizes. Es werden keine Daten gelöscht.
+Auf dem Projekt dieser Installation ist sie am 08.10.2026 angewendet und getestet worden. Bei einer neuen Supabase-Instanz erst die Tabellen anlegen (SQL oben), danach diese Datei ausführen.
+
 ## 🗑️ Eigenes Konto löschen
 
 Unter ⚙️ Einstellungen → Konto gibt es **"Mein Konto löschen…"**. Der Browser darf Konten nicht direkt löschen
