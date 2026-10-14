@@ -186,6 +186,30 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 .menu .menu-hint{margin-left:auto; font-size:11px; color:var(--text-faint); font-weight:400;}
 button.btn.primary svg.i{color:inherit;}
 
+/* Kopfzeile auf Desktop: breite Fenster einzeilig (Suche, Filter und Timer-Titel
+   werden schmaler statt umzubrechen), schmalere Fenster höchstens zweizeilig
+   (Filter in der zweiten Zeile). Die Handy-Ansicht (≤680 px) hat eigene Regeln. */
+@media (min-width:681px){
+  .tb-search{flex:0 1 220px; min-width:120px;}
+  #topbar select{flex:0 .2 auto; min-width:84px; max-width:150px; text-overflow:ellipsis;}
+  #topbar .spacer{min-width:0;}
+  #timerBanner{flex:0 1 auto; min-width:0;}
+  #timerBanner .tb-title{flex:0 1 auto; min-width:32px;}
+  #timerBanner > :not(.tb-title){flex-shrink:0;}
+}
+@media (min-width:681px) and (max-width:1500px){ #timerBanner .btn .lbl{display:none;} }
+/* Das schwebende Timer-Fenster bleibt über den Control-Center-Knopf daneben erreichbar. */
+@media (min-width:681px) and (max-width:1400px){ #tbPip{display:none;} }
+@media (min-width:1240px){ #topbar{flex-wrap:nowrap;} }
+@media (min-width:681px) and (max-width:1239px){
+  .tb-search{flex:1 1 110px; min-width:100px; max-width:320px;}
+  .tb-secondary{display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex-basis:100%; order:10;}
+}
+@media (min-width:681px) and (max-width:900px){
+  #timerBanner .tb-title{display:none;}
+  #btnNewTask .lbl{display:none;}
+}
+
 /* ---- reload banner ---- */
 #cloudChangeBanner{
   display:none; align-items:center; gap:10px; padding:8px 20px;
@@ -207,6 +231,21 @@ button.btn.primary svg.i{color:inherit;}
 .column-header .count.over-wip{background:var(--danger-bg); color:var(--danger); padding:1px 8px; border-radius:10px; font-weight:700;}
 .column-header input.rename{flex:1; min-width:0; font-weight:600; font-size:13.5px; padding:3px 6px; margin-left:-6px; background:transparent; border:1px solid transparent; color:var(--text);}
 .column-header input.rename:hover, .column-header input.rename:focus{border-color:var(--border); background:var(--surface);}
+.column-header .col-collapse{opacity:0; transition:opacity var(--t-fast);}
+.column-header:hover .col-collapse, .column-header .col-collapse:focus-visible{opacity:1;}
+@media (hover:none){ .column-header .col-collapse{opacity:1;} }
+.column.collapsed{width:44px; min-width:44px; align-self:stretch; border-radius:var(--radius-sm);}
+.column.collapsed.dragover{background:var(--accent-glow); outline:1px dashed var(--accent);}
+.col-expand{
+  display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; height:100%; padding:10px 0;
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); color:var(--text-dim); cursor:pointer;
+}
+.col-expand:hover{background:var(--hover); color:var(--text);}
+.col-expand svg.i{transform:rotate(-90deg);}
+.col-expand .count{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
+.col-expand .count.over-wip{color:var(--danger);}
+.col-expand .col-dot{width:8px; height:8px; border-radius:50%;}
+.col-vname{writing-mode:vertical-rl; font-weight:600; font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-height:60vh;}
 .column-body{flex:1; overflow-y:auto; padding:2px 2px 8px; display:flex; flex-direction:column; gap:9px; min-height:40px;}
 .column-body.dragover{background:var(--accent-glow); border-radius:var(--radius-sm); outline:1px dashed var(--accent);}
 .column-add{margin:0 2px 10px !important; justify-content:flex-start; color:var(--text-faint);}
@@ -279,6 +318,8 @@ button.btn.primary svg.i{color:inherit;}
 .card .timer-toggle.running:hover{color:var(--surface); filter:brightness(1.08);}
 .card .due{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
 .card .due.overdue{color:var(--danger); font-weight:600;}
+.card .stale-badge{display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
+.card .stale-badge svg.i{width:13px; height:13px;}
 .card.pinned{outline:2px solid var(--accent); outline-offset:-1px;}
 .card.today-focus{box-shadow:0 0 0 2px var(--ok) inset, var(--shadow);}
 .card.selected{outline:2px solid var(--accent); outline-offset:-1px; background:var(--accent-soft);}
@@ -3116,6 +3157,46 @@ function renderDashboardWidgets(){
   bind('dashSla', openSlaDashboard);
   bind('dashWhatNow', function(){ if(whatNow) openTaskModal(whatNow.id); });
 }
+/* Eingeklappte Spalten: nur eine Ansichtssache dieses Geräts, darum in
+   localStorage statt im Board-Zustand (wird nicht synchronisiert). */
+var COLLAPSED_COLS_KEY = 'wb-collapsed-cols';
+function collapsedColumnIds(){
+  try{ var v = JSON.parse(localStorage.getItem(COLLAPSED_COLS_KEY) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; }
+}
+function isColumnCollapsed(colId){ return collapsedColumnIds().indexOf(colId) >= 0; }
+function setColumnCollapsed(colId, collapsed){
+  var ids = collapsedColumnIds().filter(function(id){ return id !== colId; });
+  if(collapsed) ids.push(colId);
+  try{ localStorage.setItem(COLLAPSED_COLS_KEY, JSON.stringify(ids)); }catch(e){}
+}
+/* Tasks per Drag & Drop in eine Spalte (oder auf eine eingeklappte Spalte) ziehen. */
+function wireColumnDrop(el, col){
+  el.addEventListener('dragover', function(e){
+    e.preventDefault();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    el.classList.add('dragover');
+  });
+  el.addEventListener('dragleave', function(){ el.classList.remove('dragover'); });
+  el.addEventListener('drop', function(e){
+    e.preventDefault();
+    el.classList.remove('dragover');
+    if(draggedGroupTaskIds && draggedGroupTaskIds.length){
+      var groupIds = draggedGroupTaskIds;
+      pushUndoSnapshot();
+      groupIds.forEach(function(id){ updateTask(id, col.patch); });
+      toast('📦 ' + groupIds.length + ' Task(s) der Gruppe verschoben.');
+      renderAll();
+      return;
+    }
+    var taskId = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+    if(taskId){
+      pushUndoSnapshot();
+      updateTask(taskId, col.patch);
+      renderAll();
+    }
+  });
+}
+
 function renderBoard(){
   var board = document.getElementById('board');
   renderSidebarActive();
@@ -3150,6 +3231,19 @@ function renderBoard(){
     colEl.className = 'column';
     colEl.dataset.colId = col.id;
     var overWip = col.wipLimit && colTasks.length > col.wipLimit;
+    if(isColumnCollapsed(col.id)){
+      colEl.className = 'column collapsed';
+      colEl.innerHTML = '<button class="col-expand" data-action="col-expand" title="Spalte „'+escapeAttr(col.name)+'“ ausklappen" aria-label="Spalte '+escapeAttr(col.name)+' ausklappen">' +
+        svgIcon('chevron') +
+        '<span class="count'+(overWip?' over-wip':'')+'">'+colTasks.length+'</span>' +
+        (col.color ? '<span class="col-dot" style="background:'+escapeAttr(col.color)+'"></span>' : '') +
+        '<span class="col-vname">'+(col.icon ? escapeHtml(col.icon)+' ' : '')+escapeHtml(col.name)+'</span>' +
+      '</button>';
+      colEl.querySelector('.col-expand').addEventListener('click', function(){ setColumnCollapsed(col.id, false); renderBoard(); });
+      wireColumnDrop(colEl, col);
+      board.appendChild(colEl);
+      return;
+    }
 
     var groupTotalHtml = '';
     if(col.showGroupTotal){
@@ -3164,6 +3258,7 @@ function renderBoard(){
       (col.virtual ? '<span style="flex:1;">'+escapeHtml(col.name)+'</span>' : '<input class="rename" value="'+escapeAttr(col.name)+'" data-col-id="'+col.id+'">') +
       '<span class="count'+(overWip?' over-wip':'')+'" title="'+(col.wipLimit?('WIP-Limit: '+col.wipLimit):'')+'">'+colTasks.length+(col.wipLimit?' / '+col.wipLimit:'')+'</span>' +
       groupTotalHtml +
+      '<button class="icon-btn col-collapse" data-action="col-collapse" data-col-id="'+escapeAttr(col.id)+'" title="Spalte einklappen" aria-label="Spalte '+escapeAttr(col.name)+' einklappen">'+svgIcon('collapse')+'</button>' +
       (col.virtual ? '' : '<button class="icon-btn" data-action="col-menu" data-col-id="'+col.id+'" title="Optionen">⋯</button>');
     colEl.appendChild(header);
     if(selectMode && colTasks.length){
@@ -3233,31 +3328,7 @@ function renderBoard(){
       }
     }
 
-    // DnD on column body
-    body.addEventListener('dragover', function(e){
-      e.preventDefault();
-      if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-      body.classList.add('dragover');
-    });
-    body.addEventListener('dragleave', function(){ body.classList.remove('dragover'); });
-    body.addEventListener('drop', function(e){
-      e.preventDefault();
-      body.classList.remove('dragover');
-      if(draggedGroupTaskIds && draggedGroupTaskIds.length){
-        var groupIds = draggedGroupTaskIds;
-        pushUndoSnapshot();
-        groupIds.forEach(function(id){ updateTask(id, col.patch); });
-        toast('📦 ' + groupIds.length + ' Task(s) der Gruppe verschoben.');
-        renderAll();
-        return;
-      }
-      var taskId = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-      if(taskId){
-        pushUndoSnapshot();
-        updateTask(taskId, col.patch);
-        renderAll();
-      }
-    });
+    wireColumnDrop(body, col);
 
     board.appendChild(colEl);
   });
@@ -3279,6 +3350,9 @@ function renderBoard(){
       var col = state.columns.find(function(c){ return c.id === inp.dataset.colId; });
       if(col){ col.name = inp.value || col.name; save(); }
     });
+  });
+  board.querySelectorAll('[data-action="col-collapse"]').forEach(function(btn){
+    btn.addEventListener('click', function(){ setColumnCollapsed(btn.dataset.colId, true); renderBoard(); });
   });
   board.querySelectorAll('[data-action="col-menu"]').forEach(function(btn){
     btn.addEventListener('click', function(e){ openColumnMenu(btn.dataset.colId, e.currentTarget); });
@@ -3431,6 +3505,20 @@ function typeIconHtml(key){
   if(TYPE_SVG[key]) return svgIcon(TYPE_SVG[key]);
   return escapeHtml((TYPES[key] || TYPES.adhoc).icon);
 }
+/* Fälligkeit auf Karten: "Heute", "Morgen", "Gestern", sonst "Mo 20.10." (anderes Jahr mit Jahreszahl). */
+var STALE_TASK_DAYS = 7;
+function friendlyDueLabel(dateStr){
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
+  if(!m) return dateStr || '';
+  var d = new Date(+m[1], +m[2] - 1, +m[3]);
+  var today = new Date(new Date().toDateString());
+  var diff = Math.round((d - today) / 86400000);
+  if(diff === 0) return 'Heute';
+  if(diff === 1) return 'Morgen';
+  if(diff === -1) return 'Gestern';
+  var days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  return days[d.getDay()] + ' ' + m[3] + '.' + m[2] + '.' + (d.getFullYear() !== today.getFullYear() ? m[1] : '');
+}
 function renderCard(t){
   var card = document.createElement('div');
   var isSelected = selectedTaskIds.indexOf(t.id) >= 0;
@@ -3447,8 +3535,10 @@ function renderCard(t){
   var dueHtml = '';
   if(t.dueDate){
     var overdue = new Date(t.dueDate) < new Date(new Date().toDateString());
-    dueHtml = '<span class="due'+(overdue?' overdue':'')+'">'+svgIcon('cal')+t.dueDate+'</span>';
+    dueHtml = '<span class="due'+(overdue?' overdue':'')+'" title="Fällig am '+escapeAttr(t.dueDate)+'">'+svgIcon('cal')+escapeHtml(friendlyDueLabel(t.dueDate))+'</span>';
   }
+  var staleDays = (!running && !t.completedAt && !t.archived && t.updatedAt) ? Math.floor((Date.now() - new Date(t.updatedAt).getTime()) / 86400000) : 0;
+  var staleHtml = staleDays >= STALE_TASK_DAYS ? '<span class="stale-badge" title="Seit '+staleDays+' Tagen nicht mehr bearbeitet">'+svgIcon('moon')+staleDays+' T.</span>' : '';
 
   var budgetHtml = '';
   if(t.estimatedMinutes){
@@ -3481,6 +3571,7 @@ function renderCard(t){
       '<span class="time-badge'+(running?' running':'')+(myOpenBooking(t)?' booking':'')+'" data-time-for="'+t.id+'" title="'+(myOpenBooking(t) ? 'Aktuelle Buchung · Gesamt '+fmtHM(tsec) : 'Gesamtzeit')+'">'+svgIcon('clock')+'<span class="tv">'+fmtHMS(displaySeconds(t))+'</span></span>' +
       (t.comments && t.comments.length ? '<span class="cm-badge" title="Kommentare">💬 '+t.comments.length+'</span>' : '') +
       dueHtml +
+      staleHtml +
       (!showArchive ? '<button class="timer-toggle'+(running?' running':'')+'" data-action="toggle-timer" data-task-id="'+t.id+'" title="'+(running?'Pause':'Start')+'" aria-label="'+(running?'Pause':'Start')+'">'+svgIcon(running?'pause':'play')+'</button>' : '') +
     '</div>';
 
@@ -6614,11 +6705,13 @@ function renderStatsView(range){
       '<div class="dash-head"><div><h1>Statistik</h1>' +
         '<p>'+label+' · Total <strong style="color:var(--text);">'+fmtHM(grand)+'</strong> · '+completedCount+' erledigt' +
           (state.settings.hourlyRate ? ' · <strong style="color:var(--text);">'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong> erarbeitet' : '') + '</p></div>' +
-        '<div class="seg" role="group" aria-label="Zeitraum">' +
+        '<div class="dash-actions"><div class="seg" role="group" aria-label="Zeitraum">' +
           '<button class="seg-btn'+(range==='today'?' on':'')+'" data-range="today">Heute</button>' +
           '<button class="seg-btn'+(range==='week'?' on':'')+'" data-range="week">Diese Woche</button>' +
           '<button class="seg-btn'+(range==='month'?' on':'')+'" data-range="month">Dieser Monat</button>' +
-        '</div></div>' +
+        '</div>' +
+        '<button class="btn" id="btnStatsCsv" title="Alle erfassten Zeiten dieses Zeitraums als Tabelle für Excel herunterladen">'+svgIcon('save')+'<span class="lbl">CSV für Excel</span></button>' +
+      '</div></div>' +
       (targetHtml ? '<section class="dcard" style="margin-bottom:14px;">'+targetHtml+'</section>' : '') +
       '<div class="dash-grid">' +
         pcard('Zeitverteilung', donutHtml + rows) +
@@ -6633,6 +6726,47 @@ function renderStatsView(range){
   board.querySelectorAll('[data-range]').forEach(function(btn){
     btn.addEventListener('click', function(){ renderStatsView(btn.dataset.range); });
   });
+  document.getElementById('btnStatsCsv').addEventListener('click', function(){ exportTimeCsv(range, startMs, endMs); });
+}
+
+/* Erfasste Zeiten (eigene Sitzungen) eines Zeitraums als CSV für Excel:
+   Semikolon, UTF-8 mit BOM, eine Zeile pro Sitzung. */
+function csvCell(v){
+  var str = String(v == null ? '' : v);
+  if(/^[=+\-@\t\r]/.test(str)) str = "'" + str; /* keine Formeln in Excel ausführen */
+  return /[";\r\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+}
+function exportTimeCsv(range, startMs, endMs){
+  function two(n){ return (n < 10 ? '0' : '') + n; }
+  function hm(d){ return two(d.getHours()) + ':' + two(d.getMinutes()); }
+  var rows = [];
+  state.tasks.forEach(function(t){
+    t.timeSessions.forEach(function(s){
+      if(!isMySession(s)) return;
+      var a = Math.max(new Date(s.start).getTime(), startMs);
+      var b = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), endMs);
+      if(!(b > a)) return;
+      var booking = s.bk && t.bookings ? t.bookings.find(function(x){ return x.id === s.bk; }) : null;
+      var sec = Math.round((b - a) / 1000);
+      rows.push({a:a, cells:[
+        toDateInputValue(new Date(a)), hm(new Date(a)), s.end ? hm(new Date(b)) : 'läuft', fmtHM(sec),
+        (sec / 3600).toFixed(2).replace('.', ','), t.title, t.jiraKey || '', (TYPES[t.type] || TYPES.adhoc).label,
+        projectNameOf(t) || '', t.reporter || '', booking && booking.comment ? booking.comment : ''
+      ]});
+    });
+  });
+  if(!rows.length){ toast('Keine erfasste Zeit in diesem Zeitraum.'); return; }
+  rows.sort(function(x, y){ return x.a - y.a; });
+  var header = ['Datum','Start','Ende','Dauer','Stunden','Task','Ticket','Typ','Projekt','Reporter','Kommentar'];
+  var csv = '\ufeff' + [header].concat(rows.map(function(r){ return r.cells; }))
+    .map(function(cells){ return cells.map(csvCell).join(';'); }).join('\r\n') + '\r\n';
+  var name = 'zeiten-' + (range === 'today' ? toDateInputValue(new Date()) : range === 'month' ? toDateInputValue(new Date()).slice(0, 7) : 'woche-' + toDateInputValue(new Date(startMs))) + '.csv';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  toast(rows.length + ' Zeiteinträge exportiert (' + name + ').');
 }
 
 /* =========================================================

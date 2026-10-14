@@ -24,6 +24,20 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-14 (Fortsetzung): Praktische Erweiterungen (Branch `claude/praktische-erweiterungen-vsank6`)
+
+Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimierungen). Umgesetzt, ohne das gespeicherte Datenformat zu ändern:
+- **Kopfzeile** (CSS-Block nach `.menu`-Regeln): ab 1240 px einzeilig (`flex-wrap:nowrap`, Suche/Filter/Timer-Titel schrumpfen), 681–1239 px zweizeilig
+  (`.tb-secondary` mit den Filtern als zweite Zeile). Timer-Knöpfe bis 1500 px nur als Symbol, `#tbPip` bis 1400 px ausgeblendet (Control-Center-Knopf daneben).
+  Verträgt sich mit PR #2 (ohne Konflikt zusammengeführt und geprüft).
+- **Spalten einklappen:** Knopf im Spaltenkopf (`data-action="col-collapse"`), eingeklappt = schmaler Streifen mit Name und Anzahl, Drag & Drop darauf geht
+  (`wireColumnDrop`). Pro Gerät in localStorage `wb-collapsed-cols`, nicht im Board-Zustand und nicht synchronisiert.
+- **CSV-Export** in der Statistik (`exportTimeCsv`, `csvCell`): eigene Sitzungen des Zeitraums, auf den Zeitraum gekürzt, Semikolon + BOM für Excel,
+  Buchungskommentar, Schutz vor Formel-Injektion.
+- **Karten:** Fälligkeit als "Heute/Morgen/Gestern/Mo 20.10." (`friendlyDueLabel`, ISO-Datum im Tooltip); Hinweis "💤 N T." bei offenen Tasks ohne Änderung seit
+  `STALE_TASK_DAYS` (7) Tagen (`updatedAt`).
+- Getestet mit Playwright und Supabase-Mock (Breiten 400–1920 px, hell/dunkel, Drop auf eingeklappte Spalte, Neuladen, defekter localStorage-Wert, CSV-Inhalt).
+
 ## ✅ Stand 2026-10-14 (Fortsetzung): Timer-Anzeige nach Buchungen (PR #2, Entwurf)
 
 Der Knopf "Abschliessen" machte die Timer-Pille in der Kopfzeile breiter als ihre Maximalbreite
