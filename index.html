@@ -901,7 +901,13 @@ button.mobile-only{display:none;}
 .pl-block:hover .pl-block-tools{display:flex;}
 .pl-block-tools button{border:0; background:var(--surface); border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; color:var(--text);}
 .pl-rs{position:absolute; left:0; right:0; bottom:0; height:7px; cursor:ns-resize;}
-.pl-log{position:absolute; right:2px; width:6px; border-radius:3px; background:var(--ok); opacity:.75; cursor:pointer; z-index:1;}
+.pl-log{position:absolute; border-radius:4px; background:var(--ok-bg, var(--surface-2)); border-left:3px solid var(--ok); padding:1px 4px; overflow:hidden; font-size:10.5px; line-height:1.2; cursor:pointer; z-index:1; user-select:none; touch-action:none;}
+.pl-log.movable{cursor:grab;}
+.pl-log.movable:hover{box-shadow:var(--shadow);}
+.pl-log.open{border-left-style:dashed;}
+.pl-log.dragging{z-index:10; box-shadow:var(--shadow-lg); cursor:grabbing; opacity:.95;}
+.pl-log-time{color:var(--text-dim); font-variant-numeric:tabular-nums; white-space:nowrap;}
+.pl-log-title{font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .pl-now{position:absolute; left:0; right:0; height:2px; background:var(--danger); z-index:6; pointer-events:none;}
 .pl-now::before{content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--danger);}
 .pl-drop{position:absolute; left:0; right:0; height:0; border-top:2px dashed var(--accent); z-index:7; pointer-events:none;}
@@ -10565,10 +10571,11 @@ function plLoggedOnDay(ds){
   state.tasks.forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
-      var a = Math.max(new Date(s.start).getTime(), dayStart);
-      var b = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), dayEnd);
+      var sa = new Date(s.start).getTime(), sb = s.end ? new Date(s.end).getTime() : Date.now();
+      var a = Math.max(sa, dayStart), b = Math.min(sb, dayEnd);
       if(b <= a) return;
-      out.push({task: t, start: (a - dayStart) / 60000, end: (b - dayStart) / 60000, open: !s.end});
+      /* movable: abgeschlossen und ganz an diesem Tag, nur dann im Planer verschiebbar */
+      out.push({task: t, sess: s, start: (a - dayStart) / 60000, end: (b - dayStart) / 60000, open: !s.end, movable: !!s.end && sa >= dayStart && sb <= dayEnd});
     });
   });
   return out;
@@ -10654,15 +10661,18 @@ function renderPlannerView(){
   }).join('');
 
   var colsHtml = dayData.map(function(dd){
+    /* Plan links, gebuchte Zeit (Ist) rechts daneben, wenn es an diesem Tag welche gibt */
+    var planShare = !dd.logged.length ? 100 : (dd.items.length ? PL_PLAN_SHARE : 0);
+    plLanes(dd.logged);
     var blocks = dd.items.map(function(it){
       var t = it.task;
       var top = (it.start - axS) / 60 * PL_HPX;
       var height = Math.max(18, (it.end - it.start) / 60 * PL_HPX - 2);
-      var w = 100 / it.lanes;
+      var w = planShare / it.lanes;
       var tyc = BASE_TYPES[t.type] ? t.type : 'adhoc';
       var p = projectOf(t);
       return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + '" data-task="' + t.id + '" ' +
-        'style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (it.lane * w).toFixed(2) + '% + 2px); width:calc(' + w.toFixed(2) + '% - 12px);">' +
+        'style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (it.lane * w).toFixed(2) + '% + 2px); width:calc(' + w.toFixed(2) + '% - ' + (planShare < 100 ? 4 : 12) + 'px);">' +
         '<div class="pl-block-time">' + plMinToTime(it.start) + '–' + plMinToTime(it.end) + (p ? ' <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 0 0 4px;"></i>' : '') + '</div>' +
         '<div class="pl-block-title">' + escapeHtml(t.title) + '</div>' +
         '<div class="pl-block-tools"><button data-pl-play="' + t.id + '" title="Timer ' + (isRunning(t) ? 'stoppen' : 'starten') + '">' + (isRunning(t) ? '⏸' : '▶') + '</button><button data-pl-x="' + t.id + '" title="Planung aufheben">✕</button></div>' +
@@ -10670,8 +10680,15 @@ function renderPlannerView(){
     }).join('');
     var logs = dd.logged.map(function(l){
       var top = (l.start - axS) / 60 * PL_HPX;
-      var height = Math.max(3, (l.end - l.start) / 60 * PL_HPX);
-      return '<div class="pl-log' + (l.open ? ' open' : '') + '" data-open-task="' + l.task.id + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht: ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
+      var height = Math.max(l.movable ? 14 : 3, (l.end - l.start) / 60 * PL_HPX - 1);
+      var lw = (100 - planShare) / (l.lanes || 1);
+      var tyc = BASE_TYPES[l.task.type] ? l.task.type : 'adhoc';
+      var label = plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end));
+      return '<div class="pl-log ty-' + tyc + (l.open ? ' open' : '') + (l.movable ? ' movable' : '') + '"' + (l.movable ? ' data-log-task="' + l.task.id + '" data-log-start="' + escapeAttr(l.sess.start) + '"' : ' data-open-task="' + l.task.id + '"') +
+        ' style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (planShare + (l.lane || 0) * lw).toFixed(2) + '% + 1px); width:calc(' + lw.toFixed(2) + '% - 3px);"' +
+        ' title="Gebucht: ' + escapeAttr(l.task.title) + ' ' + label + (l.movable ? ' – ziehen zum Verschieben, unten ziehen für die Länge' : '') + '">' +
+        (height >= 26 ? '<div class="pl-log-time">' + label + '</div>' : '') + '<div class="pl-log-title">' + escapeHtml(l.task.title) + '</div>' +
+        (l.movable ? '<div class="pl-rs" title="Länge ändern"></div>' : '') + '</div>';
     }).join('');
     var nowLine = '';
     if(dd.ds === todayStr){
@@ -10687,7 +10704,7 @@ function renderPlannerView(){
       '<aside class="pl-side"><div class="pl-side-head"><b>Nicht geplant</b><span class="count">' + unsched.length + '</span></div>' +
         '<input id="plSearch" type="search" placeholder="Task suchen…" value="' + escapeAttr(plannerSearch) + '">' +
         '<div class="pl-list" id="plList">' + (unsched.map(plItemHtml).join('') || '<div class="empty-state">Alles geplant.</div>') + '</div>' +
-        '<div class="hint" style="margin:6px 4px 0;">Task auf den Kalender ziehen. Doppelklick auf eine freie Stelle legt einen neuen Block an.</div></aside>' +
+        '<div class="hint" style="margin:6px 4px 0;">Task auf den Kalender ziehen. Doppelklick auf eine freie Stelle legt einen neuen Block an. Gebuchte Zeit (grün) lässt sich ebenfalls verschieben, unten ziehen ändert die Länge.</div></aside>' +
       '<section class="pl-main">' +
         '<div class="pl-toolbar">' +
           '<div class="pl-nav"><button class="btn icon-btn" id="plPrev" title="Vorherige Woche" aria-label="Vorherige Woche">‹</button>' +
@@ -10739,6 +10756,94 @@ function plAxisStartFromDom(){
   return first ? parseInt(first.textContent, 10) * 60 : plAxis().s * 60;
 }
 function plSnap(min){ return Math.round(min / 15) * 15; }
+var PL_PLAN_SHARE = 62; /* Breite (%) der geplanten Blöcke an Tagen mit gebuchter Zeit; diese steht rechts daneben */
+/* Gebuchte Zeit (eine abgeschlossene Sitzung) im Planer verschieben oder in der Länge ändern.
+   Der Abgleich zwischen Geräten erkennt Sitzungen an ihrem Start (unionBy in mergeTask). Ändert sich
+   der Start, bleibt die alte Sitzung darum als 0-Sekunden-Eintrag stehen und eine neue kommt dazu;
+   so taucht die alte Zeit bei einem gleichzeitigen Abgleich nicht wieder auf. */
+function plMoveSession(taskId, oldStartIso, newStartMs, newEndMs){
+  var t = getTask(taskId);
+  var s = t && t.timeSessions.find(function(x){ return x.start === oldStartIso && x.end && isMySession(x); });
+  if(!s || !(newEndMs > newStartMs)) return false;
+  var clash = t.timeSessions.some(function(x){
+    if(x === s || !isMySession(x)) return false;
+    var a = new Date(x.start).getTime(), b = x.end ? new Date(x.end).getTime() : Date.now();
+    return b > a && a < newEndMs && b > newStartMs;
+  });
+  if(clash){ toast('Dort ist für diesen Task schon Zeit gebucht.'); return false; }
+  if(newEndMs > Date.now() + 60000){ toast('Gebuchte Zeit kann nicht in der Zukunft liegen.'); return false; }
+  pushUndoSnapshot();
+  var oldA = new Date(s.start).getTime(), oldB = new Date(s.end).getTime();
+  var newStartIso = new Date(newStartMs).toISOString();
+  if(newStartIso === s.start){
+    s.end = new Date(newEndMs).toISOString();
+  } else {
+    var moved = {start: newStartIso, end: new Date(newEndMs).toISOString()};
+    ['bk', 'by', 'manual'].forEach(function(k){ if(s[k] !== undefined) moved[k] = s[k]; });
+    s.end = s.start;
+    t.timeSessions.push(moved);
+    t.timeSessions.sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  }
+  /* Beginn (und bei nachgetragenen Buchungen das Ende) der Buchung nachführen */
+  var b = s.bk && (t.bookings || []).find(function(x){ return x.id === s.bk; });
+  if(b){
+    var parts = bookingSessions(t, b).filter(function(x){ return !x.end || x.end !== x.start; });
+    if(parts.length){
+      b.start = parts.reduce(function(m, x){ return x.start < m ? x.start : m; }, parts[0].start);
+      if(b.manual && b.closedAt) b.closedAt = parts.reduce(function(m, x){ return x.end > m ? x.end : m; }, parts[0].end);
+    }
+  }
+  logActivity(t, 'Buchung verschoben: ' + fmtClock(oldA) + '–' + fmtClock(oldB) + ' → ' + new Date(newStartMs).toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit'}) + ' ' + fmtClock(newStartMs) + '–' + fmtClock(newEndMs));
+  t.updatedAt = nowIso();
+  save();
+  return true;
+}
+function plStartLogDrag(e, el, axS){
+  if(e.button !== 0) return;
+  var t = getTask(el.dataset.logTask);
+  var s = t && t.timeSessions.find(function(x){ return x.start === el.dataset.logStart; });
+  if(!s || !s.end) return;
+  var resizing = !!e.target.closest('.pl-rs');
+  var startX = e.clientX, startY = e.clientY, moved = false;
+  var a0 = new Date(s.start), dur = (new Date(s.end) - a0) / 60000;
+  var startMin0 = plDayMinutes(a0) + a0.getSeconds() / 60;
+  var target = {ds: el.closest('.pl-col').dataset.date, start: startMin0, dur: dur};
+  var lbl = el.querySelector('.pl-log-time');
+  function onMove(ev){
+    if(!moved && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 5) return;
+    if(!moved){ moved = true; el.classList.add('dragging'); }
+    ev.preventDefault();
+    if(resizing){
+      var endMin = Math.max(target.start + 5, plSnap(startMin0 + dur + (ev.clientY - startY) / PL_HPX * 60));
+      target.dur = Math.min(1440 - target.start, endMin - target.start);
+    } else {
+      var col = plColAt(ev.clientX) || el.parentNode;
+      var min = plSnap(startMin0 + (ev.clientY - startY) / PL_HPX * 60);
+      min = Math.max(0, Math.min(1440 - dur, min));
+      if(col !== el.parentNode) col.appendChild(el);
+      target.ds = col.dataset.date; target.start = min;
+    }
+    el.style.top = ((target.start - axS) / 60 * PL_HPX) + 'px';
+    el.style.height = Math.max(14, target.dur / 60 * PL_HPX - 1) + 'px';
+    el.title = plMinToTime(target.start) + '–' + plMinToTime(target.start + target.dur);
+    if(lbl) lbl.textContent = el.title;
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    if(!moved){ if(!resizing) openTaskModal(t.id); return; }
+    var dayStart = new Date(target.ds + 'T00:00:00').getTime();
+    var a = resizing ? a0.getTime() : dayStart + Math.round(target.start * 60000);
+    var b = resizing ? dayStart + Math.round((target.start + target.dur) * 60000) : a + Math.round(target.dur * 60000);
+    if(plMoveSession(t.id, s.start, a, b)) toast('Buchung verschoben: ' + fmtClock(a) + '–' + fmtClock(b) + '. Strg+Z macht es rückgängig.');
+    renderAll();
+  }
+  document.addEventListener('pointermove', onMove, {passive: false});
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+  e.preventDefault();
+}
 function plSchedule(taskId, ds, startMin, duration){
   var d = new Date(ds + 'T00:00:00');
   d.setMinutes(Math.max(0, Math.min(1440 - 15, startMin)));
@@ -10804,6 +10909,9 @@ function wirePlanner(board){
   });
   board.querySelectorAll('.pl-block').forEach(function(blk){
     blk.addEventListener('pointerdown', function(e){ plStartDrag(e, blk, axS); });
+  });
+  board.querySelectorAll('.pl-log.movable').forEach(function(el){
+    el.addEventListener('pointerdown', function(e){ plStartLogDrag(e, el, axS); });
   });
 }
 function wirePlannerItems(){
