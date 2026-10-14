@@ -154,7 +154,7 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 /* laufender Timer als Pille in der Kopfzeile */
 #timerBanner{
   display:none; align-items:center; gap:9px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
-  padding:3px 4px 3px 12px; background:var(--surface); font-variant-numeric:tabular-nums; max-width:380px;
+  padding:3px 4px 3px 12px; background:var(--surface); font-variant-numeric:tabular-nums;
 }
 #timerBanner.active{display:flex;}
 #timerBanner .tb-dot{width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; animation:pulse 1.6s infinite;}
@@ -193,11 +193,12 @@ button.btn.primary svg.i{color:inherit;}
   .tb-search{flex:0 1 220px; min-width:120px;}
   #topbar select{flex:0 .2 auto; min-width:84px; max-width:150px; text-overflow:ellipsis;}
   #topbar .spacer{min-width:0;}
-  #timerBanner{flex:0 1 auto; min-width:0;}
+  #timerBanner{flex:0 1 auto;}
   #timerBanner .tb-title{flex:0 1 auto; min-width:32px;}
   #timerBanner > :not(.tb-title){flex-shrink:0;}
 }
-@media (min-width:681px) and (max-width:1500px){ #timerBanner .btn .lbl{display:none;} }
+@media (min-width:681px) and (max-width:1699px){ #timerBanner .btn .lbl{display:none;} }
+@media (min-width:1240px) and (max-width:1399px){ #timerBanner .tb-title{max-width:80px;} }
 /* Das schwebende Timer-Fenster bleibt über den Control-Center-Knopf daneben erreichbar. */
 @media (min-width:681px) and (max-width:1400px){ #tbPip{display:none;} }
 @media (min-width:1240px){ #topbar{flex-wrap:nowrap;} }
