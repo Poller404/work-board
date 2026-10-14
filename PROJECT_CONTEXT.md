@@ -4,6 +4,15 @@
 > vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
 > Hintergrundwissen.
 
+## ✅ Stand 2026-10-14: Buchungen in der Zeiterfassung
+
+Nutzer wollte statt eines endlos hochzählenden Timers pro Task getrennte Buchungen mit "Fortsetzen" oder "Abschliessen".
+Optionales Task-Feld `bookings` (`{id, start, closedAt, by?}`), Sitzungen tragen `bk` (Buchungs-ID); alte Sitzungen ohne `bk` erscheinen als "Frühere Zeit".
+`startTimer` setzt die offene eigene Buchung fort (`myOpenBooking`) oder legt eine neue an (`newBooking`); stammt die offene Buchung von einem früheren Tag,
+erscheint ein Toast mit "Neue Buchung" (`restartAsNewBooking`). `stopTimer` = Pause (Buchung bleibt offen), `finishBooking` schliesst ab; `updateTask` schliesst beim
+Erledigen ab. Anzeige: `currentBookingSeconds`/`displaySeconds` (Banner, Karte, Control-Center, Task-Fenster mit Buchungsliste); `totalSeconds` bleibt für Auswertungen.
+`mergeTask` vereinigt `bookings` nach ID (abgeschlossen gewinnt). Getestet im Browser ohne Supabase (Start/Pause/Fortsetzen/Abschliessen, Vortag, Merge, Handy-Breite).
+
 ## ✅ Stand 2026-10-08: Gemini als zweiter KI-Anbieter
 
 `aiProvider` ('anthropic'|'gemini') in den Einstellungen, Keys getrennt in localStorage (`wb-ai-key`, `wb-gemini-key`). `callAIRaw`/`callAIMessages` verzweigen;
