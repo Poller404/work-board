@@ -1,10 +1,37 @@
 # Projekt-Kontext: Work Board (Kanban & Zeiterfassung)
 
-> Diese Datei ist der Übergabe-Kontext für eine neue Claude-Instanz (Kontextfenster der
-> vorherigen Session wurde voll). Bitte zuerst diesen Abschnitt lesen, dann den Rest als
-> Hintergrundwissen.
+> Diese Datei ist der Übergabe-Kontext für eine neue Claude-Instanz. Bitte zuerst den Abschnitt
+> "Aktueller Stand" lesen, danach die datierten Einträge (neueste oben) als Hintergrundwissen.
+> Einträge vor Oktober 2026 beschreiben teilweise die alte Gist-Architektur und sind historisch.
 
-## ✅ Stand 2026-10-14: Buchungen in der Zeiterfassung
+## 📌 Aktueller Stand (2026-10-14)
+
+- **Repo:** https://github.com/Poller404/work-board, Standard-Branch `main`, live über GitHub Pages
+  unter `https://poller404.github.io/work-board/`.
+- **Arbeitsweise:** Claude arbeitet in Cloud-Sessions (frischer Klon des Repos, kein lokaler Pfad
+  beim Nutzer). Änderungen laufen über einen Feature-Branch `claude/...` und einen Pull Request,
+  den der Nutzer merged. Nicht mehr direkt auf `main` pushen.
+- **Speicher:** Supabase ist der einzige Cloud-Speicher (Login Pflicht, Board-Daten pro Person
+  Ende-zu-Ende-verschlüsselt, geteilte Boards mit eigenem Board-Schlüssel). Gist-Sync,
+  Read-only-Link und Dateianbindung sind entfernt.
+- **Pull Requests:**
+  - **#1** "Zeiterfassung mit Buchungen: Fortsetzen oder Abschliessen statt Endlos-Timer",
+    am 2026-10-14 in `main` gemerged (Merge-Commit `10f6d66`).
+  - **#2** "Timer-Anzeige: Knöpfe ragen nicht mehr über die Anzeige hinaus", offen als Entwurf
+    (Branch `claude/friendly-pascal-84i3h6`). Behebt die Überlappung, die der neue Knopf
+    "Abschliessen" aus #1 in der Timer-Anzeige verursacht hat.
+- **Offen / nicht getestet:** Buchungs-Abgleich, geteilte Boards und Gemini jeweils nur mit
+  Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
+  Gemini-Key.
+
+## ✅ Stand 2026-10-14 (Fortsetzung): Timer-Anzeige nach Buchungen (PR #2, Entwurf)
+
+Der Knopf "Abschliessen" machte die Timer-Pille in der Kopfzeile breiter als ihre Maximalbreite
+(380 px); die Knöpfe ragten 47 px hinaus und überdeckten den Control-Center-Knopf. Fix: Maximalbreite
+480 px, bei 681–1280 px zeigen "Pause"/"Abschliessen" nur das Symbol (Tooltip bleibt), gekürzt wird
+nur der Task-Titel. Mit Playwright von 700 bis 1920 px geprüft, Handy-Ansicht unverändert.
+
+## ✅ Stand 2026-10-14: Buchungen in der Zeiterfassung (PR #1, gemerged)
 
 Nutzer wollte statt eines endlos hochzählenden Timers pro Task getrennte Buchungen mit "Fortsetzen" oder "Abschliessen".
 Optionales Task-Feld `bookings` (`{id, start, closedAt, by?}`), Sitzungen tragen `bk` (Buchungs-ID); alte Sitzungen ohne `bk` erscheinen als "Frühere Zeit".
@@ -411,7 +438,9 @@ README.md wurde für alle sechs Features synchron aktualisiert (Commit `26b0a9e`
 **Offen für die nächste Session:** Nutzer-Bestätigung, ob das schwebende Timer-Fenster auf dem
 echten Gerät (Chrome/Edge) tatsächlich öffnet.
 
-## ✅ ROOT CAUSE GEFUNDEN UND BEHOBEN (Stand 2026-08-26, Commit `f726caa`)
+## ✅ ROOT CAUSE GEFUNDEN UND BEHOBEN (Stand 2026-08-26, Commit `f726caa`, historisch)
+
+> Historisch: betrifft den alten Gist-Sync und den Willkommens-Dialog, beides seit Oktober 2026 entfernt.
 
 Der Nutzer hat nach den vier Cache/Sync-Fixes vom 2026-08-25 einen Screenshot geschickt: der
 Willkommens-Dialog erschien weiterhin bei jedem Laden, obwohl Cloud-Sync laut Dialog-Text selbst
@@ -442,7 +471,11 @@ echter Cloud-Daten (`a1828df`), HTTP-Cache-Bypass via `{cache:'no-store'}` (`e24
 Nutzer nach dem neuen Fix immer noch Probleme meldet: die Debugging-Schritte unten weiter
 abarbeiten.
 
-## 🔴 URSPRÜNGLICHES PROBLEM (Beschreibung, für Kontext)
+## 🗄️ URSPRÜNGLICHES PROBLEM (August 2026, historisch)
+
+> Erledigt: Die unten beschriebene Push-vor-Pull-Gefahr gibt es nicht mehr. Seit 2026-10-07 gleicht
+> `personalSync()` pro Task in drei Wegen ab; ein frisches Gerät ohne Basis übernimmt den Cloud-Stand (siehe Eintrag "Sicherheitsprüfung
+> und Abgleich-Fix"). Gist, "Mit bestehendem Speicher verbinden" und der Willkommens-Dialog sind entfernt.
 
 Der Nutzer meldet: Beim Öffnen der App (auf `https://poller404.github.io/work-board/`, seinem
 echten Firmengerät) erscheint **immer wieder der Willkommens-Dialog**, obwohl unter
@@ -499,83 +532,62 @@ Hotline-Support-Anrufen, Meetings, rapportiert Zeit über Dyce). Zentrale Randbe
 sitzt auf einem gesperrten **Firmen-Arbeitsgerät** (keine Admin-Rechte, kein Server, keine
 Installationen möglich) – das hat die gesamte Architektur geprägt.
 
-**Architektur:** Eine einzige self-contained `index.html` (Vanilla JS, kein Framework, keine
-externen Libraries/CDN, kein Build-Schritt) plus `manifest.json` (PWA) und `sw.js` (Service
-Worker). Aktuell **ca. 6000+ Zeilen** (stark gewachsen durch eine 30-Feature-Batch-Runde am
-2026-08-25).
+**Architektur:** Eine einzige `index.html` (Vanilla JS, kein Framework, kein Build-Schritt,
+ca. 12'900 Zeilen) plus `manifest.json` (PWA) und `sw.js` (Service Worker). Einzige externe
+Bibliothek ist `@supabase/supabase-js` 2.117.3 von jsDelivr (mit SRI), dazu die Schrift Instrument
+Sans von Google Fonts.
 
-## Dateispeicherorte
+## Dateien im Repo
 
-- `C:\Git\kanban-time-tracker\index.html` – die App (Hauptdatei)
-- `C:\Git\kanban-time-tracker\manifest.json` – PWA-Manifest
-- `C:\Git\kanban-time-tracker\sw.js` – Service Worker (**Network-first seit heute**, Cache nur
-  Offline-Fallback, `CACHE_NAME = 'work-board-v2'`)
-- `C:\Git\kanban-time-tracker\README.md` – vollständige Nutzer-Doku, wird bei jedem Feature
+- `index.html` – die App (Hauptdatei)
+- `manifest.json` – PWA-Manifest
+- `sw.js` – Service Worker (Network-first, `CACHE_NAME = 'work-board-v3'`, cached nur eigene
+  Dateien, jsDelivr und Google Fonts, nie API-Antworten)
+- `README.md` – vollständige Nutzer-Doku inkl. einmaligem Supabase-SQL, wird bei jedem Feature
   synchron gehalten
-- `C:\Git\kanban-time-tracker\PROJECT_CONTEXT.md` – diese Datei
-- `C:\Git\kanban-time-tracker\.git\` – lokales Git-Repo (Branch `main`), **Remote `origin`
-  konfiguriert und aktiv genutzt** (siehe Deployment – das hat sich seit der letzten
-  Zusammenfassung geändert!)
+- `supabase-aufraeumen.sql` – einmalige Bereinigung/Absicherung des Supabase-Projekts (08.10.2026,
+  am Projekt angewendet)
+- `PROJECT_CONTEXT.md` – diese Datei
+- `board.png`, `modal.png`, `modal-finished.png` – Screenshots
+
+Der frühere lokale Pfad `C:\Git\kanban-time-tracker` beim Nutzer ist nicht mehr massgeblich;
+gearbeitet wird direkt im GitHub-Repo.
 
 ## Deployment
 
-Live auf **GitHub Pages**, Repo: **https://github.com/Poller404/work-board**, URL vermutlich
-`https://poller404.github.io/work-board/`. Seit 2026-08-24 hat der Nutzer lokale
-Git-Zugangsdaten eingerichtet – **Claude pusht direkt per `git push origin main`**, kein
-manueller Upload mehr nötig. Nutzer hat das explizit so gewünscht ("wäre super wenn du die
-neuen Files automatisch pushen könntest").
+Live auf **GitHub Pages** aus `main`: `https://poller404.github.io/work-board/` (Repo
+https://github.com/Poller404/work-board). Seit Oktober 2026 gehen Änderungen als Pull Request von
+einem `claude/...`-Branch an `main`; der Nutzer merged selbst (z. B. PR #1). Nach dem Merge kann
+GitHub Pages einige Minuten brauchen, bis der neue Stand ausgeliefert wird.
 
-**Push-Historie der heutigen Session (2026-08-25, chronologisch):**
-1. Cloud-Sync-UX-Überarbeitung, QR-Geräte-Kopplung, Mobile-Redesign, Zeit-erfassen-Button
-2. Timer-Unterbrechung/Fortsetzen, Dyce-Rundung, Soll-/Ist-Vergleich, Zeitverteilungs-Chart
-3. Undo, Kompaktansicht, WIP-Limits, Spalten-Icons/-Farben
-4. Pomodoro, Journal, Erinnerungen, Morgen-Ritual
-5. Tages-Vorlagen, Jira-Bookmarklets (Status/Bulk), Wissensdatenbank, SLA-Dashboard,
-   Schichtübergabe, PDF-Export, iOS-Kurzbefehle, Read-only-Teilen-Link
-6. Dashboard-Widget-Ansicht (nachträglich ergänzt, war in der 30er-Liste übersehen worden)
-7. Visuelle Design-Politur (Farben/Schatten/Transitions/Animationen, keine Funktionsänderung)
-8. Service-Worker Network-first-Fix
-9. Cloud-Pull-Autoload-Fix bei leerem lokalem Board
+**Historisch (August 2026):** Damals pushte Claude aus dem lokalen Klon direkt per
+`git push origin main`. Beim allerersten Push wurde die unabhängige Upload-Historie ("Add files via
+upload") nach Rückfrage per `--force-with-lease` ersetzt. Später tauchten mehrfach leere
+"Add files via upload"-Commits auf (Ursache ungeklärt, kein Datenverlust).
 
-**Einmaliger Sonderfall beim allerersten Push:** Lokale Git-Historie und die bereits auf GitHub
-liegende Historie (alte manuelle Uploads, "Add files via upload") waren komplett unrelated →
-nach Prüfung, dass der lokale Stand inhaltlich alles abdeckt, mit `git push --force-with-lease`
-bereinigt (Nutzer hat das nach Rückfrage explizit gewählt). Seither normale Fast-Forward-Pushes.
+## Datenspeicher-Architektur (Stand Oktober 2026)
 
-## Datenspeicher-Architektur (mehrschichtig)
+1. **Supabase** (Pflicht-Login): persönliches Board als Chiffretext in `boards`, Tages-Snapshots in
+   `board_snapshots`, geteilte Boards mit eigenem Board-Schlüssel pro Mitglied (ECDH P-256).
+   Verschlüsselung AES-256-GCM, Schlüssel per PBKDF2 (600'000 Durchläufe) aus einer eigenen
+   Passphrase (nicht dem Login-Passwort).
+2. **localStorage** – lokaler Arbeitsstand pro Browser/Gerät, Abgleichsbasis `wb-pb-<userId>`.
+3. **Manueller JSON-Export/Import** (💾 Sichern / 📂 Datei laden, Strg+S).
 
-1. **localStorage** – automatisch, laufend, pro Browser/Gerät (`kanban-state-backup`)
-2. **Manueller JSON-Export/Import** (💾 Sichern / 📂 Datei laden)
-3. **File System Access API** ("Direkt mit Datei verbinden") – nur über `https://`
-4. **☁️ Cloud-Sync via privatem GitHub Gist** – siehe unten, aktuell Gegenstand des offenen Bugs
+Abgleich zwischen Geräten: `personalSync()` mit Drei-Wege-Merge pro Task und bedingtem Schreiben
+(`updated_at`); Listen in den Einstellungen (Projekte, Regeln) über `mergeSyncLists`.
+Details stehen in den datierten Einträgen oben und in der README.
 
-## ☁️ Cloud-Sync – Kernfeature, Ende-zu-Ende-verschlüsselt
+## ☁️ Cloud-Sync über GitHub Gist (historisch, entfernt)
 
-- **Verschlüsselung**: AES-256-GCM via Web Crypto API, Schlüssel aus Passphrase via PBKDF2
-  (100'000 Iterationen). Alles im Browser – GitHub sieht nie Klartext.
-- **Speicherort**: privater ("secret") GitHub Gist via `api.github.com/gists`.
-- **Token-Typ**: Classic Personal Access Token, nur Scope `gist` (Fine-grained Tokens
-  unterstützen die Gist-API nicht).
-- Token/Passphrase/Gist-ID liegen in separatem localStorage-Key `wb-cloud-sync-config`, NICHT
-  in `state.settings`.
-- **Zusätzlich seit heute**: einmal täglich automatischer datierter Snapshot im selben Gist
-  (7 Tage Aufbewahrung, `cloudMaybeSnapshot()`).
-- Sync-Rhythmus: Push ~8s nach Änderung (debounced), Pull beim Start + alle 45s.
-- Konflikt-UI: `cloudChangeBanner` – **liegt im normalen Dokumentfluss und kann vom
-  volldeckenden Willkommens-Dialog verdeckt werden** (Teil des heute gefixten Bugs).
-- Zwei UI-Wege zum Verbinden: **"☁️ Neuen Speicher erstellen"** (1. Gerät) und **"🔗 Mit
-  bestehendem Speicher verbinden"** (weitere Geräte, braucht Gist-ID) – bewusst als zwei
-  getrennte Buttons statt einem mehrdeutigen, weil Nutzer sonst auf zwei Geräten versehentlich
-  zwei getrennte Speicher anlegte.
-- Geräte-Kopplung auch per **QR-Code** möglich (Kamera-Scan via `BarcodeDetector`-API oder
-  Zwischenablage-Fallback) – Passphrase wird bewusst NICHT im QR übertragen, muss manuell
-  eingegeben werden (Sicherheits-Layer).
-- Relevante Funktionen: `getCloudSyncConfig`, `setCloudSyncConfig`, `cloudEncryptState`,
-  `cloudDecryptPayload`, `cloudCreateGist`, `cloudPushNow`, `cloudPullNow`, `cloudJoinExisting`,
-  `cloudMaybeSnapshot`, `renderCloudSyncStatus`, `openCloudPairQr`, `openQrScanner`,
-  `promptPassphraseAndJoin`.
+Bis 2026-10-07 lag das verschlüsselte Board in einem privaten Gist (Classic PAT mit Scope `gist`,
+Push ~8 s nach Änderung, Pull alle 45 s, QR-Geräte-Kopplung). Alles davon wurde mit der
+Supabase-Umstellung entfernt (siehe "Aufräumen nach der Supabase-Umstellung").
 
 ## Vollständige Feature-Liste (sehr umfangreich – Kurzform)
+
+> Stand August 2026. Seither entfernt: Gist-Cloud-Sync, QR-Geräte-Kopplung, Read-only-Teilen-Link,
+> Gist-Snapshots, Dateianbindung. Neuere Funktionen stehen in den datierten Einträgen oben.
 
 **Kanban-Kern**: Spalten (Icons/Farben/WIP-Limits), DnD, Prioritäten, Checklisten,
 Abhängigkeiten, Anpinnen, Suche/Filter, Tags, Links, Archiv, Bulk-Aktionen, Kontextmenü,
@@ -660,9 +672,6 @@ Modal-/Toast-Animationen (mit `prefers-reduced-motion`-Support).
 10. Service Worker Cache-first → Network-first (siehe oben, "AKTUELL OFFENES PROBLEM")
 11. `cloudPullNow()` lud bei leerem lokalem Board nie automatisch den Cloud-Stand (siehe oben)
 
-## Aktueller Status (Stand 2026-08-25, Ende der Session)
+## Aktueller Status
 
-Alle 30 vom Nutzer gewünschten Features + Dashboard-Nachtrag + Design-Politur implementiert,
-getestet, gepusht. **Das offene Problem ganz oben in dieser Datei ist der aktive
-Arbeitsauftrag für die nächste Session** – bitte zuerst dort weitermachen, inkl. der
-identifizierten, noch ungefixten Push-vor-Pull-Gefahr bei leerem lokalem Board.
+Siehe Abschnitt "📌 Aktueller Stand" ganz oben in dieser Datei.
