@@ -154,19 +154,24 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 /* laufender Timer als Pille in der Kopfzeile */
 #timerBanner{
   display:none; align-items:center; gap:9px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
-  padding:3px 4px 3px 12px; background:var(--surface); font-variant-numeric:tabular-nums; max-width:380px;
+  padding:3px 4px 3px 12px; background:var(--surface); font-variant-numeric:tabular-nums; max-width:480px; min-width:0;
 }
 #timerBanner.active{display:flex;}
 #timerBanner .tb-dot{width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; animation:pulse 1.6s infinite;}
-#timerBanner .tb-title{min-width:70px; color:var(--text-dim); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
+#timerBanner .tb-title{min-width:40px; color:var(--text-dim); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
 #timerBanner .tb-time{font-weight:600; font-size:13.5px; color:var(--text);}
-#timerBanner button{padding:5px 9px;}
+#timerBanner button{padding:5px 9px; flex-shrink:0;}
+#timerBanner .tb-time{flex-shrink:0;}
 
 @media (max-width:1400px) and (min-width:681px){ #btnCloudSyncTopbar .lbl{display:none;} }
 @media (max-width:1500px) and (min-width:681px){
   #btnWhatNow .lbl, #btnFocus .lbl{display:none;}
   .tb-search{width:190px;}
   #timerBanner .tb-title{max-width:110px;}
+}
+/* Schmalere Desktop-Fenster: Pause/Abschliessen nur als Symbol (Tooltip bleibt). */
+@media (max-width:1280px) and (min-width:681px){
+  #timerBanner .btn .lbl{display:none;}
 }
 /* geteilter Hauptbutton und Menüs */
 .split{display:inline-flex;}
