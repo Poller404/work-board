@@ -610,7 +610,11 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .total-time-display .ttd-sum b{font-weight:600; color:var(--text);}
 .total-time-display .ttd-btns{margin-left:auto; display:flex; flex-direction:column; gap:6px;}
 .total-time-display .ttd-btns .btn, .total-time-display .ttd-btns #modalTimerBtn{margin-left:0 !important; justify-content:center;}
-.bookings-box .notes-log{max-height:180px; overflow-y:auto;}
+.bookings-box .notes-log{max-height:220px; overflow-y:auto;}
+.booking-row{flex-wrap:wrap; align-items:center;}
+.booking-row .bk-right{display:inline-flex; align-items:center; gap:4px;}
+.booking-row .bk-edit{padding:0 5px; min-width:0; min-height:0; font-size:12px; line-height:1.4;}
+.booking-row .bk-comment{flex-basis:100%; color:var(--text); font-weight:400; white-space:pre-wrap; padding:2px 0 2px 8px; border-left:2px solid var(--border-strong); margin:3px 0 2px;}
 .bookings-box .section-title{margin-top:0;}
 .prop-panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px;}
 .prop{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
@@ -1407,7 +1411,11 @@ function normalizeTask(t){
   if(!Array.isArray(t.timeSessions)) t.timeSessions = [];
   if(t.bookings !== undefined){
     t.bookings = Array.isArray(t.bookings) ? t.bookings.filter(function(b){ return b && typeof b === 'object' && typeof b.id === 'string' && SAFE_ID_RE.test(b.id) && typeof b.start === 'string'; }) : [];
-    t.bookings.forEach(function(b){ if(typeof b.closedAt !== 'string') b.closedAt = null; });
+    t.bookings.forEach(function(b){
+      if(typeof b.closedAt !== 'string') b.closedAt = null;
+      if(b.comment !== undefined && typeof b.comment !== 'string') delete b.comment;
+      if(typeof b.commentAt !== 'string') delete b.commentAt;
+    });
   }
   if(!Array.isArray(t.notes)) t.notes = [];
   if(!Array.isArray(t.links)) t.links = [];
@@ -1749,22 +1757,76 @@ function currentBookingSeconds(task){
 function displaySeconds(task){
   return myOpenBooking(task) ? currentBookingSeconds(task) : totalSeconds(task);
 }
-function finishBooking(taskId, skipRender){
+/* Schliesst die offene Buchung ab. Ohne skipRender folgt der Kommentar-Dialog ("Was wurde gemacht?");
+   onDone läuft, sobald er geschlossen ist. Gibt die abgeschlossene Buchung zurück (oder null). */
+function finishBooking(taskId, skipRender, onDone){
   var t = getTask(taskId);
-  if(!t) return;
+  if(!t) return null;
   var b = myOpenBooking(t);
   if(isRunning(t)) stopTimer(taskId, true);
-  if(!b){ if(!skipRender) renderAll(); return; }
+  if(!b){ if(!skipRender){ renderAll(); if(onDone) onDone(); } return null; }
   b.closedAt = nowIso();
   var sec = bookingSeconds(t, b);
-  if(!bookingSessions(t, b).length) t.bookings = t.bookings.filter(function(x){ return x !== b; });
+  var empty = !bookingSessions(t, b).length;
+  if(empty) t.bookings = t.bookings.filter(function(x){ return x !== b; });
   else logActivity(t, 'Buchung abgeschlossen: ' + fmtHM(sec));
   t.updatedAt = nowIso();
   save();
   if(!skipRender){
     renderAll();
-    toast('✔ Buchung abgeschlossen: ' + fmtHM(sec) + '. Der nächste Start beginnt eine neue Buchung.');
+    if(empty){ toast('Buchung ohne erfasste Zeit verworfen.'); if(onDone) onDone(); }
+    else openBookingCommentDialog(taskId, b.id, onDone);
   }
+  return empty ? null : b;
+}
+function setBookingComment(taskId, bookingId, text){
+  var t = getTask(taskId);
+  var b = t && (t.bookings || []).find(function(x){ return x.id === bookingId; });
+  if(!b) return;
+  text = String(text || '').trim().slice(0, 2000);
+  if(text === (b.comment || '')) return;
+  if(text) b.comment = text; else delete b.comment;
+  b.commentAt = nowIso();
+  t.updatedAt = nowIso();
+  save();
+}
+/* Kommentar zu einer Buchung erfassen oder ändern. */
+function openBookingCommentDialog(taskId, bookingId, onDone){
+  var t = getTask(taskId);
+  var b = t && (t.bookings || []).find(function(x){ return x.id === bookingId; });
+  if(!b){ if(onDone) onDone(); return; }
+  var editing = typeof b.comment === 'string';
+  var html =
+    '<div class="modal-header"><h2>' + (b.closedAt && !editing ? '✔ Buchung abgeschlossen' : 'Kommentar zur Buchung') + '</h2><button class="icon-btn" id="bkcClose" aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + ' · ' + new Date(b.start).toLocaleString('de-CH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' · <b>' + fmtHM(bookingSeconds(t, b)) + '</b></p>' +
+      '<label for="bkcText" class="section-title" style="display:block;">Was wurde gemacht?</label>' +
+      '<textarea id="bkcText" rows="4" style="width:100%;" placeholder="z.B. Drucker neu installiert, Treiber aktualisiert, mit Benutzer getestet">' + escapeHtml(b.comment || '') + '</textarea>' +
+      '<div class="hint">Strg+Enter speichert.</div>' +
+    '</div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn" id="bkcSkip">' + (editing ? 'Abbrechen' : 'Überspringen') + '</button>' +
+      '<button class="btn primary" id="bkcSave">Speichern</button>' +
+    '</div>';
+  openModal(html);
+  var finished = false;
+  function done(save){
+    if(finished) return;
+    finished = true;
+    if(save) setBookingComment(taskId, bookingId, document.getElementById('bkcText').value);
+    modalCloseCleanup = null;
+    closeModal();
+    renderAll();
+    if(save) toast('Kommentar gespeichert.');
+    if(onDone) onDone();
+  }
+  modalCloseCleanup = function(){ if(!finished){ finished = true; if(onDone) onDone(); } };
+  var ta = document.getElementById('bkcText');
+  ta.focus();
+  ta.addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); done(true); } });
+  document.getElementById('bkcSave').addEventListener('click', function(){ done(true); });
+  document.getElementById('bkcSkip').addEventListener('click', function(){ done(false); });
+  document.getElementById('bkcClose').addEventListener('click', function(){ done(false); });
 }
 /* Die gerade fortgesetzte Buchung abschliessen und die laufende Sitzung in eine neue verschieben. */
 function restartAsNewBooking(taskId, oldBookingId){
@@ -3676,6 +3738,17 @@ function ccBuild(root, withClose){
       host.querySelector('[name="subject"]').focus();
       return;
     }
+    if(kind === 'bookingnote'){
+      var ids = String(arg).split('|');
+      host.innerHTML =
+        '<form class="cc-form" data-cc-bookingform data-task="'+escapeAttr(ids[0])+'" data-booking="'+escapeAttr(ids[1])+'">' +
+          '<div class="cc-label">Buchung abgeschlossen – was wurde gemacht?</div>' +
+          '<textarea class="cc-field" name="comment" rows="3" placeholder="z.B. Drucker neu installiert, mit Benutzer getestet"></textarea>' +
+          '<div class="cc-add"><button class="cc-btn primary" type="submit">Speichern</button><button class="cc-btn" type="button" data-cc="skipnote">Überspringen</button></div>' +
+        '</form>';
+      host.querySelector('[name="comment"]').focus();
+      return;
+    }
     if(kind === 'hotline'){
       host.innerHTML =
         '<form class="cc-form" data-cc-hotline>' +
@@ -3708,7 +3781,15 @@ function ccBuild(root, withClose){
     } else if(el.dataset.cc === 'main'){ window.focus(); }
     else if(el.dataset.cc === 'close'){ closeCcPanel(); }
     else if(el.dataset.cc === 'pause'){ var id = state.settings.activeTaskId; if(id) stopTimer(id); }
-    else if(el.dataset.cc === 'finish'){ var fid = state.settings.activeTaskId; if(fid){ finishBooking(fid); say('Buchung abgeschlossen.'); } }
+    else if(el.dataset.cc === 'finish'){
+      var fid = state.settings.activeTaskId;
+      if(fid){
+        var fb = finishBooking(fid, true);
+        renderAll();
+        if(fb){ q('[data-cc-formhost]').dataset.kind = ''; showForm('bookingnote', fid + '|' + fb.id); }
+        say('Buchung abgeschlossen.');
+      }
+    }
     else if(el.dataset.cc === 'done'){
       var did = state.settings.activeTaskId;
       if(did){
@@ -3719,6 +3800,7 @@ function ccBuild(root, withClose){
         say('Task erledigt.');
       }
     }
+    else if(el.dataset.cc === 'skipnote'){ clearForm(); }
     else if(el.dataset.cc === 'hotline'){ showForm('hotline'); }
     else if(el.dataset.cc === 'time'){ showForm('time'); }
     else if(el.dataset.cc === 'meeting'){
@@ -3752,6 +3834,11 @@ function ccBuild(root, withClose){
       renderAll();
       ni.value = '';
       say('Notiz gespeichert.');
+    } else if(form.hasAttribute('data-cc-bookingform')){
+      setBookingComment(form.dataset.task, form.dataset.booking, form.comment.value);
+      renderAll();
+      clearForm();
+      say('Kommentar gespeichert.');
     } else if(form.hasAttribute('data-cc-hotline')){
       createHotlineTask({reporter: form.reporter.value, issue: form.issue.value, notes: form.notes.value, start: true});
       clearForm();
@@ -4414,7 +4501,11 @@ function openTaskModal(taskId){
   var bookingRows = (t.bookings || []).slice().reverse().map(function(b){
     var parts = bookingSessions(t, b).length;
     var status = b.closedAt ? 'abgeschlossen' : (openSess && openSess.bk === b.id ? 'läuft' : 'offen');
-    return '<div class="session-row'+(!b.closedAt?' open':'')+'"><span>'+shortDate(b.start)+(b.closedAt ? ' – '+shortDate(b.closedAt) : '')+' · '+status+(parts > 1 ? ' · '+parts+' Abschnitte' : '')+(b.by && activeShared ? ' · '+escapeHtml(personName(b.by)) : '')+'</span><span>'+fmtHMS(bookingSeconds(t, b))+'</span></div>';
+    var mine = isMySession(b);
+    return '<div class="session-row booking-row'+(!b.closedAt?' open':'')+'"><span>'+shortDate(b.start)+(b.closedAt ? ' – '+shortDate(b.closedAt) : '')+' · '+status+(parts > 1 ? ' · '+parts+' Abschnitte' : '')+(b.by && activeShared ? ' · '+escapeHtml(personName(b.by)) : '')+'</span>' +
+      '<span class="bk-right">'+fmtHMS(bookingSeconds(t, b))+(b.closedAt && mine ? '<button type="button" class="icon-btn bk-edit" data-bk-comment="'+b.id+'" title="'+(b.comment ? 'Kommentar bearbeiten' : 'Kommentar hinzufügen')+'" aria-label="Kommentar">✎</button>' : '')+'</span>' +
+      (b.comment ? '<div class="bk-comment">'+escapeHtml(b.comment)+'</div>' : '') +
+    '</div>';
   });
   var legacySec = t.timeSessions.filter(function(s){ return !s.bk; }).reduce(function(sum, s){
     return sum + Math.max(0, (s.end ? new Date(s.end).getTime() : Date.now()) - new Date(s.start).getTime()) / 1000;
@@ -4716,8 +4807,14 @@ function openTaskModal(taskId){
   });
   var modalFinishBtn = document.getElementById('modalFinishBtn');
   if(modalFinishBtn) modalFinishBtn.addEventListener('click', function(){
-    finishBooking(t.id);
-    openTaskModal(t.id);
+    var tid = t.id;
+    finishBooking(tid, false, function(){ openTaskModal(tid); });
+  });
+  document.querySelectorAll('[data-bk-comment]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tid = t.id;
+      openBookingCommentDialog(tid, btn.dataset.bkComment, function(){ openTaskModal(tid); });
+    });
   });
   document.getElementById('btnExportScheduledIcs').addEventListener('click', function(){
     exportTaskIcs(getTask(t.id));
@@ -7269,7 +7366,8 @@ function mergeTask(L, R){
     (newer.bookings || []).concat(other.bookings || []).forEach(function(b){
       var i = bkSeen[b.id];
       if(i === undefined){ bkSeen[b.id] = m.bookings.length; m.bookings.push(b); }
-      else if(b.closedAt && !m.bookings[i].closedAt) m.bookings[i] = b;
+      else if(b.closedAt && !m.bookings[i].closedAt) m.bookings[i] = Object.assign({}, b, (m.bookings[i].commentAt || '') > (b.commentAt || '') ? {comment: m.bookings[i].comment, commentAt: m.bookings[i].commentAt} : {});
+      else if(!!b.closedAt === !!m.bookings[i].closedAt && (b.commentAt || '') > (m.bookings[i].commentAt || '')) m.bookings[i] = Object.assign({}, m.bookings[i], {comment: b.comment, commentAt: b.commentAt});
     });
   }
   m.notes = unionBy(newer.notes, other.notes, function(n){ return n.ts + '|' + n.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });

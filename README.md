@@ -546,6 +546,9 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
   **Abschliessen** beendet die Buchung; der nächste Start beginnt wieder bei 0. Die Knöpfe gibt es
   in der Timer-Anzeige oben, im Task-Fenster, im Control-Center und im Rechtsklick-Menü der Karte.
   Wird eine Buchung von einem früheren Tag fortgesetzt, bietet ein Hinweis "Neue Buchung" an.
+  Nach dem Abschliessen fragt ein kurzer Dialog **"Was wurde gemacht?"** (Überspringen möglich,
+  Strg+Enter speichert). Der Kommentar steht im Task-Fenster unter der Buchung und lässt sich dort
+  mit ✎ nachträglich ergänzen oder ändern; im Control-Center erscheint das Feld direkt im Fenster.
   Beim Verschieben nach "Erledigt" wird die offene Buchung automatisch abgeschlossen.
   Timer und Karte zeigen die aktuelle Buchung, die Gesamtzeit steht im Task-Fenster (und im
   Tooltip); Statistik, Tagesabschluss und Berichte rechnen wie bisher mit allen Zeiten.

@@ -11,7 +11,8 @@ Optionales Task-Feld `bookings` (`{id, start, closedAt, by?}`), Sitzungen tragen
 `startTimer` setzt die offene eigene Buchung fort (`myOpenBooking`) oder legt eine neue an (`newBooking`); stammt die offene Buchung von einem früheren Tag,
 erscheint ein Toast mit "Neue Buchung" (`restartAsNewBooking`). `stopTimer` = Pause (Buchung bleibt offen), `finishBooking` schliesst ab; `updateTask` schliesst beim
 Erledigen ab. Anzeige: `currentBookingSeconds`/`displaySeconds` (Banner, Karte, Control-Center, Task-Fenster mit Buchungsliste); `totalSeconds` bleibt für Auswertungen.
-`mergeTask` vereinigt `bookings` nach ID (abgeschlossen gewinnt). Getestet im Browser ohne Supabase (Start/Pause/Fortsetzen/Abschliessen, Vortag, Merge, Handy-Breite).
+`mergeTask` vereinigt `bookings` nach ID (abgeschlossen gewinnt, beim Kommentar das neuere `commentAt`).
+Kommentar pro Buchung (`comment`, `commentAt`): `finishBooking(taskId, skipRender, onDone)` öffnet danach `openBookingCommentDialog`, im Control-Center das Inline-Formular `bookingnote`; ✎ in der Buchungsliste bearbeitet. Getestet im Browser ohne Supabase (Start/Pause/Fortsetzen/Abschliessen, Vortag, Merge, Handy-Breite).
 
 ## ✅ Stand 2026-10-08: Gemini als zweiter KI-Anbieter
 
