@@ -36,6 +36,11 @@ Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimier
   Buchungskommentar, Schutz vor Formel-Injektion.
 - **Karten:** Fälligkeit als "Heute/Morgen/Gestern/Mo 20.10." (`friendlyDueLabel`, ISO-Datum im Tooltip); Hinweis "💤 N T." bei offenen Tasks ohne Änderung seit
   `STALE_TASK_DAYS` (7) Tagen (`updatedAt`).
+- **Zeitblock buchen** (Nachtrag von Timo: Timer beim falschen Task laufen lassen): `openTimeBlockDialog` im Task-Fenster (Knopf unter "Buchungen") und
+  im Rechtsklick-Menü. Legt eine abgeschlossene Buchung `{..., manual:true}` mit einer Sitzung an (`bookTimeBlock`) und zieht auf Wunsch die Überschneidung bei
+  anderen eigenen Tasks ab (`sessionOverlapsWith`, `removeTimeFromTask`; ein laufender Timer läuft weiter). Sitzungen werden nur gekürzt oder geteilt, ihr Start
+  bleibt gleich, weil `mergeTask` Sitzungen über den Start erkennt; daraus können 0-Sekunden-Sitzungen entstehen, die in der Sitzungsliste ausgeblendet sind.
+  Rückgängig mit Strg+Z.
 - Getestet mit Playwright und Supabase-Mock (Breiten 400–1920 px, hell/dunkel, Drop auf eingeklappte Spalte, Neuladen, defekter localStorage-Wert, CSV-Inhalt).
 
 ## ✅ Stand 2026-10-14 (Fortsetzung): Timer-Anzeige nach Buchungen (PR #2, Entwurf)

@@ -655,6 +655,12 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .booking-row{flex-wrap:wrap; align-items:center;}
 .booking-row .bk-right{display:inline-flex; align-items:center; gap:4px;}
 .booking-row .bk-edit{padding:0 5px; min-width:0; min-height:0; font-size:12px; line-height:1.4;}
+.bk-add{margin-top:6px; width:100%; justify-content:center;}
+.tbk-chips{display:flex; flex-wrap:wrap; gap:6px;}
+.tbk-chip.on{background:var(--accent-soft); color:var(--accent); border-color:var(--accent);}
+.tbk-times{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px;}
+.tbk-deduct{border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; margin:8px 0 10px; background:var(--surface-2);}
+.tbk-row{display:flex; align-items:center; gap:6px; font-size:13px; margin-top:4px;}
 .booking-row .bk-comment{flex-basis:100%; color:var(--text); font-weight:400; white-space:pre-wrap; padding:2px 0 2px 8px; border-left:2px solid var(--border-strong); margin:3px 0 2px;}
 .bookings-box .section-title{margin-top:0;}
 .prop-panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px;}
@@ -2735,6 +2741,7 @@ function openCardContextMenu(t, x, y){
     item('data-ctx="open"', 'search', 'Öffnen') +
     item('data-ctx="timer"', running ? 'pause' : 'play', running ? 'Timer pausieren' : (myOpenBooking(t) ? 'Buchung fortsetzen' : 'Timer starten')) +
     (myOpenBooking(t) ? item('data-ctx="finish"', 'check', 'Buchung abschliessen') : '') +
+    item('data-ctx="timeblock"', 'clock', 'Zeitblock buchen…') +
     item('data-ctx="pin"', 'pin', t.pinned ? 'Anheften lösen' : 'Anheften') +
     item('data-ctx="duplicate"', 'layers', 'Duplizieren');
   html += '<div class="ctx-label">Priorität</div><div class="ctx-prios">' +
@@ -2768,6 +2775,7 @@ function openCardContextMenu(t, x, y){
     if(item.dataset.ctx === 'open') openTaskModal(t.id);
     else if(item.dataset.ctx === 'timer'){ if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); renderAll(); }
     else if(item.dataset.ctx === 'finish'){ finishBooking(t.id); }
+    else if(item.dataset.ctx === 'timeblock'){ openTimeBlockDialog(t.id); }
     else if(item.dataset.ctx === 'pin'){ updateTask(t.id, {pinned: !t.pinned}); renderBoard(); }
     else if(item.dataset.ctx === 'duplicate'){
       var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null});
@@ -4580,7 +4588,7 @@ function openTaskModal(taskId){
     return '<div class="link-chip"><span>'+linkIcon(l.type)+'</span><a href="'+escapeAttr(safeHref(l.url))+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(l.label||l.url)+'</a><button class="icon-btn" data-action="remove-link" data-idx="'+idx+'">✕</button></div>';
   }).join('') || '<div class="hint">Keine Links.</div>';
 
-  var sessionsHtml = t.timeSessions.slice().reverse().map(function(s){
+  var sessionsHtml = t.timeSessions.filter(function(s){ return !s.end || s.end !== s.start; }).reverse().map(function(s){
     var dur = s.end ? fmtHMS((new Date(s.end)-new Date(s.start))/1000) : 'läuft…';
     var dateLabel = new Date(s.start).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     return '<div class="session-row'+(!s.end?' open':'')+'"><span>'+dateLabel+(s.by && activeShared ? ' · '+escapeHtml(personName(s.by)) : '')+'</span><span>'+dur+'</span></div>';
@@ -4591,7 +4599,7 @@ function openTaskModal(taskId){
   var shortDate = function(iso){ return new Date(iso).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
   var bookingRows = (t.bookings || []).slice().reverse().map(function(b){
     var parts = bookingSessions(t, b).length;
-    var status = b.closedAt ? 'abgeschlossen' : (openSess && openSess.bk === b.id ? 'läuft' : 'offen');
+    var status = b.closedAt ? (b.manual ? 'nachgetragen' : 'abgeschlossen') : (openSess && openSess.bk === b.id ? 'läuft' : 'offen');
     var mine = isMySession(b);
     return '<div class="session-row booking-row'+(!b.closedAt?' open':'')+'"><span>'+shortDate(b.start)+(b.closedAt ? ' – '+shortDate(b.closedAt) : '')+' · '+status+(parts > 1 ? ' · '+parts+' Abschnitte' : '')+(b.by && activeShared ? ' · '+escapeHtml(personName(b.by)) : '')+'</span>' +
       '<span class="bk-right">'+fmtHMS(bookingSeconds(t, b))+(b.closedAt && mine ? '<button type="button" class="icon-btn bk-edit" data-bk-comment="'+b.id+'" title="'+(b.comment ? 'Kommentar bearbeiten' : 'Kommentar hinzufügen')+'" aria-label="Kommentar">✎</button>' : '')+'</span>' +
@@ -4761,7 +4769,8 @@ function openTaskModal(taskId){
               (openBk ? '<button class="btn" id="modalFinishBtn" title="Buchung abschliessen – der nächste Start beginnt bei 0">Abschliessen</button>' : '') +
             '</div>' +
           '</div>' +
-          '<div class="bookings-box"><div class="section-title">Buchungen</div><div class="notes-log">'+bookingsHtml+'</div></div>' +
+          '<div class="bookings-box"><div class="section-title">Buchungen</div><div class="notes-log">'+bookingsHtml+'</div>' +
+            '<button type="button" class="btn ghost bk-add" id="modalTimeBlockBtn" title="Zeit nachträglich buchen, z.B. 45 Minuten ohne Timer">'+svgIcon('plus')+'<span>Zeitblock buchen</span></button></div>' +
           '<div class="prop-panel">' +
             '<div class="prop"><label for="fColumn">Status</label><select id="fColumn">'+colOptions+'</select></div>' +
             '<div class="prop-row2">' +
@@ -4900,6 +4909,10 @@ function openTaskModal(taskId){
   if(modalFinishBtn) modalFinishBtn.addEventListener('click', function(){
     var tid = t.id;
     finishBooking(tid, false, function(){ openTaskModal(tid); });
+  });
+  document.getElementById('modalTimeBlockBtn').addEventListener('click', function(){
+    var tid = t.id;
+    openTimeBlockDialog(tid, function(){ openTaskModal(tid); });
   });
   document.querySelectorAll('[data-bk-comment]').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -6216,6 +6229,150 @@ function gapSuggestions(ds, g){
     if(Math.abs(iv.s - g.e) < 120000) add(iv.task, 1, 'danach gebucht');
   });
   return Object.keys(score).map(function(k){ return score[k]; }).sort(function(a, b){ return b.pts - a.pts; }).slice(0, 4);
+}
+/* ---- Zeitblock nachträglich buchen ----
+   Legt auf einem Task eine abgeschlossene Buchung mit genau einer Sitzung an (z.B. 45 Min.).
+   Optional wird dieselbe Zeit bei anderen eigenen Tasks abgezogen, deren Sitzungen sich mit dem
+   Block überschneiden (typisch: der Timer lief beim falschen Task weiter). Sitzungen werden dabei
+   nur gekürzt oder geteilt, nie gelöscht und ihr Start bleibt gleich, weil der Abgleich zwischen
+   Geräten Sitzungen über ihren Start erkennt (unionBy in mergeTask). */
+function sessionOverlapsWith(blockStart, blockEnd, exceptTaskId){
+  var out = [];
+  state.tasks.forEach(function(o){
+    if(o.id === exceptTaskId) return;
+    var sec = 0;
+    o.timeSessions.forEach(function(s){
+      if(!isMySession(s)) return;
+      var a = new Date(s.start).getTime(), b = s.end ? new Date(s.end).getTime() : Date.now();
+      var ov = Math.min(b, blockEnd) - Math.max(a, blockStart);
+      if(ov > 0) sec += ov / 1000;
+    });
+    if(sec >= 30) out.push({task: o, sec: sec});
+  });
+  return out.sort(function(x, y){ return y.sec - x.sec; });
+}
+function removeTimeFromTask(task, blockStart, blockEnd){
+  var now = Date.now(), added = [], removed = 0;
+  task.timeSessions.forEach(function(s){
+    if(!isMySession(s)) return;
+    var a = new Date(s.start).getTime(), open = !s.end, b = open ? now : new Date(s.end).getTime();
+    var cutA = Math.max(a, blockStart), cutB = Math.min(b, blockEnd);
+    if(cutB <= cutA) return;
+    removed += (cutB - cutA) / 1000;
+    /* Rest nach dem Block als neue Sitzung (läuft weiter, wenn die alte offen war). */
+    if(cutB < b || open){
+      var rest = {start: new Date(cutB).toISOString(), end: open ? null : s.end};
+      ['bk', 'by', 'manual'].forEach(function(k){ if(s[k] !== undefined) rest[k] = s[k]; });
+      added.push(rest);
+    }
+    s.end = new Date(cutA).toISOString(); /* Rest vor dem Block bleibt (ggf. 0 Sekunden) */
+  });
+  if(!removed) return 0;
+  task.timeSessions = task.timeSessions.concat(added).sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  logActivity(task, 'Zeit umgebucht: −' + fmtHM(removed) + ' (' + fmtClock(blockStart) + '–' + fmtClock(blockEnd) + ')');
+  task.updatedAt = nowIso();
+  return removed;
+}
+function bookTimeBlock(taskId, startMs, endMs, comment, deductFromIds){
+  var t = getTask(taskId);
+  if(!t || !(endMs > startMs)) return false;
+  var clash = t.timeSessions.some(function(s){
+    if(!isMySession(s)) return false;
+    var a = new Date(s.start).getTime(), b = s.end ? new Date(s.end).getTime() : Date.now();
+    return a < endMs && b > startMs;
+  });
+  if(clash){ toast('In diesem Zeitraum ist für diesen Task bereits Zeit gebucht.'); return false; }
+  pushUndoSnapshot();
+  var moved = [];
+  (deductFromIds || []).forEach(function(id){
+    var o = getTask(id);
+    var sec = o ? removeTimeFromTask(o, startMs, endMs) : 0;
+    if(sec) moved.push(o.title);
+  });
+  var b = {id: uid(), start: new Date(startMs).toISOString(), closedAt: new Date(endMs).toISOString(), manual: true};
+  if(activeShared) b.by = myUserId();
+  comment = String(comment || '').trim().slice(0, 2000);
+  if(comment){ b.comment = comment; b.commentAt = nowIso(); }
+  if(!Array.isArray(t.bookings)) t.bookings = [];
+  t.bookings.push(b);
+  var sess = {start: b.start, end: b.closedAt, bk: b.id, manual: true};
+  if(activeShared) sess.by = myUserId();
+  t.timeSessions.push(sess);
+  t.timeSessions.sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  logActivity(t, 'Zeitblock gebucht: ' + fmtHM((endMs - startMs) / 1000) + ' (' + fmtClock(startMs) + '–' + fmtClock(endMs) + ')');
+  t.updatedAt = nowIso();
+  save();
+  toast('⏱ ' + fmtHM((endMs - startMs) / 1000) + ' gebucht' + (moved.length ? ' und bei „' + moved.join('“, „') + '“ abgezogen' : '') + '.');
+  return true;
+}
+function openTimeBlockDialog(taskId, onDone){
+  var t = getTask(taskId);
+  if(!t) return;
+  function two(n){ return (n < 10 ? '0' : '') + n; }
+  var end = new Date(); end.setSeconds(0, 0);
+  var start = new Date(end.getTime() - 45 * 60000);
+  var html =
+    '<div class="modal-header"><h2>⏱ Zeitblock buchen</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + '</p>' +
+      '<div class="form-row"><label>Dauer</label><div class="tbk-chips">' +
+        [15, 30, 45, 60, 90, 120].map(function(m){ return '<button type="button" class="btn tbk-chip' + (m === 45 ? ' on' : '') + '" data-min="' + m + '">' + (m < 60 ? m + ' Min.' : (m / 60) + ' Std.').replace('.5 Std.', ',5 Std.') + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="tbk-times">' +
+        '<div class="form-row"><label for="tbkDate">Datum</label><input type="date" id="tbkDate" value="' + toDateInputValue(end) + '"></div>' +
+        '<div class="form-row"><label for="tbkFrom">Von</label><input type="time" id="tbkFrom" value="' + two(start.getHours()) + ':' + two(start.getMinutes()) + '"></div>' +
+        '<div class="form-row"><label for="tbkTo">Bis</label><input type="time" id="tbkTo" value="' + two(end.getHours()) + ':' + two(end.getMinutes()) + '"></div>' +
+      '</div>' +
+      '<div id="tbkSummary" class="hint"></div>' +
+      '<div id="tbkDeduct"></div>' +
+      '<div class="form-row"><label for="tbkComment">Was wurde gemacht? (optional)</label><textarea id="tbkComment" rows="3" style="width:100%;"></textarea></div>' +
+      '<div id="tbkErr" class="hint" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="tbkSave">Buchen</button></div>';
+  openModal(html);
+  var unchecked = {};
+  function range(){
+    var d = document.getElementById('tbkDate').value, f = document.getElementById('tbkFrom').value, to = document.getElementById('tbkTo').value;
+    if(!d || !f || !to) return null;
+    var a = new Date(d + 'T' + f).getTime(), b = new Date(d + 'T' + to).getTime();
+    if(b <= a) b += 86400000; /* über Mitternacht */
+    return {a: a, b: b};
+  }
+  function refresh(){
+    var r = range(), sum = document.getElementById('tbkSummary'), box = document.getElementById('tbkDeduct');
+    document.querySelectorAll('.tbk-chip').forEach(function(c){ c.classList.toggle('on', !!r && Math.round((r.b - r.a) / 60000) === +c.dataset.min); });
+    if(!r){ sum.textContent = ''; box.innerHTML = ''; return; }
+    sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + ' auf diesen Task.';
+    var ov = sessionOverlapsWith(r.a, Math.min(r.b, Date.now()), t.id);
+    box.innerHTML = ov.length ? '<div class="tbk-deduct"><div class="section-title">In dieser Zeit lief schon Zeit bei:</div>' + ov.map(function(o){
+      return '<label class="tbk-row"><input type="checkbox" data-deduct="' + escapeAttr(o.task.id) + '"' + (unchecked[o.task.id] ? '' : ' checked') + '> ' +
+        fmtHM(o.sec) + ' bei „' + escapeHtml(o.task.title) + '“ abziehen' + (isRunning(o.task) ? ' <span class="hint">(Timer läuft weiter)</span>' : '') + '</label>';
+    }).join('') + '</div>' : '';
+    box.querySelectorAll('[data-deduct]').forEach(function(cb){
+      cb.addEventListener('change', function(){ unchecked[cb.dataset.deduct] = !cb.checked; });
+    });
+  }
+  document.querySelectorAll('.tbk-chip').forEach(function(c){
+    c.addEventListener('click', function(){
+      var r = range() || {b: Date.now()};
+      var from = new Date(r.b - c.dataset.min * 60000);
+      document.getElementById('tbkFrom').value = two(from.getHours()) + ':' + two(from.getMinutes());
+      refresh();
+    });
+  });
+  ['tbkDate', 'tbkFrom', 'tbkTo'].forEach(function(id){ document.getElementById(id).addEventListener('input', refresh); });
+  document.getElementById('tbkSave').addEventListener('click', function(){
+    var r = range(), err = document.getElementById('tbkErr');
+    if(!r){ err.textContent = 'Bitte Datum, Von und Bis ausfüllen.'; return; }
+    if(r.b > Date.now() + 60000){ err.textContent = 'Der Block darf nicht in der Zukunft enden.'; return; }
+    if(r.b - r.a > 12 * 3600000){ err.textContent = 'Ein Block darf höchstens 12 Stunden lang sein.'; return; }
+    var ids = Array.prototype.map.call(document.querySelectorAll('[data-deduct]:checked'), function(cb){ return cb.dataset.deduct; });
+    if(!bookTimeBlock(t.id, r.a, r.b, document.getElementById('tbkComment').value, ids)) return;
+    closeModal();
+    renderAll();
+    if(onDone) onDone();
+  });
+  refresh();
 }
 function addManualSession(taskId, startMs, endMs){
   var t = getTask(taskId);
