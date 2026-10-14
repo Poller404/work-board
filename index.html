@@ -158,7 +158,7 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 }
 #timerBanner.active{display:flex;}
 #timerBanner .tb-dot{width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; animation:pulse 1.6s infinite;}
-#timerBanner .tb-title{min-width:0; color:var(--text-dim); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
+#timerBanner .tb-title{min-width:70px; color:var(--text-dim); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
 #timerBanner .tb-time{font-weight:600; font-size:13.5px; color:var(--text);}
 #timerBanner button{padding:5px 9px;}
 
@@ -605,6 +605,17 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .task-side{position:sticky; top:0; display:flex; flex-direction:column; gap:12px;}
 .task-side .total-time-display{margin:0; font-size:26px; padding:10px 12px;}
 .task-side .total-time-display .btn{margin-left:auto;}
+.total-time-display .ttd-main{display:flex; flex-direction:column; min-width:0; line-height:1.15;}
+.total-time-display .ttd-label, .total-time-display .ttd-sum{font-size:11.5px; font-weight:500; color:var(--text-dim); letter-spacing:.02em;}
+.total-time-display .ttd-sum b{font-weight:600; color:var(--text);}
+.total-time-display .ttd-btns{margin-left:auto; display:flex; flex-direction:column; gap:6px;}
+.total-time-display .ttd-btns .btn, .total-time-display .ttd-btns #modalTimerBtn{margin-left:0 !important; justify-content:center;}
+.bookings-box .notes-log{max-height:220px; overflow-y:auto;}
+.booking-row{flex-wrap:wrap; align-items:center;}
+.booking-row .bk-right{display:inline-flex; align-items:center; gap:4px;}
+.booking-row .bk-edit{padding:0 5px; min-width:0; min-height:0; font-size:12px; line-height:1.4;}
+.booking-row .bk-comment{flex-basis:100%; color:var(--text); font-weight:400; white-space:pre-wrap; padding:2px 0 2px 8px; border-left:2px solid var(--border-strong); margin:3px 0 2px;}
+.bookings-box .section-title{margin-top:0;}
 .prop-panel{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px;}
 .prop{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
 .prop:last-child{margin-bottom:0;}
@@ -720,8 +731,9 @@ button.mobile-only{display:none;}
   #topbar button.btn, #topbar select{padding:10px 12px; font-size:14px; min-height:40px;}
   button.icon-btn{min-width:40px; min-height:40px;}
   button.mobile-only{display:inline-flex; min-width:40px; min-height:40px;}
-  #timerBanner{order:5; flex-basis:100%; max-width:none;}
-  #timerBanner .tb-title{flex:1; max-width:none;}
+  #timerBanner{order:5; flex-basis:100%; max-width:none; min-width:0; box-sizing:border-box;}
+  #timerBanner .tb-title{flex:1; max-width:none; min-width:0;}
+  #timerBanner .btn .lbl{display:none;}
   #board{
     scroll-snap-type:x mandatory; padding:12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
     overscroll-behavior-x:contain;
@@ -1071,7 +1083,8 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
       <span class="tb-title" id="tbTitle"></span>
       <span class="tb-time" id="tbTime">00:00:00</span>
       <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Timer-Fenster" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
-      <button class="btn" id="tbPause"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
+      <button class="btn" id="tbPause" title="Pausieren – die Buchung bleibt offen und kann fortgesetzt werden"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
+      <button class="btn" id="tbFinish" title="Buchung abschliessen – der nächste Start beginnt eine neue Buchung"><svg class="i"><use href="#i-check"/></svg><span class="lbl">Abschliessen</span></button>
     </div>
     <button class="btn ghost icon-btn" id="btnControlCenter" title="Control-Center (schwebendes Fenster)" aria-label="Control-Center öffnen"><svg class="i"><use href="#i-pip"/></svg></button>
     <button class="btn ghost" id="btnCloudSyncTopbar" title="Cloud-Speicher jetzt synchronisieren"><svg class="i"><use href="#i-cloud"/></svg><span class="lbl" data-i18n="btnCloudSyncTopbar">Sync</span></button>
@@ -1396,6 +1409,14 @@ function normalizeTask(t){
   if(typeof t.jiraKey !== 'string') t.jiraKey = '';
   if(typeof t.description !== 'string') t.description = '';
   if(!Array.isArray(t.timeSessions)) t.timeSessions = [];
+  if(t.bookings !== undefined){
+    t.bookings = Array.isArray(t.bookings) ? t.bookings.filter(function(b){ return b && typeof b === 'object' && typeof b.id === 'string' && SAFE_ID_RE.test(b.id) && typeof b.start === 'string'; }) : [];
+    t.bookings.forEach(function(b){
+      if(typeof b.closedAt !== 'string') b.closedAt = null;
+      if(b.comment !== undefined && typeof b.comment !== 'string') delete b.comment;
+      if(typeof b.commentAt !== 'string') delete b.commentAt;
+    });
+  }
   if(!Array.isArray(t.notes)) t.notes = [];
   if(!Array.isArray(t.links)) t.links = [];
   if(!Array.isArray(t.tags)) t.tags = [];
@@ -1548,6 +1569,7 @@ function updateTask(id, patch){
     logActivity(t, 'Verschoben: ' + (fromCol?fromCol.name:'?') + ' → ' + (toCol?toCol.name:'?'));
     if(toCol && DONE_COLUMN_RE.test(toCol.name) && !t.completedAt){
       patch.completedAt = nowIso();
+      if(myOpenBooking(t)) finishBooking(t.id, true);
       fireConfetti();
       playSound('complete');
       awardXp(t);
@@ -1677,14 +1699,156 @@ function startTimer(taskId){
   var t = getTask(taskId);
   if(!t) return;
   var open = myOpenSession(t);
+  var resumed = null, resumedFromEarlierDay = false;
   if(!open){
-    t.timeSessions.push(activeShared ? {start: nowIso(), end: null, by: myUserId()} : {start: nowIso(), end: null});
+    var b = myOpenBooking(t);
+    if(b){ resumed = b; resumedFromEarlierDay = bookingLastActivity(t, b) < startOfDay(new Date()).getTime(); }
+    else b = newBooking(t);
+    var sess = {start: nowIso(), end: null, bk: b.id};
+    if(activeShared) sess.by = myUserId();
+    t.timeSessions.push(sess);
   }
   state.settings.activeTaskId = taskId;
   playSound('start');
   t.updatedAt = nowIso();
   save();
   renderAll();
+  /* Offene Buchung von einem früheren Tag: fortgesetzt, aber mit Angebot, neu zu beginnen. */
+  if(resumedFromEarlierDay){
+    var tid = t.id, bid = resumed.id;
+    toast('▶ Buchung vom ' + new Date(resumed.start).toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit'}) + ' fortgesetzt (bisher ' + fmtHM(bookingSeconds(t, resumed)) + ').', 9000, 'Neue Buchung', function(){ restartAsNewBooking(tid, bid); });
+  }
+}
+
+/* ---- Buchungen: fassen Zeitsitzungen eines Tasks zusammen ----
+   Start legt eine Buchung an (oder setzt die offene fort), Pause unterbricht sie nur,
+   "Abschliessen" beendet sie. Der nächste Start beginnt dann eine neue Buchung bei 0.
+   Sitzungen tragen die Buchungs-ID in "bk"; ältere Sitzungen ohne "bk" gehören zu keiner Buchung. */
+function myOpenBooking(task){
+  return (task.bookings || []).find(function(b){ return !b.closedAt && isMySession(b); });
+}
+function newBooking(task){
+  var b = {id: uid(), start: nowIso(), closedAt: null};
+  if(activeShared) b.by = myUserId();
+  if(!Array.isArray(task.bookings)) task.bookings = [];
+  task.bookings.push(b);
+  return b;
+}
+function bookingSessions(task, b){
+  return task.timeSessions.filter(function(s){ return s.bk === b.id; });
+}
+function bookingSeconds(task, b){
+  return bookingSessions(task, b).reduce(function(sum, s){
+    var end = s.end ? new Date(s.end).getTime() : Date.now();
+    return sum + Math.max(0, end - new Date(s.start).getTime()) / 1000;
+  }, 0);
+}
+function bookingLastActivity(task, b){
+  return bookingSessions(task, b).reduce(function(mx, s){
+    return Math.max(mx, s.end ? new Date(s.end).getTime() : Date.now());
+  }, new Date(b.start).getTime());
+}
+/* Zeit der laufenden bzw. offenen eigenen Buchung (0, wenn keine offen ist). */
+function currentBookingSeconds(task){
+  var b = myOpenBooking(task);
+  return b ? bookingSeconds(task, b) : 0;
+}
+/* Anzeige-Zeit für Karte/Banner: offene Buchung, sonst Gesamtzeit. */
+function displaySeconds(task){
+  return myOpenBooking(task) ? currentBookingSeconds(task) : totalSeconds(task);
+}
+/* Schliesst die offene Buchung ab. Ohne skipRender folgt der Kommentar-Dialog ("Was wurde gemacht?");
+   onDone läuft, sobald er geschlossen ist. Gibt die abgeschlossene Buchung zurück (oder null). */
+function finishBooking(taskId, skipRender, onDone){
+  var t = getTask(taskId);
+  if(!t) return null;
+  var b = myOpenBooking(t);
+  if(isRunning(t)) stopTimer(taskId, true);
+  if(!b){ if(!skipRender){ renderAll(); if(onDone) onDone(); } return null; }
+  b.closedAt = nowIso();
+  var sec = bookingSeconds(t, b);
+  var empty = !bookingSessions(t, b).length;
+  if(empty) t.bookings = t.bookings.filter(function(x){ return x !== b; });
+  else logActivity(t, 'Buchung abgeschlossen: ' + fmtHM(sec));
+  t.updatedAt = nowIso();
+  save();
+  if(!skipRender){
+    renderAll();
+    if(empty){ toast('Buchung ohne erfasste Zeit verworfen.'); if(onDone) onDone(); }
+    else openBookingCommentDialog(taskId, b.id, onDone);
+  }
+  return empty ? null : b;
+}
+function setBookingComment(taskId, bookingId, text){
+  var t = getTask(taskId);
+  var b = t && (t.bookings || []).find(function(x){ return x.id === bookingId; });
+  if(!b) return;
+  text = String(text || '').trim().slice(0, 2000);
+  if(text === (b.comment || '')) return;
+  if(text) b.comment = text; else delete b.comment;
+  b.commentAt = nowIso();
+  t.updatedAt = nowIso();
+  save();
+}
+/* Kommentar zu einer Buchung erfassen oder ändern. */
+function openBookingCommentDialog(taskId, bookingId, onDone){
+  var t = getTask(taskId);
+  var b = t && (t.bookings || []).find(function(x){ return x.id === bookingId; });
+  if(!b){ if(onDone) onDone(); return; }
+  var editing = typeof b.comment === 'string';
+  var html =
+    '<div class="modal-header"><h2>' + (b.closedAt && !editing ? '✔ Buchung abgeschlossen' : 'Kommentar zur Buchung') + '</h2><button class="icon-btn" id="bkcClose" aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + ' · ' + new Date(b.start).toLocaleString('de-CH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' · <b>' + fmtHM(bookingSeconds(t, b)) + '</b></p>' +
+      '<label for="bkcText" class="section-title" style="display:block;">Was wurde gemacht?</label>' +
+      '<textarea id="bkcText" rows="4" style="width:100%;" placeholder="z.B. Drucker neu installiert, Treiber aktualisiert, mit Benutzer getestet">' + escapeHtml(b.comment || '') + '</textarea>' +
+      '<div class="hint">Strg+Enter speichert.</div>' +
+    '</div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn" id="bkcSkip">' + (editing ? 'Abbrechen' : 'Überspringen') + '</button>' +
+      '<button class="btn primary" id="bkcSave">Speichern</button>' +
+    '</div>';
+  openModal(html);
+  var finished = false;
+  function done(save){
+    if(finished) return;
+    finished = true;
+    if(save) setBookingComment(taskId, bookingId, document.getElementById('bkcText').value);
+    modalCloseCleanup = null;
+    closeModal();
+    renderAll();
+    if(save) toast('Kommentar gespeichert.');
+    if(onDone) onDone();
+  }
+  modalCloseCleanup = function(){ if(!finished){ finished = true; if(onDone) onDone(); } };
+  var ta = document.getElementById('bkcText');
+  ta.focus();
+  ta.addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); done(true); } });
+  document.getElementById('bkcSave').addEventListener('click', function(){ done(true); });
+  document.getElementById('bkcSkip').addEventListener('click', function(){ done(false); });
+  document.getElementById('bkcClose').addEventListener('click', function(){ done(false); });
+}
+/* Die gerade fortgesetzte Buchung abschliessen und die laufende Sitzung in eine neue verschieben. */
+function restartAsNewBooking(taskId, oldBookingId){
+  var t = getTask(taskId);
+  if(!t) return;
+  var old = (t.bookings || []).find(function(b){ return b.id === oldBookingId; });
+  var open = myOpenSession(t);
+  if(!old || old.closedAt || !open || open.bk !== old.id) return;
+  var others = bookingSessions(t, old).filter(function(s){ return s !== open; });
+  var nb = newBooking(t);
+  nb.start = open.start;
+  open.bk = nb.id;
+  if(others.length){
+    old.closedAt = others.reduce(function(mx, s){ return s.end && s.end > mx ? s.end : mx; }, old.start);
+    logActivity(t, 'Buchung abgeschlossen: ' + fmtHM(bookingSeconds(t, old)));
+  } else {
+    t.bookings = t.bookings.filter(function(x){ return x !== old; });
+  }
+  t.updatedAt = nowIso();
+  save();
+  renderAll();
+  toast('Neue Buchung gestartet.');
 }
 function stopTimer(taskId, skipRender){
   var t = getTask(taskId);
@@ -1796,7 +1960,7 @@ function updateClockAndTitle(){
   if(activeId){
     var t = getTask(activeId);
     if(t){
-      document.title = '⏱ ' + fmtHMS(totalSeconds(t)).slice(0,5) + ' – ' + t.title;
+      document.title = '⏱ ' + fmtHMS(displaySeconds(t)).slice(0,5) + ' – ' + t.title;
       return;
     }
   }
@@ -2528,7 +2692,8 @@ function openCardContextMenu(t, x, y){
   var running = isRunning(t);
   var html =
     item('data-ctx="open"', 'search', 'Öffnen') +
-    item('data-ctx="timer"', running ? 'pause' : 'play', running ? 'Timer pausieren' : 'Timer starten') +
+    item('data-ctx="timer"', running ? 'pause' : 'play', running ? 'Timer pausieren' : (myOpenBooking(t) ? 'Buchung fortsetzen' : 'Timer starten')) +
+    (myOpenBooking(t) ? item('data-ctx="finish"', 'check', 'Buchung abschliessen') : '') +
     item('data-ctx="pin"', 'pin', t.pinned ? 'Anheften lösen' : 'Anheften') +
     item('data-ctx="duplicate"', 'layers', 'Duplizieren');
   html += '<div class="ctx-label">Priorität</div><div class="ctx-prios">' +
@@ -2561,9 +2726,10 @@ function openCardContextMenu(t, x, y){
     if(!item) return;
     if(item.dataset.ctx === 'open') openTaskModal(t.id);
     else if(item.dataset.ctx === 'timer'){ if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); renderAll(); }
+    else if(item.dataset.ctx === 'finish'){ finishBooking(t.id); }
     else if(item.dataset.ctx === 'pin'){ updateTask(t.id, {pinned: !t.pinned}); renderBoard(); }
     else if(item.dataset.ctx === 'duplicate'){
-      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], notes:[], activityLog:[], completedAt:null});
+      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null});
       delete copy.id;
       createTask(copy);
       renderAll();
@@ -3312,7 +3478,7 @@ function renderCard(t){
     (t.tags.length ? '<div class="tags">'+t.tags.map(function(tag){ return '<span class="tag">#'+escapeHtml(tag)+'</span>'; }).join('')+'</div>' : '') +
     budgetHtml +
     '<div class="card-bottom">' +
-      '<span class="time-badge'+(running?' running':'')+'" data-time-for="'+t.id+'">'+svgIcon('clock')+'<span class="tv">'+fmtHMS(tsec)+'</span></span>' +
+      '<span class="time-badge'+(running?' running':'')+(myOpenBooking(t)?' booking':'')+'" data-time-for="'+t.id+'" title="'+(myOpenBooking(t) ? 'Aktuelle Buchung · Gesamt '+fmtHM(tsec) : 'Gesamtzeit')+'">'+svgIcon('clock')+'<span class="tv">'+fmtHMS(displaySeconds(t))+'</span></span>' +
       (t.comments && t.comments.length ? '<span class="cm-badge" title="Kommentare">💬 '+t.comments.length+'</span>' : '') +
       dueHtml +
       (!showArchive ? '<button class="timer-toggle'+(running?' running':'')+'" data-action="toggle-timer" data-task-id="'+t.id+'" title="'+(running?'Pause':'Start')+'" aria-label="'+(running?'Pause':'Start')+'">'+svgIcon(running?'pause':'play')+'</button>' : '') +
@@ -3431,7 +3597,8 @@ function renderTimerBanner(){
   if(!t){ banner.classList.remove('active'); ccRefresh(true); return; }
   banner.classList.add('active');
   document.getElementById('tbTitle').textContent = (t.jiraKey ? t.jiraKey + ' · ' : '') + t.title;
-  document.getElementById('tbTime').textContent = fmtHMS(totalSeconds(t));
+  document.getElementById('tbTime').textContent = fmtHMS(currentBookingSeconds(t));
+  document.getElementById('tbTime').title = 'Aktuelle Buchung · Gesamt ' + fmtHM(totalSeconds(t));
   ccRefresh(true);
 }
 
@@ -3571,6 +3738,17 @@ function ccBuild(root, withClose){
       host.querySelector('[name="subject"]').focus();
       return;
     }
+    if(kind === 'bookingnote'){
+      var ids = String(arg).split('|');
+      host.innerHTML =
+        '<form class="cc-form" data-cc-bookingform data-task="'+escapeAttr(ids[0])+'" data-booking="'+escapeAttr(ids[1])+'">' +
+          '<div class="cc-label">Buchung abgeschlossen – was wurde gemacht?</div>' +
+          '<textarea class="cc-field" name="comment" rows="3" placeholder="z.B. Drucker neu installiert, mit Benutzer getestet"></textarea>' +
+          '<div class="cc-add"><button class="cc-btn primary" type="submit">Speichern</button><button class="cc-btn" type="button" data-cc="skipnote">Überspringen</button></div>' +
+        '</form>';
+      host.querySelector('[name="comment"]').focus();
+      return;
+    }
     if(kind === 'hotline'){
       host.innerHTML =
         '<form class="cc-form" data-cc-hotline>' +
@@ -3603,6 +3781,15 @@ function ccBuild(root, withClose){
     } else if(el.dataset.cc === 'main'){ window.focus(); }
     else if(el.dataset.cc === 'close'){ closeCcPanel(); }
     else if(el.dataset.cc === 'pause'){ var id = state.settings.activeTaskId; if(id) stopTimer(id); }
+    else if(el.dataset.cc === 'finish'){
+      var fid = state.settings.activeTaskId;
+      if(fid){
+        var fb = finishBooking(fid, true);
+        renderAll();
+        if(fb){ q('[data-cc-formhost]').dataset.kind = ''; showForm('bookingnote', fid + '|' + fb.id); }
+        say('Buchung abgeschlossen.');
+      }
+    }
     else if(el.dataset.cc === 'done'){
       var did = state.settings.activeTaskId;
       if(did){
@@ -3613,6 +3800,7 @@ function ccBuild(root, withClose){
         say('Task erledigt.');
       }
     }
+    else if(el.dataset.cc === 'skipnote'){ clearForm(); }
     else if(el.dataset.cc === 'hotline'){ showForm('hotline'); }
     else if(el.dataset.cc === 'time'){ showForm('time'); }
     else if(el.dataset.cc === 'meeting'){
@@ -3646,6 +3834,11 @@ function ccBuild(root, withClose){
       renderAll();
       ni.value = '';
       say('Notiz gespeichert.');
+    } else if(form.hasAttribute('data-cc-bookingform')){
+      setBookingComment(form.dataset.task, form.dataset.booking, form.comment.value);
+      renderAll();
+      clearForm();
+      say('Kommentar gespeichert.');
     } else if(form.hasAttribute('data-cc-hotline')){
       createHotlineTask({reporter: form.reporter.value, issue: form.issue.value, notes: form.notes.value, start: true});
       clearForm();
@@ -3676,8 +3869,8 @@ function ccRefresh(full){
       now.className = 'cc-now' + (t ? ' run' : '');
       now.innerHTML = t ?
         '<div class="cc-run-title" data-cc-open="'+t.id+'" title="Task öffnen">'+escapeHtml((t.jiraKey ? t.jiraKey + ' · ' : '') + t.title)+'</div>' +
-        '<div class="cc-time" data-cc-time>'+fmtHMS(totalSeconds(t))+'</div>' +
-        '<div class="cc-actions"><button class="cc-btn" data-cc="pause">Pause</button><button class="cc-btn" data-cc="done">Erledigt</button></div>'
+        '<div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' +
+        '<div class="cc-actions"><button class="cc-btn" data-cc="pause" title="Buchung bleibt offen">Pause</button><button class="cc-btn" data-cc="finish" title="Buchung abschliessen">Abschliessen</button><button class="cc-btn" data-cc="done">Erledigt</button></div>'
         : '<div class="cc-idle">Kein Timer aktiv. Starte unten einen Task oder lege einen neuen an.</div>';
     }
     var noteForm = q('[data-cc-noteform]');
@@ -3703,7 +3896,7 @@ function ccRefresh(full){
     }
   }
   var tm = q('[data-cc-time]');
-  if(tm && t) tm.textContent = fmtHMS(totalSeconds(t));
+  if(tm && t) tm.textContent = fmtHMS(currentBookingSeconds(t));
 }
 
 function tick(){
@@ -3713,13 +3906,15 @@ function tick(){
   var t = getTask(id);
   if(!t) return;
   var timeEl = document.getElementById('tbTime');
-  if(timeEl) timeEl.textContent = fmtHMS(totalSeconds(t));
+  if(timeEl) timeEl.textContent = fmtHMS(currentBookingSeconds(t));
   renderSidebarToday();
   var cardTimeEl = document.querySelector('[data-time-for="'+id+'"]');
-  if(cardTimeEl){ var tv = cardTimeEl.querySelector('.tv'); (tv || cardTimeEl).textContent = fmtHMS(totalSeconds(t)); }
+  if(cardTimeEl){ var tv = cardTimeEl.querySelector('.tv'); (tv || cardTimeEl).textContent = fmtHMS(displaySeconds(t)); }
   if(openTaskModalId === id){
     var modalTimeEl = document.getElementById('modalTotalTime');
-    if(modalTimeEl) modalTimeEl.textContent = fmtHMS(totalSeconds(t));
+    if(modalTimeEl) modalTimeEl.textContent = fmtHMS(currentBookingSeconds(t));
+    var modalSumEl = document.getElementById('modalSumTime');
+    if(modalSumEl) modalSumEl.textContent = fmtHM(totalSeconds(t));
   }
   ccRefresh(false);
 
@@ -4300,6 +4495,24 @@ function openTaskModal(taskId){
     return '<div class="session-row'+(!s.end?' open':'')+'"><span>'+dateLabel+(s.by && activeShared ? ' · '+escapeHtml(personName(s.by)) : '')+'</span><span>'+dur+'</span></div>';
   }).join('') || '<div class="hint">Noch keine Zeit erfasst.</div>';
 
+  var openBk = myOpenBooking(t);
+  var openSess = myOpenSession(t);
+  var shortDate = function(iso){ return new Date(iso).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+  var bookingRows = (t.bookings || []).slice().reverse().map(function(b){
+    var parts = bookingSessions(t, b).length;
+    var status = b.closedAt ? 'abgeschlossen' : (openSess && openSess.bk === b.id ? 'läuft' : 'offen');
+    var mine = isMySession(b);
+    return '<div class="session-row booking-row'+(!b.closedAt?' open':'')+'"><span>'+shortDate(b.start)+(b.closedAt ? ' – '+shortDate(b.closedAt) : '')+' · '+status+(parts > 1 ? ' · '+parts+' Abschnitte' : '')+(b.by && activeShared ? ' · '+escapeHtml(personName(b.by)) : '')+'</span>' +
+      '<span class="bk-right">'+fmtHMS(bookingSeconds(t, b))+(b.closedAt && mine ? '<button type="button" class="icon-btn bk-edit" data-bk-comment="'+b.id+'" title="'+(b.comment ? 'Kommentar bearbeiten' : 'Kommentar hinzufügen')+'" aria-label="Kommentar">✎</button>' : '')+'</span>' +
+      (b.comment ? '<div class="bk-comment">'+escapeHtml(b.comment)+'</div>' : '') +
+    '</div>';
+  });
+  var legacySec = t.timeSessions.filter(function(s){ return !s.bk; }).reduce(function(sum, s){
+    return sum + Math.max(0, (s.end ? new Date(s.end).getTime() : Date.now()) - new Date(s.start).getTime()) / 1000;
+  }, 0);
+  if(legacySec > 0) bookingRows.push('<div class="session-row"><span>Frühere Zeit (vor Buchungen)</span><span>'+fmtHMS(legacySec)+'</span></div>');
+  var bookingsHtml = bookingRows.join('') || '<div class="hint">Noch keine Buchung. Mit Start beginnt die erste.</div>';
+
   var activityHtml = t.activityLog.slice().reverse().map(function(a){
     return '<div class="session-row"><span>'+escapeHtml(a.text)+'</span><span>'+new Date(a.ts).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></div>';
   }).join('') || '<div class="hint">Keine Aktivität.</div>';
@@ -4448,7 +4661,16 @@ function openTaskModal(taskId){
         '</div>' +
 
         '<aside class="task-side">' +
-          '<div class="total-time-display"><span id="modalTotalTime">'+fmtHMS(totalSeconds(t))+'</span> <button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn">'+(running?'Pause':'Start')+'</button></div>' +
+          '<div class="total-time-display">' +
+            '<div class="ttd-main"><span class="ttd-label">'+(running ? 'Buchung läuft' : (openBk ? 'Buchung pausiert' : 'Neue Buchung'))+'</span>' +
+              '<span id="modalTotalTime">'+fmtHMS(currentBookingSeconds(t))+'</span>' +
+              '<span class="ttd-sum">Gesamt <b id="modalSumTime">'+fmtHM(totalSeconds(t))+'</b></span></div>' +
+            '<div class="ttd-btns">' +
+              '<button class="btn'+(running?' danger':' primary')+'" id="modalTimerBtn" title="'+(running ? 'Pausieren – die Buchung bleibt offen' : (openBk ? 'Offene Buchung fortsetzen' : 'Neue Buchung starten'))+'">'+(running ? 'Pause' : (openBk ? 'Fortsetzen' : 'Start'))+'</button>' +
+              (openBk ? '<button class="btn" id="modalFinishBtn" title="Buchung abschliessen – der nächste Start beginnt bei 0">Abschliessen</button>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="bookings-box"><div class="section-title">Buchungen</div><div class="notes-log">'+bookingsHtml+'</div></div>' +
           '<div class="prop-panel">' +
             '<div class="prop"><label for="fColumn">Status</label><select id="fColumn">'+colOptions+'</select></div>' +
             '<div class="prop-row2">' +
@@ -4582,6 +4804,17 @@ function openTaskModal(taskId){
   document.getElementById('modalTimerBtn').addEventListener('click', function(){
     if(isRunning(t)) stopTimer(t.id); else startTimer(t.id);
     openTaskModal(t.id);
+  });
+  var modalFinishBtn = document.getElementById('modalFinishBtn');
+  if(modalFinishBtn) modalFinishBtn.addEventListener('click', function(){
+    var tid = t.id;
+    finishBooking(tid, false, function(){ openTaskModal(tid); });
+  });
+  document.querySelectorAll('[data-bk-comment]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tid = t.id;
+      openBookingCommentDialog(tid, btn.dataset.bkComment, function(){ openTaskModal(tid); });
+    });
   });
   document.getElementById('btnExportScheduledIcs').addEventListener('click', function(){
     exportTaskIcs(getTask(t.id));
@@ -7127,6 +7360,16 @@ function mergeTask(L, R){
   var other = newer === L ? R : L;
   var m = JSON.parse(JSON.stringify(newer));
   m.timeSessions = unionBy(newer.timeSessions, other.timeSessions, function(s){ return s.start + '|' + (s.by || ''); });
+  if(newer.bookings || other.bookings){
+    m.bookings = [];
+    var bkSeen = {};
+    (newer.bookings || []).concat(other.bookings || []).forEach(function(b){
+      var i = bkSeen[b.id];
+      if(i === undefined){ bkSeen[b.id] = m.bookings.length; m.bookings.push(b); }
+      else if(b.closedAt && !m.bookings[i].closedAt) m.bookings[i] = Object.assign({}, b, (m.bookings[i].commentAt || '') > (b.commentAt || '') ? {comment: m.bookings[i].comment, commentAt: m.bookings[i].commentAt} : {});
+      else if(!!b.closedAt === !!m.bookings[i].closedAt && (b.commentAt || '') > (m.bookings[i].commentAt || '')) m.bookings[i] = Object.assign({}, m.bookings[i], {comment: b.comment, commentAt: b.commentAt});
+    });
+  }
   m.notes = unionBy(newer.notes, other.notes, function(n){ return n.ts + '|' + n.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
   m.activityLog = unionBy(newer.activityLog, other.activityLog, function(a){ return a.ts + '|' + a.text; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
   if(newer.comments || other.comments) m.comments = unionBy(newer.comments, other.comments, function(c){ return c.id; }).sort(function(a, b){ return new Date(a.ts) - new Date(b.ts); });
@@ -7508,7 +7751,7 @@ function openShareLocalBoardDialog(){
     var btn = this;
     btn.disabled = true; btn.textContent = 'Lege an…';
     var tasks = JSON.parse(JSON.stringify(state.tasks.filter(function(t){ return !t.archived; })));
-    tasks.forEach(function(t){ t.timeSessions.forEach(function(s){ if(!s.by) s.by = myUserId(); }); t.assigneeId = ''; });
+    tasks.forEach(function(t){ t.timeSessions.forEach(function(s){ if(!s.by) s.by = myUserId(); }); (t.bookings || []).forEach(function(b){ if(!b.by) b.by = myUserId(); }); t.assigneeId = ''; });
     var columns = JSON.parse(JSON.stringify(state.columns));
     createSharedBoard(name, columns, tasks).then(function(id){
       return loadSharedBoards().then(function(){ closeModal(); enterSharedBoard(id); setTimeout(openBoardMembers, 400); });
@@ -9301,6 +9544,10 @@ document.getElementById('btnCloudSyncTopbar').addEventListener('click', function
 document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
+});
+document.getElementById('tbFinish').addEventListener('click', function(){
+  var id = state.settings.activeTaskId;
+  if(id) finishBooking(id);
 });
 document.getElementById('tbPip').addEventListener('click', toggleControlCenter);
 document.getElementById('btnControlCenter').addEventListener('click', toggleControlCenter);

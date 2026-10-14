@@ -540,6 +540,18 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 
 ## Zeiterfassung – Komfort & Sicherheit
 
+- **⏱ Buchungen statt Endlos-Timer**: Die Zeit auf einem Task wird in Buchungen erfasst.
+  **Start** beginnt eine neue Buchung bei 00:00:00. **Pause** unterbricht sie nur – mit
+  **Fortsetzen** läuft dieselbe Buchung weiter (keine neue Buchung pro Unterbrechung).
+  **Abschliessen** beendet die Buchung; der nächste Start beginnt wieder bei 0. Die Knöpfe gibt es
+  in der Timer-Anzeige oben, im Task-Fenster, im Control-Center und im Rechtsklick-Menü der Karte.
+  Wird eine Buchung von einem früheren Tag fortgesetzt, bietet ein Hinweis "Neue Buchung" an.
+  Nach dem Abschliessen fragt ein kurzer Dialog **"Was wurde gemacht?"** (Überspringen möglich,
+  Strg+Enter speichert). Der Kommentar steht im Task-Fenster unter der Buchung und lässt sich dort
+  mit ✎ nachträglich ergänzen oder ändern; im Control-Center erscheint das Feld direkt im Fenster.
+  Beim Verschieben nach "Erledigt" wird die offene Buchung automatisch abgeschlossen.
+  Timer und Karte zeigen die aktuelle Buchung, die Gesamtzeit steht im Task-Fenster (und im
+  Tooltip); Statistik, Tagesabschluss und Berichte rechnen wie bisher mit allen Zeiten.
 - **Zeit-Budget**: pro Task eine Schätzung (Minuten) hinterlegen, Fortschrittsbalken auf der
   Karte zeigt Ist vs. Soll.
 - **SLA-Ampel** für Hotline-Tickets: färbt sich gelb/rot, wenn ein Ticket zu lange offen ist
