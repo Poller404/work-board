@@ -827,6 +827,56 @@ button.mobile-only{display:none;}
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 }
+/* ---- iPhone (z. B. iPhone 16 Pro, 402 × 874 CSS-Pixel) ----
+   Grössere Tippflächen (≥ 44 px, Apple-Empfehlung), 16 px Schrift in
+   Eingabefeldern (sonst zoomt Safari beim Antippen hinein) und eine
+   aufgeräumte Kopfzeile: oben Menü, Suche, Neu, Mehr – darunter die
+   wischbare Filterzeile mit Sync und Control-Center. */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+@media (hover:none) and (pointer:coarse){
+  body{-webkit-tap-highlight-color:transparent;}
+  button, a, select, label, .card{touch-action:manipulation;}
+}
+@media (max-width: 680px){
+  input, textarea, select, .tb-search input, .column-header input.rename{font-size:16px;}
+  .sb-item{min-height:44px; font-size:15px; padding:10px 12px;}
+  #sidebar{width:min(300px, 84vw); padding-left:max(10px, env(safe-area-inset-left)); overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .chip{min-height:34px; padding:5px 13px; font-size:13.5px;}
+  .column-header{min-height:44px;}
+  .column-header button.icon-btn{min-width:40px; min-height:40px;}
+  .card .timer-toggle{width:40px; height:40px;}
+  .column-add button, .column-footer button{min-height:44px;}
+  .ai-fab{right:max(16px, env(safe-area-inset-right)); bottom:calc(52px + env(safe-area-inset-bottom)); width:52px; height:52px;}
+  .menu .btn{min-height:44px;}
+  .modal-header .icon-btn, .modal-header button.btn{min-width:40px; min-height:40px;}
+  .modal-body button.btn{min-height:40px;}
+  button.column-add{min-height:44px;}
+  /* Im Task-Fenster untereinander gestapelte Felder volle Breite nutzen lassen … */
+  .task-main .form-row-inline{align-items:stretch;}
+  /* … ausser Notiz und Checkliste: Eingabefeld und Knöpfe bleiben nebeneinander. */
+  .form-row-inline.input-btn-row, .task-main .form-row-inline.input-btn-row{flex-direction:row; gap:8px; align-items:flex-start;}
+  .input-btn-row > .form-row{flex:0 0 auto;}
+  .input-btn-row > .form-row:first-child{flex:1 1 0; min-width:0;}
+  .input-btn-row input{width:100%; min-width:0; min-height:40px;}
+}
+@media (max-width: 480px){
+  #topbar{gap:6px; row-gap:8px;}
+  /* Zeilenumbruch erzwingen: Sync und Control-Center rutschen in die
+     zweite Zeile neben die wischbaren Filter, damit die Suche Platz hat. */
+  #topbar::after{content:""; order:9; flex-basis:100%; height:0;}
+  .tb-secondary{flex:1 1 0; min-width:0; order:10;}
+  /* "Was jetzt?" und Fokus zuerst, damit sie ohne Wischen sichtbar sind. */
+  #btnWhatNow, #btnFocus{order:-1;}
+  #btnControlCenter, #btnCloudSyncTopbar{order:11; flex-shrink:0;}
+  .tb-search{min-width:0;}
+  #topbar .split-caret{padding-left:8px; padding-right:8px;}
+}
+/* Querformat auf dem iPhone: Desktop-Layout, aber Notch/Dynamic Island links bzw. rechts frei lassen. */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:681px){
+  #topbar, #statusbar{padding-left:max(20px, env(safe-area-inset-left)); padding-right:max(20px, env(safe-area-inset-right));}
+  #board{padding-left:max(20px, env(safe-area-inset-left)); padding-right:max(20px, env(safe-area-inset-right)); padding-bottom:max(12px, env(safe-area-inset-bottom));}
+  #sidebar{padding-left:max(12px, env(safe-area-inset-left));}
+}
 /* ---- Projekte & Abrechnung ---- */
 .proj-dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle;}
 .proj-card.inactive{opacity:.6;}
@@ -1602,6 +1652,7 @@ function createTask(partial){
 }
 
 var DONE_COLUMN_RE = /erledigt|done/i;
+var WAITING_COLUMN_RE = /wartet|wartend|waiting|on hold/i;
 function isSnoozed(t){ return !!(t.snoozeUntil && new Date(t.snoozeUntil).getTime() > Date.now()); }
 function logActivity(t, text){
   t.activityLog.push({ts: nowIso(), text: currentUser ? text + ' (von ' + currentUser.displayName + ')' : text});
@@ -2853,9 +2904,10 @@ function typeAffinityForHour(hour){
   return best;
 }
 function pickWhatNowTask(){
-  var doneColIds = state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; });
+  /* Tasks in "Erledigt" und in "Wartet" (wartet auf Rückmeldung) nie vorschlagen. */
+  var skipColIds = state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name) || WAITING_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; });
   var candidates = state.tasks.filter(function(t){
-    return !t.archived && doneColIds.indexOf(t.columnId) < 0 && !isSnoozed(t);
+    return !t.archived && !t.completedAt && skipColIds.indexOf(t.columnId) < 0 && !isSnoozed(t);
   });
   if(!candidates.length) return null;
   var preferredType = typeAffinityForHour(new Date().getHours());
@@ -4684,7 +4736,7 @@ function openTaskModal(taskId){
           '</div>' +
 
           '<div class="task-block"><div class="task-block-title">Notizen'+(t.type==='hotline'?'<span class="task-block-sub">z.B. während des Anrufs</span>':'')+'</div>' +
-            '<div class="form-row-inline">' +
+            '<div class="form-row-inline input-btn-row">' +
               '<div class="form-row" style="flex:1; margin-bottom:8px;"><input id="newNoteText" placeholder="Notiz hinzufügen und Enter drücken…"></div>' +
               (('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) ? '<div class="form-row" style="margin-bottom:8px;"><button class="btn icon-btn" id="voiceNoteBtn" title="Diktieren">🎙️</button></div>' : '') +
               '<div class="form-row" style="margin-bottom:8px;"><button class="btn icon-btn" id="noteSnippetBtn" title="Textbaustein einfügen">📎</button></div>' +
@@ -4706,7 +4758,7 @@ function openTaskModal(taskId){
             '<div class="notes-log" id="checklistLog">' + (t.checklist.map(function(c, idx){
               return '<div class="note-item" style="display:flex; align-items:center; gap:8px;"><input type="checkbox" data-checklist-idx="'+idx+'" '+(c.done?'checked':'')+'><span style="flex:1; '+(c.done?'text-decoration:line-through; color:var(--text-faint);':'')+'">'+escapeHtml(c.text)+'</span><button class="icon-btn" data-remove-checklist="'+idx+'" aria-label="Entfernen">✕</button></div>';
             }).join('') || '<div class="hint">Keine Punkte.</div>') + '</div>' +
-            '<div class="form-row-inline">' +
+            '<div class="form-row-inline input-btn-row">' +
               '<div class="form-row" style="flex:1; margin-bottom:0;"><input id="newChecklistText" placeholder="Punkt hinzufügen und Enter drücken…"></div>' +
               '<div class="form-row" style="margin-bottom:0;"><button class="btn" id="addChecklistBtn">Punkt</button></div>' +
             '</div>' +

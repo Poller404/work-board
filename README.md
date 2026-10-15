@@ -523,7 +523,7 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 ## Fokus, Priorität & Tempo
 
 - **🧭 Was jetzt?** schlägt automatisch den nächsten Task vor (angepinnt zuerst, dann höchste
-  Priorität, dann ältester Task).
+  Priorität, dann ältester Task). Tasks in „Erledigt“ und „Wartet“ werden nie vorgeschlagen.
 - **🎯 Fokus** startet einen Pomodoro-artigen Fokus-Block (Dauer einstellbar) für den aktuellen
   bzw. vorgeschlagenen Task, mit Countdown-Overlay.
 - **🎯 Nach Priorität**: Board umschalten von Status-Spalten auf Prioritäts-Swimlanes; Karten

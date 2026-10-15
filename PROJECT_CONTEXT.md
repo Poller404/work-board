@@ -206,6 +206,10 @@ Nutzer wählte nach zwei Mockups Variante A. Umbau (Funktionen unverändert, all
 - **Sprache:** `data-i18n` auf `.lbl`-Spans statt `textContent` auf Buttons (I18N-Wörterbuch ohne Emoji).
 - **Mobil (<680px):** Seitenleiste als Schublade (`body.sb-open`, ☰-Button `#btnMoreToggle`), zweite
   Kopfzeile mit Filtern/Was jetzt/Fokus scrollbar.
+- **iPhone (≤480px, getestet 402×874 = iPhone 16 Pro):** Kopfzeile Zeile 1 = Menü, Suche, Neu, Mehr; Zeile 2 =
+  wischbare Filter (Was jetzt/Fokus zuerst) + Control-Center/Sync (`#topbar::after` erzwingt den Umbruch).
+  Eingabefelder 16px (kein Safari-Zoom), Tippflächen ≥40–44px, `.input-btn-row` hält Notiz/Checkliste nebeneinander.
+- **Was jetzt?** (`pickWhatNowTask`) überspringt Spalten nach `DONE_COLUMN_RE` und `WAITING_COLUMN_RE` (wartet/waiting).
 - Getestet gegen gemocktes Supabase im Browser (Hell/Dunkel, Navigation, Menüs, Dialoge, Auswahl, Kompakt).
 
 ## ✅ Stand 2026-10-07 (Fortsetzung): Einstellungsmenü neu aufgebaut
