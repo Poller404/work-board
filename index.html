@@ -954,6 +954,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .pl-block-tools button{border:0; background:var(--surface); border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; color:var(--text);}
 .pl-rs{position:absolute; left:0; right:0; bottom:0; height:7px; cursor:ns-resize;}
 .pl-log{position:absolute; right:2px; width:6px; border-radius:3px; background:var(--ok); opacity:.75; cursor:pointer; z-index:1;}
+.pl-log.free{background:var(--accent);}
 .pl-now{position:absolute; left:0; right:0; height:2px; background:var(--danger); z-index:6; pointer-events:none;}
 .pl-now::before{content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--danger);}
 .pl-drop{position:absolute; left:0; right:0; height:0; border-top:2px dashed var(--accent); z-index:7; pointer-events:none;}
@@ -1723,7 +1724,7 @@ function spawnRecurrenceIfDue(t){
    ========================================================= */
 var undoStack = [];
 function pushUndoSnapshot(){
-  undoStack.push(JSON.stringify({tasks: state.tasks, columns: state.columns}));
+  undoStack.push(JSON.stringify({tasks: state.tasks, columns: state.columns, freeTime: freeTimeList()}));
   if(undoStack.length > 20) undoStack.shift();
 }
 function undoLastAction(){
@@ -1731,6 +1732,7 @@ function undoLastAction(){
   var snap = JSON.parse(undoStack.pop());
   state.tasks = snap.tasks.map(normalizeTask);
   state.columns = snap.columns;
+  if(Array.isArray(snap.freeTime)) state.settings.freeTime = snap.freeTime;
   save();
   renderAll();
   toast('↩️ Rückgängig gemacht.');
@@ -2684,7 +2686,7 @@ function printWeeklyReportPdf(){
   var end = Date.now();
   var totals = {};
   Object.keys(TYPES).forEach(function(k){ totals[k] = 0; });
-  var withTime = state.tasks.filter(function(t){ return secondsInRange(t,start,end) > 0; });
+  var withTime = timeTasks().filter(function(t){ return secondsInRange(t,start,end) > 0; });
   withTime.forEach(function(t){ totals[t.type] = (totals[t.type]||0) + secondsInRange(t,start,end); });
   var grand = Object.keys(totals).reduce(function(s,k){ return s+totals[k]; }, 0);
   var completedCount = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= start; }).length;
@@ -3108,21 +3110,21 @@ function renderDashboardWidgets(){
 
   var goalSec = (parseFloat(state.settings.targetHoursPerDay) || 0) * 3600;
   var dayStart = startOfDay(now).getTime();
-  var todaySec = state.tasks.reduce(function(s,t){ return s + secondsInRange(t, dayStart, Date.now()); }, 0);
+  var todaySec = timeTasks().reduce(function(s,t){ return s + secondsInRange(t, dayStart, Date.now()); }, 0);
   var weekStart = startOfWeek(now);
   var days = [];
   var todayIdx = -1;
   for(var i = 0; i < 7; i++){
     var ds = new Date(weekStart); ds.setDate(ds.getDate() + i);
     var de = new Date(ds); de.setDate(de.getDate() + 1);
-    var sec = state.tasks.reduce(function(s,t){ return s + secondsInRange(t, ds.getTime(), de.getTime()); }, 0);
+    var sec = timeTasks().reduce(function(s,t){ return s + secondsInRange(t, ds.getTime(), de.getTime()); }, 0);
     if(toDateInputValue(ds) === today) todayIdx = i;
     days.push(sec);
   }
   var weekSec = days.reduce(function(a,b){ return a + b; }, 0);
   var doneWeek = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= weekStart.getTime(); }).length;
   var byType = {};
-  state.tasks.forEach(function(t){
+  timeTasks().forEach(function(t){
     var s = secondsInRange(t, weekStart.getTime(), Date.now());
     if(s > 0) byType[t.type] = (byType[t.type] || 0) + s;
   });
@@ -4030,7 +4032,7 @@ function ccRefresh(full){
     var noteForm = q('[data-cc-noteform]');
     if(noteForm) noteForm.hidden = !t;
     var dayStart = startOfDay(new Date()).getTime();
-    var todaySec = state.tasks.reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+    var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
     var todayEl = q('[data-cc-today]');
     if(todayEl) todayEl.textContent = 'Heute ' + fmtHM(todaySec);
     var recent = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x); })
@@ -5627,10 +5629,12 @@ function openQuickTimeEntry(){
     '<div class="modal-header"><h2>⏱️ Zeiterfassung starten</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="form-row"><label>Wofür?</label><input id="qteTitle" placeholder="z.B. Rechnungen kontrollieren"></div>' +
+      '<div class="hint">„Starten“ legt einen Task an und startet den Timer. „Ohne Task buchen“ bucht einen Zeitblock nur mit diesem Text.</div>' +
     '</div>' +
-    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="qteStartBtn">▶ Starten</button></div>';
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn" id="qteFreeBtn">📝 Ohne Task buchen…</button><button class="btn primary" id="qteStartBtn">▶ Starten</button></div>';
   openModal(html);
   var input = document.getElementById('qteTitle');
+  document.getElementById('qteFreeBtn').addEventListener('click', function(){ var txt = input.value.trim(); closeModal(); openTimeBlockDialog(null, null, {text: txt}); });
   input.focus();
   function start(){
     var title = input.value.trim() || ('Zeiterfassung ' + timeLabel);
@@ -6174,7 +6178,7 @@ function shiftDate(ds, delta){
 }
 function dyceRows(ds){
   var rounding = state.settings.dyceRoundingMinutes || 0;
-  var rows = state.tasks.map(function(t){ return {t: t, sec: secondsOnDate(t, ds)}; }).filter(function(r){ return r.sec > 0; });
+  var rows = timeTasks().map(function(t){ return {t: t, sec: secondsOnDate(t, ds)}; }).filter(function(r){ return r.sec > 0; });
   rows.forEach(function(r){ r.rsec = roundSeconds(r.sec, rounding); });
   if(rounding && state.settings.dyceBalance && rows.length){
     var rawTotal = rows.reduce(function(s, r){ return s + r.sec; }, 0);
@@ -6198,7 +6202,7 @@ function dyceRows(ds){
 /* Meine Sitzungen eines Tages als Intervalle (ms), laufende bis jetzt. */
 function dayIntervals(ds){
   var a = dayStartMs(ds), b = a + 86400000, out = [];
-  state.tasks.forEach(function(t){
+  timeTasks().forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
       var s0 = Math.max(new Date(s.start).getTime(), a);
@@ -6256,7 +6260,7 @@ function dyceGaps(ds){
 function gapSuggestions(ds, g){
   var score = {};
   function add(t, pts, why){
-    if(!t || t.archived && !t.completedAt) return;
+    if(!t || t._free || t.archived && !t.completedAt) return;
     var e = score[t.id] || (score[t.id] = {t: t, pts: 0, why: []});
     e.pts += pts; if(why && e.why.indexOf(why) < 0) e.why.push(why);
   }
@@ -6360,30 +6364,88 @@ function bookTimeBlock(taskId, startMs, endMs, comment, deductFromIds){
   toast('⏱ ' + fmtHM((endMs - startMs) / 1000) + ' gebucht' + (moved.length ? ' und bei „' + moved.join('“, „') + '“ abgezogen' : '') + '.');
   return true;
 }
-function openTimeBlockDialog(taskId, onDone){
-  var t = getTask(taskId);
-  if(!t) return;
+/* ---- Zeit ohne Task ----
+   Freie Buchungen mit einem kurzen Text (z.B. "Teamsitzung", "Weiterbildung") gehören keinem Task.
+   Sie liegen in state.settings.freeTime ({id, start, end, text, updatedAt}), damit sie beim Wechsel
+   zwischen Boards bleiben und wie Projekte Eintrag für Eintrag zwischen Geräten abgeglichen werden
+   (SYNC_LISTS). Für Auswertungen werden sie als schreibgeschützte Schein-Tasks (_free) eingereiht. */
+var FREE_TIME_KEY = '_free';
+var FREE_TIME_TYPE = {label: 'Ohne Task', icon: '📝'};
+function freeTimeList(){ return Array.isArray(state.settings.freeTime) ? state.settings.freeTime : []; }
+function freeTimeTasks(){
+  return freeTimeList().map(function(e){
+    return {id: e.id, _free: true, title: e.text, type: 'adhoc', priority: 'medium', jiraKey: '', reporter: '', description: '',
+      tags: [], notes: [], links: [], activityLog: [], checklist: [], archived: false, completedAt: null,
+      createdAt: e.start, updatedAt: e.updatedAt, timeSessions: [{start: e.start, end: e.end, manual: true}]};
+  });
+}
+/* Alle Tasks plus die freien Buchungen, nur zum Zusammenzählen und Anzeigen von Zeit. */
+function timeTasks(){ return state.tasks.concat(freeTimeTasks()); }
+function statTypeInfo(k){ return k === FREE_TIME_KEY ? FREE_TIME_TYPE : (TYPES[k] || TYPES.adhoc); }
+function bookFreeTime(startMs, endMs, text, deductFromIds, editId){
+  text = String(text || '').trim().slice(0, 500);
+  if(!text || !(endMs > startMs)) return false;
+  var clash = freeTimeList().some(function(e){
+    return e.id !== editId && new Date(e.start).getTime() < endMs && new Date(e.end).getTime() > startMs;
+  });
+  if(clash){ toast('In diesem Zeitraum ist bereits Zeit ohne Task gebucht.'); return false; }
+  pushUndoSnapshot();
+  var moved = [];
+  (deductFromIds || []).forEach(function(id){
+    var o = getTask(id);
+    var sec = o ? removeTimeFromTask(o, startMs, endMs) : 0;
+    if(sec) moved.push(o.title);
+  });
+  var list = state.settings.freeTime = freeTimeList().slice();
+  var entry = {id: editId || 'ft-' + uid(), start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString(), text: text, updatedAt: nowIso()};
+  var idx = editId ? list.findIndex(function(e){ return e.id === editId; }) : -1;
+  if(idx >= 0) list[idx] = entry; else list.push(entry);
+  list.sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  save();
+  toast('📝 ' + fmtHM((endMs - startMs) / 1000) + ' ohne Task ' + (idx >= 0 ? 'gespeichert' : 'gebucht') + (moved.length ? ' und bei „' + moved.join('“, „') + '“ abgezogen' : '') + '.');
+  return true;
+}
+function deleteFreeTime(id){
+  pushUndoSnapshot();
+  state.settings.freeTime = freeTimeList().filter(function(e){ return e.id !== id; });
+  save();
+}
+function openFreeTimeDialog(id){
+  if(!freeTimeList().some(function(e){ return e.id === id; })) return;
+  openTimeBlockDialog(null, null, {entryId: id});
+}
+/* taskId leer = Zeit ohne Task. opts: {start, end} (ms) vorbelegen, {text} vorbelegen, {entryId} bestehende freie Buchung bearbeiten. */
+function openTimeBlockDialog(taskId, onDone, opts){
+  opts = opts || {};
+  var free = !taskId;
+  var t = free ? null : getTask(taskId);
+  if(!free && !t) return;
+  var entry = free && opts.entryId ? freeTimeList().find(function(e){ return e.id === opts.entryId; }) : null;
   function two(n){ return (n < 10 ? '0' : '') + n; }
-  var end = new Date(); end.setSeconds(0, 0);
-  var start = new Date(end.getTime() - 45 * 60000);
+  var end, start;
+  if(entry){ start = new Date(entry.start); end = new Date(entry.end); }
+  else if(opts.start && opts.end){ start = new Date(opts.start); end = new Date(opts.end); }
+  else { end = new Date(); end.setSeconds(0, 0); start = new Date(end.getTime() - 45 * 60000); }
   var html =
-    '<div class="modal-header"><h2>⏱ Zeitblock buchen</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-header"><h2>' + (free ? (entry ? '📝 Zeit ohne Task bearbeiten' : '📝 Zeit ohne Task buchen') : '⏱ Zeitblock buchen') + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
-      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + '</p>' +
+      (free ? '<div class="form-row"><label for="tbkText">Was hast du gemacht?</label><input id="tbkText" maxlength="500" placeholder="z.B. Teamsitzung, Weiterbildung, Admin" value="' + escapeAttr(entry ? entry.text : (opts.text || '')) + '"></div>'
+        : '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + '</p>') +
       '<div class="form-row"><label>Dauer</label><div class="tbk-chips">' +
         [15, 30, 45, 60, 90, 120].map(function(m){ return '<button type="button" class="btn tbk-chip' + (m === 45 ? ' on' : '') + '" data-min="' + m + '">' + (m < 60 ? m + ' Min.' : (m / 60) + ' Std.').replace('.5 Std.', ',5 Std.') + '</button>'; }).join('') +
       '</div></div>' +
       '<div class="tbk-times">' +
-        '<div class="form-row"><label for="tbkDate">Datum</label><input type="date" id="tbkDate" value="' + toDateInputValue(end) + '"></div>' +
+        '<div class="form-row"><label for="tbkDate">Datum</label><input type="date" id="tbkDate" value="' + toDateInputValue(start) + '"></div>' +
         '<div class="form-row"><label for="tbkFrom">Von</label><input type="time" id="tbkFrom" value="' + two(start.getHours()) + ':' + two(start.getMinutes()) + '"></div>' +
         '<div class="form-row"><label for="tbkTo">Bis</label><input type="time" id="tbkTo" value="' + two(end.getHours()) + ':' + two(end.getMinutes()) + '"></div>' +
       '</div>' +
       '<div id="tbkSummary" class="hint"></div>' +
       '<div id="tbkDeduct"></div>' +
-      '<div class="form-row"><label for="tbkComment">Was wurde gemacht? (optional)</label><textarea id="tbkComment" rows="3" style="width:100%;"></textarea></div>' +
+      (free ? '' : '<div class="form-row"><label for="tbkComment">Was wurde gemacht? (optional)</label><textarea id="tbkComment" rows="3" style="width:100%;"></textarea></div>') +
       '<div id="tbkErr" class="hint" style="color:var(--danger);"></div>' +
     '</div>' +
-    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="tbkSave">Buchen</button></div>';
+    '<div class="modal-footer">' + (entry ? '<button class="btn danger" id="tbkDelete" style="margin-right:auto;">Löschen</button>' : '') +
+      '<button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="tbkSave">' + (entry ? 'Speichern' : 'Buchen') + '</button></div>';
   openModal(html);
   var unchecked = {};
   function range(){
@@ -6397,8 +6459,8 @@ function openTimeBlockDialog(taskId, onDone){
     var r = range(), sum = document.getElementById('tbkSummary'), box = document.getElementById('tbkDeduct');
     document.querySelectorAll('.tbk-chip').forEach(function(c){ c.classList.toggle('on', !!r && Math.round((r.b - r.a) / 60000) === +c.dataset.min); });
     if(!r){ sum.textContent = ''; box.innerHTML = ''; return; }
-    sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + ' auf diesen Task.';
-    var ov = sessionOverlapsWith(r.a, Math.min(r.b, Date.now()), t.id);
+    sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + (free ? ' ohne Task.' : ' auf diesen Task.');
+    var ov = entry ? [] : sessionOverlapsWith(r.a, Math.min(r.b, Date.now()), t ? t.id : null);
     box.innerHTML = ov.length ? '<div class="tbk-deduct"><div class="section-title">In dieser Zeit lief schon Zeit bei:</div>' + ov.map(function(o){
       return '<label class="tbk-row"><input type="checkbox" data-deduct="' + escapeAttr(o.task.id) + '"' + (unchecked[o.task.id] ? '' : ' checked') + '> ' +
         fmtHM(o.sec) + ' bei „' + escapeHtml(o.task.title) + '“ abziehen' + (isRunning(o.task) ? ' <span class="hint">(Timer läuft weiter)</span>' : '') + '</label>';
@@ -6416,17 +6478,35 @@ function openTimeBlockDialog(taskId, onDone){
     });
   });
   ['tbkDate', 'tbkFrom', 'tbkTo'].forEach(function(id){ document.getElementById(id).addEventListener('input', refresh); });
+  function done(){
+    closeModal();
+    renderAll();
+    if(onDone) onDone();
+  }
   document.getElementById('tbkSave').addEventListener('click', function(){
     var r = range(), err = document.getElementById('tbkErr');
+    var text = free ? document.getElementById('tbkText').value.trim() : '';
+    if(free && !text){ err.textContent = 'Bitte kurz beschreiben, was du gemacht hast.'; document.getElementById('tbkText').focus(); return; }
     if(!r){ err.textContent = 'Bitte Datum, Von und Bis ausfüllen.'; return; }
     if(r.b > Date.now() + 60000){ err.textContent = 'Der Block darf nicht in der Zukunft enden.'; return; }
     if(r.b - r.a > 12 * 3600000){ err.textContent = 'Ein Block darf höchstens 12 Stunden lang sein.'; return; }
     var ids = Array.prototype.map.call(document.querySelectorAll('[data-deduct]:checked'), function(cb){ return cb.dataset.deduct; });
-    if(!bookTimeBlock(t.id, r.a, r.b, document.getElementById('tbkComment').value, ids)) return;
-    closeModal();
-    renderAll();
-    if(onDone) onDone();
+    if(free){ if(!bookFreeTime(r.a, r.b, text, ids, entry ? entry.id : '')) return; }
+    else if(!bookTimeBlock(t.id, r.a, r.b, document.getElementById('tbkComment').value, ids)) return;
+    done();
   });
+  if(entry) document.getElementById('tbkDelete').addEventListener('click', function(){
+    confirmDialog('„' + entry.text + '“ (' + fmtHM((new Date(entry.end) - new Date(entry.start)) / 1000) + ') löschen?', 'Löschen', function(){
+      deleteFreeTime(entry.id);
+      toast('Buchung ohne Task gelöscht.');
+      done();
+    });
+  });
+  if(free){
+    var txt = document.getElementById('tbkText');
+    txt.addEventListener('keydown', function(e){ if(e.key === 'Enter') document.getElementById('tbkSave').click(); });
+    if(!entry) txt.focus();
+  }
   refresh();
 }
 function addManualSession(taskId, startMs, endMs){
@@ -6484,6 +6564,9 @@ function renderDyceView(){
   var gapTotal = gaps.reduce(function(s, g){ return s + (g.e - g.s); }, 0) / 1000;
 
   var bodyRows = rows.map(function(r){
+    if(r.t._free) return '<tr data-open-free="' + r.t.id + '" style="cursor:pointer;" title="Zeit ohne Task bearbeiten"><td>📝 Ohne Task</td>' +
+      '<td>' + escapeHtml(r.t.title) + '</td>' + (hasProjects ? '<td>–</td>' : '') +
+      '<td>' + fmtHM(r.sec) + '</td><td><b>' + fmtHM(r.rsec) + '</b></td></tr>';
     return '<tr data-open-task="' + r.t.id + '" style="cursor:pointer;"><td>' + (TYPES[r.t.type] || TYPES.adhoc).icon + ' ' + escapeHtml(r.t.jiraKey || r.t.title) + '</td>' +
       '<td>' + escapeHtml(r.t.title) + '</td>' + (hasProjects ? '<td>' + escapeHtml(projectNameOf(r.t) || '–') + '</td>' : '') +
       '<td>' + fmtHM(r.sec) + '</td><td><b>' + fmtHM(r.rsec) + '</b></td></tr>';
@@ -6501,7 +6584,7 @@ function renderDyceView(){
       (sug.length ? '<div class="gap-sug">' + sug.map(function(x){ return '<button type="button" class="chip" data-gap-pick="' + x.t.id + '" title="' + escapeAttr(x.why.join(' · ')) + '">' + escapeHtml(x.t.title.slice(0, 34)) + '<b>' + escapeHtml(x.why[0] || '') + '</b></button>'; }).join('') + '</div>' : '') +
       '<div class="gap-form"><input type="time" class="gap-from" value="' + fmtClock(g.s) + '"><span>–</span><input type="time" class="gap-to" value="' + fmtClock(g.e) + '">' +
         '<select class="gap-task">' + opts + '</select>' +
-        '<button class="btn primary" data-gap-book="' + i + '">Buchen</button><button class="btn" data-gap-new="' + i + '">Neuer Task…</button><button class="btn ghost" data-gap-pause="' + i + '" title="Als Pause markieren (wird ignoriert)">Pause</button></div>' +
+        '<button class="btn primary" data-gap-book="' + i + '">Buchen</button><button class="btn" data-gap-new="' + i + '">Neuer Task…</button><button class="btn" data-gap-free="' + i + '" title="Zeit mit einem kurzen Text buchen, ohne Task">Ohne Task…</button><button class="btn ghost" data-gap-pause="' + i + '" title="Als Pause markieren (wird ignoriert)">Pause</button></div>' +
       '<div class="gap-ai hint"></div></div>';
   }).join('');
 
@@ -6552,6 +6635,7 @@ function renderDyceView(){
           '<div class="form-row"><label>Rundung</label><select id="dyceRounding">' + [[0, 'Keine'], [5, 'Auf 5 Min.'], [10, 'Auf 10 Min.'], [15, 'Auf 15 Min.'], [30, 'Auf 30 Min.']].map(function(o){ return '<option value="' + o[0] + '"' + (rounding === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
           '<div class="form-row"><label>Art</label><select id="dyceMode"><option value="nearest"' + (!state.settings.dyceRoundingMode || state.settings.dyceRoundingMode === 'nearest' ? ' selected' : '') + '>Kaufmännisch</option><option value="up"' + (state.settings.dyceRoundingMode === 'up' ? ' selected' : '') + '>Aufrunden</option><option value="down"' + (state.settings.dyceRoundingMode === 'down' ? ' selected' : '') + '>Abrunden</option></select></div>' +
           '<button class="btn" id="dyceAddTime">' + svgIcon('plus') + '<span>Zeit nachtragen</span></button>' +
+          '<button class="btn" id="dyceAddFree" title="Zeit mit einem kurzen Text buchen, ohne Task">📝 <span>Ohne Task buchen</span></button>' +
           '<button class="btn primary" id="copyDyceTsvBtn">' + svgIcon('clipboard') + '<span>Als Tabelle kopieren</span></button>' +
         '</div></div>' +
       '<section class="dcard"><div class="dcard-head"><h3>Buchungen</h3>' +
@@ -6589,6 +6673,7 @@ function wireDyce(board, dateStr, gaps, rows, wStats){
   var bal = document.getElementById('dyceBalance');
   if(bal) bal.addEventListener('change', function(e){ state.settings.dyceBalance = e.target.checked; save(); renderDyceView(); });
   board.querySelectorAll('[data-open-task]').forEach(function(el){ el.addEventListener('click', function(){ openTaskModal(el.dataset.openTask); }); });
+  board.querySelectorAll('[data-open-free]').forEach(function(el){ el.addEventListener('click', function(){ openFreeTimeDialog(el.dataset.openFree); }); });
   board.querySelectorAll('[data-week-day]').forEach(function(tr){ tr.addEventListener('click', function(){ go(tr.dataset.weekDay); }); });
   board.querySelectorAll('[data-stop-open]').forEach(function(b){ b.addEventListener('click', function(){
     var t = getTask(b.dataset.stopOpen), open = t && myOpenSession(t);
@@ -6627,6 +6712,11 @@ function wireDyce(board, dateStr, gaps, rows, wStats){
     toast('Wochentabelle kopiert.');
   });
   document.getElementById('dyceAddTime').addEventListener('click', function(){ openDyceAddTime(dateStr); });
+  document.getElementById('dyceAddFree').addEventListener('click', function(){
+    var base = dayStartMs(dateStr), end = Math.min(Date.now(), base + parseHM(state.settings.dyceWorkEnd, 1020) * 60000);
+    end = Math.floor(end / 60000) * 60000;
+    openTimeBlockDialog(null, null, {start: Math.max(base, end - 45 * 60000), end: end});
+  });
 
   /* Lücken: Vorschläge, Buchen, Pause */
   board.querySelectorAll('.gap-card').forEach(function(card){
@@ -6652,6 +6742,11 @@ function wireDyce(board, dateStr, gaps, rows, wStats){
         if(addManualSession(nt.id, r.s, r.e)) toast('✅ Task angelegt und ' + Math.round((r.e - r.s) / 60000) + ' Min. gebucht.');
         renderAll();
       });
+    });
+    card.querySelector('[data-gap-free]').addEventListener('click', function(){
+      var r = range();
+      if(r.e <= r.s){ toast('Das Ende muss nach dem Beginn liegen.'); return; }
+      openTimeBlockDialog(null, null, {start: r.s, end: r.e});
     });
     card.querySelector('[data-gap-pause]').addEventListener('click', function(){
       var r = range();
@@ -6758,7 +6853,7 @@ function buildDonutChart(totals, grand){
     var pct = grand > 0 ? Math.round(totals[k]/grand*100) : 0;
     return '<div style="display:flex; align-items:center; gap:6px; font-size:12px;">' +
       '<span style="width:10px; height:10px; border-radius:3px; background:'+DONUT_COLORS[i%DONUT_COLORS.length]+'; flex-shrink:0;"></span>' +
-      '<span>'+TYPES[k].icon+' '+TYPES[k].label+' · '+pct+'%</span>' +
+      '<span>'+statTypeInfo(k).icon+' '+statTypeInfo(k).label+' · '+pct+'%</span>' +
     '</div>';
   }).join('');
   return '<div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">' +
@@ -6785,6 +6880,7 @@ function renderStatsView(range){
   state.tasks.forEach(function(t){
     totals[t.type] = (totals[t.type] || 0) + secondsInRange(t, startMs, endMs);
   });
+  totals[FREE_TIME_KEY] = freeTimeTasks().reduce(function(s, t){ return s + secondsInRange(t, startMs, endMs); }, 0);
   var grand = Object.keys(totals).reduce(function(s,k){ return s + totals[k]; }, 0);
   var maxVal = Math.max.apply(null, Object.keys(totals).map(function(k){ return totals[k]; })) || 1;
   var donutHtml = buildDonutChart(totals, grand);
@@ -6809,11 +6905,11 @@ function renderStatsView(range){
     '</div>';
   }
 
-  var rows = Object.keys(TYPES).map(function(k){
+  var rows = Object.keys(TYPES).concat(totals[FREE_TIME_KEY] ? [FREE_TIME_KEY] : []).map(function(k){
     var sec = totals[k];
     var pct = Math.round(sec / maxVal * 100);
     return '<div style="margin-bottom:12px;">' +
-      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>'+TYPES[k].icon+' '+TYPES[k].label+'</span><span style="font-weight:700;">'+fmtHM(sec)+'</span></div>' +
+      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>'+statTypeInfo(k).icon+' '+statTypeInfo(k).label+'</span><span style="font-weight:700;">'+fmtHM(sec)+'</span></div>' +
       '<div style="background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; border:1px solid var(--border);"><div style="width:'+pct+'%; background:var(--accent); height:100%;"></div></div>' +
     '</div>';
   }).join('');
@@ -6824,7 +6920,7 @@ function renderStatsView(range){
 
   // Zeit pro Jira-Projekt/Kunde (Projekt-Präfix vor dem "-" im Jira-Key, z.B. "PROJ-123" -> "PROJ")
   var projectTotals = {};
-  state.tasks.forEach(function(t){
+  timeTasks().forEach(function(t){
     var sec = secondsInRange(t, startMs, endMs);
     if(!sec) return;
     var proj = projectNameOf(t) || (t.jiraKey ? t.jiraKey.split('-')[0] : '– ohne Projekt –');
@@ -6846,7 +6942,7 @@ function renderStatsView(range){
   for(var i=6;i>=0;i--){
     var d = new Date(); d.setDate(d.getDate()-i);
     var dateStr = toDateInputValue(d);
-    var sec = state.tasks.reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
+    var sec = timeTasks().reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
     sparkDays.push({label: dayLabels[d.getDay()], sec: sec});
   }
   var sparkMax = Math.max.apply(null, sparkDays.map(function(x){return x.sec;})) || 1;
@@ -6866,7 +6962,7 @@ function renderStatsView(range){
       var hd = startOfWeek(new Date()); hd.setDate(hd.getDate() - w*7 + dow);
       if(hd > new Date()) { heatCells.push(null); continue; }
       var hdStr = toDateInputValue(hd);
-      var hSec = state.tasks.reduce(function(s,t){ return s + secondsOnDate(t, hdStr); }, 0);
+      var hSec = timeTasks().reduce(function(s,t){ return s + secondsOnDate(t, hdStr); }, 0);
       heatCells.push({date:hdStr, sec:hSec});
     }
   }
@@ -6952,7 +7048,7 @@ function exportTimeCsv(range, startMs, endMs){
   function two(n){ return (n < 10 ? '0' : '') + n; }
   function hm(d){ return two(d.getHours()) + ':' + two(d.getMinutes()); }
   var rows = [];
-  state.tasks.forEach(function(t){
+  timeTasks().forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
       var a = Math.max(new Date(s.start).getTime(), startMs);
@@ -6962,7 +7058,7 @@ function exportTimeCsv(range, startMs, endMs){
       var sec = Math.round((b - a) / 1000);
       rows.push({a:a, cells:[
         toDateInputValue(new Date(a)), hm(new Date(a)), s.end ? hm(new Date(b)) : 'läuft', fmtHM(sec),
-        (sec / 3600).toFixed(2).replace('.', ','), t.title, t.jiraKey || '', (TYPES[t.type] || TYPES.adhoc).label,
+        (sec / 3600).toFixed(2).replace('.', ','), t.title, t.jiraKey || '', t._free ? FREE_TIME_TYPE.label : (TYPES[t.type] || TYPES.adhoc).label,
         projectNameOf(t) || '', t.reporter || '', booking && booking.comment ? booking.comment : ''
       ]});
     });
@@ -9049,7 +9145,7 @@ function openSettings(){
    ========================================================= */
 function buildRecapText(startMs, endMs, heading){
   var lines = [heading, ''];
-  var withTime = state.tasks.filter(function(t){ return secondsInRange(t, startMs, endMs) > 0; })
+  var withTime = timeTasks().filter(function(t){ return secondsInRange(t, startMs, endMs) > 0; })
     .sort(function(a,b){ return secondsInRange(b,startMs,endMs) - secondsInRange(a,startMs,endMs); });
   var totalSec = withTime.reduce(function(s,t){ return s + secondsInRange(t,startMs,endMs); }, 0);
   lines.push('Gesamtzeit: ' + fmtHM(totalSec), '');
@@ -9404,6 +9500,7 @@ function cmdActionsList(){
     {icon:'✨', label:'Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
     {icon:'📅', label:'Meeting starten', run:startMeeting},
     {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
+    {icon:'📝', label:'Zeit ohne Task buchen (nur Text)', run: function(){ openTimeBlockDialog(null); }},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
     {icon:'🎯', label:'Fokus-Modus starten', run: enterFocusMode},
@@ -9842,7 +9939,7 @@ function renderSidebarToday(){
   if(!valEl) return;
   var start = startOfDay(new Date()).getTime();
   var now = Date.now();
-  var sec = state.tasks.reduce(function(s,t){ return s + secondsInRange(t, start, now); }, 0);
+  var sec = timeTasks().reduce(function(s,t){ return s + secondsInRange(t, start, now); }, 0);
   var goal = (parseFloat(state.settings.targetHoursPerDay) || 0) * 3600;
   valEl.textContent = fmtHM(sec);
   var fill = document.getElementById('sbTodayFill');
@@ -10062,7 +10159,7 @@ function handleUrlShortcutAction(){
    Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
    Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
    ========================================================= */
-var SYNC_LISTS = ['projects', 'automationRules'];
+var SYNC_LISTS = ['projects', 'automationRules', 'freeTime'];
 var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
 var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
 var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
@@ -10115,7 +10212,20 @@ function normalizeRule(r){
 function normalizeSyncSettings(settings){
   settings.projects = (Array.isArray(settings.projects) ? settings.projects : []).map(normalizeProject).filter(Boolean);
   settings.automationRules = (Array.isArray(settings.automationRules) ? settings.automationRules : []).map(normalizeRule).filter(Boolean);
+  settings.freeTime = (Array.isArray(settings.freeTime) ? settings.freeTime : []).map(normalizeFreeTime).filter(Boolean);
   if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
+}
+function normalizeFreeTime(e){
+  if(!e || typeof e !== 'object') return null;
+  var a = new Date(e.start).getTime(), b = new Date(e.end).getTime();
+  if(!(isFinite(a) && isFinite(b) && b > a)) return null;
+  var text = cleanStr(e.text, 500).trim();
+  if(!text) return null;
+  return {
+    id: (typeof e.id === 'string' && SAFE_ID_RE.test(e.id)) ? e.id : 'ft-' + uid(),
+    start: new Date(a).toISOString(), end: new Date(b).toISOString(), text: text,
+    updatedAt: typeof e.updatedAt === 'string' && !isNaN(new Date(e.updatedAt).getTime()) ? e.updatedAt : nowIso()
+  };
 }
 function normalizeComments(list){
   return (Array.isArray(list) ? list : []).filter(function(c){ return c && typeof c === 'object'; }).slice(-200).map(function(c){
@@ -10179,7 +10289,7 @@ function mergeSyncLists(base, remoteSettings){
   SYNC_LISTS.forEach(function(k){
     var L = Array.isArray(state.settings[k]) ? state.settings[k] : [];
     var Rraw = remoteSettings && Array.isArray(remoteSettings[k]) ? remoteSettings[k] : [];
-    var tmp = {projects: [], automationRules: []};
+    var tmp = {projects: [], automationRules: [], freeTime: []};
     tmp[k] = Rraw;
     normalizeSyncSettings(tmp);
     var R = tmp[k];
@@ -10616,7 +10726,7 @@ function plLoggedOnDay(ds){
   var out = [];
   var dayStart = new Date(ds + 'T00:00:00').getTime();
   var dayEnd = dayStart + 24 * 3600 * 1000;
-  state.tasks.forEach(function(t){
+  timeTasks().forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
       var a = Math.max(new Date(s.start).getTime(), dayStart);
@@ -10725,7 +10835,7 @@ function renderPlannerView(){
     var logs = dd.logged.map(function(l){
       var top = (l.start - axS) / 60 * PL_HPX;
       var height = Math.max(3, (l.end - l.start) / 60 * PL_HPX);
-      return '<div class="pl-log' + (l.open ? ' open' : '') + '" data-open-task="' + l.task.id + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht: ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
+      return '<div class="pl-log' + (l.open ? ' open' : '') + (l.task._free ? ' free" data-open-free="' : '" data-open-task="') + l.task.id + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht' + (l.task._free ? ' (ohne Task)' : '') + ': ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
     }).join('');
     var nowLine = '';
     if(dd.ds === todayStr){
@@ -10818,6 +10928,9 @@ function wirePlanner(board){
   wirePlannerItems();
   board.querySelectorAll('[data-open-task]').forEach(function(el){
     el.addEventListener('click', function(e){ e.stopPropagation(); openTaskModal(el.dataset.openTask); });
+  });
+  board.querySelectorAll('[data-open-free]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); openFreeTimeDialog(el.dataset.openFree); });
   });
   var axS = plAxisStartFromDom();
   var grid = board.querySelector('.pl-grid');
@@ -12273,7 +12386,7 @@ function chatExecRead(u){
         board: currentBoardName(), columns: state.columns.map(function(c){ return {name: c.name, tasks: state.tasks.filter(function(t){ return t.columnId === c.id && !t.archived; }).length}; }),
         open: open.length, overdue: open.filter(function(t){ return t.dueDate && t.dueDate < today; }).length, due_today: open.filter(function(t){ return t.dueDate === today; }).map(chatBrief).slice(0, 10),
         running_timer: run ? {title: run.title, since_min: Math.round((Date.now() - new Date((myOpenSession(run) || {start: nowIso()}).start).getTime()) / 60000)} : null,
-        logged_today_min: Math.round(state.tasks.reduce(function(s, t){ return s + secondsOnDate(t, today); }, 0) / 60),
+        logged_today_min: Math.round(timeTasks().reduce(function(s, t){ return s + secondsOnDate(t, today); }, 0) / 60),
         planned_today: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).map(function(t){ return {title: t.title, at: chatLocal(t.scheduledAt), minutes: plannedMinutes(t)}; }),
         sla_risk: state.tasks.filter(function(t){ return slaLevel(t); }).length
       };
@@ -12320,7 +12433,7 @@ function chatExecRead(u){
       var from = chatDay(i.from, toDateInputValue(startOfWeek(new Date()))), to = chatDay(i.to, toDateInputValue(new Date()));
       var a = new Date(from + 'T00:00:00').getTime(), b = new Date(to + 'T00:00:00').getTime() + 86400000 - 1;
       var rows = {}, total = 0;
-      state.tasks.forEach(function(t){
+      timeTasks().forEach(function(t){
         var sec = secondsInRange(t, a, b);
         if(!sec) return;
         total += sec;
@@ -12342,7 +12455,7 @@ function chatExecRead(u){
         var ds = toDateInputValue(d);
         days.push({date: ds, weekday: d.toLocaleDateString('de-CH', {weekday: 'long'}),
           planned: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds; }).map(function(t){ var st = new Date(t.scheduledAt); return {title: t.title, from: chatLocal(t.scheduledAt).slice(11), to: plMinToTime(plDayMinutes(st) + plannedMinutes(t))}; }).sort(function(x, y){ return x.from < y.from ? -1 : 1; }),
-          booked_min: Math.round(state.tasks.reduce(function(s, t){ return s + secondsOnDate(t, ds); }, 0) / 60)});
+          booked_min: Math.round(timeTasks().reduce(function(s, t){ return s + secondsOnDate(t, ds); }, 0) / 60)});
       }
       return {content: JSON.stringify({work_hours: (state.settings.dyceWorkStart || '08:00') + '–' + (state.settings.dyceWorkEnd || '17:00'), days: days}), view: {k: 'step', text: '🗓 Planung ' + f2 + ' bis ' + t2 + ' abgefragt'}};
     }
