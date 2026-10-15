@@ -42,6 +42,12 @@ Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimier
   bleibt gleich, weil `mergeTask` Sitzungen über den Start erkennt; daraus können 0-Sekunden-Sitzungen entstehen, die in der Sitzungsliste ausgeblendet sind.
   Rückgängig mit Strg+Z.
 - Getestet mit Playwright und Supabase-Mock (Breiten 400–1920 px, hell/dunkel, Drop auf eingeklappte Spalte, Neuladen, defekter localStorage-Wert, CSV-Inhalt).
+- **Zeit ohne Task** (Wunsch von Timo, 2026-10-15): freie Buchungen nur mit Text in `state.settings.freeTime` (`{id:'ft-…', start, end, text, updatedAt}`),
+  über `SYNC_LISTS` Eintrag für Eintrag zwischen Geräten abgeglichen und vom Board-Wechsel unabhängig. Gleicher Dialog wie der Zeitblock
+  (`openTimeBlockDialog(null, …)`, Bearbeiten/Löschen über `openFreeTimeDialog`). Einstieg: Befehlspalette, "Zeit erfassen" → "Ohne Task buchen…",
+  Tagesabschluss (Knopf und "Ohne Task…" bei jeder Lücke). Auswertungen nutzen `timeTasks()` (Tasks plus Schein-Tasks `_free`): Tagesabschluss inkl. Lücken,
+  Statistik (eigene Zeile "📝 Ohne Task"), CSV (Typ "Ohne Task"), Planer (Ist-Streifen in Akzentfarbe, klickbar), Heute-Zeit, Wochenbericht, KI-Chat.
+  Kein Projekt pro freier Buchung; Strg+Z stellt auch `freeTime` wieder her.
 
 ## ✅ Stand 2026-10-14 (Fortsetzung): Timer-Anzeige nach Buchungen (PR #2, Entwurf)
 
