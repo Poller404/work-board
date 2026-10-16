@@ -1,5 +1,5 @@
-var CACHE_NAME = 'work-board-v3';
-var ASSETS = ['./', './index.html', './manifest.json'];
+var CACHE_NAME = 'work-board-v4';
+var ASSETS = ['./', './index.html', './manifest.json', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 
 /* Nur Dateien der App selbst sowie die fest versionierten Bibliotheken und Schriften
    (CDN, Google Fonts) werden zwischengespeichert. API-Antworten (Supabase,

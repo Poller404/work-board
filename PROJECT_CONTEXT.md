@@ -24,6 +24,14 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-15: Sicherheitsprüfung (zweite Runde)
+
+Geprüft: main-Code (Playwright-Test mit Schadcode in allen Feldern, alle Ansichten/Dialoge/Menüs), Git-Historie auf Keys, Supabase (Policies, Rechte, Advisor).
+Keine Keys im Repo ausser dem öffentlichen `sb_publishable_…`. Behoben: Typ-Namen aus den Einstellungen wurden bis zum Neuladen ungeprüft als HTML
+angezeigt (jetzt `stripMarkup` beim Speichern und Maskierung an allen Stellen); Board-Einladung zeigt Name + E-Mail; `supabase-profile-absichern.sql`
+erzwingt die echte Login-Adresse in `profiles.email` (vorher per API frei änderbar). Offen für Timo: SQL ausführen, Leaked Password Protection.
+Advisor-Warnungen zu SECURITY-DEFINER-Funktionen (`is_board_member`, `is_board_owner`, `delete_own_account`) sind gewollt.
+
 ## ✅ Stand 2026-10-14 (Fortsetzung): Gebuchte Zeit im Planer verschieben
 
 Timo wollte die Zeitbuchungs-Blöcke im Planer verschieben können. Gebuchte Zeit (`plLoggedOnDay`) wird nicht mehr als 6-px-Strich, sondern als eigener
@@ -32,7 +40,8 @@ Block mit Uhrzeit und Titel rechts neben den geplanten Blöcken gezeigt (`PL_PLA
 Länge ändern, im 15-Minuten-Raster (`plStartLogDrag`, `plMoveSession`). Laufende Sitzungen bleiben fest. Nicht erlaubt: Überschneidung mit einer anderen Sitzung
 desselben Tasks und Zeit in der Zukunft. Neuer Start = alte Sitzung bleibt als 0-Sekunden-Eintrag (gleicher Schlüssel für `unionBy`), neue Sitzung kommt dazu;
 Buchungsbeginn (bei nachgetragenen Buchungen auch das Ende) wird nachgeführt. Strg+Z macht es rückgängig. Getestet mit Playwright (Verschieben, Länge,
-Zukunft abgelehnt, zweimal rückgängig, Klick öffnet den Task, hell/dunkel).
+Zukunft abgelehnt, zweimal rückgängig, Klick öffnet den Task, hell/dunkel). Nach PR #11 auch für Zeit ohne Task: die Blöcke
+(`data-log-free`) ändern den Eintrag in `settings.freeTime` über `bookFreeTime(…, id)`, der Abgleich läuft dort über die ID.
 
 ## ✅ Stand 2026-10-14 (Fortsetzung): Praktische Erweiterungen (Branch `claude/praktische-erweiterungen-vsank6`)
 
@@ -52,6 +61,12 @@ Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimier
   bleibt gleich, weil `mergeTask` Sitzungen über den Start erkennt; daraus können 0-Sekunden-Sitzungen entstehen, die in der Sitzungsliste ausgeblendet sind.
   Rückgängig mit Strg+Z.
 - Getestet mit Playwright und Supabase-Mock (Breiten 400–1920 px, hell/dunkel, Drop auf eingeklappte Spalte, Neuladen, defekter localStorage-Wert, CSV-Inhalt).
+- **Zeit ohne Task** (Wunsch von Timo, 2026-10-15): freie Buchungen nur mit Text in `state.settings.freeTime` (`{id:'ft-…', start, end, text, updatedAt}`),
+  über `SYNC_LISTS` Eintrag für Eintrag zwischen Geräten abgeglichen und vom Board-Wechsel unabhängig. Gleicher Dialog wie der Zeitblock
+  (`openTimeBlockDialog(null, …)`, Bearbeiten/Löschen über `openFreeTimeDialog`). Einstieg: Befehlspalette, "Zeit erfassen" → "Ohne Task buchen…",
+  Tagesabschluss (Knopf und "Ohne Task…" bei jeder Lücke). Auswertungen nutzen `timeTasks()` (Tasks plus Schein-Tasks `_free`): Tagesabschluss inkl. Lücken,
+  Statistik (eigene Zeile "📝 Ohne Task"), CSV (Typ "Ohne Task"), Planer (Ist-Streifen in Akzentfarbe, klickbar), Heute-Zeit, Wochenbericht, KI-Chat.
+  Kein Projekt pro freier Buchung; Strg+Z stellt auch `freeTime` wieder her.
 
 ## ✅ Stand 2026-10-14 (Fortsetzung): Timer-Anzeige nach Buchungen (PR #2, Entwurf)
 
@@ -216,6 +231,10 @@ Nutzer wählte nach zwei Mockups Variante A. Umbau (Funktionen unverändert, all
 - **Sprache:** `data-i18n` auf `.lbl`-Spans statt `textContent` auf Buttons (I18N-Wörterbuch ohne Emoji).
 - **Mobil (<680px):** Seitenleiste als Schublade (`body.sb-open`, ☰-Button `#btnMoreToggle`), zweite
   Kopfzeile mit Filtern/Was jetzt/Fokus scrollbar.
+- **iPhone (≤480px, getestet 402×874 = iPhone 16 Pro):** Kopfzeile Zeile 1 = Menü, Suche, Neu, Mehr; Zeile 2 =
+  wischbare Filter (Was jetzt/Fokus zuerst) + Control-Center/Sync (`#topbar::after` erzwingt den Umbruch).
+  Eingabefelder 16px (kein Safari-Zoom), Tippflächen ≥40–44px, `.input-btn-row` hält Notiz/Checkliste nebeneinander.
+- **Was jetzt?** (`pickWhatNowTask`) überspringt Spalten nach `DONE_COLUMN_RE` und `WAITING_COLUMN_RE` (wartet/waiting).
 - Getestet gegen gemocktes Supabase im Browser (Hell/Dunkel, Navigation, Menüs, Dialoge, Auswahl, Kompakt).
 
 ## ✅ Stand 2026-10-07 (Fortsetzung): Einstellungsmenü neu aufgebaut

@@ -407,7 +407,16 @@ alter table board_snapshots add constraint board_snapshots_payload_size check (l
 alter table user_keys add constraint user_keys_size check (length(private_key_enc) < 20000);
 ```
 
+4. **Profile absichern (einmalig im SQL-Editor):** [`supabase-profile-absichern.sql`](supabase-profile-absichern.sql) ausführen. Danach steht im Profil
+   immer die echte Login-Adresse, niemand kann sich mit einer fremden E-Mail als jemand anderes ausgeben. Beim Hinzufügen zu einem geteilten
+   Board zeigt die Auswahl Name und E-Mail.
+5. **Authentication → Attack Protection** (bzw. Passwort-Einstellungen): "Leaked password protection" einschalten, falls in deinem Tarif verfügbar.
+   Dann werden Passwörter abgelehnt, die schon in bekannten Datenlecks aufgetaucht sind.
+
 **Was bewusst so ist:**
+- Der Supabase-Schlüssel in `index.html` (`sb_publishable_…`) ist öffentlich gedacht. Geschützt werden die Daten durch Login,
+  Row Level Security und die Verschlüsselung, nicht durch diesen Schlüssel. Der geheime Schlüssel (`service_role` / `sb_secret_…`) darf nie in den Code.
+- Die KI-Keys (Anthropic, Gemini) liegen nur im Browser-Speicher des Geräts. Setze beim Anbieter ein Ausgabenlimit für den Key.
 - Aufgaben liegen auf dem Gerät im Browser-Speicher unverschlüsselt (nötig für den Offline-Betrieb). Wer Zugriff auf dein entsperrtes
   Gerät hat, sieht sie. Die PIN ist nur ein Sichtschutz.
 - Die Passphrase wird auf dem Gerät im Browser-Speicher gemerkt, damit du sie nicht ständig eingeben musst.
@@ -523,7 +532,7 @@ offen-vs-erledigt sowie ein paar Wochen-Kennzahlen (Anrufe, Meetings, längste S
 ## Fokus, Priorität & Tempo
 
 - **🧭 Was jetzt?** schlägt automatisch den nächsten Task vor (angepinnt zuerst, dann höchste
-  Priorität, dann ältester Task).
+  Priorität, dann ältester Task). Tasks in „Erledigt“ und „Wartet“ werden nie vorgeschlagen.
 - **🎯 Fokus** startet einen Pomodoro-artigen Fokus-Block (Dauer einstellbar) für den aktuellen
   bzw. vorgeschlagenen Task, mit Countdown-Overlay.
 - **🎯 Nach Priorität**: Board umschalten von Status-Spalten auf Prioritäts-Swimlanes; Karten
