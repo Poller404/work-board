@@ -194,6 +194,9 @@ Auf Wunsch ("erweitere es wie du es für richtig hältst") zusätzlich zu Varian
   Nur in Board-Ansichten sichtbar (nicht Dashboard/Kalender/Archiv).
 - **Schnell-Anlegen** in der Spalte (`inlineAddColId`, `createQuickTask()`): Enter legt an und bleibt offen, Umschalt+Enter öffnet,
   Esc bricht ab; Kurzschreibweise `PROJ-123` (Jira-Key+Typ), `#tag`, `!kritisch|hoch|mittel|niedrig`.
+- **Erledigt → Archiv** (`archiveDoneColumn()`, `ARCHIVE_FX`, Knopf `data-action="archive-done"` nur in der Status-Ansicht an Spalten, die `DONE_COLUMN_RE` treffen):
+  archiviert die sichtbaren (gefilterten) Tasks der Spalte. Karten werden als Kopien in `#archiveFxHost` (position:fixed) animiert, pro Klick
+  zufällig eine von 5 Animationen (nie zweimal dieselbe hintereinander); bei `prefers-reduced-motion` ohne Animation. Undo-Snapshot + Toast „Rückgängig“.
 - **Kartenmenü** (Rechtsklick, `openCardContextMenu`) neu: Timer, Anheften, Duplizieren, Priorität (4 Kacheln), Verschieben nach Spalte, Archivieren, Löschen.
 - **Seitenleiste:** Tagesfortschritt (`renderSidebarToday()`, Ziel = `targetHoursPerDay`), Theme-Umschalter (System/Hell/Dunkel),
   einklappbar (`body.sb-collapsed`, localStorage `wb-sb-collapsed`, nur Desktop).
