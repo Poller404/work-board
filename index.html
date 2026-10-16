@@ -852,6 +852,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
   .card .timer-toggle{width:40px; height:40px;}
   .column-add button, .column-footer button{min-height:44px;}
   .ai-fab{right:max(16px, env(safe-area-inset-right)); bottom:calc(52px + env(safe-area-inset-bottom)); width:52px; height:52px;}
+  .voice-fab{right:calc(max(16px, env(safe-area-inset-right)) + 62px); bottom:calc(58px + env(safe-area-inset-bottom)); width:42px; height:42px;}
   .menu .btn{min-height:44px;}
   .modal-header .icon-btn, .modal-header button.btn{min-width:40px; min-height:40px;}
   .modal-body button.btn{min-height:40px;}
@@ -917,6 +918,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .pl-main{flex:1; min-width:0; display:flex; flex-direction:column;}
 .pl-toolbar{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; background:var(--surface);}
 .pl-toolbar .spacer{flex:1;}
+@media (max-width:1560px){ .pl-toolbar #plAdd span, .pl-toolbar #plIcs span{display:none;} .pl-toolbar .pl-check{font-size:12.5px;} }
 .pl-nav{display:flex; gap:4px; align-items:center;}
 .pl-title{display:flex; flex-direction:column; line-height:1.2;}
 .pl-title span{font-size:12px; color:var(--text-dim);}
@@ -1037,6 +1039,32 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 /* ---- KI-Assistent ---- */
 .ai-fab{position:fixed; right:18px; bottom:44px; width:46px; height:46px; border-radius:50%; border:none; background:var(--accent); color:#fff; display:grid; place-items:center; box-shadow:var(--shadow-lg); z-index:940; cursor:pointer;}
 .ai-fab:hover{background:var(--accent-hover);}
+/* ---- Sprachbefehle, Autopilot, Schätzung, Wissen, Screenshot ---- */
+.voice-fab{position:fixed; right:74px; bottom:48px; width:38px; height:38px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text-muted); display:grid; place-items:center; box-shadow:var(--shadow); z-index:940; cursor:pointer; font-size:17px;}
+.voice-fab:hover{color:var(--accent); border-color:var(--accent);}
+.voice-fab.recording{background:var(--danger); color:#fff; border-color:var(--danger); animation:voicePulse 1.2s ease-in-out infinite;}
+@keyframes voicePulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45);}50%{box-shadow:0 0 0 10px rgba(220,38,38,0);}}
+#voiceOverlay{position:fixed; left:50%; bottom:110px; transform:translateX(-50%); z-index:5200; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); padding:14px 18px; width:min(460px, calc(100vw - 32px)); text-align:center; cursor:pointer;}
+#voiceOverlay .v-mic{font-size:26px;}
+#voiceOverlay .v-text{font-size:15px; margin:6px 0 4px; min-height:22px;}
+.est-hint{font-size:12px; color:var(--text-muted); background:var(--surface-2, rgba(127,127,127,.08)); border-radius:8px; padding:6px 8px; margin:2px 0 8px; line-height:1.4;}
+.est-hint .btn{padding:2px 8px; font-size:12px; margin-left:4px;}
+.kb-suggest{border:1px solid var(--accent); border-radius:10px; padding:10px 12px; margin:0 0 12px; background:rgba(47,91,234,.05);}
+.kb-suggest-head{font-weight:600; font-size:13px; margin-bottom:4px;}
+.kb-suggest-head .hint{font-weight:400; margin-left:4px;}
+.kb-suggest-text{font-size:13px; white-space:pre-wrap; line-height:1.45; max-height:150px; overflow:auto;}
+.qc-img{display:flex; align-items:flex-start; gap:10px; margin-top:8px;}
+.qc-img img{max-width:260px; max-height:180px; border:1px solid var(--border); border-radius:8px; object-fit:contain; background:#fff;}
+.qc-img.small{margin:0 0 10px;}
+.qc-img.small img{max-width:140px; max-height:90px;}
+.ap-opts{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center;}
+.ap-list{display:flex; flex-direction:column; gap:4px;}
+.ap-row{display:grid; grid-template-columns:auto 96px minmax(0,1fr) auto; gap:8px; align-items:center; padding:6px 8px; border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px;}
+.ap-time{font-variant-numeric:tabular-nums; color:var(--text-muted);}
+.ap-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.ap-why{font-size:11.5px; color:var(--text-faint); text-align:right;}
+@media (max-width:640px){ .ap-row{grid-template-columns:auto 84px minmax(0,1fr);} .ap-why{grid-column:3; text-align:left;} }
+.pl-block.auto .pl-block-time::after{content:' ✨';}
 .ai-fab svg.i{width:22px; height:22px; color:#fff;}
 .ai-chat{position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow-lg); z-index:950; display:flex; flex-direction:column; transform:translateX(105%); transition:transform .22s var(--ease); visibility:hidden;}
 .ai-chat.open{transform:none; visibility:visible;}
@@ -1067,7 +1095,45 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 .ai-dots i:nth-child(2){animation-delay:.15s;}
 .ai-dots i:nth-child(3){animation-delay:.3s;}
 @keyframes aidot{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
-@media print{ #aiChat, #aiFab{display:none !important;} }
+@media print{ #aiChat, #aiFab, #voiceFab, #voiceOverlay{display:none !important;} }
+/* ---- QR-Rechnung (Druck): A4 mit Zahlteil unten, Masse nach Swiss Payment Standards ---- */
+@page qrinvoice{ size:A4; margin:0; }
+#printArea .qr-invoice{page:qrinvoice; position:relative; width:210mm; height:297mm; box-sizing:border-box; padding:18mm 20mm 0 22mm; font-family:Arial, Helvetica, sans-serif; color:#000; break-after:page; overflow:hidden;}
+#printArea .qi-top{display:flex; justify-content:space-between; font-size:10pt; line-height:1.35;}
+#printArea .qi-to{width:80mm; margin-top:27mm;}
+#printArea .qi-place{margin-top:14mm; font-size:10pt;}
+#printArea .qr-invoice h1{font-size:16pt; margin:6mm 0 1mm;}
+#printArea .qi-meta{font-size:9pt; color:#333; margin-bottom:4mm;}
+#printArea .qr-invoice table{width:100%; border-collapse:collapse; font-size:9.5pt;}
+#printArea .qr-invoice th, #printArea .qr-invoice td{text-align:left; padding:1.4mm 1.5mm; border-bottom:0.2mm solid #ccc;}
+#printArea .qr-invoice th{border-bottom:0.4mm solid #000;}
+#printArea .qr-invoice .num{text-align:right; white-space:nowrap;}
+#printArea .qr-invoice .qi-total td{font-weight:bold; border-top:0.4mm solid #000; border-bottom:none;}
+#printArea .qi-note{font-size:9.5pt; margin-top:5mm;}
+#printArea .qrb{position:absolute; left:0; bottom:0; width:210mm; height:105mm; display:flex; border-top:0.2mm dashed #000; font-family:Arial, Helvetica, sans-serif; background:#fff;}
+#printArea .qrb-receipt{width:62mm; box-sizing:border-box; padding:5mm; border-right:0.2mm dashed #000; position:relative;}
+#printArea .qrb-pay{width:148mm; box-sizing:border-box; padding:5mm; display:flex; gap:5mm;}
+#printArea .qrb-left{width:51mm;}
+#printArea .qrb-right{flex:1;}
+#printArea .qrb-title{font-size:11pt; font-weight:bold; margin-bottom:5mm;}
+#printArea .qrb-code{width:46mm; height:46mm; margin-bottom:5mm;}
+#printArea .qrb-code svg{display:block; width:46mm; height:46mm;}
+#printArea .qrb-receipt .qrb-h{font-size:6pt; font-weight:bold; margin-top:2.5mm;}
+#printArea .qrb-receipt .qrb-v{font-size:8pt; line-height:9pt;}
+#printArea .qrb-pay .qrb-h{font-size:8pt; font-weight:bold; margin-top:3mm;}
+#printArea .qrb-pay .qrb-v{font-size:10pt; line-height:11pt;}
+#printArea .qrb-right .qrb-h:first-child{margin-top:0;}
+#printArea .qrb-amount{display:flex; gap:6mm;}
+#printArea .qrb-receipt .qrb-amount{position:absolute; top:68mm;}
+#printArea .qrb-accept{position:absolute; right:5mm; top:82mm; font-size:6pt; font-weight:bold;}
+#printArea .qrb-box{position:relative; margin-top:1mm;}
+#printArea .qrb-box.r{width:52mm; height:20mm;}
+#printArea .qrb-box.p{width:65mm; height:25mm;}
+#printArea .qrb-corner, #printArea .qrb-box::before, #printArea .qrb-box::after{content:''; position:absolute; width:3mm; height:2mm; border:0.3mm solid #000;}
+#printArea .qrb-box::before{left:0; top:0; border-right:none; border-bottom:none;}
+#printArea .qrb-box::after{right:0; bottom:0; border-left:none; border-top:none;}
+#printArea .qrb-corner{right:0; top:0; border-left:none; border-bottom:none;}
+#printArea .qi-detail{padding:15mm 20mm;}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1264,6 +1330,8 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
   <div id="aiQuick" class="ai-quick"></div>
   <form id="aiForm" class="ai-form"><textarea id="aiInput" rows="1" placeholder="Frage stellen oder Auftrag geben…"></textarea><button class="btn primary" id="aiSend" type="submit">Senden</button></form>
 </aside>
+<button id="voiceFab" class="voice-fab hidden" title="Sprachbefehl (Taste V)" aria-label="Sprachbefehl">🎙️</button>
+<div id="voiceOverlay" class="hidden" role="status" aria-live="polite"><div class="v-mic">🎙️</div><div class="v-text" id="voiceText">Ich höre zu…</div><div class="hint">z.B. „Starte Drucker Meier“, „Pause“, „Verschiebe das auf morgen“, „Plane meinen Tag“ · antippen zum Abbrechen</div></div>
 <div id="confettiHost"></div>
 <div id="printArea"></div>
 
@@ -1557,6 +1625,8 @@ function normalizeTask(t){
   if(t.comments !== undefined) t.comments = normalizeComments(t.comments);
   if(t.solution !== undefined) t.solution = typeof t.solution === 'string' ? t.solution.slice(0, 8000) : '';
   if(t.mail !== undefined){ var nm = normalizeMail(t.mail); if(nm) t.mail = nm; else delete t.mail; }
+  if(t.autoPlan !== undefined && t.autoPlan !== true) delete t.autoPlan;
+  if(t.solutionAuto !== undefined && t.solutionAuto !== true) delete t.solutionAuto;
   return t;
 }
 
@@ -1682,7 +1752,9 @@ function updateTask(id, patch){
       awardXp(t);
       spawnRecurrenceIfDue(t);
       sendNtfyPush('✅ Task erledigt', 'Ein Task wurde als erledigt markiert' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + '.');
-      if(!kbHasSolution(t) && (t.type === 'hotline' || (t.notes && t.notes.length >= 2))){
+      if(!kbHasSolution(t) && aiKey() && state.settings.kbAutoWrite !== false && kbWorthWriting(t)){
+        setTimeout(function(){ kbAutoWrite(t); }, 300);
+      } else if(!kbHasSolution(t) && (t.type === 'hotline' || (t.notes && t.notes.length >= 2))){
         setTimeout(function(){ toast('💡 Erledigt – Lösung für die Wissensdatenbank festhalten?', 9000, 'Festhalten', function(){ openSolutionDialog(t.id); }); }, 700);
       }
     } else if(toCol && !DONE_COLUMN_RE.test(toCol.name) && t.completedAt){
@@ -1695,6 +1767,8 @@ function updateTask(id, patch){
   if(patch.assignee && patch.assignee !== t.assignee){
     sendNtfyPush('📋 Task zugewiesen', 'Ein Task wurde zugewiesen an: ' + patch.assignee + ' – im Board ansehen.');
   }
+  if(patch.solution !== undefined && patch.solution !== t.solution) delete t.solutionAuto;
+  if(patch.scheduledAt !== undefined && patch.scheduledAt !== t.scheduledAt && !patch.autoPlan) delete t.autoPlan;
   Object.assign(t, patch, {updatedAt: nowIso()});
   save();
   if(!ruleDepth){
@@ -4725,6 +4799,7 @@ function openTaskModal(taskId){
       '<span class="type-badge'+(BASE_TYPES[t.type] ? ' ty-'+t.type : '')+'" title="'+escapeAttr(typeInfoModal.label)+'">'+typeIconHtml(t.type)+'</span>' +
       '<span class="task-ref">'+escapeHtml(t.jiraKey || typeInfoModal.label)+'</span>' +
       '<input id="fTitle" class="task-title-input" value="'+escapeAttr(t.title)+'" placeholder="Titel" aria-label="Titel">' +
+      (voiceSupported() ? '<button class="btn ghost icon-btn" id="modalVoiceBtn" title="Sprachbefehl für diesen Task, z.B. „Verschiebe das auf morgen“" aria-label="Sprachbefehl">🎙️</button>' : '') +
       '<button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button>' +
     '</div>' +
     '<div class="modal-body task-body">' +
@@ -4732,7 +4807,7 @@ function openTaskModal(taskId){
         '<div class="meeting-chip-row">' + state.settings.recentMeetingTitles.map(function(mt){
           return '<span class="meeting-chip" data-meeting-title="'+escapeAttr(mt)+'">'+escapeHtml(mt)+'</span>';
         }).join('') + '</div>' : '') +
-      '<div id="similarHint"></div>' +
+      '<div id="similarHint"></div><div id="kbSuggest"></div>' +
       '<div class="task-layout">' +
 
         '<div class="task-main">' +
@@ -4757,7 +4832,7 @@ function openTaskModal(taskId){
 
           (activeShared ? commentsBlockHtml(t) : '') +
 
-          '<div class="task-block"><div class="task-block-title">Lösung<span class="task-block-sub">was hat geholfen? (Wissensdatenbank)</span></div>' +
+          '<div class="task-block"><div class="task-block-title">Lösung<span class="task-block-sub">'+(t.solutionAuto ? '✨ von der KI geschrieben, gerne anpassen' : 'was hat geholfen? (Wissensdatenbank)')+'</span></div>' +
             '<textarea id="fSolution" rows="3" placeholder="Problem, Ursache, Lösung in Schritten…">'+escapeHtml(t.solution||'')+'</textarea>' +
             '<div class="ai-row"><button type="button" class="btn ghost" id="solAiBtn">✨ Aus dem Fall formulieren</button></div>' +
           '</div>' +
@@ -4847,8 +4922,9 @@ function openTaskModal(taskId){
             '<div class="prop"><label for="fDue">Fällig am</label><input type="date" id="fDue" value="'+escapeAttr(t.dueDate||'')+'"></div>' +
             '<div class="prop-row2">' +
               '<div class="prop"><label for="fJiraKey">Jira-Key</label><input id="fJiraKey" value="'+escapeAttr(t.jiraKey||'')+'" placeholder="PROJ-1234"></div>' +
-              '<div class="prop"><label for="fBudget">Budget (Min.)</label><input type="number" id="fBudget" min="0" value="'+(t.estimatedMinutes||'')+'" placeholder="120"></div>' +
+              '<div class="prop"><label for="fBudget">Budget (Min.)</label><input type="number" id="fBudget" min="0" value="'+(t.estimatedMinutes||'')+'" placeholder="'+(learnedMinutes(t) || 120)+'"></div>' +
             '</div>' +
+            '<div id="estHint"></div>' +
             '<div class="prop autocomplete-wrap"><label for="fTags">Tags (Komma-getrennt)</label><input id="fTags" autocomplete="off" value="'+escapeAttr(t.tags.join(', '))+'"><div class="autocomplete-list" id="tagSuggestions"></div></div>' +
             '<div class="prop"><label for="fGroup">Gruppe (optional)</label>' +
               '<input id="fGroup" list="groupNamesList" value="'+escapeAttr(t.taskGroup||'')+'" placeholder="z.B. VPN-Rollout">' +
@@ -4899,6 +4975,10 @@ function openTaskModal(taskId){
       b.addEventListener('click', function(){ runTaskAi(b.dataset.ai, t.id); });
     });
     renderSimilarHint(t.id);
+    renderKbSuggest(t.id);
+    var mv = document.getElementById('modalVoiceBtn');
+    if(mv) mv.addEventListener('click', startVoiceCommand);
+    renderEstimateHint(t.id);
   })();
 
   function persist(){
@@ -4950,6 +5030,7 @@ function openTaskModal(taskId){
     renderBoard();
     renderStatusbar();
     renderSimilarHint(t.id);
+    renderEstimateHint(t.id);
   }
   ['fTitle','fType','fPriority','fColumn','fDue','fJiraKey','fBudget','fDesc','fTags','fGroup','fScheduledAt','fSchedMin','fRecurrence','fAssignee','fReporter','fPhone'].forEach(function(id){
     var el = document.getElementById(id);
@@ -5449,6 +5530,7 @@ function createHotlineTask(o){
   if(notes){ t.notes.push({ts: nowIso(), text: notes}); save(); }
   if(o.start !== false) startTimer(t.id);
   renderAll();
+  offerReplan();
   return t;
 }
 function createTimerTask(type, title){
@@ -5579,6 +5661,7 @@ function startMeeting(){
   var tm = new Date().toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
   var t = createTimerTask('meeting', 'Meeting ' + tm);
   openMeetingSubjectDialog(t.id);
+  offerReplan();
 }
 function openMeetingSubjectDialog(taskId){
   var t = getTask(taskId);
@@ -5684,8 +5767,8 @@ function aiReady(){
   toast('Dafür braucht es einen API-Key für ' + aiProviderName() + ' (Einstellungen → Integrationen).', 7000, 'Einstellungen', function(){ settingsActiveTab = 'integrations'; openSettings(); });
   return false;
 }
-function aiJson(systemPrompt, userText, maxTokens){
-  return callAIRaw(systemPrompt, userText, maxTokens).then(function(raw){
+function aiJson(systemPrompt, userText, maxTokens, image){
+  return callAIRaw(systemPrompt, userText, maxTokens, image).then(function(raw){
     var m = raw.match(/[\[{][\s\S]*[\]}]/);
     if(!m) throw new Error('Keine gültige Antwort der KI');
     return JSON.parse(m[0]);
@@ -5769,17 +5852,23 @@ function heuristicParse(text){
     reporter: fromMatch ? fromMatch[1].trim() : '', phone: phoneMatch ? phoneMatch[1].trim() : '', tags: tags.slice(0, 4), dueDate: heuristicDueDate(text)
   };
 }
-function processQuickCapture(text){
-  if(!aiKey()) return Promise.resolve([normalizeDraft(heuristicParse(text))]);
-  return aiJson(AI_EXTRACT_SYSTEM + ' ' + aiContextHint(), text, 2000).then(function(json){
+function processQuickCapture(text, imageUrl){
+  if(!aiKey()){
+    var h = heuristicParse(text || 'Screenshot');
+    if(imageUrl && !text) h.title = 'Screenshot ' + new Date().toLocaleString('de-CH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    return Promise.resolve([normalizeDraft(h)]);
+  }
+  var img = imageUrl ? imagePart(imageUrl) : null;
+  return aiJson(AI_EXTRACT_SYSTEM + (img ? ' ' + AI_IMAGE_HINT : '') + ' ' + aiContextHint(), text || 'Erstelle aus diesem Bild einen Task.', 2000, img).then(function(json){
     var arr = Array.isArray(json) ? json : (Array.isArray(json.tasks) ? json.tasks : [json]);
     arr = arr.filter(function(o){ return o && typeof o === 'object'; }).slice(0, 8).map(normalizeDraft);
     if(!arr.length) throw new Error('Keine Tasks erkannt');
     return arr;
   });
 }
-function openQuickCapture(prefillText, autoProcess){
+function openQuickCapture(prefillText, autoProcess, imageUrl){
   var hasKey = !!aiKey();
+  var qcImage = imageUrl || '';
   var html =
     '<div class="modal-header"><h2>✨ Ticket aus Text erstellen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
@@ -5787,11 +5876,13 @@ function openQuickCapture(prefillText, autoProcess){
         (hasKey ? 'Die KI erkennt Titel, Reporter, Priorität, Frist, Tags und Schritte, und legt bei mehreren Anliegen mehrere Tasks an.'
                 : 'Ohne API-Key gibt es eine einfache Erkennung (Ticket-Key, #Tags, Frist, Absender). Mit KI wird es deutlich besser: Einstellungen → Integrationen.') +
       '</div>' +
-      '<textarea id="qcText" rows="10" placeholder="Beschreibung oder E-Mail-Text hier einfügen…" style="width:100%;">'+escapeHtml(prefillText||'')+'</textarea>' +
-      '<div class="hint" style="margin-top:6px;">Tipp: Text einfach mit Strg+V auf dem Board einfügen, dann öffnet sich dieses Fenster automatisch.</div>' +
+      '<textarea id="qcText" rows="'+(qcImage ? 4 : 10)+'" placeholder="'+(qcImage ? 'Optional: was ist passiert, wer meldet es?' : 'Beschreibung oder E-Mail-Text hier einfügen…')+'" style="width:100%;">'+escapeHtml(prefillText||'')+'</textarea>' +
+      '<div id="qcImgBox"></div>' +
+      '<div class="hint" style="margin-top:6px;">Tipp: Text oder einen Screenshot einfach mit Strg+V auf dem Board einfügen, dann öffnet sich dieses Fenster automatisch.' + (hasKey ? '' : ' Bilder liest nur die KI.') + '</div>' +
     '</div>' +
     '<div class="modal-footer">' +
       '<button class="btn icon-btn" id="qcSnippetBtn" title="Textbaustein einfügen" style="margin-right:auto;">📎</button>' +
+      '<button class="btn" id="qcImgBtn" title="Screenshot oder Foto hinzufügen">📷 Bild</button><input type="file" id="qcImgFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>' +
       '<button class="btn" data-close-modal>Abbrechen</button>' +
       '<button class="btn primary" id="qcProcessBtn">'+(hasKey ? 'Mit KI auswerten' : 'Entwurf erstellen')+'</button>' +
     '</div>';
@@ -5800,24 +5891,44 @@ function openQuickCapture(prefillText, autoProcess){
     openSnippetMenu(e.currentTarget, document.getElementById('qcText'));
   });
   var btn = document.getElementById('qcProcessBtn');
+  function drawImage(){
+    var box = document.getElementById('qcImgBox');
+    if(!box) return;
+    box.innerHTML = qcImage ? '<div class="qc-img"><img src="'+escapeAttr(qcImage)+'" alt="Screenshot"><button type="button" class="btn ghost" id="qcImgDel">Bild entfernen</button></div>' : '';
+    var del = document.getElementById('qcImgDel');
+    if(del) del.addEventListener('click', function(){ qcImage = ''; drawImage(); });
+  }
+  function setImage(file){
+    imageFromFile(file).then(function(url){ qcImage = url; drawImage(); }).catch(function(err){ toast(err.message); });
+  }
+  drawImage();
+  document.getElementById('qcImgBtn').addEventListener('click', function(){ document.getElementById('qcImgFile').click(); });
+  document.getElementById('qcImgFile').addEventListener('change', function(e){ if(e.target.files && e.target.files[0]) setImage(e.target.files[0]); e.target.value = ''; });
+  document.getElementById('qcText').addEventListener('paste', function(e){
+    var f = clipboardImageFile(e);
+    if(f){ e.preventDefault(); setImage(f); }
+  });
+  openQuickCapture.setImage = setImage;
   function run(){
     var text = document.getElementById('qcText').value.trim();
-    if(!text) return;
-    var importPayload = tryParseImportPayload(text);
+    if(!text && !qcImage) return;
+    var importPayload = text && !qcImage ? tryParseImportPayload(text) : null;
     if(importPayload){ openDraftPreview(importPayload, text); return; }
-    btn.disabled = true; btn.textContent = hasKey ? 'KI wertet aus…' : 'Verarbeite…';
-    processQuickCapture(text).then(function(drafts){
-      openDraftPreview(drafts, text);
+    btn.disabled = true; btn.textContent = hasKey ? (qcImage ? 'KI liest das Bild…' : 'KI wertet aus…') : 'Verarbeite…';
+    var img = qcImage;
+    processQuickCapture(text, img).then(function(drafts){
+      openDraftPreview(drafts, text, img);
     }).catch(function(err){
       toast('KI-Auswertung fehlgeschlagen (' + err.message + '), nutze einfache Erkennung.', 6000);
-      openDraftPreview([normalizeDraft(heuristicParse(text))], text);
+      openDraftPreview([normalizeDraft(heuristicParse(text || 'Screenshot'))], text, img);
     });
   }
   btn.addEventListener('click', run);
-  if(autoProcess && prefillText && prefillText.trim()) setTimeout(run, 0);
+  if(autoProcess && ((prefillText && prefillText.trim()) || qcImage)) setTimeout(run, 0);
 }
-function callAIRaw(systemPrompt, userText, maxTokens){
-  if(aiProvider() === 'gemini') return callGeminiRaw(systemPrompt, userText, maxTokens);
+/* image (optional): {mediaType, data} mit Base64-Daten, z.B. ein Screenshot */
+function callAIRaw(systemPrompt, userText, maxTokens, image){
+  if(aiProvider() === 'gemini') return callGeminiRaw(systemPrompt, userText, maxTokens, image);
   var key = state.settings.aiApiKey;
   var model = state.settings.aiModel || 'claude-haiku-4-5-20251001';
   return fetch('https://api.anthropic.com/v1/messages', {
@@ -5832,7 +5943,7 @@ function callAIRaw(systemPrompt, userText, maxTokens){
       model: model,
       max_tokens: maxTokens || 800,
       system: systemPrompt,
-      messages: [{role:'user', content: userText}]
+      messages: [{role:'user', content: image ? [{type:'image', source:{type:'base64', media_type:image.mediaType, data:image.data}}, {type:'text', text:userText}] : userText}]
     })
   }).then(function(res){
     if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+' '+t.slice(0,200)); });
@@ -5870,8 +5981,9 @@ function openAiWeeklyAnalysis(){
   });
 }
 
-function openDraftPreview(input, sourceText){
+function openDraftPreview(input, sourceText, imageUrl){
   var drafts = (Array.isArray(input) ? input : [input]).map(normalizeDraft);
+  var shot = imageUrl && isSafeImageData(imageUrl) ? imageUrl : '';
   var typeOptionsFor = function(sel){ return Object.keys(TYPES).map(function(k){
     return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+escapeHtml(TYPES[k].label)+'</option>';
   }).join(''); };
@@ -5917,6 +6029,7 @@ function openDraftPreview(input, sourceText){
     '<div class="modal-body">' +
       '<datalist id="draftReporters">'+reporterList+'</datalist>' +
       (drafts.length > 1 ? '<div class="hint" style="margin:0 0 10px;">Prüfe die Entwürfe und hake ab, was nicht angelegt werden soll.</div>' : '') +
+      (shot ? '<div class="qc-img small"><img src="'+escapeAttr(shot)+'" alt="Screenshot"><span class="hint">Das Bild wird als Notiz an '+(drafts.length > 1 ? 'jeden neuen Task' : 'den Task')+' gehängt.</span></div>' : '') +
       cards +
     '</div>' +
     '<div class="modal-footer">' +
@@ -5948,6 +6061,11 @@ function openDraftPreview(input, sourceText){
       if(d.mail){
         payload.mail = d.mail;
         if(!existing && d.mail.attachments && d.mail.attachments.length) payload.notes = [{ts: nowIso(), text: '📎 Anhänge der Mail (nicht gespeichert): ' + d.mail.attachments.join(', ')}];
+      }
+      if(shot){
+        var shotNote = {ts: nowIso(), text: '📷 Screenshot', image: shot};
+        if(existing){ existing.notes.push(shotNote); }
+        else payload.notes = (payload.notes || []).concat(shotNote);
       }
       if(existing){
         (d.links || []).forEach(function(l){
@@ -6054,6 +6172,12 @@ document.addEventListener('paste', function(e){
   if(tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable)) return;
   var cd = e.clipboardData || window.clipboardData;
   if(!cd) return;
+  var imgFile = clipboardImageFile(e);
+  if(imgFile){
+    e.preventDefault();
+    imageFromFile(imgFile).then(function(url){ openQuickCapture('', !!aiKey(), url); }).catch(function(err){ toast(err.message); });
+    return;
+  }
   var text = cd.getData('text');
   if(!text || text.trim().length < 25) return;
   e.preventDefault();
@@ -7178,6 +7302,8 @@ function renderStatsView(range){
         pcard('Verlauf (12 Wochen)', heatHtml) +
         pcard('Offen und erledigt', burndownHtml) +
         pcard('Diese Woche', badgesHtml) +
+        pcard('🔀 Unterbrechungen (' + label + ')', interruptionStatsHtml(startMs, endMs)) +
+        pcard('📈 Schätzung und Wirklichkeit', estimateStatsHtml()) +
       '</div>' +
     '</div>';
   board.innerHTML = html;
@@ -7185,6 +7311,7 @@ function renderStatsView(range){
     btn.addEventListener('click', function(){ renderStatsView(btn.dataset.range); });
   });
   document.getElementById('btnStatsCsv').addEventListener('click', function(){ exportTimeCsv(range, startMs, endMs); });
+  wireInterruptionCard(board, function(){ renderStatsView(range); });
 }
 
 /* Erfasste Zeiten (eigene Sitzungen) eines Zeitraums als CSV für Excel:
@@ -8868,6 +8995,7 @@ function openSettings(){
         sRow('Anthropic API-Key', '<input type="password" id="sApiKey" value="'+escapeAttr(state.settings.aiApiKey||'')+'" placeholder="sk-ant-…">', 'Ohne Key gibt es eine einfachere Texterkennung.') +
         sRow('KI-Modell', '<select id="sAiModel">' + AI_MODELS.map(function(m){ return '<option value="'+m.id+'"'+((state.settings.aiModel||AI_MODELS[0].id)===m.id?' selected':'')+'>'+m.label+'</option>'; }).join('') + '</select>', 'Haiku ist schnell und günstig, Sonnet und Opus erkennen mehr.')
       ) +
+      sRow('Wissen automatisch schreiben', sCheck('sKbAuto', state.settings.kbAutoWrite !== false), 'Beim Erledigen schreibt die KI aus Notizen und Kommentaren einen Wissensartikel.') +
       sMore('Wofür die KI genutzt wird', '<p><strong>Ticket aus Text:</strong> E-Mail oder Notiz einfügen (auch direkt mit Strg+V auf dem Board), die KI legt einen oder mehrere Tasks an. <strong>Im Task:</strong> Beschreibung verbessern, zusammenfassen, Checkliste vorschlagen, Antwort entwerfen. <strong>Hotline-Anruf:</strong> Notizen auswerten und Felder ausfüllen. <strong>Assistent (Strg+J):</strong> Fragen zum Board, Wochenbericht, Planung.</p>') +
       sMore('Datenschutz', '<p>Der Key wird nur lokal gespeichert. Beim Auswerten werden der eingefügte Text bzw. die abgefragten Inhalte direkt an ' + escapeHtml(aiProviderName()) + ' gesendet, nicht an Supabase oder andere Dienste.</p>')
     );
@@ -9121,6 +9249,8 @@ function openSettings(){
     try{ if(state.settings.aiApiKey) localStorage.setItem('wb-ai-key', state.settings.aiApiKey); else localStorage.removeItem('wb-ai-key'); }catch(err){}
     save();
   });
+  var kbAutoEl = document.getElementById('sKbAuto');
+  if(kbAutoEl) kbAutoEl.addEventListener('change', function(e){ state.settings.kbAutoWrite = e.target.checked; save(); });
   var aiModelEl = document.getElementById('sAiModel');
   if(aiModelEl) aiModelEl.addEventListener('change', function(e){
     state.settings.aiModel = e.target.value;
@@ -9655,6 +9785,9 @@ function cmdActionsList(){
     {icon:'📝', label:'Zeit ohne Task buchen (nur Text)', run: function(){ openTimeBlockDialog(null); }},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
+    {icon:'✨', label:'Tag automatisch planen (Autopilot)', run: function(){ openAutopilot(); }},
+    {icon:'🎙️', label:'Sprachbefehl (Taste V)', run: startVoiceCommand},
+    {icon:'📷', label:'Ticket aus Screenshot oder Foto', run: function(){ openQuickCapture(''); setTimeout(function(){ var b = document.getElementById('qcImgFile'); if(b) b.click(); }, 50); }},
     {icon:'🎯', label:'Fokus-Modus starten', run: enterFocusMode},
     {icon:'🧾', label:'Tagesabschluss (Dyce)', run: openDyceExport},
     {icon:'🗓️', label:'Planer (Wochenansicht)', run: function(){ switchToView('calendar'); }},
@@ -10097,7 +10230,8 @@ function renderSidebarToday(){
   var fill = document.getElementById('sbTodayFill');
   fill.style.width = (goal ? Math.min(100, sec/goal*100) : 0) + '%';
   fill.parentNode.classList.toggle('none', !goal);
-  document.getElementById('sbTodaySub').textContent = goal ? ('von ' + fmtHM(goal) + (sec >= goal ? ' · Ziel erreicht' : '')) : 'Tagesziel: Einstellungen → Zeit';
+  var sw = sec ? switchesToday().switches : 0;
+  document.getElementById('sbTodaySub').textContent = (goal ? ('von ' + fmtHM(goal) + (sec >= goal ? ' · Ziel erreicht' : '')) : 'Tagesziel: Einstellungen → Zeit') + (sw ? ' · 🔀 ' + sw + ' Wechsel' : '');
 }
 function updateThemeToggle(){
   var use = document.getElementById('themeToggleUse');
@@ -10219,6 +10353,9 @@ document.addEventListener('keydown', function(e){
     document.getElementById('searchInput').focus();
   } else if(e.key === '?'){
     openShortcutsCheatsheet();
+  } else if((e.key === 'v' || e.key === 'V') && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault();
+    startVoiceCommand();
   } else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].indexOf(e.key) >= 0 && document.activeElement.classList.contains('card')){
     handleCardKeyNav(e);
   }
@@ -10321,7 +10458,7 @@ function normalizeProject(p){
   if(!p || typeof p !== 'object') return null;
   var rate = (typeof p.rate === 'number' && isFinite(p.rate) && p.rate >= 0) ? p.rate : null;
   var budget = (typeof p.budgetHours === 'number' && isFinite(p.budgetHours) && p.budgetHours > 0) ? p.budgetHours : null;
-  return {
+  var out = {
     id: (typeof p.id === 'string' && SAFE_ID_RE.test(p.id)) ? p.id : 'pr-' + uid(),
     name: stripMarkup(p.name, 80) || 'Projekt',
     client: stripMarkup(p.client, 80),
@@ -10332,6 +10469,8 @@ function normalizeProject(p){
     note: cleanStr(p.note, 500),
     updatedAt: typeof p.updatedAt === 'string' && !isNaN(new Date(p.updatedAt).getTime()) ? p.updatedAt : nowIso()
   };
+  if(p.clientAddress) out.clientAddress = cleanStr(p.clientAddress, 300);
+  return out;
 }
 function normalizeRule(r){
   if(!r || typeof r !== 'object') return null;
@@ -10672,6 +10811,8 @@ function renderProjectsView(){
   if(back) back.addEventListener('click', function(){ projDetailId = ''; renderProjectsView(); });
   var pr2 = document.getElementById('projPrintBtn');
   if(pr2) pr2.addEventListener('click', function(){ printProjectReport(getProject(projDetailId), b); });
+  var inv = document.getElementById('projInvoiceBtn');
+  if(inv) inv.addEventListener('click', function(){ openInvoiceDialog(getProject(projDetailId), b); });
   var cp = document.getElementById('projCopyBtn');
   if(cp) cp.addEventListener('click', function(){ copyProjectTable(getProject(projDetailId), b); });
   var ed = document.getElementById('projEditBtn');
@@ -10711,7 +10852,7 @@ function renderProjectDetailHtml(p, b, seg){
   return '<div class="dash">' +
     '<div class="dash-head"><div><button class="btn ghost" id="projBackBtn">← Alle Projekte</button><h1><span class="proj-dot" style="background:' + escapeAttr(p.color) + '"></span>' + escapeHtml(p.name) + '</h1>' +
       '<p>' + (p.client ? escapeHtml(p.client) + ' · ' : '') + b.label + ' · Satz ' + fmtCHF(rate) + ' CHF/h' + (p.billable ? '' : ' · nicht abrechenbar') + '</p></div>' +
-      '<div class="dash-actions">' + seg + '<button class="btn" id="projEditBtn">Bearbeiten</button><button class="btn" id="projCopyBtn">' + svgIcon('clipboard') + '<span>Tabelle kopieren</span></button><button class="btn primary" id="projPrintBtn">Leistungsübersicht drucken</button></div></div>' +
+      '<div class="dash-actions">' + seg + '<button class="btn" id="projEditBtn">Bearbeiten</button><button class="btn" id="projCopyBtn">' + svgIcon('clipboard') + '<span>Tabelle kopieren</span></button><button class="btn" id="projPrintBtn">Leistungsübersicht drucken</button>' + (p.billable ? '<button class="btn primary" id="projInvoiceBtn">🧾 QR-Rechnung</button>' : '') + '</div></div>' +
     '<div class="dash-grid">' +
       '<section class="dcard"><div class="dcard-head"><h3>Übersicht</h3></div><div class="proj-nums">' +
         '<div><b>' + fmtHM(totalR) + '</b><span>abrechenbar (gerundet)</span></div><div><b>' + (p.billable ? fmtCHF(amount) : '–') + '</b><span>CHF</span></div><div><b>' + fmtHM(totalRaw) + '</b><span>effektiv</span></div></div>' +
@@ -10763,6 +10904,7 @@ function openProjectDialog(id, onDone){
       '<div class="form-row"><label>Farbe</label><div style="display:flex; gap:8px; flex-wrap:wrap;" id="pjColors">' + ACCENT_PRESETS.map(function(c){
         return '<button type="button" class="accent-swatch" data-color="' + c + '" style="width:24px;height:24px;border-radius:50%;background:' + c + ';border:2px solid ' + (p.color === c ? 'var(--text)' : 'transparent') + ';cursor:pointer;"></button>';
       }).join('') + '</div></div>' +
+      '<div class="form-row"><label for="pjAddr">Rechnungsadresse (für die QR-Rechnung, optional)</label><textarea id="pjAddr" rows="2" placeholder="Musterstrasse 12&#10;8000 Zürich">' + escapeHtml(p.clientAddress || '') + '</textarea></div>' +
       '<div class="form-row"><label for="pjNote">Notiz</label><textarea id="pjNote" rows="2">' + escapeHtml(p.note) + '</textarea></div>' +
       '<label style="display:flex; gap:8px; align-items:center; margin-bottom:8px;"><input type="checkbox" id="pjBillable"' + (p.billable ? ' checked' : '') + '> Abrechenbar</label>' +
       '<label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="pjActive"' + (p.active ? ' checked' : '') + '> Aktiv (neue Tasks können zugeordnet werden)</label>' +
@@ -10787,6 +10929,8 @@ function openProjectDialog(id, onDone){
     p.rate = isFinite(rate) && rate >= 0 ? rate : null;
     p.budgetHours = isFinite(budget) && budget > 0 ? budget : null;
     p.note = document.getElementById('pjNote').value;
+    var addr = document.getElementById('pjAddr').value.trim();
+    if(addr) p.clientAddress = addr; else delete p.clientAddress;
     p.billable = document.getElementById('pjBillable').checked;
     p.active = document.getElementById('pjActive').checked;
     p = normalizeProject(p);
@@ -10823,6 +10967,999 @@ function projectChipHtml(t){
 }
 
 /* =========================================================
+   LERNENDE SCHÄTZUNG
+   Vergleicht bei erledigten Tasks (letzte 180 Tage, alle eigenen Boards) die Schätzung
+   ("Budget") mit der eigenen gebuchten Zeit, getrennt nach Typ. Daraus entstehen ein
+   Korrekturfaktor (Median Ist/Schätzung) und eine typische Dauer für Tasks ohne Schätzung.
+   ========================================================= */
+var EST_MIN_SAMPLES = 3;
+var estStatsCache = null, estStatsAt = 0;
+function medianOf(arr){
+  var a = arr.slice().sort(function(x, y){ return x - y; });
+  var n = a.length;
+  if(!n) return 0;
+  return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2;
+}
+function estimateStats(){
+  if(estStatsCache && Date.now() - estStatsAt < 10000) return estStatsCache;
+  var since = Date.now() - 180 * 86400000;
+  var types = {}, all = {ratios: [], actuals: []};
+  var pool = state.tasks.slice();
+  (state.boards || []).forEach(function(b){ if(Array.isArray(b.tasks)) pool = pool.concat(b.tasks); });
+  pool.forEach(function(t){
+    if(!t || !t.completedAt || new Date(t.completedAt).getTime() < since || !Array.isArray(t.timeSessions)) return;
+    var min = secondsInRange(t, 0, Date.now()) / 60;
+    if(min < 2) return;
+    var s = types[t.type] || (types[t.type] = {ratios: [], actuals: []});
+    s.actuals.push(min); all.actuals.push(min);
+    if(t.estimatedMinutes > 0){
+      var r = min / t.estimatedMinutes;
+      if(r > 0.05 && r < 20){ s.ratios.push(r); all.ratios.push(r); }
+    }
+  });
+  function fin(s){ s.ratio = medianOf(s.ratios); s.typical = medianOf(s.actuals); return s; }
+  Object.keys(types).forEach(function(k){ fin(types[k]); });
+  estStatsCache = {types: types, all: fin(all)};
+  estStatsAt = Date.now();
+  return estStatsCache;
+}
+function roundTo5(m){ return Math.max(5, Math.round(m / 5) * 5); }
+/* {minutes, basis:'ratio'|'typical', ratio, n, scope:'type'|'all'} oder null, wenn zu wenig Daten da sind. */
+function learnedEstimate(t){
+  if(!t || t._free) return null;
+  var s = estimateStats();
+  var ts = s.types[t.type];
+  if(t.estimatedMinutes > 0){
+    var src = ts && ts.ratios.length >= EST_MIN_SAMPLES ? ts : (s.all.ratios.length >= EST_MIN_SAMPLES + 2 ? s.all : null);
+    if(!src) return null;
+    return {minutes: roundTo5(t.estimatedMinutes * src.ratio), basis: 'ratio', ratio: src.ratio, n: src.ratios.length, scope: src === ts ? 'type' : 'all'};
+  }
+  if(ts && ts.actuals.length >= EST_MIN_SAMPLES) return {minutes: roundTo5(ts.typical), basis: 'typical', n: ts.actuals.length, scope: 'type'};
+  return null;
+}
+function learnedMinutes(t){ var l = learnedEstimate(t); return l ? l.minutes : 0; }
+function ratioPhrase(ratio){
+  var pct = Math.round((ratio - 1) * 100);
+  if(Math.abs(pct) < 10) return 'treffen die Schätzung meist gut';
+  return pct > 0 ? 'dauern im Schnitt ' + pct + ' % länger als geschätzt' : 'gehen im Schnitt ' + (-pct) + ' % schneller als geschätzt';
+}
+function estimateHintText(t, l){
+  var tl = (TYPES[t.type] || TYPES.adhoc).label;
+  if(l.basis === 'typical') return 'Erledigte ' + tl + '-Tasks dauern bei dir typisch ca. ' + l.minutes + ' Min. (' + l.n + ' Tasks).';
+  return (l.scope === 'type' ? 'Deine ' + tl + '-Tasks ' : 'Deine Tasks ') + ratioPhrase(l.ratio) + ' (' + l.n + ' Tasks). Realistisch: ca. ' + l.minutes + ' Min.';
+}
+function renderEstimateHint(taskId){
+  var el = document.getElementById('estHint');
+  var t = getTask(taskId);
+  if(!el || !t) return;
+  var l = learnedEstimate(t);
+  var est = t.estimatedMinutes || 0;
+  if(!l || (est && Math.abs(l.minutes - est) < Math.max(10, est * 0.1))){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="est-hint">📈 ' + escapeHtml(estimateHintText(t, l)) + ' <button type="button" class="btn ghost" id="estApply">' + l.minutes + ' Min. übernehmen</button></div>';
+  document.getElementById('estApply').addEventListener('click', function(){
+    var inp = document.getElementById('fBudget');
+    if(inp){ inp.value = l.minutes; inp.dispatchEvent(new Event('change')); }
+    else updateTask(t.id, {estimatedMinutes: l.minutes});
+    el.innerHTML = '';
+    toast('📈 Schätzung angepasst: ' + l.minutes + ' Min.');
+  });
+}
+function estimateStatsHtml(){
+  var s = estimateStats();
+  var keys = Object.keys(s.types).filter(function(k){ return s.types[k].actuals.length; })
+    .sort(function(a, b){ return s.types[b].actuals.length - s.types[a].actuals.length; });
+  if(!keys.length) return '<div class="hint">Sobald du Tasks mit gebuchter Zeit erledigst, lernt das Board, wie lange sie wirklich dauern.</div>';
+  return keys.map(function(k){
+    var ts = s.types[k];
+    var info = TYPES[k] || TYPES.adhoc;
+    var right = ts.ratios.length >= EST_MIN_SAMPLES ? ratioPhrase(ts.ratio) : (ts.ratios.length ? 'noch zu wenig Schätzungen' : 'ohne Schätzung');
+    var cls = ts.ratios.length >= EST_MIN_SAMPLES && ts.ratio > 1.15 ? ' style="color:var(--warn);"' : '';
+    return '<div class="dash-row" style="cursor:default;"><span class="dash-row-title">' + info.icon + ' ' + escapeHtml(info.label) + '</span>' +
+      '<span class="dash-row-extra"' + cls + '>typisch ' + Math.round(ts.typical) + ' Min. · ' + escapeHtml(right) + ' · ' + ts.actuals.length + ' Tasks</span></div>';
+  }).join('') + '<div class="hint" style="margin-top:6px;">Grundlage: erledigte Tasks der letzten 180 Tage, eigene gebuchte Zeit. Im Task-Fenster erscheint ein Vorschlag, wenn deine Schätzung deutlich abweicht.</div>';
+}
+
+/* =========================================================
+   UNTERBRECHUNGS-RADAR
+   Zählt Wechsel zwischen Tasks (eigene Sitzungen, Lücke unter 30 Min.), Anrufe und
+   Meetings dazwischen und die längste ungestörte Phase. Pro Wechsel rechnen wir mit
+   SWITCH_COST_MIN Minuten, bis man wieder drin ist (Faustregel, keine Messung).
+   ========================================================= */
+var SWITCH_COST_MIN = 10;
+function switchStats(startMs, endMs){
+  var segs = [];
+  var now = Date.now();
+  timeTasks().forEach(function(t){
+    t.timeSessions.forEach(function(s){
+      if(!isMySession(s)) return;
+      var a = Math.max(new Date(s.start).getTime(), startMs);
+      var b = Math.min(s.end ? new Date(s.end).getTime() : now, endMs);
+      if(b > a) segs.push({id: t.id, type: t.type, a: a, b: b});
+    });
+  });
+  segs.sort(function(x, y){ return x.a - y.a; });
+  var out = {switches: 0, calls: 0, longest: 0, events: [], worked: 0};
+  var cur = null;
+  segs.forEach(function(s){
+    out.worked += s.b - s.a;
+    if(cur && s.id === cur.id && s.a - cur.b < 5 * 60000){ cur.b = Math.max(cur.b, s.b); return; }
+    if(cur){
+      out.longest = Math.max(out.longest, cur.b - cur.a);
+      if(s.a - cur.b < 30 * 60000){
+        out.switches++;
+        out.events.push(s.a);
+        if(s.type === 'hotline' || s.type === 'meeting') out.calls++;
+      }
+    }
+    cur = {id: s.id, a: s.a, b: s.b};
+  });
+  if(cur) out.longest = Math.max(out.longest, cur.b - cur.a);
+  out.costMin = out.switches * SWITCH_COST_MIN;
+  return out;
+}
+/* Ruhigstes Zwei-Stunden-Fenster der letzten 4 Wochen (Werktage), gemessen in Wechseln pro gearbeiteter Stunde. */
+function calmWindow(){
+  var axis = plAxis();
+  var end = startOfDay(new Date()).getTime();
+  var start = end - 28 * 86400000;
+  var st = switchStats(start, end);
+  if(st.worked < 10 * 3600000) return null;
+  var best = null;
+  for(var h = axis.s; h <= axis.e - 2; h++){
+    var ev = 0, worked = 0, days = 0;
+    for(var d = start; d < end; d += 86400000){
+      var day = new Date(d);
+      if(day.getDay() === 0 || day.getDay() === 6) continue;
+      var w0 = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h).getTime();
+      var w1 = w0 + 2 * 3600000;
+      var wk = timeTasks().reduce(function(sum, t){ return sum + secondsInRange(t, w0, w1); }, 0);
+      if(wk > 0){ worked += wk; days++; }
+    }
+    st.events.forEach(function(e){ var x = new Date(e); if(x.getDay() !== 0 && x.getDay() !== 6 && x.getHours() >= h && x.getHours() < h + 2) ev++; });
+    if(worked < 4 * 3600 || days < 4) continue;
+    var rate = ev / (worked / 3600);
+    if(!best || rate < best.rate - 1e-9 || (Math.abs(rate - best.rate) < 1e-9 && worked > best.worked)) best = {h: h, rate: rate, perDay: ev / days, worked: worked};
+  }
+  return best;
+}
+function switchesToday(){ return switchStats(startOfDay(new Date()).getTime(), Date.now()); }
+function interruptionStatsHtml(startMs, endMs){
+  var st = switchStats(startMs, endMs);
+  var days = [];
+  for(var i = 6; i >= 0; i--){
+    var d0 = startOfDay(new Date(Date.now() - i * 86400000)).getTime();
+    days.push({label: new Date(d0).toLocaleDateString('de-CH', {weekday: 'short'}), n: switchStats(d0, d0 + 86400000).switches});
+  }
+  var max = Math.max.apply(null, days.map(function(d){ return d.n; })) || 1;
+  var bars = '<div style="display:flex; gap:6px; align-items:flex-end; height:64px; margin:8px 0 4px;">' + days.map(function(d){
+    return '<div style="flex:1; text-align:center;" title="' + d.n + ' Wechsel"><div style="height:' + Math.max(2, Math.round(d.n / max * 44)) + 'px; background:' + (d.n >= 15 ? 'var(--p-high)' : 'var(--accent)') + '; border-radius:3px 3px 0 0;"></div><div style="font-size:11px; color:var(--text-faint); margin-top:3px;">' + d.label + '</div></div>';
+  }).join('') + '</div>';
+  var calm = calmWindow();
+  var fw = state.settings.focusWindowHour;
+  var calmHtml = calm ? '<div class="hint" style="margin-top:8px;">🌿 Ruhigste Zeit der letzten 4 Wochen: <b>' + String(calm.h).padStart(2, '0') + '–' + String(calm.h + 2).padStart(2, '0') + ' Uhr</b> (' + (calm.perDay < 0.5 ? 'kaum Wechsel' : 'ca. ' + (Math.round(calm.perDay * 10) / 10).toLocaleString('de-CH') + ' Wechsel pro Tag') + '). ' +
+    (fw === calm.h ? 'Der Tag-Autopilot legt deinen wichtigsten Task in dieses Fenster. <button class="btn ghost" id="focusWinOff">Nicht mehr</button>'
+      : '<button class="btn ghost" id="focusWinOn">Als Fokusfenster nutzen</button>') + '</div>'
+    : '<div class="hint" style="margin-top:8px;">Nach rund zwei Wochen mit erfasster Zeit zeigt das Radar hier deine ruhigste Tageszeit.</div>';
+  return '<div class="proj-nums"><div><b>' + st.switches + '</b><span>Taskwechsel</span></div><div><b>' + st.calls + '</b><span>davon Anrufe/Meetings</span></div><div><b>' + (st.longest ? fmtHM(st.longest / 1000) : '–') + '</b><span>längste Fokusphase</span></div></div>' +
+    (st.switches ? '<div class="hint">Geschätzter Verlust: ca. <b>' + fmtHM(st.costMin * 60) + '</b> (Faustregel: ' + SWITCH_COST_MIN + ' Min. pro Wechsel, bis man wieder drin ist).</div>' : '') +
+    bars + calmHtml;
+}
+function wireInterruptionCard(root, rerender){
+  var on = root.querySelector('#focusWinOn'), off = root.querySelector('#focusWinOff');
+  if(on) on.addEventListener('click', function(){ var c = calmWindow(); if(!c) return; state.settings.focusWindowHour = c.h; save(); toast('🌿 Fokusfenster ' + String(c.h).padStart(2, '0') + '–' + String(c.h + 2).padStart(2, '0') + ' Uhr gespeichert.'); rerender(); });
+  if(off) off.addEventListener('click', function(){ state.settings.focusWindowHour = null; save(); rerender(); });
+}
+
+/* =========================================================
+   TAG-AUTOPILOT
+   Füllt die freien Lücken eines Tages im Planer mit offenen Tasks: zuerst Überfälliges und
+   Fälliges, dann nach Priorität. Feste Termine (alle Blöcke, die nicht vom Autopilot stammen)
+   bleiben, wo sie sind. Vom Autopilot gesetzte Blöcke tragen autoPlan:true und werden beim
+   Neuplanen wieder frei, solange noch nicht daran gearbeitet wurde.
+   ========================================================= */
+function apDoneColumnIds(){ return state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }); }
+function apWaitingColumnIds(){ return state.columns.filter(function(c){ return WAITING_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }); }
+function apIsBlocked(t){
+  return (t.blockedBy || []).some(function(id){ var b = getTask(id); return b && !b.completedAt && !b.archived; });
+}
+function apScore(t, ds){
+  var reasons = [], score = 0;
+  var dayMs = new Date(ds + 'T00:00:00').getTime();
+  if(t.dueDate){
+    var diff = Math.round((new Date(t.dueDate + 'T00:00:00').getTime() - dayMs) / 86400000);
+    if(diff < 0){ score += 100; reasons.push('überfällig'); }
+    else if(diff === 0){ score += 80; reasons.push('heute fällig'); }
+    else if(diff === 1){ score += 40; reasons.push('morgen fällig'); }
+    else if(diff <= 3){ score += 20; reasons.push('bald fällig'); }
+  }
+  var pr = {critical: 60, high: 35, medium: 10, low: 0}[t.priority] || 0;
+  score += pr;
+  if(t.priority === 'critical' || t.priority === 'high') reasons.push(PRIORITIES[t.priority].label);
+  var focus = state.settings.todayFocusDate === ds && (state.settings.todayFocusIds || []).indexOf(t.id) >= 0;
+  if(focus){ score += 50; reasons.push('Tagesfokus'); }
+  if(t.pinned){ score += 25; reasons.push('angeheftet'); }
+  if(t.columnId === inProgressColumn().id){ score += 15; reasons.push('in Bearbeitung'); }
+  score += Math.min(10, (Date.now() - new Date(t.createdAt || Date.now()).getTime()) / 86400000);
+  return {score: score, reasons: reasons};
+}
+/* Blöcke des Tages, die der Autopilot neu verteilen darf. */
+function apReplannable(ds){
+  var now = Date.now();
+  return state.tasks.filter(function(t){
+    if(!t.autoPlan || !t.scheduledAt || t.archived || t.completedAt || isRunning(t)) return false;
+    var st = new Date(t.scheduledAt);
+    if(toDateInputValue(st) !== ds) return false;
+    var end = st.getTime() + plannedMinutes(t) * 60000;
+    if(st.getTime() >= now) return true;
+    return secondsInRange(t, st.getTime(), Math.min(end, now)) < 60;
+  });
+}
+function autopilotPlan(ds, opts){
+  opts = opts || {};
+  var gap = parseInt(opts.gap, 10) || 0;
+  var axis = plAxis();
+  var dayStart = axis.s * 60, dayEnd = axis.e * 60;
+  var todayStr = toDateInputValue(new Date());
+  if(ds === todayStr) dayStart = Math.max(dayStart, Math.ceil((plDayMinutes(new Date()) + 5) / 15) * 15);
+  var freed = apReplannable(ds);
+  var freedIds = {};
+  freed.forEach(function(t){ freedIds[t.id] = 1; });
+  var busy = [];
+  state.tasks.forEach(function(t){
+    if(t.archived || !t.scheduledAt || freedIds[t.id]) return;
+    var st = new Date(t.scheduledAt);
+    if(toDateInputValue(st) !== ds) return;
+    var s = plDayMinutes(st);
+    busy.push({a: s, b: s + plannedMinutes(t)});
+  });
+  if(opts.lunch) busy.push({a: 12 * 60, b: 13 * 60});
+  var done = apDoneColumnIds(), waiting = apWaitingColumnIds();
+  var cands = state.tasks.filter(function(t){
+    if(t.archived || t.completedAt || isSnoozed(t) || t.type === 'meeting') return false;
+    if(done.indexOf(t.columnId) >= 0 || waiting.indexOf(t.columnId) >= 0 || apIsBlocked(t)) return false;
+    if(t.assigneeId && activeShared && t.assigneeId !== myUserId()) return false;
+    return !t.scheduledAt || freedIds[t.id];
+  }).map(function(t){
+    var sc = apScore(t, ds);
+    var planned = plannedMinutes(t);
+    var logged = secondsInRange(t, 0, Date.now()) / 60;
+    var known = t.scheduledMinutes || t.estimatedMinutes || learnedMinutes(t);
+    var rem = known ? Math.max(15, Math.ceil((planned - (t.scheduledMinutes ? 0 : logged)) / 15) * 15) : planned;
+    return {task: t, score: sc.score, reasons: sc.reasons, minutes: Math.min(rem, 240)};
+  }).sort(function(a, b){ return b.score - a.score; });
+
+  function gaps(){
+    var list = busy.slice().sort(function(x, y){ return x.a - y.a; });
+    var out = [], cur = dayStart;
+    list.forEach(function(b){
+      if(b.b <= cur) return;
+      if(b.a > cur) out.push({a: cur, b: Math.min(b.a, dayEnd)});
+      cur = Math.max(cur, b.b + gap);
+    });
+    if(cur < dayEnd) out.push({a: cur, b: dayEnd});
+    return out.filter(function(g){ return g.b - g.a >= 15; });
+  }
+  /* Tagesziel (Einstellungen → Zeit) begrenzt, wie viel insgesamt verplant wird: heute zählt bereits Gebuchtes mit. */
+  var target = (parseFloat(state.settings.targetHoursPerDay) || 0) * 60;
+  var capacity = Infinity;
+  if(target){
+    var fixedMin = busy.reduce(function(sum, b){ return sum + (b.b - b.a); }, 0) - (opts.lunch ? 60 : 0);
+    var loggedToday = ds === todayStr ? timeTasks().reduce(function(sum, t){ return sum + secondsInRange(t, startOfDay(new Date()).getTime(), Date.now()); }, 0) / 60 : 0;
+    capacity = Math.max(0, target - fixedMin - loggedToday);
+  }
+  var blocks = [], skipped = [];
+  function place(c, at, minutes, partial){
+    minutes = Math.min(minutes, Math.floor(capacity / 15) * 15);
+    if(minutes < 15) return false;
+    blocks.push({task: c.task, start: at, minutes: minutes, reasons: c.reasons, partial: !!partial || minutes < c.minutes});
+    busy.push({a: at, b: at + minutes});
+    capacity -= minutes;
+    return true;
+  }
+  /* Fokusfenster aus dem Unterbrechungs-Radar: der wichtigste längere Task kommt dort hinein. */
+  var fw = state.settings.focusWindowHour;
+  if(typeof fw === 'number' && cands.length){
+    var fa = Math.max(fw * 60, dayStart), fb = fw * 60 + 120;
+    var free = fb - fa >= 45 && !busy.some(function(b){ return b.a < fb && b.b > fa; });
+    var first = cands.find(function(c){ return c.minutes >= 45; });
+    if(free && first && place(first, fa, Math.min(first.minutes, fb - fa), first.minutes > fb - fa)){
+      blocks[blocks.length - 1].reasons = first.reasons.concat('Fokusfenster');
+      cands = cands.filter(function(c){ return c !== first; });
+    }
+  }
+  cands.forEach(function(c){
+    var gs = gaps();
+    if(!gs.length || capacity < 15){ skipped.push(c.task); return; }
+    var fit = gs.find(function(g){ return g.b - g.a >= c.minutes; });
+    if(fit){ if(!place(c, fit.a, c.minutes)) skipped.push(c.task); return; }
+    /* Lange Tasks: grösste Lücke ab 30 Min. als Teilblock nutzen */
+    var big = gs.slice().sort(function(x, y){ return (y.b - y.a) - (x.b - x.a); })[0];
+    if(!(c.minutes > 60 && big.b - big.a >= 30 && place(c, big.a, Math.floor((big.b - big.a) / 15) * 15, true))) skipped.push(c.task);
+  });
+  blocks.sort(function(a, b){ return a.start - b.start; });
+  return {blocks: blocks, skipped: skipped, freed: freed, dayStart: dayStart, dayEnd: dayEnd, target: target, full: target && capacity < 15};
+}
+function apNextWorkday(){
+  var d = startOfDay(new Date());
+  do { d.setDate(d.getDate() + 1); } while(!state.settings.planWeekend && (d.getDay() === 0 || d.getDay() === 6));
+  return d;
+}
+function openAutopilot(ds){
+  var todayStr = toDateInputValue(new Date());
+  var tomorrow = apNextWorkday();
+  var tomorrowStr = toDateInputValue(tomorrow);
+  var tomorrowLabel = toDateInputValue(new Date(Date.now() + 86400000)) === tomorrowStr ? 'Morgen' : tomorrow.toLocaleDateString('de-CH', {weekday: 'long'});
+  ds = ds || todayStr;
+  var opts = {gap: state.settings.autopilotGap || 0, lunch: state.settings.autopilotLunch !== false};
+  var html =
+    '<div class="modal-header"><h2>✨ Tag-Autopilot</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="ap-opts">' +
+        '<div class="seg" role="group" aria-label="Tag"><button class="seg-btn" data-ap-day="' + todayStr + '">Heute</button><button class="seg-btn" data-ap-day="' + tomorrowStr + '">' + tomorrowLabel + '</button></div>' +
+        '<label class="pl-check">Pause zwischen Blöcken <select id="apGap">' + [0, 5, 10, 15].map(function(m){ return '<option value="' + m + '"' + (opts.gap === m ? ' selected' : '') + '>' + (m ? m + ' Min.' : 'keine') + '</option>'; }).join('') + '</select></label>' +
+        '<label class="pl-check"><input type="checkbox" id="apLunch"' + (opts.lunch ? ' checked' : '') + '> Mittag 12–13 Uhr frei</label>' +
+      '</div>' +
+      '<div id="apBody"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="apApply">Plan übernehmen</button></div>';
+  openModal(html, {wide: true});
+  var plan = null;
+  function hm(m){ return plMinToTime(m); }
+  function draw(){
+    document.querySelectorAll('[data-ap-day]').forEach(function(b){ b.classList.toggle('on', b.dataset.apDay === ds); });
+    plan = autopilotPlan(ds, opts);
+    var body = document.getElementById('apBody');
+    if(!plan.blocks.length){
+      body.innerHTML = '<div class="empty-state" style="padding:18px;">' + (plan.dayEnd - plan.dayStart < 15 ? 'Der Arbeitstag ist für heute vorbei. Plane den nächsten Tag.' : (plan.full ? 'Dein Tagesziel von ' + fmtHM(plan.target * 60) + ' ist mit Gebuchtem und festen Terminen schon erreicht.' : 'Nichts zu planen: Es gibt keine offenen Tasks ohne Termin oder keine freie Zeit mehr.')) + '</div>';
+      document.getElementById('apApply').disabled = true;
+      return;
+    }
+    document.getElementById('apApply').disabled = false;
+    var total = plan.blocks.reduce(function(s, b){ return s + b.minutes; }, 0);
+    body.innerHTML = '<div class="hint" style="margin:10px 0;">' + new Date(ds + 'T00:00:00').toLocaleDateString('de-CH', {weekday: 'long', day: 'numeric', month: 'long'}) + ': ' + plan.blocks.length + ' Blöcke, ' + fmtHM(total * 60) + ' verplant' +
+      (plan.freed.length ? ', ' + plan.freed.length + ' bisherige Autopilot-Blöcke werden neu verteilt' : '') + '. Feste Termine bleiben, wo sie sind.</div>' +
+      '<div class="ap-list">' + plan.blocks.map(function(b, i){
+        return '<label class="ap-row"><input type="checkbox" class="ap-use" data-i="' + i + '" checked>' +
+          '<span class="ap-time">' + hm(b.start) + '–' + hm(b.start + b.minutes) + '</span>' +
+          '<span class="ap-title">' + typeIconHtml(b.task.type) + ' ' + escapeHtml(b.task.title) + (b.partial ? ' <span class="hint">(Teil)</span>' : '') + '</span>' +
+          '<span class="ap-why">' + escapeHtml(b.reasons.join(' · ')) + '</span></label>';
+      }).join('') + '</div>' +
+      (plan.skipped.length ? '<div class="hint" style="margin-top:8px;">' + (plan.full ? 'Tagesziel von ' + fmtHM(plan.target * 60) + ' erreicht, kein' : 'Kein') + ' Platz mehr für ' + plan.skipped.length + ' weitere Task' + (plan.skipped.length === 1 ? '' : 's') + ' (' + plan.skipped.slice(0, 3).map(function(t){ return escapeHtml(t.title); }).join(', ') + (plan.skipped.length > 3 ? ', …' : '') + ').</div>' : '');
+  }
+  document.querySelectorAll('[data-ap-day]').forEach(function(b){ b.addEventListener('click', function(){ ds = b.dataset.apDay; draw(); }); });
+  document.getElementById('apGap').addEventListener('change', function(e){ opts.gap = parseInt(e.target.value, 10) || 0; state.settings.autopilotGap = opts.gap; save(); draw(); });
+  document.getElementById('apLunch').addEventListener('change', function(e){ opts.lunch = e.target.checked; state.settings.autopilotLunch = opts.lunch; save(); draw(); });
+  document.getElementById('apApply').addEventListener('click', function(){
+    if(!plan) return;
+    pushUndoSnapshot();
+    plan.freed.forEach(function(t){ delete t.autoPlan; updateTask(t.id, {scheduledAt: ''}); });
+    var n = 0;
+    document.querySelectorAll('.ap-use').forEach(function(cb){
+      if(!cb.checked) return;
+      var b = plan.blocks[parseInt(cb.dataset.i, 10)];
+      var d = new Date(ds + 'T00:00:00');
+      d.setMinutes(b.start);
+      updateTask(b.task.id, {scheduledAt: d.toISOString(), scheduledMinutes: b.minutes, autoPlan: true});
+      n++;
+    });
+    closeModal();
+    plannerWeek = startOfWeek(new Date(ds + 'T00:00:00'));
+    plannerScroll = null;
+    switchToView('calendar');
+    toast('✨ ' + n + ' Blöcke geplant. Strg+Z macht es rückgängig.');
+  });
+  draw();
+}
+/* Nach einer Störung (Anruf, Meeting) anbieten, den Rest des Tages neu zu verteilen. */
+function offerReplan(){
+  var ds = toDateInputValue(new Date());
+  if(!apReplannable(ds).length) return;
+  setTimeout(function(){ toast('✨ Dein Tagesplan ist durcheinander. Rest des Tages neu planen?', 10000, 'Neu planen', function(){ openAutopilot(ds); }); }, 900);
+}
+
+/* =========================================================
+   SCREENSHOT WIRD TICKET
+   Bilder (eingefügt, gezogen oder gewählt) werden verkleinert, von der KI gelesen und als
+   Notiz an den neuen Task gehängt.
+   ========================================================= */
+var AI_IMAGE_HINT = 'Ist ein Bild angehängt (z.B. Screenshot einer Fehlermeldung, eines Chats oder einer Mail), lies Programm, Fehlermeldung, Fehlercode und sichtbare Details genau ab und übernimm Fehlermeldungen wörtlich in die Beschreibung. Erfinde nichts, was nicht zu sehen ist.';
+function shrinkImage(dataUrl, maxSide){
+  maxSide = maxSide || 1600;
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var f = Math.min(1, maxSide / Math.max(w, h));
+      if(f === 1 && dataUrl.length < 600000){ resolve(dataUrl); return; }
+      var c = document.createElement('canvas');
+      c.width = Math.round(w * f); c.height = Math.round(h * f);
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      var png = c.toDataURL('image/png');
+      resolve(png.length < 900000 ? png : c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = function(){ resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+function imageFromFile(file){
+  return new Promise(function(resolve, reject){
+    if(!file || !/^image\/(png|jpeg|jpg|gif|webp)$/.test(file.type)){ reject(new Error('Kein unterstütztes Bild')); return; }
+    var r = new FileReader();
+    r.onload = function(){ shrinkImage(r.result).then(resolve); };
+    r.onerror = function(){ reject(r.error); };
+    r.readAsDataURL(file);
+  });
+}
+function imagePart(dataUrl){
+  var m = /^data:(image\/[a-z]+);base64,(.+)$/.exec(dataUrl || '');
+  return m ? {mediaType: m[1] === 'image/jpg' ? 'image/jpeg' : m[1], data: m[2]} : null;
+}
+function clipboardImageFile(e){
+  var cd = e.clipboardData || window.clipboardData;
+  if(!cd || !cd.items) return null;
+  for(var i = 0; i < cd.items.length; i++){
+    if(cd.items[i].kind === 'file' && cd.items[i].type.indexOf('image/') === 0) return cd.items[i].getAsFile();
+  }
+  return null;
+}
+
+/* =========================================================
+   SPRACHBEFEHLE
+   Taste V oder das Mikrofon unten rechts. Häufige Befehle versteht das Board selbst
+   (auch ohne KI); alles andere geht mit KI-Key an den Assistenten.
+   ========================================================= */
+var voiceRec = null;
+function voiceSupported(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+function voiceNorm(s){ return String(s || '').toLowerCase().replace(/[.,!?;:"„“]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function voiceCurrentTask(){
+  return (openTaskModalId && getTask(openTaskModalId)) || (state.settings.activeTaskId && getTask(state.settings.activeTaskId)) || null;
+}
+function voiceFindTask(name){
+  name = voiceNorm(name).replace(/^(den|die|das|dem|der|task|ticket|aufgabe)\s+/, '');
+  if(!name) return null;
+  var open = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; });
+  var exact = open.find(function(t){ return voiceNorm(t.title).indexOf(name) >= 0 || voiceNorm(t.jiraKey).replace(/-/g, ' ') === name.replace(/-/g, ' '); });
+  if(exact) return exact;
+  var hits = kbSearch(name, {filter: function(t){ return !t.archived && !t.completedAt; }, limit: 1});
+  return hits.length && hits[0].coverage >= 0.5 ? hits[0].t : null;
+}
+function voiceDate(s){
+  var d = startOfDay(new Date());
+  if(/übermorgen/.test(s)){ d.setDate(d.getDate() + 2); return d; }
+  if(/morgen/.test(s)){ d.setDate(d.getDate() + 1); return d; }
+  if(/heute/.test(s)) return d;
+  if(/nächste woche/.test(s)){ d = startOfWeek(d); d.setDate(d.getDate() + 7); return d; }
+  var m = s.match(/in (\d+|einem|zwei|drei|vier|fünf) tag/);
+  if(m){ var n = {einem: 1, zwei: 2, drei: 3, vier: 4, 'fünf': 5}[m[1]] || parseInt(m[1], 10); d.setDate(d.getDate() + n); return d; }
+  var days = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+  for(var i = 0; i < 7; i++){ if(s.indexOf(days[i]) >= 0){ var diff = (i - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + diff); return d; } }
+  var dm = s.match(/(\d{1,2})\.\s?(\d{1,2})\.?/);
+  if(dm){ var x = new Date(d.getFullYear(), parseInt(dm[2], 10) - 1, parseInt(dm[1], 10)); if(x < d) x.setFullYear(x.getFullYear() + 1); return x; }
+  return null;
+}
+var VOICE_VIEWS = [[/planer|kalender|wochenplan/, 'calendar', 'Planer'], [/statistik|auswertung/, 'stats', 'Statistik'], [/dashboard|übersicht/, 'dashboard', 'Dashboard'],
+  [/wissen/, 'kb', 'Wissen'], [/projekt|abrechnung/, 'projects', 'Projekte'], [/tagesabschluss/, 'dyce', 'Tagesabschluss'], [/team/, 'teamdash', 'Team'], [/board|kanban/, 'status', 'Board']];
+/* Gibt eine Bestätigung zurück oder null, wenn der Satz nicht erkannt wurde. */
+function runVoiceCommand(raw){
+  var s = voiceNorm(raw);
+  var m, t;
+  if(/(plane|planen|plan).*(tag|heute|morgen)|^tag planen|autopilot/.test(s)){ openAutopilot(/morgen/.test(s) ? toDateInputValue(apNextWorkday()) : null); return 'Tag-Autopilot geöffnet'; }
+  if(/^(was jetzt|was soll ich|was mache ich)/.test(s)){ openWhatNow(); return 'Was jetzt?'; }
+  if(/^(hotline|anruf|telefon)/.test(s)){ openHotlineDialog(); return 'Hotline-Anruf'; }
+  if(/^meeting( starten)?$|^starte (ein |das )?meeting/.test(s)){ startMeeting(); return 'Meeting gestartet'; }
+  if(/(timer|zeit).*(stopp|stop|anhalten|pause)|^(stopp|stop|pause)/.test(s)){
+    var aid = state.settings.activeTaskId;
+    if(!aid) return 'Es läuft kein Timer';
+    stopTimer(aid); return 'Timer pausiert';
+  }
+  if((m = s.match(/^(?:starte|start|timer starten|starte den timer|starte timer)(?: den timer| timer)?(?: bei| für| auf| mit)?\s*(.*)$/))){
+    t = m[1] ? voiceFindTask(m[1]) : voiceCurrentTask();
+    if(!t) return m[1] ? 'Keinen Task gefunden zu „' + m[1] + '“' : 'Welcher Task? Sag zum Beispiel „Starte Drucker Meier“.';
+    startTimer(t.id);
+    if(openTaskModalId === t.id) openTaskModal(t.id);
+    return '▶ Timer: ' + t.title;
+  }
+  if(/buchung abschliessen|^abschliessen/.test(s)){
+    t = voiceCurrentTask();
+    if(!t || !myOpenBooking(t)) return 'Keine offene Buchung';
+    finishBooking(t.id); return 'Buchung abgeschlossen: ' + t.title;
+  }
+  if((m = s.match(/^(?:erledige|schliesse)\s+(.+?)(?:\s+ab)?$/)) || /(ist )?erledigt$|^fertig$/.test(s)){
+    t = m ? voiceFindTask(m[1]) : voiceCurrentTask();
+    var doneCol = state.columns.find(function(c){ return DONE_COLUMN_RE.test(c.name); });
+    if(!t || !doneCol) return t ? 'Keine Spalte „Erledigt“ gefunden' : 'Welcher Task ist erledigt?';
+    updateTask(t.id, {columnId: doneCol.id}); renderAll();
+    if(openTaskModalId === t.id) openTaskModal(t.id);
+    return '✅ Erledigt: ' + t.title;
+  }
+  if((m = s.match(/^(?:verschiebe|verschieb|schiebe)\s+(.*?)\s*auf\s+(.+)$/))){
+    var when = voiceDate(m[2]);
+    t = (!m[1] || /^(das|ihn|es|den task|diesen task)$/.test(m[1])) ? voiceCurrentTask() : voiceFindTask(m[1]);
+    if(!t) return 'Welcher Task soll verschoben werden?';
+    if(!when) return 'Datum nicht verstanden: „' + m[2] + '“';
+    var patch = {dueDate: toDateInputValue(when)};
+    if(t.scheduledAt){ var sa = new Date(t.scheduledAt); var nd = new Date(when); nd.setHours(sa.getHours(), sa.getMinutes(), 0, 0); patch.scheduledAt = nd.toISOString(); }
+    updateTask(t.id, patch); renderAll();
+    if(openTaskModalId === t.id) openTaskModal(t.id);
+    return '📆 ' + t.title + ' → ' + when.toLocaleDateString('de-CH', {weekday: 'short', day: '2-digit', month: '2-digit'});
+  }
+  if((m = s.match(/^(?:notiz|notiere|schreib auf)[:\s]+(.+)$/))){
+    t = voiceCurrentTask();
+    var text = raw.trim().replace(/^\S+[:\s]+/, '');
+    if(!t){ t = createTask({title: text.charAt(0).toUpperCase() + text.slice(1)}); renderAll(); return '➕ Neuer Task: ' + t.title; }
+    t.notes.push({ts: nowIso(), text: text}); t.updatedAt = nowIso(); save();
+    if(openTaskModalId === t.id) openTaskModal(t.id);
+    return '📝 Notiz bei ' + t.title;
+  }
+  if((m = s.match(/^(?:neuer task|neue aufgabe|neues ticket|erstelle (?:einen |ein |eine )?(?:task|aufgabe|ticket))[:\s]*(.*)$/))){
+    var title = raw.trim().replace(/^(neuer task|neue aufgabe|neues ticket|erstelle (einen |ein |eine )?(task|aufgabe|ticket))[:\s]*/i, '');
+    var d = heuristicParse(title || 'Neuer Task');
+    t = createTask({title: (title.charAt(0).toUpperCase() + title.slice(1)) || 'Neuer Task', priority: d.priority, dueDate: d.dueDate || ''});
+    renderAll(); return '➕ Neuer Task: ' + t.title;
+  }
+  if(/^(zeige|zeig|öffne|geh zu|gehe zu|wechsle zu)/.test(s)){
+    for(var i = 0; i < VOICE_VIEWS.length; i++){
+      if(VOICE_VIEWS[i][0].test(s)){ switchToView(VOICE_VIEWS[i][1]); return VOICE_VIEWS[i][2]; }
+    }
+  }
+  return null;
+}
+function closeVoice(){
+  if(voiceRec){ try{ voiceRec.abort(); }catch(e){} voiceRec = null; }
+  var ov = document.getElementById('voiceOverlay');
+  if(ov) ov.classList.add('hidden');
+  var fab = document.getElementById('voiceFab');
+  if(fab) fab.classList.remove('recording');
+}
+function startVoiceCommand(){
+  if(voiceRec){ closeVoice(); return; }
+  var Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!Ctor){ toast('Sprachbefehle werden von diesem Browser nicht unterstützt (Chrome, Edge und Safari können es).'); return; }
+  var ov = document.getElementById('voiceOverlay');
+  var txt = document.getElementById('voiceText');
+  ov.classList.remove('hidden');
+  txt.textContent = 'Ich höre zu…';
+  document.getElementById('voiceFab').classList.add('recording');
+  var rec = new Ctor();
+  rec.lang = 'de-CH';
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  var finalText = '';
+  rec.onresult = function(e){
+    var interim = '';
+    for(var i = e.resultIndex; i < e.results.length; i++){
+      if(e.results[i].isFinal) finalText += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+    }
+    txt.textContent = (finalText + interim) || 'Ich höre zu…';
+  };
+  rec.onerror = function(e){
+    var msg = e.error === 'not-allowed' ? 'Mikrofon nicht erlaubt. Bitte im Browser freigeben.' : (e.error === 'no-speech' ? 'Nichts gehört.' : 'Spracherkennung: ' + e.error);
+    closeVoice(); toast('🎙️ ' + msg);
+  };
+  rec.onend = function(){
+    if(voiceRec !== rec) return;
+    closeVoice();
+    var said = finalText.trim();
+    if(!said) return;
+    var res;
+    try{ res = runVoiceCommand(said); }catch(err){ res = 'Fehler: ' + err.message; }
+    if(res){ toast('🎙️ „' + said + '“ → ' + res, 5000); return; }
+    if(aiKey()){ openAiChat(); chatSend(said); }
+    else toast('🎙️ „' + said + '“ nicht verstanden. Beispiele: „Starte Drucker Meier“, „Pause“, „Verschiebe das auf morgen“, „Plane meinen Tag“.', 8000);
+  };
+  voiceRec = rec;
+  try{ rec.start(); }catch(err){ closeVoice(); toast('🎙️ Spracherkennung konnte nicht starten.'); }
+}
+
+/* =========================================================
+   WISSEN SCHREIBT SICH SELBST
+   Beim Erledigen schreibt die KI aus Beschreibung, Notizen und Kommentaren einen Wissensartikel
+   (solutionAuto:true, bis jemand ihn bearbeitet). Bei offenen Tasks schlägt das Task-Fenster die
+   beste passende Lösung vor und formuliert auf Wunsch gleich die Antwort.
+   ========================================================= */
+function kbWorthWriting(t){
+  return t.type === 'hotline' || (t.notes && t.notes.some(function(n){ return n.text && !n.image; })) || (t.comments && t.comments.length) || (t.description || '').length > 40;
+}
+function kbAutoWrite(t){
+  var id = t.id;
+  kbAiDraft(t).then(function(text){
+    var cur = getTask(id);
+    if(!cur || kbHasSolution(cur) || !text) return;
+    cur.solution = text.slice(0, 8000);
+    cur.solutionAuto = true;
+    cur.updatedAt = nowIso();
+    save();
+    if(boardViewMode === 'kb') renderBoard();
+    toast('💡 Wissensartikel geschrieben: ' + cur.title, 8000, 'Ansehen', function(){ openSolutionDialog(id); });
+  }).catch(function(){
+    toast('💡 Erledigt – Lösung für die Wissensdatenbank festhalten?', 9000, 'Festhalten', function(){ openSolutionDialog(id); });
+  });
+}
+function kbSuggestionFor(t){
+  if(!t || t.completedAt || t.archived || /^Neuer Task$/i.test(t.title.trim())) return null;
+  var filter = function(x){ return x.id !== t.id && kbHasSolution(x); };
+  /* Mindestens zwei Stichworte aus dem Titel müssen im Fall vorkommen, sonst ist es Zufall. */
+  var n = kbTokens(t.title).length;
+  var top = n >= 2 ? kbSearch(t.title, {filter: filter, limit: 1})[0] : null;
+  return top && top.coverage >= 0.6 && top.coverage * n >= 2 ? top.t : null;
+}
+function renderKbSuggest(taskId){
+  var el = document.getElementById('kbSuggest');
+  var t = getTask(taskId);
+  if(!el || !t) return;
+  var src = kbSuggestionFor(t);
+  if(!src || (t.notes || []).some(function(n){ return n.text && n.text.indexOf('„' + src.title + '“') >= 0; })){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="kb-suggest"><div class="kb-suggest-head">💡 Passende Lösung aus dem Wissen <span class="hint">„' + escapeHtml(src.title) + '“' + (src.completedAt ? ', ' + new Date(src.completedAt).toLocaleDateString('de-CH') : '') + '</span></div>' +
+    '<div class="kb-suggest-text">' + escapeHtml(src.solution.trim().slice(0, 600)) + (src.solution.length > 600 ? '…' : '') + '</div>' +
+    '<div class="ai-row"><button type="button" class="btn ghost" id="kbSugNote">Als Notiz übernehmen</button>' +
+    '<button type="button" class="btn ghost" id="kbSugReply">✉️ Antwort mit dieser Lösung</button>' +
+    '<button type="button" class="btn ghost" id="kbSugOpen">Fall öffnen</button></div></div>';
+  document.getElementById('kbSugNote').addEventListener('click', function(){
+    t.notes.push({ts: nowIso(), text: 'Mögliche Lösung (aus „' + src.title + '“): ' + src.solution.trim()});
+    t.updatedAt = nowIso(); save(); openTaskModal(t.id);
+    toast('💡 Lösung als Notiz übernommen.');
+  });
+  document.getElementById('kbSugOpen').addEventListener('click', function(){ openTaskModal(src.id); });
+  document.getElementById('kbSugReply').addEventListener('click', function(){
+    if(!aiReady()) return;
+    var box = document.getElementById('aiResult');
+    var btn = this;
+    btn.disabled = true; btn.textContent = '✉️ KI schreibt…';
+    callAIRaw(AI_TASK_PROMPTS.reply.sys + ' Nutze dafür die bewährte Lösung aus einem früheren, ähnlichen Fall und beschreibe die Schritte für den Reporter verständlich.',
+      taskAiContext(t) + '\n\nBewährte Lösung aus „' + src.title + '“:\n' + src.solution.trim(), 700).then(function(text){
+      text = text.trim();
+      if(box){
+        showAiResult(box, text, [
+          {label: 'Kopieren', primary: true, fn: function(){ copyToClipboard(text); toast('Antwort kopiert.'); }},
+          {label: 'Mail öffnen', fn: function(){ openMailto(taskMailtoUrl(t, text)); }},
+          {label: 'Verwerfen', fn: function(){ box.innerHTML = ''; }}
+        ]);
+        box.scrollIntoView({block: 'nearest'});
+      } else { copyToClipboard(text); toast('Antwort kopiert.'); }
+    }).catch(function(err){ toast('KI-Fehler: ' + err.message); }).then(function(){ btn.disabled = false; btn.textContent = '✉️ Antwort mit dieser Lösung'; });
+  });
+}
+
+/* =========================================================
+   QR-CODE (alle Versionen, Fehlerkorrektur M) für die Schweizer QR-Rechnung
+   Aufbau nach ISO/IEC 18004 wie im bekannten Referenz-Encoder von Project Nayuki;
+   nutzt die Reed-Solomon- und Masken-Bewertung des kleinen Encoders oben.
+   ========================================================= */
+var QRM_ECC = [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28];
+var QRM_BLOCKS = [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49];
+function qrmRawModules(v){
+  var r = (16 * v + 128) * v + 64;
+  if(v >= 2){ var na = Math.floor(v / 7) + 2; r -= (25 * na - 10) * na - 55; if(v >= 7) r -= 36; }
+  return r;
+}
+function qrmDataCw(v){ return Math.floor(qrmRawModules(v) / 8) - QRM_ECC[v] * QRM_BLOCKS[v]; }
+function qrmAlign(v){
+  if(v === 1) return [];
+  var na = Math.floor(v / 7) + 2;
+  var step = Math.floor((v * 8 + na * 3 + 5) / (na * 4 - 4)) * 2;
+  var res = [6];
+  for(var pos = v * 4 + 10; res.length < na; pos -= step) res.splice(1, 0, pos);
+  return res;
+}
+function encodeQRM(text){
+  var bytes = qrStrToBytes(text);
+  var ver = 0;
+  for(var v = 1; v <= 40; v++){ if(4 + (v < 10 ? 8 : 16) + bytes.length * 8 <= qrmDataCw(v) * 8){ ver = v; break; } }
+  if(!ver) return null;
+  var cap = qrmDataCw(ver) * 8;
+  var bits = [];
+  function put(val, len){ for(var i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); }
+  put(4, 4); put(bytes.length, ver < 10 ? 8 : 16);
+  bytes.forEach(function(b){ put(b, 8); });
+  put(0, Math.min(4, cap - bits.length));
+  put(0, (8 - bits.length % 8) % 8);
+  for(var pad = 0xEC; bits.length < cap; pad ^= 0xEC ^ 0x11) put(pad, 8);
+  var data = [];
+  for(var i = 0; i < bits.length; i += 8){ var x = 0; for(var j = 0; j < 8; j++) x = (x << 1) | bits[i + j]; data.push(x); }
+  /* Blöcke bilden, Fehlerkorrektur anhängen, verschränken */
+  var nb = QRM_BLOCKS[ver], ecLen = QRM_ECC[ver], raw = Math.floor(qrmRawModules(ver) / 8);
+  var numShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+  var blocks = [], k = 0;
+  for(var b = 0; b < nb; b++){
+    var dat = data.slice(k, k + shortLen - ecLen + (b < numShort ? 0 : 1));
+    k += dat.length;
+    var ec = qrRsEncode(dat, ecLen);
+    if(b < numShort) dat.push(0);
+    blocks.push(dat.concat(ec));
+  }
+  var cw = [];
+  for(i = 0; i < blocks[0].length; i++){
+    for(b = 0; b < nb; b++){ if(i !== shortLen - ecLen || b >= numShort) cw.push(blocks[b][i]); }
+  }
+  /* Matrix */
+  var size = ver * 4 + 17;
+  var mod = [], fn = [];
+  for(i = 0; i < size; i++){ mod.push(new Array(size).fill(false)); fn.push(new Array(size).fill(false)); }
+  function setF(x, y, dark){ mod[y][x] = !!dark; fn[y][x] = true; }
+  for(i = 0; i < size; i++){ setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+  function finder(cx, cy){
+    for(var dy = -4; dy <= 4; dy++) for(var dx = -4; dx <= 4; dx++){
+      var d = Math.max(Math.abs(dx), Math.abs(dy)), xx = cx + dx, yy = cy + dy;
+      if(xx >= 0 && xx < size && yy >= 0 && yy < size) setF(xx, yy, d !== 2 && d !== 4);
+    }
+  }
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  var al = qrmAlign(ver), na = al.length;
+  for(i = 0; i < na; i++) for(j = 0; j < na; j++){
+    if((i === 0 && j === 0) || (i === 0 && j === na - 1) || (i === na - 1 && j === 0)) continue;
+    for(var ay = -2; ay <= 2; ay++) for(var ax = -2; ax <= 2; ax++) setF(al[i] + ax, al[j] + ay, Math.max(Math.abs(ax), Math.abs(ay)) !== 1);
+  }
+  function formatBits(mask){
+    var d = (0 << 3) | mask, rem = d; /* Level M = 00 */
+    for(var q = 0; q < 10; q++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    var fb = ((d << 10) | rem) ^ 0x5412;
+    function g(n){ return ((fb >>> n) & 1) !== 0; }
+    for(q = 0; q <= 5; q++) setF(8, q, g(q));
+    setF(8, 7, g(6)); setF(8, 8, g(7)); setF(7, 8, g(8));
+    for(q = 9; q < 15; q++) setF(14 - q, 8, g(q));
+    for(q = 0; q < 8; q++) setF(size - 1 - q, 8, g(q));
+    for(q = 8; q < 15; q++) setF(8, size - 15 + q, g(q));
+    setF(8, size - 8, true);
+  }
+  formatBits(0);
+  if(ver >= 7){
+    var rem = ver;
+    for(i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+    var vb = (ver << 12) | rem;
+    for(i = 0; i < 18; i++){
+      var bit = ((vb >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3);
+      setF(a, c, bit); setF(c, a, bit);
+    }
+  }
+  var bi = 0;
+  for(var right = size - 1; right >= 1; right -= 2){
+    if(right === 6) right = 5;
+    for(var vert = 0; vert < size; vert++){
+      for(j = 0; j < 2; j++){
+        var x0 = right - j, up = ((right + 1) & 2) === 0, y0 = up ? size - 1 - vert : vert;
+        if(!fn[y0][x0] && bi < cw.length * 8){ mod[y0][x0] = ((cw[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+      }
+    }
+  }
+  var MASKS = [
+    function(x, y){ return (x + y) % 2 === 0; }, function(x, y){ return y % 2 === 0; }, function(x){ return x % 3 === 0; }, function(x, y){ return (x + y) % 3 === 0; },
+    function(x, y){ return (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; }, function(x, y){ return x * y % 2 + x * y % 3 === 0; },
+    function(x, y){ return (x * y % 2 + x * y % 3) % 2 === 0; }, function(x, y){ return ((x + y) % 2 + x * y % 3) % 2 === 0; }
+  ];
+  var base = mod, best = null, bestScore = Infinity;
+  for(var m = 0; m < 8; m++){
+    mod = base.map(function(row){ return row.slice(); });
+    for(var yy = 0; yy < size; yy++) for(var xx = 0; xx < size; xx++){ if(!fn[yy][xx] && MASKS[m](xx, yy)) mod[yy][xx] = !mod[yy][xx]; }
+    formatBits(m);
+    var p = qrPenalty(mod);
+    if(p < bestScore){ bestScore = p; best = mod; }
+  }
+  return {matrix: best, size: size, version: ver};
+}
+
+/* =========================================================
+   SCHWEIZER QR-RECHNUNG (Swiss Payment Standards, Version 2.0, Adresstyp S)
+   ========================================================= */
+function qrbClean(s, max){
+  return String(s == null ? '' : s).replace(/[\r\n\t]+/g, ' ').replace(/[^\x20-\x7E -ſȘ-ț€]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+function ibanNormalize(s){ return String(s || '').replace(/\s+/g, '').toUpperCase(); }
+function ibanValid(iban){
+  if(!/^(CH|LI)\d{2}[0-9A-Z]{17}$/.test(iban)) return false;
+  var r = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, function(ch){ return String(ch.charCodeAt(0) - 55); });
+  var mod = 0;
+  for(var i = 0; i < r.length; i++) mod = (mod * 10 + parseInt(r[i], 10)) % 97;
+  return mod === 1;
+}
+function isQrIban(iban){ var iid = parseInt(iban.slice(4, 9), 10); return iid >= 30000 && iid <= 31999; }
+function qrrReference(no){
+  var digits = String(no).replace(/\D/g, '').slice(-26).padStart(26, '0');
+  var table = [0, 9, 4, 6, 8, 2, 7, 1, 3, 5], carry = 0;
+  for(var i = 0; i < digits.length; i++) carry = table[(carry + parseInt(digits[i], 10)) % 10];
+  return digits + ((10 - carry) % 10);
+}
+function scorReference(no){
+  var ref = String(no).toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 21);
+  if(!ref) return '';
+  var num = (ref + 'RF00').replace(/[A-Z]/g, function(ch){ return String(ch.charCodeAt(0) - 55); });
+  var mod = 0;
+  for(var i = 0; i < num.length; i++) mod = (mod * 10 + parseInt(num[i], 10)) % 97;
+  return 'RF' + String(98 - mod).padStart(2, '0') + ref;
+}
+/* "Musterstrasse 12a\n8000 Zürich" → {street, nr, zip, town, country} */
+function parseSwissAddress(text){
+  var out = {street: '', nr: '', zip: '', town: '', country: 'CH'};
+  String(text || '').split(/\n/).map(function(l){ return l.trim(); }).filter(Boolean).forEach(function(l){
+    var z = l.match(/^(?:([A-Z]{2})[-\s])?(\d{4,5})\s+(.+)$/);
+    if(z && !out.zip){ out.zip = z[2]; out.town = z[3]; if(z[1]) out.country = z[1]; else if(z[2].length === 5) out.country = 'DE'; return; }
+    if(/^(schweiz|switzerland|suisse|svizzera)$/i.test(l)){ out.country = 'CH'; return; }
+    if(/^(deutschland|germany)$/i.test(l)){ out.country = 'DE'; return; }
+    if(/^(österreich|austria)$/i.test(l)){ out.country = 'AT'; return; }
+    if(/^(liechtenstein)$/i.test(l)){ out.country = 'LI'; return; }
+    if(!out.street){
+      var s = l.match(/^(.*?)\s+(\d+[a-zA-Z]?(?:\s?[-\/]\s?\d+[a-zA-Z]?)?)$/);
+      if(s){ out.street = s[1]; out.nr = s[2].replace(/\s/g, ''); } else out.street = l;
+    }
+  });
+  return out;
+}
+function swissQrPayload(o){
+  var cr = o.creditor, db = o.debtor;
+  var L = ['SPC', '0200', '1', o.iban, 'S', qrbClean(cr.name, 70), qrbClean(cr.street, 70), qrbClean(cr.nr, 16), qrbClean(cr.zip, 16), qrbClean(cr.town, 35), cr.country,
+    '', '', '', '', '', '', '',
+    o.amount ? o.amount.toFixed(2) : '', o.currency];
+  if(db && db.name && db.zip && db.town) L.push('S', qrbClean(db.name, 70), qrbClean(db.street, 70), qrbClean(db.nr, 16), qrbClean(db.zip, 16), qrbClean(db.town, 35), db.country || 'CH');
+  else L.push('', '', '', '', '', '', '');
+  L.push(o.refType, o.ref || '', qrbClean(o.message, 140), 'EPD');
+  return L.join('\r\n');
+}
+function swissQrSvg(payload){
+  var q = encodeQRM(payload);
+  if(!q) return '';
+  var n = q.size, rects = '';
+  for(var y = 0; y < n; y++) for(var x = 0; x < n; x++){ if(q.matrix[y][x]) rects += 'M' + x + ' ' + y + 'h1v1h-1z'; }
+  /* Schweizerkreuz: 7 mm auf 46 mm, mittig */
+  var s = n * 7 / 46, o = (n - s) / 2, bs = s * 6 / 7, bo = (n - bs) / 2;
+  var arm = bs * 0.19, len = bs * 0.62, ao = (n - arm) / 2, lo = (n - len) / 2;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + n + ' ' + n + '" width="46mm" height="46mm" shape-rendering="crispEdges">' +
+    '<rect width="' + n + '" height="' + n + '" fill="#fff"/><path d="' + rects + '" fill="#000"/>' +
+    '<rect x="' + o + '" y="' + o + '" width="' + s + '" height="' + s + '" fill="#fff"/><rect x="' + bo + '" y="' + bo + '" width="' + bs + '" height="' + bs + '" fill="#000"/>' +
+    '<rect x="' + ao + '" y="' + lo + '" width="' + arm + '" height="' + len + '" fill="#fff"/><rect x="' + lo + '" y="' + ao + '" width="' + len + '" height="' + arm + '" fill="#fff"/></svg>';
+}
+function fmtIban(iban){ return iban.replace(/(.{4})/g, '$1 ').trim(); }
+function fmtRef(type, ref){
+  if(type === 'QRR') return ref.slice(0, 2) + ' ' + ref.slice(2).replace(/(.{5})/g, '$1 ').trim();
+  if(type === 'SCOR') return ref.replace(/(.{4})/g, '$1 ').trim();
+  return '';
+}
+function fmtQrAmount(n){ return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function invoiceSettings(){
+  var s = state.settings.invoice && typeof state.settings.invoice === 'object' ? state.settings.invoice : {};
+  return {name: s.name || '', address: s.address || '', iban: s.iban || '', vatNo: s.vatNo || '', vatPercent: typeof s.vatPercent === 'number' ? s.vatPercent : null,
+    payDays: s.payDays || 30, nextNo: s.nextNo || 1, email: s.email || ''};
+}
+function openInvoiceDialog(p, b){
+  if(!p) return;
+  var inv = invoiceSettings();
+  var rows = billingEntries(p, b.start, b.end);
+  var net = rows.reduce(function(s, r){ return s + r.amount; }, 0);
+  var year = new Date().getFullYear();
+  var needSetup = !inv.name || !inv.iban || !inv.address;
+  var html =
+    '<div class="modal-header"><h2>🧾 QR-Rechnung: ' + escapeHtml(p.name) + '</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="hint" style="margin:0 0 10px;">' + escapeHtml(b.label) + ': ' + rows.length + ' Einträge, ' + fmtCHF(net) + ' CHF netto. Die Rechnung enthält einen Schweizer QR-Einzahlungsschein und auf Wunsch die Leistungsübersicht als zweite Seite.</div>' +
+      '<div class="form-row-inline"><div class="form-row"><label for="ivNo">Rechnungsnummer</label><input id="ivNo" value="' + escapeAttr(year + '-' + String(inv.nextNo).padStart(3, '0')) + '"></div>' +
+        '<div class="form-row"><label for="ivDate">Rechnungsdatum</label><input type="date" id="ivDate" value="' + toDateInputValue(new Date()) + '"></div>' +
+        '<div class="form-row"><label for="ivDays">Zahlbar innert (Tagen)</label><input type="number" id="ivDays" min="0" value="' + inv.payDays + '"></div></div>' +
+      '<div class="form-row"><label for="ivTo">Rechnungsadresse ' + escapeHtml(p.client || p.name) + ' (Strasse Nr., PLZ Ort)</label><textarea id="ivTo" rows="3" placeholder="Musterstrasse 12&#10;8000 Zürich">' + escapeHtml(p.clientAddress || '') + '</textarea></div>' +
+      '<label style="display:flex; gap:8px; align-items:center; margin:4px 0 12px;"><input type="checkbox" id="ivDetail" checked> Leistungsübersicht als Seite 2 beilegen</label>' +
+      '<details class="s-more"' + (needSetup ? ' open' : '') + '><summary>Meine Angaben (Rechnungssteller)</summary><div class="s-more-body">' +
+        '<div class="form-row-inline"><div class="form-row"><label for="ivMyName">Name / Firma</label><input id="ivMyName" value="' + escapeAttr(inv.name) + '"></div>' +
+          '<div class="form-row"><label for="ivMail">E-Mail (optional)</label><input id="ivMail" value="' + escapeAttr(inv.email) + '"></div></div>' +
+        '<div class="form-row"><label for="ivMyAddr">Adresse (Strasse Nr., PLZ Ort)</label><textarea id="ivMyAddr" rows="2">' + escapeHtml(inv.address) + '</textarea></div>' +
+        '<div class="form-row-inline"><div class="form-row"><label for="ivIban">IBAN oder QR-IBAN (CH/LI)</label><input id="ivIban" value="' + escapeAttr(fmtIban(inv.iban)) + '" placeholder="CH93 0076 2011 6238 5295 7"></div>' +
+          '<div class="form-row"><label for="ivVat">MWST % (leer = keine)</label><input type="number" id="ivVat" min="0" max="30" step="0.1" value="' + (inv.vatPercent == null ? '' : inv.vatPercent) + '"></div>' +
+          '<div class="form-row"><label for="ivVatNo">MWST-Nr.</label><input id="ivVatNo" value="' + escapeAttr(inv.vatNo) + '" placeholder="CHE-123.456.789 MWST"></div></div>' +
+      '</div></details>' +
+      '<div id="ivErr" class="hint" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="ivPrint">Rechnung drucken / PDF</button></div>';
+  openModal(html, {wide: true});
+  document.getElementById('ivPrint').addEventListener('click', function(){
+    var err = document.getElementById('ivErr');
+    var iban = ibanNormalize(document.getElementById('ivIban').value);
+    var vatRaw = document.getElementById('ivVat').value;
+    var vat = vatRaw === '' ? null : parseFloat(vatRaw);
+    var next = {
+      name: stripMarkup(document.getElementById('ivMyName').value, 70),
+      address: cleanStr(document.getElementById('ivMyAddr').value, 200),
+      email: stripMarkup(document.getElementById('ivMail').value, 80),
+      iban: iban, vatPercent: isFinite(vat) && vat > 0 ? vat : null,
+      vatNo: stripMarkup(document.getElementById('ivVatNo').value, 40),
+      payDays: Math.max(0, parseInt(document.getElementById('ivDays').value, 10) || 0), nextNo: inv.nextNo
+    };
+    var cr = parseSwissAddress(next.address);
+    if(!next.name || !cr.zip || !cr.town){ err.textContent = 'Bitte deinen Namen und deine Adresse mit PLZ und Ort angeben (unter „Meine Angaben“).'; return; }
+    if(!ibanValid(iban)){ err.textContent = 'Die IBAN ist ungültig. Für QR-Rechnungen braucht es eine Schweizer oder Liechtensteiner IBAN.'; return; }
+    var no = stripMarkup(document.getElementById('ivNo').value, 30) || String(next.nextNo);
+    var toText = cleanStr(document.getElementById('ivTo').value, 300);
+    if(toText !== (p.clientAddress || '')){
+      var pp = Object.assign({}, p);
+      if(toText) pp.clientAddress = toText; else delete pp.clientAddress;
+      saveProject(normalizeProject(pp));
+    }
+    var m = no.match(/(\d+)\s*$/);
+    next.nextNo = Math.max(inv.nextNo, (m ? parseInt(m[1], 10) : inv.nextNo) + 1);
+    var meta = {no: no, date: document.getElementById('ivDate').value || toDateInputValue(new Date()), detail: document.getElementById('ivDetail').checked};
+    state.settings.invoice = next;
+    save();
+    closeModal();
+    printQrInvoice(getProject(p.id) || p, b, meta, next, cr);
+  });
+}
+function printQrInvoice(p, b, meta, inv, cr){
+  var rows = billingEntries(p, b.start, b.end);
+  var rate = projectRate(p);
+  var byTask = {}, order = [];
+  rows.forEach(function(r){
+    if(!byTask[r.task.id]){ byTask[r.task.id] = {t: r.task, sec: 0, amount: 0}; order.push(r.task.id); }
+    byTask[r.task.id].sec += r.rsec; byTask[r.task.id].amount += r.amount;
+  });
+  var lines = order.map(function(id){ return byTask[id]; }).sort(function(a, c){ return c.amount - a.amount; });
+  var shown = lines.slice(0, 14), rest = lines.slice(14);
+  if(rest.length) shown.push({t: {title: rest.length + ' weitere Leistungen (siehe Leistungsübersicht)'}, sec: rest.reduce(function(s, x){ return s + x.sec; }, 0), amount: rest.reduce(function(s, x){ return s + x.amount; }, 0)});
+  var net = Math.round(rows.reduce(function(s, r){ return s + r.amount; }, 0) * 100) / 100;
+  var vat = inv.vatPercent ? Math.round(net * inv.vatPercent) / 100 : 0;
+  var total = Math.round((net + vat) * 20) / 20; /* auf 5 Rappen */
+  var invDate = new Date(meta.date + 'T00:00:00');
+  var due = new Date(invDate); due.setDate(due.getDate() + inv.payDays);
+  var db = parseSwissAddress(p.clientAddress || '');
+  db.name = p.client || p.name;
+  var hasDb = !!(db.zip && db.town);
+  var refType = isQrIban(inv.iban) ? 'QRR' : 'SCOR';
+  var ref = refType === 'QRR' ? qrrReference(meta.no) : scorReference(meta.no);
+  if(!ref) refType = 'NON';
+  var message = 'Rechnung ' + meta.no + ' · ' + p.name;
+  var payload = swissQrPayload({iban: inv.iban, creditor: {name: inv.name, street: cr.street, nr: cr.nr, zip: cr.zip, town: cr.town, country: cr.country},
+    amount: total, currency: 'CHF', debtor: hasDb ? db : null, refType: refType, ref: ref, message: message});
+  function addrLines(name, a){ return [name, (a.street + ' ' + a.nr).trim(), (a.country !== 'CH' ? a.country + '-' : '') + a.zip + ' ' + a.town].filter(function(x){ return x && x.trim(); }).map(escapeHtml).join('<br>'); }
+  var crHtml = escapeHtml(fmtIban(inv.iban)) + '<br>' + addrLines(inv.name, cr);
+  var dbHtml = hasDb ? addrLines(db.name, db) : '';
+  var corner = '<div class="qrb-corner"></div>';
+  var periodTxt = new Date(b.start || (rows[0] ? new Date(rows[0].date + 'T00:00:00').getTime() : Date.now())).toLocaleDateString('de-CH') + ' – ' + new Date(b.end).toLocaleDateString('de-CH');
+  var body = shown.map(function(x){
+    return '<tr><td>' + escapeHtml(x.t.title) + (x.t.jiraKey ? ' (' + escapeHtml(x.t.jiraKey) + ')' : '') + '</td><td class="num">' + fmtHdec(x.sec) + '</td><td class="num">' + fmtCHF(x.amount) + '</td></tr>';
+  }).join('') || '<tr><td colspan="3">Keine Leistungen im Zeitraum.</td></tr>';
+  var page1 =
+    '<div class="qr-invoice">' +
+      '<div class="qi-top">' +
+        '<div class="qi-from">' + addrLines(inv.name, cr) + (inv.email ? '<br>' + escapeHtml(inv.email) : '') + (inv.vatNo ? '<br>' + escapeHtml(inv.vatNo) : '') + '</div>' +
+        '<div class="qi-to">' + (hasDb ? addrLines(db.name, db) : escapeHtml(db.name)) + '</div>' +
+      '</div>' +
+      '<div class="qi-place">' + escapeHtml(cr.town) + ', ' + invDate.toLocaleDateString('de-CH', {day: 'numeric', month: 'long', year: 'numeric'}) + '</div>' +
+      '<h1>Rechnung ' + escapeHtml(meta.no) + '</h1>' +
+      '<div class="qi-meta">Projekt: ' + escapeHtml(p.name) + ' · Leistungszeitraum ' + periodTxt + ' · Stundensatz ' + fmtCHF(rate) + ' CHF</div>' +
+      '<table><thead><tr><th>Leistung</th><th class="num">Stunden</th><th class="num">CHF</th></tr></thead><tbody>' + body + '</tbody>' +
+        '<tfoot>' + (vat ? '<tr><td>Zwischentotal</td><td></td><td class="num">' + fmtCHF(net) + '</td></tr><tr><td>MWST ' + inv.vatPercent.toLocaleString('de-CH') + ' %</td><td></td><td class="num">' + fmtCHF(vat) + '</td></tr>' : '') +
+        '<tr class="qi-total"><td>Total CHF' + (vat ? ' inkl. MWST' : '') + '</td><td></td><td class="num">' + fmtCHF(total) + '</td></tr></tfoot></table>' +
+      '<p class="qi-note">Zahlbar ' + (inv.payDays ? 'innert ' + inv.payDays + ' Tagen bis ' + due.toLocaleDateString('de-CH') : 'sofort') + ' mit dem untenstehenden QR-Einzahlungsschein. Vielen Dank für den Auftrag.</p>' +
+      '<div class="qrb">' +
+        '<div class="qrb-receipt">' +
+          '<div class="qrb-title">Empfangsschein</div>' +
+          '<div class="qrb-h">Konto / Zahlbar an</div><div class="qrb-v">' + crHtml + '</div>' +
+          (refType !== 'NON' ? '<div class="qrb-h">Referenz</div><div class="qrb-v">' + escapeHtml(fmtRef(refType, ref)) + '</div>' : '') +
+          '<div class="qrb-h">Zahlbar durch' + (hasDb ? '' : ' (Name/Adresse)') + '</div>' + (hasDb ? '<div class="qrb-v">' + dbHtml + '</div>' : '<div class="qrb-box r">' + corner + '</div>') +
+          '<div class="qrb-amount"><div><div class="qrb-h">Währung</div><div class="qrb-v">CHF</div></div><div><div class="qrb-h">Betrag</div><div class="qrb-v">' + fmtQrAmount(total) + '</div></div></div>' +
+          '<div class="qrb-accept">Annahmestelle</div>' +
+        '</div>' +
+        '<div class="qrb-pay">' +
+          '<div class="qrb-left"><div class="qrb-title">Zahlteil</div><div class="qrb-code">' + swissQrSvg(payload) + '</div>' +
+            '<div class="qrb-amount"><div><div class="qrb-h">Währung</div><div class="qrb-v">CHF</div></div><div><div class="qrb-h">Betrag</div><div class="qrb-v">' + fmtQrAmount(total) + '</div></div></div></div>' +
+          '<div class="qrb-right">' +
+            '<div class="qrb-h">Konto / Zahlbar an</div><div class="qrb-v">' + crHtml + '</div>' +
+            (refType !== 'NON' ? '<div class="qrb-h">Referenz</div><div class="qrb-v">' + escapeHtml(fmtRef(refType, ref)) + '</div>' : '') +
+            '<div class="qrb-h">Zusätzliche Informationen</div><div class="qrb-v">' + escapeHtml(message) + '</div>' +
+            '<div class="qrb-h">Zahlbar durch' + (hasDb ? '' : ' (Name/Adresse)') + '</div>' + (hasDb ? '<div class="qrb-v">' + dbHtml + '</div>' : '<div class="qrb-box p">' + corner + '</div>') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  var detail = '';
+  if(meta.detail){
+    detail = '<div class="print-report qi-detail"><h1>Leistungsübersicht zu Rechnung ' + escapeHtml(meta.no) + '</h1><div class="print-meta">' + escapeHtml(p.client ? p.client + ' · ' : '') + escapeHtml(p.name) + ' · ' + periodTxt + '</div>' +
+      '<table><thead><tr><th>Datum</th><th>Leistung</th><th>Person</th><th>Stunden</th><th>CHF</th></tr></thead><tbody>' + rows.map(function(r){
+        return '<tr><td>' + new Date(r.date + 'T00:00:00').toLocaleDateString('de-CH') + '</td><td>' + escapeHtml(r.task.title) + '</td><td>' + escapeHtml(r.person) + '</td><td>' + fmtHdec(r.rsec) + '</td><td>' + fmtCHF(r.amount) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  document.getElementById('printArea').innerHTML = page1 + detail;
+  window.__lastQrPayload = payload;
+  window.print();
+}
+
+/* =========================================================
    PLANER (Wochenansicht mit Zeitblöcken)
    Tasks werden per Drag & Drop aus der Liste "Nicht geplant" in den Kalender gezogen,
    per Ziehen verschoben und am unteren Rand in der Länge verändert (15-Minuten-Raster).
@@ -10836,7 +11973,7 @@ var plannerSearch = '';
 var plannerNowTimer = null;
 
 function plannedMinutes(t){
-  var m = t.scheduledMinutes || t.estimatedMinutes || 60;
+  var m = t.scheduledMinutes || learnedMinutes(t) || t.estimatedMinutes || 60;
   return Math.max(15, Math.min(720, Math.round(m / 15) * 15));
 }
 function plAxis(){
@@ -10977,7 +12114,7 @@ function renderPlannerView(){
       var w = 100 / it.lanes;
       var tyc = BASE_TYPES[t.type] ? t.type : 'adhoc';
       var p = projectOf(t);
-      return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + '" data-task="' + t.id + '" ' +
+      return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + (t.autoPlan ? ' auto' : '') + '" data-task="' + t.id + '" ' +
         'style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (it.lane * w).toFixed(2) + '% + 2px); width:calc(' + w.toFixed(2) + '% - 12px);">' +
         '<div class="pl-block-time">' + plMinToTime(it.start) + '–' + plMinToTime(it.end) + (p ? ' <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 0 0 4px;"></i>' : '') + '</div>' +
         '<div class="pl-block-title">' + escapeHtml(t.title) + '</div>' +
@@ -11011,6 +12148,7 @@ function renderPlannerView(){
           '<div class="pl-title"><b>KW ' + wkNum + '</b><span>' + rangeLabel + '</span></div>' +
           '<div class="pl-sum">Geplant <b>' + hm(weekPlanned) + '</b> · Gebucht <b>' + hm(weekLogged) + '</b>' + (weekConflicts ? ' · <span class="neg">⚠ ' + weekConflicts + ' Überschneidung' + (weekConflicts === 1 ? '' : 'en') + '</span>' : '') + '</div>' +
           '<div class="spacer"></div>' +
+          '<button class="btn primary" id="plAuto" title="Freie Zeit eines Tages automatisch mit offenen Tasks füllen">✨ <span>Tag planen</span></button>' +
           '<button class="btn" id="plAdd">' + svgIcon('plus') + '<span>Planen</span></button>' +
           '<label class="pl-check"><input type="checkbox" id="plWeekend"' + (showWe ? ' checked' : '') + '> Wochenende</label>' +
           '<select id="plStart" title="Beginn des Tages">' + hourOptions(axis.s, 0, 12) + '</select><select id="plEnd" title="Ende des Tages">' + hourOptions(axis.e, 12, 24) + '</select>' +
@@ -11071,6 +12209,11 @@ function wirePlanner(board){
   document.getElementById('plEnd').addEventListener('change', function(e){ state.settings.planEndHour = parseInt(e.target.value, 10); save(); renderPlannerView(); });
   document.getElementById('plAdd').addEventListener('click', function(){ openPlannerAdd(toDateInputValue(new Date()), Math.max(8 * 60, Math.ceil(plDayMinutes(new Date()) / 15) * 15)); });
   document.getElementById('plIcs').addEventListener('click', exportPlannerIcs);
+  document.getElementById('plAuto').addEventListener('click', function(){
+    var todayStr = toDateInputValue(new Date());
+    var inWeek = new Date(todayStr + 'T00:00:00') >= plannerWeek && new Date(todayStr + 'T00:00:00') < new Date(plannerWeek.getFullYear(), plannerWeek.getMonth(), plannerWeek.getDate() + 7);
+    openAutopilot(inWeek ? todayStr : toDateInputValue(plannerWeek));
+  });
   document.getElementById('plSearch').addEventListener('input', function(e){
     plannerSearch = e.target.value;
     var list = plUnscheduled();
@@ -12381,7 +13524,7 @@ function importMailFiles(files){
     if(!overlay){
       overlay = document.createElement('div');
       overlay.id = 'mailDrop';
-      overlay.innerHTML = '<div><div style="font-size:44px;">✉️</div><b>Mail hier ablegen</b><div class="hint">.eml oder .msg aus Outlook – daraus wird ein Task</div></div>';
+      overlay.innerHTML = '<div><div style="font-size:44px;">✉️</div><b>Mail oder Screenshot hier ablegen</b><div class="hint">.eml/.msg aus Outlook oder ein Bild – daraus wird ein Task</div></div>';
       document.body.appendChild(overlay);
     }
     overlay.classList.add('show');
@@ -12398,7 +13541,16 @@ function importMailFiles(files){
     e.preventDefault(); hide();
     if(!document.getElementById('authOverlay').classList.contains('hidden')) return;
     var files = e.dataTransfer.files;
-    if(files && files.length) importMailFiles(files);
+    if(!files || !files.length) return;
+    var img = [].filter.call(files, function(f){ return /^image\/(png|jpeg|gif|webp)$/.test(f.type); })[0];
+    var hasMail = [].some.call(files, function(f){ return /\.(eml|msg)$/i.test(f.name) || f.type === 'message/rfc822'; });
+    if(img && !hasMail){
+      if(document.getElementById('qcImgBox') && openQuickCapture.setImage){ openQuickCapture.setImage(img); return; }
+      if(!document.getElementById('modalOverlay').classList.contains('hidden')) return;
+      imageFromFile(img).then(function(url){ openQuickCapture('', !!aiKey(), url); }).catch(function(err){ toast(err.message); });
+      return;
+    }
+    importMailFiles(files);
   });
 })();
 function openMailFilePicker(){
@@ -12722,11 +13874,13 @@ function geminiCandidate(json){
   }
   return cand;
 }
-function callGeminiRaw(systemPrompt, userText, maxTokens){
+function callGeminiRaw(systemPrompt, userText, maxTokens, image){
   /* Reichlich Platz lassen: bei Denkmodellen zählen die "Gedanken" zum Limit. */
+  var parts = [{text: userText}];
+  if(image) parts.unshift({inlineData: {mimeType: image.mediaType, data: image.data}});
   var body = {
     systemInstruction: {parts: [{text: systemPrompt}]},
-    contents: [{role: 'user', parts: [{text: userText}]}],
+    contents: [{role: 'user', parts: parts}],
     generationConfig: {maxOutputTokens: Math.max(4096, (maxTokens || 800) * 4)}
   };
   return geminiFetch(body).then(function(json){
@@ -12960,6 +14114,10 @@ function closeAiChat(){
 function toggleAiChat(){ if(chat.open) closeAiChat(); else openAiChat(); }
 (function(){
   document.getElementById('aiFab').addEventListener('click', function(){ openAiChat(); });
+  var vf = document.getElementById('voiceFab');
+  if(voiceSupported()) vf.classList.remove('hidden');
+  vf.addEventListener('click', startVoiceCommand);
+  document.getElementById('voiceOverlay').addEventListener('click', closeVoice);
   document.getElementById('aiClose').addEventListener('click', closeAiChat);
   document.getElementById('aiNew').addEventListener('click', function(){ chat.msgs = []; chat.view = []; chat.pending = null; chat.busy = false; renderChat(); });
   document.getElementById('aiForm').addEventListener('submit', function(e){

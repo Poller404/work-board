@@ -24,6 +24,20 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-16: Sieben neue Funktionen (Branch `claude/project-thread-gckjc3`)
+
+Timo wählte aus 10 Ideen 1, 2, 4, 5, 6, 9, 10 (nicht: Kalender live, Kunden-Statuslink, smarte Zuweisung). Block vor "PLANER" in index.html:
+- **Lernende Schätzung** `estimateStats` (Cache 10 s), `learnedEstimate/learnedMinutes`; `plannedMinutes` nutzt sie vor `estimatedMinutes`. Hinweis `#estHint` im Task-Fenster.
+- **Unterbrechungs-Radar** `switchStats` (Wechsel = anderer Task innerhalb 30 Min.), `calmWindow`, Fokusfenster `settings.focusWindowHour`.
+- **Tag-Autopilot** `autopilotPlan/openAutopilot/offerReplan`, optionales Task-Feld `autoPlan:true` (fällt weg, wenn der Termin von Hand geändert wird, siehe `updateTask`).
+  Begrenzt aufs Tagesziel, überspringt Wartet/Erledigt/blockiert/Meetings, Wochenende nur mit `planWeekend`.
+- **Screenshot → Ticket** `callAIRaw(sys, text, max, image)` (Anthropic image block / Gemini inlineData), `shrinkImage`, Paste/Drop auf dem Board, `openDraftPreview(…, imageUrl)`.
+- **Sprachbefehle** `runVoiceCommand` (lokale Grammatik), sonst `chatSend`; `#voiceFab`, Taste V, `#modalVoiceBtn`.
+- **Wissen** `kbAutoWrite` beim Erledigen (`settings.kbAutoWrite`, Feld `solutionAuto`), `renderKbSuggest` im Task-Fenster.
+- **QR-Rechnung** eigener QR-Encoder `encodeQRM` (alle Versionen, EC M), `swissQrPayload`, `printQrInvoice`, `settings.invoice`, Projektfeld `clientAddress`.
+Getestet: Playwright mit Supabase- und Anthropic-Mock, Sprach-API gemockt; QR-Codes (Version 1–39 und Rechnung aus dem PDF) mit zxing-cpp dekodiert.
+Nicht getestet: echte KI-Antworten mit Bildern, echte Spracherkennung auf dem iPhone, Zahlung mit einer Banking-App.
+
 ## ✅ Stand 2026-10-15: Sicherheitsprüfung (zweite Runde)
 
 Geprüft: main-Code (Playwright-Test mit Schadcode in allen Feldern, alle Ansichten/Dialoge/Menüs), Git-Historie auf Keys, Supabase (Policies, Rechte, Advisor).
