@@ -32,6 +32,17 @@ angezeigt (jetzt `stripMarkup` beim Speichern und Maskierung an allen Stellen); 
 erzwingt die echte Login-Adresse in `profiles.email` (vorher per API frei änderbar). Offen für Timo: SQL ausführen, Leaked Password Protection.
 Advisor-Warnungen zu SECURITY-DEFINER-Funktionen (`is_board_member`, `is_board_owner`, `delete_own_account`) sind gewollt.
 
+## ✅ Stand 2026-10-14 (Fortsetzung): Gebuchte Zeit im Planer verschieben
+
+Timo wollte die Zeitbuchungs-Blöcke im Planer verschieben können. Gebuchte Zeit (`plLoggedOnDay`) wird nicht mehr als 6-px-Strich, sondern als eigener
+Block mit Uhrzeit und Titel rechts neben den geplanten Blöcken gezeigt (`PL_PLAN_SHARE` = 62 % für Plan, wenn der Tag beides hat; sonst volle Breite;
+Überschneidungen über `plLanes`). Abgeschlossene Sitzungen, die ganz an einem Tag liegen, lassen sich ziehen (auch auf einen anderen Tag) und unten in der
+Länge ändern, im 15-Minuten-Raster (`plStartLogDrag`, `plMoveSession`). Laufende Sitzungen bleiben fest. Nicht erlaubt: Überschneidung mit einer anderen Sitzung
+desselben Tasks und Zeit in der Zukunft. Neuer Start = alte Sitzung bleibt als 0-Sekunden-Eintrag (gleicher Schlüssel für `unionBy`), neue Sitzung kommt dazu;
+Buchungsbeginn (bei nachgetragenen Buchungen auch das Ende) wird nachgeführt. Strg+Z macht es rückgängig. Getestet mit Playwright (Verschieben, Länge,
+Zukunft abgelehnt, zweimal rückgängig, Klick öffnet den Task, hell/dunkel). Nach PR #11 auch für Zeit ohne Task: die Blöcke
+(`data-log-free`) ändern den Eintrag in `settings.freeTime` über `bookFreeTime(…, id)`, der Abgleich läuft dort über die ID.
+
 ## ✅ Stand 2026-10-14 (Fortsetzung): Praktische Erweiterungen (Branch `claude/praktische-erweiterungen-vsank6`)
 
 Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimierungen). Umgesetzt, ohne das gespeicherte Datenformat zu ändern:
