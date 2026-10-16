@@ -292,6 +292,31 @@ grant select, insert, update, delete on user_keys to authenticated;
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
 
+## 🚀 Tag-Autopilot, lernende Schätzung, Sprachbefehle & mehr
+
+Kein zusätzliches SQL nötig, alles liegt im verschlüsselten Board bzw. in den Einstellungen.
+
+- **✨ Tag-Autopilot** (Planer → „Tag planen“, Befehlspalette oder Sprachbefehl „Plane meinen Tag“): füllt die freien Lücken von heute
+  oder dem nächsten Arbeitstag mit offenen Tasks (Überfälliges und Fälliges zuerst, dann Priorität, Tagesfokus, angeheftet). Feste
+  Termine bleiben; das Tagesziel (Einstellungen → Zeit) begrenzt die Menge; Pause zwischen Blöcken und Mittag einstellbar; lange Tasks
+  werden als Teilblock eingeplant. Autopilot-Blöcke tragen ✨ und werden beim Neuplanen wieder verteilt. Nach einem Hotline-Anruf oder
+  Meeting bietet ein Hinweis an, den Rest des Tages neu zu planen. Rückgängig mit Strg+Z.
+- **📈 Lernende Schätzung:** vergleicht bei erledigten Tasks (180 Tage) Schätzung und eigene gebuchte Zeit pro Typ. Im Task-Fenster
+  erscheint ein Vorschlag, wenn die Schätzung deutlich abweicht; der Planer nutzt die gelernte Dauer. Übersicht in der Statistik.
+- **🔀 Unterbrechungs-Radar** (Statistik, Seitenleiste „Heute“): Taskwechsel, davon Anrufe/Meetings, längste Fokusphase und geschätzter
+  Verlust (Faustregel 10 Min. pro Wechsel). Zeigt die ruhigste Tageszeit der letzten 4 Wochen; als Fokusfenster gespeichert legt der
+  Autopilot den wichtigsten Task dorthin.
+- **📷 Screenshot wird Ticket:** Bild mit Strg+V auf dem Board einfügen, ins Fenster ziehen oder in „Ticket aus Text“ über „📷 Bild“
+  wählen. Die KI (Claude oder Gemini) liest Fehlermeldungen ab und legt den Task an; das Bild hängt als Notiz am Task.
+- **🎙️ Sprachbefehle** (Taste V, Mikrofon unten rechts oder im Task-Fenster): „Starte Drucker Meier“, „Pause“, „Buchung abschliessen“,
+  „Erledigt“, „Verschiebe das auf morgen/Montag“, „Notiz …“, „Neuer Task …“, „Zeige Planer/Statistik“, „Plane meinen Tag“,
+  „Hotline“, „Meeting“. Alles andere geht mit KI-Key an den Assistenten. Braucht Chrome, Edge oder Safari.
+- **💡 Wissen schreibt sich selbst:** Beim Erledigen schreibt die KI aus Beschreibung und Notizen einen Wissensartikel (abschaltbar unter
+  Einstellungen → Integrationen). Offene Tasks zeigen oben die passende Lösung aus früheren Fällen, mit „Antwort mit dieser Lösung“.
+- **🧾 QR-Rechnung** (Projekte → Projekt → „QR-Rechnung“): Rechnung mit Schweizer QR-Einzahlungsschein (Swiss Payment Standards 2.0,
+  IBAN oder QR-IBAN mit QR-Referenz, sonst Creditor Reference RF), optional MWST, Total auf 5 Rappen gerundet, Leistungsübersicht als
+  Seite 2. Rechnungsadresse pro Projekt, eigene Angaben werden beim ersten Mal abgefragt.
+
 ## ✨ Große Funktionen (Planer, Projekte, Wissen, Automatisierung, Team, Mail, KI)
 
 Alle Daten dieser Funktionen liegen im verschlüsselten Board bzw. in den (ebenfalls verschlüsselten) Einstellungen –
