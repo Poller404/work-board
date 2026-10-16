@@ -772,4 +772,6 @@ manuelles Exportieren/Importieren. Einzelne Tasks lassen sich zusätzlich über 
 - Suche & Filter nach Typ/Priorität
 - Fälligkeitsdatum, Tags, mehrere Links (Jira/Confluence/Sonstige) pro Task
 - Erledigte Tasks werden nach X Tagen automatisch archiviert (einstellbar), Archiv jederzeit einsehbar
+- **🗄️ Erledigt leeren**: Knopf im Kopf der Erledigt-Spalte schickt alle sichtbaren Tasks mit einer von 5 zufälligen Animationen
+  (Abflug, Strudel, Raketenstart, Domino, Sternenstaub) ins Archiv; danach „Rückgängig“ im Hinweis oder `Strg+Z`.
 - Hell/Dunkel-Theme

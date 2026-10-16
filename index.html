@@ -354,6 +354,17 @@ button.btn.primary svg.i{color:inherit;}
 @keyframes confetti-fall{
   to{ transform:translateY(110vh) rotate(600deg); opacity:.3; }
 }
+/* ---- Erledigt -> Archiv (Animationen) ---- */
+#archiveFxHost{position:fixed; inset:0; pointer-events:none; z-index:2900; overflow:hidden;}
+.afx-card{position:fixed; margin:0; box-sizing:border-box; will-change:transform, opacity, filter; box-shadow:var(--shadow-lg);}
+.afx-bit{position:fixed; border-radius:50%; will-change:transform, opacity;}
+.afx-flame{position:absolute; left:50%; bottom:-26px; width:22px; margin-left:-11px; height:30px; border-radius:50% 50% 50% 50% / 30% 30% 70% 70%;
+  background:radial-gradient(circle at 50% 30%, #fff6c2 0%, #ffb547 40%, #ff5a1f 75%, transparent 76%); filter:blur(.5px);}
+.afx-label{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%); font-size:22px; font-weight:700; color:var(--text);
+  background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:10px 22px; box-shadow:var(--shadow-lg); white-space:nowrap;}
+.column-header .archive-done-btn{color:var(--text-dim);}
+.column-header .archive-done-btn:hover{color:var(--accent);}
+.column-header .archive-done-btn[disabled]{opacity:.4; cursor:default;}
 
 /* ---- Command Palette ---- */
 #cmdPaletteOverlay{position:fixed; inset:0; background:rgba(9,30,66,.54); z-index:1500; display:flex; align-items:flex-start; justify-content:center; padding-top:10vh;}
@@ -1333,6 +1344,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 <button id="voiceFab" class="voice-fab hidden" title="Sprachbefehl (Taste V)" aria-label="Sprachbefehl">🎙️</button>
 <div id="voiceOverlay" class="hidden" role="status" aria-live="polite"><div class="v-mic">🎙️</div><div class="v-text" id="voiceText">Ich höre zu…</div><div class="hint">z.B. „Starte Drucker Meier“, „Pause“, „Verschiebe das auf morgen“, „Plane meinen Tag“ · antippen zum Abbrechen</div></div>
 <div id="confettiHost"></div>
+<div id="archiveFxHost" aria-hidden="true"></div>
 <div id="printArea"></div>
 
 <div id="cmdPaletteOverlay" class="hidden">
@@ -2242,6 +2254,204 @@ function fireConfetti(){
     (function(el){ setTimeout(function(){ el.remove(); }, 2600); })(piece);
   }
 }
+
+/* =========================================================
+   ERLEDIGT -> ARCHIV (Knopf im Kopf der Erledigt-Spalte)
+   Schickt alle sichtbaren Tasks der Erledigt-Spalte ins Archiv.
+   Pro Klick wird zufällig eine von 5 Animationen gewählt (nie zweimal
+   dieselbe hintereinander). Die Karten werden als Kopien in eine fixe
+   Ebene gelegt, damit sie die Spalte verlassen können, ohne abgeschnitten
+   zu werden. Bei "Bewegung reduzieren" wird ohne Animation archiviert.
+   ========================================================= */
+var archiveFxRunning = false;
+var lastArchiveFx = -1;
+function canArchiveDoneColumn(col, colTasks){
+  return !showArchive && !col.virtual && boardViewMode === 'status' && DONE_COLUMN_RE.test(col.name || '') && colTasks.length > 0;
+}
+function prefersReducedMotion(){
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+function archiveDoneColumn(colId){
+  if(archiveFxRunning) return;
+  var col = state.columns.find(function(c){ return c.id === colId; });
+  if(!col) return;
+  var ids = state.tasks.filter(function(t){ return !t.archived && t.columnId === colId && taskMatchesFilters(t); }).map(function(t){ return t.id; });
+  if(!ids.length){ toast('Keine Tasks zum Archivieren.'); return; }
+  var colEl = document.querySelector('#board .column[data-col-id="'+colId+'"]');
+  var els = colEl ? Array.prototype.slice.call(colEl.querySelectorAll('.column-body > .card, .column-body > .group-block')) : [];
+  function commit(fxName){
+    pushUndoSnapshot();
+    var now = nowIso();
+    ids.forEach(function(id){
+      var t = getTask(id);
+      if(!t) return;
+      logActivity(t, 'Archiviert (Erledigt-Spalte geleert)');
+      t.archived = true;
+      t.updatedAt = now;
+    });
+    save();
+    renderAll();
+    pulseArchiveButton();
+    toast('🗄️ ' + ids.length + (ids.length === 1 ? ' Task' : ' Tasks') + ' im Archiv' + (fxName ? ' · ' + fxName : ''), 6000, 'Rückgängig', undoLastAction);
+  }
+  if(!els.length || prefersReducedMotion() || typeof Element.prototype.animate !== 'function'){ commit(''); return; }
+  var pick;
+  do { pick = Math.floor(Math.random() * ARCHIVE_FX.length); } while(ARCHIVE_FX.length > 1 && pick === lastArchiveFx);
+  lastArchiveFx = pick;
+  var fx = ARCHIVE_FX[pick];
+  archiveFxRunning = true;
+  document.querySelectorAll('[data-action="archive-done"]').forEach(function(b){ b.disabled = true; });
+  var host = document.getElementById('archiveFxHost');
+  var target = archiveTargetPoint();
+  var clones = els.map(function(el, i){
+    var r = el.getBoundingClientRect();
+    var c = el.cloneNode(true);
+    c.classList.add('afx-card');
+    c.removeAttribute('id');
+    c.style.left = r.left + 'px'; c.style.top = r.top + 'px';
+    c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+    host.appendChild(c);
+    el.style.visibility = 'hidden';
+    return {el: c, rect: r, i: i, n: els.length};
+  }).filter(function(o){ return o.rect.width > 0 && o.rect.bottom > 0 && o.rect.top < window.innerHeight; });
+  var duration = 0;
+  try { duration = fx.run(clones, target, host) || 1200; } catch(e){ duration = 0; }
+  setTimeout(function(){
+    host.innerHTML = '';
+    archiveFxRunning = false;
+    commit(fx.name);
+  }, duration);
+}
+function archiveTargetPoint(){
+  var b = document.getElementById('btnArchive');
+  var r = b && b.getBoundingClientRect();
+  if(r && r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth) return {x: r.left + Math.min(r.width, 40) / 2 + 6, y: r.top + r.height / 2};
+  return {x: window.innerWidth - 36, y: 28};
+}
+function pulseArchiveButton(){
+  var b = document.getElementById('btnArchive');
+  if(!b || typeof b.animate !== 'function' || prefersReducedMotion()) return;
+  b.animate([{transform:'scale(1)'}, {transform:'scale(1.12)', background:'var(--hover)'}, {transform:'scale(.97)'}, {transform:'scale(1)'}], {duration: 520, easing: 'ease-out'});
+}
+function afxBits(host, x, y, count, colors, spread, life){
+  for(var k = 0; k < count; k++){
+    var d = document.createElement('div');
+    var size = 3 + Math.random() * 5;
+    d.className = 'afx-bit';
+    d.style.width = d.style.height = size + 'px';
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    d.style.background = colors[Math.floor(Math.random() * colors.length)];
+    host.appendChild(d);
+    var a = Math.random() * Math.PI * 2, dist = spread * (.4 + Math.random() * .6);
+    d.animate([
+      {transform: 'translate(0,0) scale(1)', opacity: 1},
+      {transform: 'translate(' + (Math.cos(a) * dist) + 'px,' + (Math.sin(a) * dist - spread * .3) + 'px) scale(.2)', opacity: 0}
+    ], {duration: life * (.6 + Math.random() * .4), easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards'});
+  }
+}
+var AFX_COLORS = ['#0052cc','#00875a','#ff8b00','#de350b','#8b5cf6','#00b8d9'];
+var ARCHIVE_FX = [
+  /* 1: Die Karten fliegen im Bogen nacheinander zum Archiv-Knopf und schrumpfen dabei. */
+  {name: 'Abflug', run: function(cards, target){
+    var stagger = Math.min(110, 700 / cards.length), dur = 900;
+    cards.forEach(function(o){
+      var cx = o.rect.left + o.rect.width / 2, cy = o.rect.top + o.rect.height / 2;
+      var dx = target.x - cx, dy = target.y - cy;
+      var lift = -Math.max(80, Math.abs(dx) * .25);
+      o.el.animate([
+        {transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1},
+        {transform: 'translate(0,-10px) scale(1.04) rotate(-3deg)', opacity: 1, offset: .12},
+        {transform: 'translate(' + (dx * .5) + 'px,' + (dy * .5 + lift) + 'px) scale(.55) rotate(' + (dx < 0 ? -14 : 14) + 'deg)', opacity: 1, offset: .55},
+        {transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.05) rotate(' + (dx < 0 ? -30 : 30) + 'deg)', opacity: .2}
+      ], {duration: dur, delay: o.i * stagger, easing: 'cubic-bezier(.45,0,.35,1)', fill: 'both'});
+    });
+    return dur + (cards.length - 1) * stagger + 80;
+  }},
+  /* 2: Strudel – alle Karten drehen sich in die Mitte der Spalte und verschwinden. */
+  {name: 'Strudel', run: function(cards){
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    cards.forEach(function(o){ minX = Math.min(minX, o.rect.left); maxX = Math.max(maxX, o.rect.right); minY = Math.min(minY, o.rect.top); maxY = Math.max(maxY, o.rect.bottom); });
+    var mx = (minX + maxX) / 2, my = (minY + maxY) / 2, dur = 1250, stagger = Math.min(50, 400 / cards.length);
+    cards.forEach(function(o){
+      var dx = mx - (o.rect.left + o.rect.width / 2), dy = my - (o.rect.top + o.rect.height / 2);
+      o.el.animate([
+        {transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1, filter: 'blur(0)'},
+        {transform: 'translate(' + (dx * .35 + 30) + 'px,' + (dy * .35) + 'px) rotate(200deg) scale(.8)', opacity: 1, offset: .4},
+        {transform: 'translate(' + (dx * .8 - 15) + 'px,' + (dy * .8) + 'px) rotate(500deg) scale(.35)', opacity: .8, offset: .75, filter: 'blur(1px)'},
+        {transform: 'translate(' + dx + 'px,' + dy + 'px) rotate(900deg) scale(0)', opacity: 0, filter: 'blur(3px)'}
+      ], {duration: dur, delay: o.i * stagger, easing: 'cubic-bezier(.55,0,.75,.4)', fill: 'both'});
+    });
+    return dur + (cards.length - 1) * stagger + 80;
+  }},
+  /* 3: Rakete – die Karten zittern kurz, zünden und schiessen nach oben aus dem Bild. */
+  {name: 'Raketenstart', run: function(cards, target, host){
+    var stagger = Math.min(140, 900 / cards.length), dur = 1300;
+    cards.forEach(function(o){
+      var flame = document.createElement('div');
+      flame.className = 'afx-flame';
+      o.el.appendChild(flame);
+      flame.animate([{transform: 'scaleY(.2)', opacity: 0}, {transform: 'scaleY(1)', opacity: 1, offset: .35}, {transform: 'scaleY(1.6)', opacity: 1}], {duration: dur, delay: o.i * stagger, fill: 'both'});
+      var drift = (Math.random() - .5) * 60;
+      o.el.animate([
+        {transform: 'translate(0,0) rotate(0deg)'},
+        {transform: 'translate(-2px,1px) rotate(-1deg)', offset: .06},
+        {transform: 'translate(2px,-1px) rotate(1deg)', offset: .12},
+        {transform: 'translate(-2px,1px) rotate(-1deg)', offset: .18},
+        {transform: 'translate(2px,0) rotate(1deg)', offset: .24},
+        {transform: 'translate(0,6px) rotate(0deg)', offset: .32},
+        {transform: 'translate(' + drift + 'px,' + (-(o.rect.bottom + 140)) + 'px) rotate(' + (drift / 6) + 'deg)'}
+      ], {duration: dur, delay: o.i * stagger, easing: 'cubic-bezier(.6,0,.9,.5)', fill: 'both'});
+      setTimeout(function(){ afxBits(host, o.rect.left + o.rect.width / 2, o.rect.bottom, 10, ['#ffb547','#ff5a1f','#c4c4c4'], 40, 600); }, o.i * stagger + dur * .32);
+    });
+    return dur + (cards.length - 1) * stagger + 80;
+  }},
+  /* 4: Domino – die Karten kippen nacheinander um und fallen nach unten weg. */
+  {name: 'Domino', run: function(cards){
+    var stagger = Math.min(120, 800 / cards.length), dur = 1050;
+    cards.forEach(function(o){
+      var dir = o.i % 2 ? -1 : 1;
+      o.el.style.transformOrigin = (dir > 0 ? '100%' : '0%') + ' 100%';
+      o.el.animate([
+        {transform: 'translate(0,0) rotate(0deg)', opacity: 1},
+        {transform: 'translate(0,0) rotate(' + (dir * 8) + 'deg)', opacity: 1, offset: .2},
+        {transform: 'translate(' + (dir * 20) + 'px,30px) rotate(' + (dir * 50) + 'deg)', opacity: 1, offset: .45},
+        {transform: 'translate(' + (dir * 70) + 'px,' + (window.innerHeight - o.rect.top + 60) + 'px) rotate(' + (dir * 160) + 'deg)', opacity: .6}
+      ], {duration: dur, delay: o.i * stagger, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'both'});
+    });
+    return dur + (cards.length - 1) * stagger + 80;
+  }},
+  /* 5: Staub – die Karten zerfallen in bunte Partikel, die zum Archiv-Knopf wehen. */
+  {name: 'Sternenstaub', run: function(cards, target, host){
+    var stagger = Math.min(120, 800 / cards.length), dur = 900;
+    cards.forEach(function(o){
+      o.el.animate([
+        {transform: 'scale(1)', opacity: 1, filter: 'blur(0) saturate(1)'},
+        {transform: 'scale(1.03)', opacity: 1, filter: 'blur(0) saturate(1.6) brightness(1.15)', offset: .25},
+        {transform: 'scale(.92) translate(12px,-8px)', opacity: 0, filter: 'blur(8px) saturate(2)'}
+      ], {duration: dur, delay: o.i * stagger, easing: 'ease-in', fill: 'both'});
+      setTimeout(function(){
+        var n = Math.min(26, Math.round(o.rect.width * o.rect.height / 1500));
+        for(var k = 0; k < n; k++){
+          var d = document.createElement('div');
+          var size = 3 + Math.random() * 4;
+          d.className = 'afx-bit';
+          d.style.width = d.style.height = size + 'px';
+          var sx = o.rect.left + Math.random() * o.rect.width, sy = o.rect.top + Math.random() * o.rect.height;
+          d.style.left = sx + 'px'; d.style.top = sy + 'px';
+          d.style.background = AFX_COLORS[Math.floor(Math.random() * AFX_COLORS.length)];
+          host.appendChild(d);
+          var tx = target.x - sx, ty = target.y - sy;
+          d.animate([
+            {transform: 'translate(0,0) scale(1)', opacity: 0},
+            {transform: 'translate(' + ((Math.random() - .5) * 60) + 'px,' + (-20 - Math.random() * 40) + 'px) scale(1.2)', opacity: 1, offset: .3},
+            {transform: 'translate(' + tx + 'px,' + ty + 'px) scale(.3)', opacity: .1}
+          ], {duration: 900 + Math.random() * 300, delay: Math.random() * 200, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'both'});
+        }
+      }, o.i * stagger + dur * .2);
+    });
+    return dur * .2 + (cards.length - 1) * stagger + 1500;
+  }}
+];
 
 /* =========================================================
    KEYWORT-VORSCHLÄGE (Priorität & Tags)
@@ -3403,6 +3613,7 @@ function renderBoard(){
       (col.virtual ? '<span style="flex:1;">'+escapeHtml(col.name)+'</span>' : '<input class="rename" value="'+escapeAttr(col.name)+'" data-col-id="'+col.id+'">') +
       '<span class="count'+(overWip?' over-wip':'')+'" title="'+(col.wipLimit?('WIP-Limit: '+col.wipLimit):'')+'">'+colTasks.length+(col.wipLimit?' / '+col.wipLimit:'')+'</span>' +
       groupTotalHtml +
+      (canArchiveDoneColumn(col, colTasks) ? '<button class="icon-btn archive-done-btn" data-action="archive-done" data-col-id="'+escapeAttr(col.id)+'" title="Alle '+colTasks.length+' Tasks ins Archiv schicken" aria-label="Alle Tasks aus '+escapeAttr(col.name)+' archivieren"'+(archiveFxRunning?' disabled':'')+'>'+svgIcon('box')+'</button>' : '') +
       '<button class="icon-btn col-collapse" data-action="col-collapse" data-col-id="'+escapeAttr(col.id)+'" title="Spalte einklappen" aria-label="Spalte '+escapeAttr(col.name)+' einklappen">'+svgIcon('collapse')+'</button>' +
       (col.virtual ? '' : '<button class="icon-btn" data-action="col-menu" data-col-id="'+col.id+'" title="Optionen">⋯</button>');
     colEl.appendChild(header);
@@ -3498,6 +3709,9 @@ function renderBoard(){
   });
   board.querySelectorAll('[data-action="col-collapse"]').forEach(function(btn){
     btn.addEventListener('click', function(){ setColumnCollapsed(btn.dataset.colId, true); renderBoard(); });
+  });
+  board.querySelectorAll('[data-action="archive-done"]').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); archiveDoneColumn(btn.dataset.colId); });
   });
   board.querySelectorAll('[data-action="col-menu"]').forEach(function(btn){
     btn.addEventListener('click', function(e){ openColumnMenu(btn.dataset.colId, e.currentTarget); });
