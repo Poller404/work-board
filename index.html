@@ -2692,7 +2692,7 @@ function printWeeklyReportPdf(){
   var completedCount = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= start; }).length;
 
   var typeRows = Object.keys(TYPES).filter(function(k){ return totals[k]>0; }).map(function(k){
-    return '<tr><td>'+TYPES[k].icon+' '+TYPES[k].label+'</td><td>'+fmtHM(totals[k])+'</td></tr>';
+    return '<tr><td>'+escapeHtml(TYPES[k].icon+' '+TYPES[k].label)+'</td><td>'+fmtHM(totals[k])+'</td></tr>';
   }).join('');
 
   var taskRows = withTime.sort(function(a,b){ return secondsInRange(b,start,end)-secondsInRange(a,start,end); }).map(function(t){
@@ -4632,7 +4632,7 @@ function openTaskModal(taskId){
   var t = getTask(taskId);
   if(!t) return;
   var typeOptions = Object.keys(TYPES).map(function(k){
-    return '<option value="'+k+'"'+(t.type===k?' selected':'')+'>'+TYPES[k].icon+' '+TYPES[k].label+'</option>';
+    return '<option value="'+k+'"'+(t.type===k?' selected':'')+'>'+escapeHtml(TYPES[k].icon+' '+TYPES[k].label)+'</option>';
   }).join('');
   var prioOptions = Object.keys(PRIORITIES).map(function(k){
     return '<option value="'+k+'"'+(t.priority===k?' selected':'')+'>'+PRIORITIES[k].label+'</option>';
@@ -5867,7 +5867,7 @@ function openAiWeeklyAnalysis(){
 function openDraftPreview(input, sourceText){
   var drafts = (Array.isArray(input) ? input : [input]).map(normalizeDraft);
   var typeOptionsFor = function(sel){ return Object.keys(TYPES).map(function(k){
-    return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+TYPES[k].label+'</option>';
+    return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+escapeHtml(TYPES[k].label)+'</option>';
   }).join(''); };
   var prioOptionsFor = function(sel){ return Object.keys(PRIORITIES).map(function(k){
     return '<option value="'+k+'"'+(sel===k?' selected':'')+'>'+PRIORITIES[k].label+'</option>';
@@ -6853,7 +6853,7 @@ function buildDonutChart(totals, grand){
     var pct = grand > 0 ? Math.round(totals[k]/grand*100) : 0;
     return '<div style="display:flex; align-items:center; gap:6px; font-size:12px;">' +
       '<span style="width:10px; height:10px; border-radius:3px; background:'+DONUT_COLORS[i%DONUT_COLORS.length]+'; flex-shrink:0;"></span>' +
-      '<span>'+statTypeInfo(k).icon+' '+statTypeInfo(k).label+' · '+pct+'%</span>' +
+      '<span>'+escapeHtml(statTypeInfo(k).icon+' '+statTypeInfo(k).label)+' · '+pct+'%</span>' +
     '</div>';
   }).join('');
   return '<div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">' +
@@ -6909,7 +6909,7 @@ function renderStatsView(range){
     var sec = totals[k];
     var pct = Math.round(sec / maxVal * 100);
     return '<div style="margin-bottom:12px;">' +
-      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>'+statTypeInfo(k).icon+' '+statTypeInfo(k).label+'</span><span style="font-weight:700;">'+fmtHM(sec)+'</span></div>' +
+      '<div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;"><span>'+escapeHtml(statTypeInfo(k).icon+' '+statTypeInfo(k).label)+'</span><span style="font-weight:700;">'+fmtHM(sec)+'</span></div>' +
       '<div style="background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; border:1px solid var(--border);"><div style="width:'+pct+'%; background:var(--accent); height:100%;"></div></div>' +
     '</div>';
   }).join('');
@@ -8236,7 +8236,7 @@ function renderMembersModal(){
         '<div class="task-block-title" style="margin-top:16px;">Person hinzufügen</div>' +
         (candidates.length ?
           '<div class="s-inline"><select id="mbAdd" style="flex:1;">' + candidates.map(function(p){
-            return '<option value="'+p.id+'"'+(p.public_key?'':' disabled')+'>'+escapeHtml(p.display_name || p.email)+(p.public_key?'':' (noch nicht bereit)')+'</option>';
+            return '<option value="'+escapeAttr(p.id)+'"'+(p.public_key?'':' disabled')+'>'+escapeHtml(p.display_name && p.email ? p.display_name + ' (' + p.email + ')' : (p.display_name || p.email))+(p.public_key?'':' (noch nicht bereit)')+'</option>';
           }).join('') + '</select><button class="btn primary" id="mbAddBtn">Hinzufügen</button></div>' +
           '<div class="hint">Nur registrierte Personen, die sich mit der aktuellen Version angemeldet haben, sind auswählbar. Neue Personen registrieren sich selbst über den App-Link.</div>'
           : '<div class="hint">Keine weiteren registrierten Personen vorhanden. Gib den App-Link weiter, damit sich andere registrieren.</div>')
@@ -9072,7 +9072,9 @@ function openSettings(){
   document.querySelectorAll('[data-ctype-idx]').forEach(function(inp){
     inp.addEventListener('change', function(){
       var idx = parseInt(inp.dataset.ctypeIdx,10);
-      state.settings.customTypes[idx][inp.dataset.ctypeField] = inp.value;
+      var field = inp.dataset.ctypeField;
+      if(field !== 'label' && field !== 'icon') return;
+      state.settings.customTypes[idx][field] = stripMarkup(inp.value, field === 'icon' ? 8 : 40) || (field === 'icon' ? '🔧' : 'Typ');
       save(); rebuildTypeRegistry(); renderBoard();
     });
   });
@@ -11282,7 +11284,7 @@ function renderKbView(){
     '<div class="kb-search"><input id="kbSearch" type="search" value="' + escapeAttr(kbQuery) + '" placeholder="Problem beschreiben, z.B. VPN verbindet nicht, Drucker, Passwort-Reset…" autocomplete="off">' +
       '<button class="btn primary" id="kbAsk" title="Die KI beantwortet die Frage anhand der besten Treffer">🤖 Antwort</button></div>' +
     '<div class="kb-filters"><label class="pl-check"><input type="checkbox" id="kbOnlySolved"' + (kbOnlySolved ? ' checked' : '') + '> Nur Fälle mit Lösung/Notizen</label>' +
-      '<select id="kbType"><option value="">Alle Typen</option>' + Object.keys(TYPES).map(function(k){ return '<option value="' + k + '"' + (kbFilterType === k ? ' selected' : '') + '>' + TYPES[k].label + '</option>'; }).join('') + '</select></div>' +
+      '<select id="kbType"><option value="">Alle Typen</option>' + Object.keys(TYPES).map(function(k){ return '<option value="' + k + '"' + (kbFilterType === k ? ' selected' : '') + '>' + escapeHtml(TYPES[k].label) + '</option>'; }).join('') + '</select></div>' +
     (kbAnswerHtml ? '<section class="dcard kb-answer" style="margin-bottom:12px;">' + kbAnswerHtml + '</section>' : '') +
     missHtml +
     '<div class="kb"><div class="kb-list">' + listHtml + '</div><div class="kb-detail">' + (sel ? kbArticleHtml(sel) : '<div class="empty-state">Wähle links einen Fall.</div>') + '</div></div>' +

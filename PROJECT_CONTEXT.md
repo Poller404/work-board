@@ -24,6 +24,14 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-15: Sicherheitsprüfung (zweite Runde)
+
+Geprüft: main-Code (Playwright-Test mit Schadcode in allen Feldern, alle Ansichten/Dialoge/Menüs), Git-Historie auf Keys, Supabase (Policies, Rechte, Advisor).
+Keine Keys im Repo ausser dem öffentlichen `sb_publishable_…`. Behoben: Typ-Namen aus den Einstellungen wurden bis zum Neuladen ungeprüft als HTML
+angezeigt (jetzt `stripMarkup` beim Speichern und Maskierung an allen Stellen); Board-Einladung zeigt Name + E-Mail; `supabase-profile-absichern.sql`
+erzwingt die echte Login-Adresse in `profiles.email` (vorher per API frei änderbar). Offen für Timo: SQL ausführen, Leaked Password Protection.
+Advisor-Warnungen zu SECURITY-DEFINER-Funktionen (`is_board_member`, `is_board_owner`, `delete_own_account`) sind gewollt.
+
 ## ✅ Stand 2026-10-14 (Fortsetzung): Praktische Erweiterungen (Branch `claude/praktische-erweiterungen-vsank6`)
 
 Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimierungen). Umgesetzt, ohne das gespeicherte Datenformat zu ändern:
