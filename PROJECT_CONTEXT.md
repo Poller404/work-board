@@ -24,6 +24,21 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-20: Seite pro Task (Whiteboard, Branch `claude/project-thread-mi03r0`)
+
+Timo wollte pro Task eine OneNote-artige Seite (frei platzierbare Screenshots/Texte, für Troubleshooting).
+Block "SEITE PRO TASK" nach `clipboardImageFile` in index.html: `openTaskPage/closeTaskPage`, Overlay `#wbPage` (z-index 1300).
+- Task-Feld `page = {items:[{id,type:'text'|'img',x,y,w,(h),text,mono,color,file,key,ts}], updatedAt}`, geprüft in `normalizePage`.
+  Gespeichert über `updateTask` (`pageCommit`), Abgleich wie andere Felder (neuere Task-Version gewinnt).
+- Bilder NICHT im Board-Zustand: IndexedDB `wb-page-files` + Supabase-Tabelle `task_files` (`supabase-task-seiten.sql`,
+  muss Timo einmal ausführen). Pro Bild zufälliger AES-Schlüssel im Item (`key`), `board_id` für geteilte Boards.
+  Upload `pageUploadPending` (pending-Flag in IndexedDB), Laden `pageLoadImage` (lokal, sonst Cloud). Bild-Datei wird erst
+  9 s nach dem Löschen entfernt (Rückgängig). Duplizieren kopiert die Seite nicht.
+- Eigene Pointer-Logik (Pan, Pinch, Verschieben, Grösse), Paste/Key-Listener in der Capture-Phase auf window, damit die
+  Board-Handler (Screenshot→Ticket, Tastenkürzel) nicht greifen.
+Getestet: Playwright mit Supabase-Mock (https-Origin nötig wegen crypto.subtle), PC 1440px und iPhone 402px.
+Nicht getestet: echte Supabase-Tabelle, Touch-Gesten auf echtem Gerät. Bekannt: Bilder gelöschter Tasks bleiben in `task_files`.
+
 ## ✅ Stand 2026-10-16: Sieben neue Funktionen (Branch `claude/project-thread-gckjc3`)
 
 Timo wählte aus 10 Ideen 1, 2, 4, 5, 6, 9, 10 (nicht: Kalender live, Kunden-Statuslink, smarte Zuweisung). Block vor "PLANER" in index.html:
