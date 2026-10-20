@@ -642,6 +642,42 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .dcard .dyce-table{margin:0;}
 @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .dash-grid{grid-template-columns:1fr;} }
 @media (max-width:680px){ #board.dashboard-mode{padding:16px 14px 30px;} }
+/* ---- Mein Tag ---- */
+.md-wrap{max-width:760px;}
+.md-progress{height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin:-6px 0 16px;}
+.md-progress i{display:block; height:100%; background:var(--ok); border-radius:3px; transition:width var(--t-fast);}
+.md-add{display:flex; gap:8px; margin-bottom:14px;}
+.md-add input{flex:1; min-width:0; border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; background:var(--surface); color:var(--text); font:inherit;}
+.md-add input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow);}
+.md-list{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px;}
+.md-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border-top:1px solid var(--border);}
+.md-row:first-child{border-top:none;}
+.md-row:hover{background:var(--hover);}
+.md-row.run{background:var(--accent-soft);}
+.md-row.drag-over{box-shadow:0 -2px 0 var(--accent) inset;}
+.md-check{width:22px; height:22px; flex-shrink:0; border-radius:50%; border:2px solid var(--border-strong); background:transparent; padding:0; display:grid; place-items:center; color:transparent; font-size:12px; line-height:1; cursor:pointer;}
+.md-check:hover{border-color:var(--ok); color:var(--ok);}
+.md-row.done .md-check{background:var(--ok); border-color:var(--ok); color:#fff;}
+.md-main{flex:1; min-width:0; cursor:pointer;}
+.md-title{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.md-row.done .md-title{text-decoration:line-through; color:var(--text-dim);}
+.md-meta{font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.md-meta .overdue{color:var(--danger); font-weight:500;}
+.md-time{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; flex-shrink:0;}
+.md-btn{width:30px; height:30px; flex-shrink:0; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text-dim); display:grid; place-items:center; padding:0; cursor:pointer;}
+.md-btn:hover{border-color:var(--accent); color:var(--accent);}
+.md-btn.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+.md-btn.sun{border-color:transparent; color:var(--warn);}
+.md-btn.sun:hover{border-color:var(--border);}
+.md-btn.add{color:var(--text-dim);}
+.md-btn .i{width:15px; height:15px;}
+.md-sec{display:flex; align-items:center; gap:8px; margin:4px 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}
+.md-sec button{margin-left:auto; text-transform:none; letter-spacing:0;}
+.md-why{font-size:11.5px; color:var(--text-faint); flex-shrink:0;}
+.md-empty{padding:28px 16px; text-align:center; color:var(--text-dim);}
+.md-empty b{display:block; font-size:15px; color:var(--text); margin-bottom:4px;}
+.sun-badge{font-size:11px;}
+@media (max-width:680px){ .md-row{padding:10px 8px; gap:8px;} .md-why{display:none;} }
 
 /* ---- Task-Fenster (zwei Spalten) ---- */
 .modal.wide:has(.task-layout){max-width:1040px;}
@@ -1198,6 +1234,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 <div id="app">
   <aside id="sidebar" aria-label="Navigation">
     <div class="menu-wrap sb-brand-wrap"><button class="sb-brand" id="boardSwitchBtn" aria-haspopup="true" title="Board wechseln"><span class="sb-logo">W</span><span class="sb-brand-text"><span class="sb-name">Work Board</span><span class="sb-board" id="boardNameLabel"></span></span><svg class="i sb-caret"><use href="#i-chevron"/></svg></button><div class="menu" id="boardMenu"></div></div>
+    <button class="sb-item" data-view="myday" title="Mein Tag"><svg class="i"><use href="#i-sun"/></svg><span class="lbl" data-i18n="navMyDay">Mein Tag</span></button>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
     <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
@@ -1213,7 +1250,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="team"><svg class="i"><use href="#i-users"/></svg><span class="lbl" data-i18n="viewTeam">Nach Person</span></button>
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
-      <option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
+      <option value="myday">Mein Tag</option><option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
       <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
     </select>
     <div class="sb-foot">
@@ -1265,11 +1302,11 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
       <span class="tb-dot"></span>
       <span class="tb-title" id="tbTitle"></span>
       <span class="tb-time" id="tbTime">00:00:00</span>
-      <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Timer-Fenster" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
+      <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Fenster: Timer und Mein Tag" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
       <button class="btn" id="tbPause" title="Pausieren – die Buchung bleibt offen und kann fortgesetzt werden"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
       <button class="btn" id="tbFinish" title="Buchung abschliessen – der nächste Start beginnt eine neue Buchung"><svg class="i"><use href="#i-check"/></svg><span class="lbl">Abschliessen</span></button>
     </div>
-    <button class="btn ghost icon-btn" id="btnControlCenter" title="Control-Center (schwebendes Fenster)" aria-label="Control-Center öffnen"><svg class="i"><use href="#i-pip"/></svg></button>
+    <button class="btn ghost icon-btn" id="btnControlCenter" title="Control-Center: Timer und Mein Tag (schwebendes Fenster)" aria-label="Control-Center öffnen"><svg class="i"><use href="#i-pip"/></svg></button>
     <button class="btn ghost" id="btnCloudSyncTopbar" title="Cloud-Speicher jetzt synchronisieren"><svg class="i"><use href="#i-cloud"/></svg><span class="lbl" data-i18n="btnCloudSyncTopbar">Sync</span></button>
     <div class="menu-wrap">
       <div class="split">
@@ -2108,7 +2145,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
+    navMyDay:'Mein Tag', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -2117,7 +2154,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
+    navMyDay:'My Day', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -3088,6 +3125,7 @@ function openCardContextMenu(t, x, y){
     item('data-ctx="timer"', running ? 'pause' : 'play', running ? 'Timer pausieren' : (myOpenBooking(t) ? 'Buchung fortsetzen' : 'Timer starten')) +
     (myOpenBooking(t) ? item('data-ctx="finish"', 'check', 'Buchung abschliessen') : '') +
     item('data-ctx="timeblock"', 'clock', 'Zeitblock buchen…') +
+    item('data-ctx="myday"', 'sun', isInMyDay(t.id) ? 'Aus Mein Tag entfernen' : 'Zu Mein Tag hinzufügen') +
     item('data-ctx="pin"', 'pin', t.pinned ? 'Anheften lösen' : 'Anheften') +
     item('data-ctx="duplicate"', 'layers', 'Duplizieren');
   html += '<div class="ctx-label">Priorität</div><div class="ctx-prios">' +
@@ -3122,6 +3160,7 @@ function openCardContextMenu(t, x, y){
     else if(item.dataset.ctx === 'timer'){ if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); renderAll(); }
     else if(item.dataset.ctx === 'finish'){ finishBooking(t.id); }
     else if(item.dataset.ctx === 'timeblock'){ openTimeBlockDialog(t.id); }
+    else if(item.dataset.ctx === 'myday'){ toggleMyDay(t.id); renderAll(); }
     else if(item.dataset.ctx === 'pin'){ updateTask(t.id, {pinned: !t.pinned}); renderBoard(); }
     else if(item.dataset.ctx === 'duplicate'){
       var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null});
@@ -3229,7 +3268,7 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash'];
+var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash'];
 var quickFilters = {};
 var filterTag = '';
 var filterProject = '';
@@ -3559,6 +3598,7 @@ function renderBoard(){
   renderFilterBar();
   board.classList.toggle('dashboard-mode', FULL_VIEWS.indexOf(boardViewMode) >= 0);
   board.classList.toggle('planner-mode', boardViewMode === 'calendar');
+  if(boardViewMode === 'myday'){ renderMyDayView(); return; }
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
   if(boardViewMode === 'dyce'){ renderDyceView(); return; }
@@ -3914,6 +3954,7 @@ function renderCard(t){
       '<span class="card-ref">'+escapeHtml(t.jiraKey || typeInfo.label)+'</span>' +
       (sla ? '<span class="sla-dot '+sla+'" title="SLA: '+(sla==='critical'?'überfällig':'bald fällig')+'"></span>' : '') +
       (t.pinned ? '<span class="pin-badge" title="Angeheftet">📌</span>' : '') +
+      (isTodayFocus ? '<span class="sun-badge" title="Auf Mein Tag">☀️</span>' : '') +
       '<span class="prio prio-'+escapeAttr(t.priority||'medium')+'" title="Priorität: '+escapeAttr(prioInfo.label)+'"><i></i><i></i><i></i></span>' +
     '</div>' +
     '<div class="card-title">'+escapeHtml(t.title)+'</div>' +
@@ -4065,7 +4106,8 @@ function renderTimerBanner(){
    das auch sichtbar bleibt, wenn das Board im Hintergrund ist - z.B. während der Arbeit
    in Jira oder Outlook. Ohne PiP-Unterstützung erscheint dasselbe Panel als Overlay
    unten rechts in der Seite. Inhalt: laufender Timer, Schnell-Anlegen, Hotline-Anruf,
-   Meeting, Zeit erfassen und die zuletzt bearbeiteten Tasks mit Start/Pause.
+   Meeting, Zeit erfassen, die Liste „Mein Tag“ zum Abhaken und die zuletzt
+   bearbeiteten Tasks mit Start/Pause und ☀ (auf Mein Tag setzen).
    ========================================================= */
 var CC_CSS =
   '.cc{font-family:var(--font); color:var(--text); background:var(--surface); display:flex; flex-direction:column; gap:10px; padding:12px; box-sizing:border-box; height:100%; overflow-y:auto; font-size:13px; line-height:1.4;}' +
@@ -4102,9 +4144,19 @@ var CC_CSS =
   '.cc-play:hover{border-color:var(--accent); color:var(--accent);}' +
   '.cc-play.on{background:var(--accent); border-color:var(--accent); color:#fff;}' +
   '.cc-msg{font-size:12px; color:var(--ok); min-height:16px;}' +
+  '.cc-label-row{display:flex; align-items:center; justify-content:space-between;}' +
+  '.cc-label-row span:last-child{letter-spacing:0; text-transform:none; font-weight:500;}' +
+  '.cc-check{width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid var(--border-strong); background:transparent; color:transparent; padding:0; display:grid; place-items:center; font-size:11px; line-height:1;}' +
+  '.cc-check:hover{border-color:var(--ok); color:var(--ok);}' +
+  '.cc-row.done .cc-check{background:var(--ok); border-color:var(--ok); color:#fff;}' +
+  '.cc-row.done .cc-row-title{text-decoration:line-through; color:var(--text-dim);}' +
+  '.cc-row.run{background:var(--accent-soft);}' +
+  '.cc-sun{width:26px; height:26px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--text-faint); display:grid; place-items:center; padding:0; font-size:13px; filter:grayscale(1); opacity:.6;}' +
+  '.cc-sun:hover, .cc-sun.on{filter:none; opacity:1; border-color:var(--border);}' +
+  '.cc-more{font-size:12px; color:var(--text-dim); padding:2px 6px;}' +
   '[hidden]{display:none !important;}';
 var CC_VARS = ['--bg','--side','--surface','--surface-2','--hover','--border','--border-strong','--text','--text-dim','--text-faint',
-  '--accent','--accent-hover','--accent-glow','--accent-soft','--danger','--danger-bg','--ok','--ok-bg','--font'];
+  '--accent','--accent-hover','--accent-glow','--accent-soft','--danger','--danger-bg','--ok','--ok-bg','--warn','--font'];
 var ccWindow = null;
 var ccRoot = null;
 var ccPanelEl = null;
@@ -4117,7 +4169,7 @@ function toggleControlCenter(){
   if(ccWindow){ ccWindow.close(); return; }
   if(ccPanelEl){ closeCcPanel(); return; }
   if(!('documentPictureInPicture' in window)){ openCcPanel(); return; }
-  documentPictureInPicture.requestWindow({width:360, height:620}).then(function(win){
+  documentPictureInPicture.requestWindow({width:360, height:700}).then(function(win){
     ccWindow = win;
     win.document.title = 'Work Board – Control-Center';
     var st = win.document.createElement('style');
@@ -4136,7 +4188,7 @@ function openCcPanel(){
   if(!document.getElementById('ccStyle')){
     var st = document.createElement('style');
     st.id = 'ccStyle';
-    st.textContent = CC_CSS + ' #ccPanel{position:fixed; right:18px; bottom:18px; width:340px; max-height:82vh; height:560px; z-index:1200; border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow-lg); overflow:hidden; background:var(--surface);}' +
+    st.textContent = CC_CSS + ' #ccPanel{position:fixed; right:18px; bottom:18px; width:340px; max-height:86vh; height:640px; z-index:1200; border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow-lg); overflow:hidden; background:var(--surface);}' +
       ' @media (max-width:680px){ #ccPanel{left:8px; right:8px; bottom:8px; width:auto;} }';
     document.head.appendChild(st);
   }
@@ -4159,10 +4211,14 @@ function ccBuild(root, withClose){
       '</div>' +
       '<div class="cc-now" data-cc-now></div>' +
       '<form class="cc-add" data-cc-noteform hidden><input class="cc-field" data-cc-noteinput placeholder="Notiz zum laufenden Task…" autocomplete="off"><button class="cc-btn" type="submit">Notiz</button></form>' +
-      '<form class="cc-add" data-cc-addform><input class="cc-field" data-cc-addinput placeholder="Neuer Task… (PROJ-123, #tag, !hoch)" autocomplete="off"><button class="cc-btn primary" type="submit" title="Task anlegen">+</button></form>' +
+      '<form class="cc-add" data-cc-addform><input class="cc-field" data-cc-addinput placeholder="Neuer Task… (PROJ-123, #tag, !hoch)" autocomplete="off">' +
+        '<button class="cc-sun" type="button" data-cc="addsun" title="Neuen Task direkt auf Mein Tag setzen" aria-label="Neuen Task auf Mein Tag setzen">☀️</button>' +
+        '<button class="cc-btn primary" type="submit" title="Task anlegen">+</button></form>' +
       '<div class="cc-quick"><button class="cc-btn" data-cc="hotline">Hotline-Anruf</button><button class="cc-btn" data-cc="meeting">Meeting</button><button class="cc-btn" data-cc="time">Zeit erfassen</button></div>' +
       '<div data-cc-formhost></div>' +
       '<div class="cc-msg" data-cc-msg></div>' +
+      '<div class="cc-label cc-label-row"><span>☀️ Mein Tag</span><span data-cc-mdcount></span></div>' +
+      '<div data-cc-myday></div>' +
       '<div class="cc-label">Zuletzt bearbeitet</div>' +
       '<div data-cc-recent></div>' +
       '<datalist id="ccReporters">'+reporters.map(function(c){ return '<option value="'+escapeAttr(c)+'">'; }).join('')+'</datalist>' +
@@ -4220,9 +4276,20 @@ function ccBuild(root, withClose){
   function clearForm(){ var h = q('[data-cc-formhost]'); h.innerHTML = ''; h.dataset.kind = ''; }
 
   root.addEventListener('click', function(e){
-    var el = e.target.closest('[data-cc], [data-cc-toggle], [data-cc-open]');
+    var el = e.target.closest('[data-cc], [data-cc-toggle], [data-cc-open], [data-cc-done], [data-cc-sun]');
     if(!el) return;
-    if(el.dataset.ccToggle){
+    if(el.dataset.ccDone){
+      var dt = getTask(el.dataset.ccDone);
+      if(dt){ setTaskDone(dt.id, !dt.completedAt); renderAll(); say(dt.completedAt ? 'Task erledigt.' : 'Task wieder offen.'); }
+    } else if(el.dataset.ccSun){
+      setMyDay(el.dataset.ccSun, true);
+      renderAll();
+      say('Auf Mein Tag gesetzt.');
+    } else if(el.dataset.cc === 'addsun'){
+      state.settings.ccAddToMyDay = state.settings.ccAddToMyDay === false;
+      save();
+      ccRefresh(true);
+    } else if(el.dataset.ccToggle){
       var tt = getTask(el.dataset.ccToggle);
       if(tt){ if(isRunning(tt)) stopTimer(tt.id); else startTimer(tt.id); }
     } else if(el.dataset.ccOpen){
@@ -4268,10 +4335,12 @@ function ccBuild(root, withClose){
       var inp = q('[data-cc-addinput]');
       var val = inp.value.trim();
       if(!val) return;
-      createQuickTask(state.columns[0].id, val);
+      var nt = createQuickTask(state.columns[0].id, val);
+      var toMyDay = state.settings.ccAddToMyDay !== false;
+      if(toMyDay) setMyDay(nt.id, true);
       renderAll();
       inp.value = '';
-      say('Task angelegt.');
+      say(toMyDay ? 'Task angelegt und auf Mein Tag gesetzt.' : 'Task angelegt.');
     } else if(form.hasAttribute('data-cc-noteform')){
       var ni = q('[data-cc-noteinput]');
       var text = ni.value.trim();
@@ -4329,7 +4398,29 @@ function ccRefresh(full){
     var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
     var todayEl = q('[data-cc-today]');
     if(todayEl) todayEl.textContent = 'Heute ' + fmtHM(todaySec);
-    var recent = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x); })
+    var addSun = q('[data-cc="addsun"]');
+    if(addSun) addSun.classList.toggle('on', state.settings.ccAddToMyDay !== false);
+    var md = myDayTasks();
+    var mdOpen = md.filter(function(x){ return !x.completedAt; });
+    var mdDone = md.filter(function(x){ return x.completedAt; });
+    var mdCount = q('[data-cc-mdcount]');
+    if(mdCount) mdCount.textContent = md.length ? mdDone.length + ' / ' + md.length + ' erledigt' : '';
+    var mdList = q('[data-cc-myday]');
+    if(mdList){
+      var mdRow = function(x){
+        var isDone = !!x.completedAt, run = isRunning(x);
+        return '<div class="cc-row' + (isDone ? ' done' : '') + (run ? ' run' : '') + '">' +
+          '<button class="cc-check" data-cc-done="' + x.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' +
+          '<span class="cc-row-title" data-cc-open="' + x.id + '" title="' + escapeAttr(x.title) + '">' + escapeHtml(x.title) + '</span>' +
+          (totalSeconds(x) ? '<span class="cc-row-time">' + fmtHM(totalSeconds(x)) + '</span>' : '') +
+          (isDone ? '' : '<button class="cc-play' + (run ? ' on' : '') + '" data-cc-toggle="' + x.id + '" title="' + (run ? 'Pause' : 'Start') + '" aria-label="' + (run ? 'Pause' : 'Start') + '">' + (run ? '⏸' : '▶') + '</button>') +
+        '</div>';
+      };
+      mdList.innerHTML = md.length ? mdOpen.map(mdRow).join('') + mdDone.slice(-3).map(mdRow).join('') +
+          (mdDone.length > 3 ? '<div class="cc-more">+ ' + (mdDone.length - 3) + ' weitere erledigt</div>' : '')
+        : '<div class="cc-idle">Noch nichts für heute. Tippe unten auf ☀️, um einen Task auf Mein Tag zu setzen.</div>';
+    }
+    var recent = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x) && !isInMyDay(x.id); })
       .map(function(x){
         var last = x.timeSessions.length ? new Date(x.timeSessions[x.timeSessions.length-1].start).getTime() : 0;
         return {t: x, at: Math.max(last, new Date(x.updatedAt || 0).getTime())};
@@ -4341,8 +4432,9 @@ function ccRefresh(full){
         var x = r.t, run = isRunning(x);
         return '<div class="cc-row"><span class="cc-row-title" data-cc-open="'+x.id+'" title="'+escapeAttr(x.title)+'">'+escapeHtml(x.title)+'</span>' +
           '<span class="cc-row-time">'+fmtHM(totalSeconds(x))+'</span>' +
+          '<button class="cc-sun" data-cc-sun="'+x.id+'" title="Zu Mein Tag hinzufügen" aria-label="Zu Mein Tag hinzufügen">☀️</button>' +
           '<button class="cc-play'+(run?' on':'')+'" data-cc-toggle="'+x.id+'" title="'+(run?'Pause':'Start')+'" aria-label="'+(run?'Pause':'Start')+'">'+(run?'⏸':'▶')+'</button></div>';
-      }).join('') : '<div class="cc-idle">Noch keine Tasks.</div>';
+      }).join('') : '<div class="cc-idle">' + (md.length ? 'Alle offenen Tasks sind schon auf Mein Tag.' : 'Noch keine Tasks.') + '</div>';
     }
   }
   var tm = q('[data-cc-time]');
@@ -4647,7 +4739,7 @@ function openDayTemplates(){
    ========================================================= */
 function openMorningRitual(){
   var today = toDateInputValue(new Date());
-  if(state.settings.todayFocusDate !== today) state.settings.todayFocusIds = [];
+  myDayRollover();
   var candidates = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && !isSnoozed(t); })
     .sort(function(a,b){ return PRIORITIES[a.priority].order - PRIORITIES[b.priority].order; });
   var selected = state.settings.todayFocusIds || [];
@@ -4673,6 +4765,197 @@ function openMorningRitual(){
     closeModal();
     toast(picked.length ? '🌅 ' + picked.length + ' Priorität(en) für heute gesetzt.' : 'Keine Priorität ausgewählt.');
   });
+}
+
+/* =========================================================
+   MEIN TAG (wie in Microsoft To Do)
+   Eine Liste nur für heute. Tasks kommen von Hand darauf (☀ im Task-Fenster,
+   im Rechtsklick-Menü, bei den Vorschlägen oder im Control-Center) und fallen
+   am nächsten Tag wieder herunter; was offen blieb, erscheint dann als Vorschlag.
+   Gespeichert in state.settings.todayFocusIds/todayFocusDate - derselben Liste
+   wie Morgen-Ritual und Tagesfokus, damit Mein Tag auch im Autopilot, in
+   „Was jetzt?“ und im Dashboard zählt. Die Reihenfolge der IDs ist die
+   Reihenfolge der Liste (per Drag & Drop änderbar).
+   ========================================================= */
+function myDayRollover(){
+  var s = state.settings;
+  var today = toDateInputValue(new Date());
+  if(s.todayFocusDate === today && Array.isArray(s.todayFocusIds)) return;
+  if(s.todayFocusDate && s.todayFocusDate !== today && (s.todayFocusIds || []).length){
+    s.prevFocusIds = s.todayFocusIds.slice();
+    s.prevFocusDate = s.todayFocusDate;
+  }
+  s.todayFocusIds = [];
+  s.todayFocusDate = today;
+}
+function myDayIds(){ myDayRollover(); return state.settings.todayFocusIds; }
+function myDayTasks(){ return myDayIds().map(getTask).filter(function(t){ return t && !t.archived; }); }
+function isInMyDay(id){ return myDayIds().indexOf(id) >= 0; }
+function setMyDay(id, on){
+  var ids = myDayIds();
+  var i = ids.indexOf(id);
+  if(on && i < 0) ids.push(id);
+  else if(!on && i >= 0) ids.splice(i, 1);
+  else return on;
+  save();
+  return on;
+}
+function toggleMyDay(id){ return setMyDay(id, !isInMyDay(id)); }
+/* Abhaken: in die Erledigt-Spalte (wie „Erledigt“ im Control-Center).
+   Wieder öffnen: zurück nach „In Bearbeitung“. */
+function setTaskDone(id, done){
+  var t = getTask(id);
+  if(!t) return;
+  var doneCol = state.columns.find(function(c){ return DONE_COLUMN_RE.test(c.name); });
+  if(done){
+    if(isRunning(t)) stopTimer(id, true);
+    if(doneCol) updateTask(id, {columnId: doneCol.id});
+    else updateTask(id, {completedAt: nowIso()});
+  } else if(doneCol && t.columnId === doneCol.id){
+    updateTask(id, {columnId: inProgressColumn().id});
+  } else {
+    updateTask(id, {completedAt: null});
+  }
+}
+function myDaySuggestions(){
+  var today = toDateInputValue(new Date());
+  var tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+  var tomorrow = toDateInputValue(tmr);
+  var ids = myDayIds();
+  var open = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && !isSnoozed(t) && ids.indexOf(t.id) < 0; });
+  var out = [], seen = {};
+  function add(t, why){ if(t && !seen[t.id] && open.indexOf(t) >= 0){ seen[t.id] = 1; out.push({t: t, why: why}); } }
+  var prevDate = state.settings.prevFocusDate || '';
+  var y = new Date(); y.setDate(y.getDate() - 1);
+  var prevLabel = prevDate === toDateInputValue(y) ? 'Von gestern' : (prevDate ? 'Vom ' + new Date(prevDate + 'T00:00').toLocaleDateString('de-CH', {day:'numeric', month:'numeric'}) : '');
+  (state.settings.prevFocusIds || []).forEach(function(id){ add(getTask(id), prevLabel); });
+  open.filter(function(t){ return t.dueDate && t.dueDate < today; }).forEach(function(t){ add(t, 'Überfällig'); });
+  open.filter(function(t){ return t.dueDate === today; }).forEach(function(t){ add(t, 'Heute fällig'); });
+  open.filter(function(t){ return t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).forEach(function(t){ add(t, 'Heute eingeplant'); });
+  var inProg = inProgressColumn();
+  open.filter(function(t){ return isRunning(t) || (inProg !== state.columns[0] && t.columnId === inProg.id); }).forEach(function(t){ add(t, 'In Bearbeitung'); });
+  open.filter(function(t){ return t.pinned; }).forEach(function(t){ add(t, 'Angeheftet'); });
+  open.filter(function(t){ return t.dueDate === tomorrow; }).forEach(function(t){ add(t, 'Morgen fällig'); });
+  return out.slice(0, 10);
+}
+function myDayMeta(t, why){
+  var col = state.columns.find(function(c){ return c.id === t.columnId; });
+  var parts = [];
+  if(why) parts.push('<b>' + escapeHtml(why) + '</b>');
+  if(t.jiraKey) parts.push(escapeHtml(t.jiraKey));
+  if(col && !t.completedAt && col.name !== why) parts.push(escapeHtml(col.name));
+  if(t.dueDate && !t.completedAt && !/fällig/i.test(why || '')){
+    var overdue = t.dueDate < toDateInputValue(new Date());
+    parts.push('<span class="' + (overdue ? 'overdue' : '') + '">Fällig ' + escapeHtml(friendlyDueLabel(t.dueDate)) + '</span>');
+  }
+  if(t.reporter) parts.push(escapeHtml(t.reporter));
+  return parts.join(' · ');
+}
+var myDayShowSuggest = true;
+var myDayDragId = null;
+function renderMyDayView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var now = new Date();
+  var list = myDayTasks();
+  var open = list.filter(function(t){ return !t.completedAt; });
+  var done = list.filter(function(t){ return t.completedAt; });
+  var pct = list.length ? Math.round(done.length / list.length * 100) : 0;
+  var dayStart = startOfDay(now).getTime();
+  var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+  var sugg = myDayShowSuggest ? myDaySuggestions() : [];
+  function row(t){
+    var isDone = !!t.completedAt, run = isRunning(t), sec = totalSeconds(t);
+    return '<div class="md-row' + (isDone ? ' done' : '') + (run ? ' run' : '') + '" data-md-row="' + t.id + '"' + (isDone ? '' : ' draggable="true"') + '>' +
+      '<button class="md-check" data-md-done="' + t.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Als erledigt markieren') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' +
+      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t) + '</div></div>' +
+      (sec ? '<span class="md-time">' + fmtHM(sec) + '</span>' : '') +
+      (!isDone ? '<button class="md-btn' + (run ? ' on' : '') + '" data-md-timer="' + t.id + '" title="' + (run ? 'Pause' : 'Timer starten') + '" aria-label="' + (run ? 'Pause' : 'Start') + '">' + svgIcon(run ? 'pause' : 'play') + '</button>' : '') +
+      '<button class="md-btn sun" data-md-remove="' + t.id + '" title="Aus Mein Tag entfernen" aria-label="Aus Mein Tag entfernen">' + svgIcon('sun') + '</button>' +
+    '</div>';
+  }
+  function srow(s){
+    var t = s.t;
+    return '<div class="md-row" data-md-sugg="' + t.id + '">' +
+      '<button class="md-btn add" data-md-add="' + t.id + '" title="Zu Mein Tag hinzufügen" aria-label="Zu Mein Tag hinzufügen">' + svgIcon('plus') + '</button>' +
+      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t, s.why) + '</div></div>' +
+    '</div>';
+  }
+  var dateLabel = now.toLocaleDateString('de-CH', {weekday:'long', day:'numeric', month:'long'});
+  board.innerHTML = '<div class="dash md-wrap">' +
+    '<div class="dash-head"><div><h1>☀️ Mein Tag</h1><p>' + escapeHtml(dateLabel) + ' · ' +
+      (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p></div>' +
+      '<div class="dash-actions"><button class="btn" id="mdPip" title="Mein Tag und Timer in einem kleinen Fenster, das immer im Vordergrund bleibt">' + svgIcon('pip') + '<span>Kleines Fenster</span></button>' +
+      '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button></div></div>' +
+    (list.length ? '<div class="md-progress" title="' + pct + ' % erledigt"><i style="width:' + pct + '%"></i></div>' : '') +
+    '<form class="md-add" id="mdAddForm"><input id="mdAddInput" placeholder="Task für heute hinzufügen… (PROJ-123, #tag, !hoch)" autocomplete="off" aria-label="Neuer Task für Mein Tag">' +
+      '<button class="btn primary" type="submit">' + svgIcon('plus') + '<span>Hinzufügen</span></button></form>' +
+    (open.length ? '<div class="md-list" id="mdOpenList">' + open.map(row).join('') + '</div>' :
+      '<div class="md-list"><div class="md-empty"><b>' + (done.length ? 'Alles erledigt 🎉' : 'Konzentriere dich auf deinen Tag') + '</b>' +
+      (done.length ? 'Stark. Unten findest du Vorschläge, falls du noch mehr schaffen willst.' : 'Setze Tasks mit ＋ bei den Vorschlägen auf Mein Tag, im Task-Fenster mit „Zu Mein Tag“ oder per Rechtsklick auf eine Karte.') + '</div></div>') +
+    (done.length ? '<div class="md-sec">Erledigt · ' + done.length + '</div><div class="md-list">' + done.map(row).join('') + '</div>' : '') +
+    '<div class="md-sec">Vorschläge' + (sugg.length ? ' · ' + sugg.length : '') + '<button class="btn ghost" id="mdSuggToggle">' + (myDayShowSuggest ? 'Ausblenden' : 'Anzeigen') + '</button></div>' +
+    (myDayShowSuggest ? (sugg.length ? '<div class="md-list">' + sugg.map(srow).join('') + '</div>' :
+      '<div class="hint">Keine Vorschläge. Hier erscheinen offene Tasks von gestern, fällige, heute eingeplante und angefangene Tasks.</div>') : '') +
+  '</div>';
+
+  var wrap = board.querySelector('.md-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-md-done], [data-md-open], [data-md-timer], [data-md-remove], [data-md-add], #mdPip, #mdAutopilot, #mdSuggToggle');
+    if(!el) return;
+    if(el.dataset.mdDone){ var dt = getTask(el.dataset.mdDone); if(dt) setTaskDone(dt.id, !dt.completedAt); renderAll(); }
+    else if(el.dataset.mdTimer){ var tt = getTask(el.dataset.mdTimer); if(tt){ if(isRunning(tt)) stopTimer(tt.id); else startTimer(tt.id); } }
+    else if(el.dataset.mdRemove){ setMyDay(el.dataset.mdRemove, false); renderAll(); }
+    else if(el.dataset.mdAdd){ setMyDay(el.dataset.mdAdd, true); renderAll(); }
+    else if(el.dataset.mdOpen){ openTaskModal(el.dataset.mdOpen); }
+    else if(el.id === 'mdPip'){ toggleControlCenter(); }
+    else if(el.id === 'mdAutopilot'){ openAutopilot(toDateInputValue(new Date())); }
+    else if(el.id === 'mdSuggToggle'){ myDayShowSuggest = !myDayShowSuggest; renderMyDayView(); }
+  });
+  document.getElementById('mdAddForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var inp = document.getElementById('mdAddInput');
+    var val = inp.value.trim();
+    if(!val) return;
+    var t = createQuickTask(state.columns[0].id, val);
+    setMyDay(t.id, true);
+    renderAll();
+    var again = document.getElementById('mdAddInput');
+    if(again) again.focus();
+  });
+  var openList = document.getElementById('mdOpenList');
+  if(openList){
+    openList.addEventListener('dragstart', function(e){
+      var r = e.target.closest('[data-md-row]');
+      if(!r) return;
+      myDayDragId = r.dataset.mdRow;
+      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', myDayDragId); }catch(err){} }
+    });
+    openList.addEventListener('dragover', function(e){
+      var r = e.target.closest('[data-md-row]');
+      if(!myDayDragId || !r) return;
+      e.preventDefault();
+      openList.querySelectorAll('.drag-over').forEach(function(x){ if(x !== r) x.classList.remove('drag-over'); });
+      r.classList.add('drag-over');
+    });
+    openList.addEventListener('drop', function(e){
+      var r = e.target.closest('[data-md-row]');
+      if(!myDayDragId || !r) return;
+      e.preventDefault();
+      var ids = myDayIds();
+      var from = ids.indexOf(myDayDragId), to = ids.indexOf(r.dataset.mdRow);
+      if(from >= 0 && to >= 0 && from !== to){
+        /* Nach oben gezogen: vor das Ziel, nach unten: dahinter. */
+        ids.splice(from, 1);
+        ids.splice(to, 0, myDayDragId);
+        save();
+      }
+      myDayDragId = null;
+      renderAll();
+    });
+    openList.addEventListener('dragend', function(){ myDayDragId = null; openList.querySelectorAll('.drag-over').forEach(function(x){ x.classList.remove('drag-over'); }); });
+  }
 }
 
 /* =========================================================
@@ -5156,6 +5439,7 @@ function openTaskModal(taskId){
     '<div class="modal-footer">' +
       '<div class="modal-footer-danger"><button class="btn danger" id="deleteTaskBtn">'+svgIcon('trash')+'<span>Löschen</span></button></div>' +
       '<div class="modal-footer-actions">' +
+        (!t.archived ? '<button class="btn" id="myDayToggleBtn" title="Auf die Liste für heute setzen">'+svgIcon('sun')+'<span>'+(isInMyDay(t.id)?'Auf Mein Tag ✓':'Zu Mein Tag')+'</span></button>' : '') +
         '<div class="menu-wrap">' +
           '<button class="btn" id="taskMoreBtn" aria-haspopup="true">Mehr'+svgIcon('chevron')+'</button>' +
           '<div class="menu up" id="taskMoreMenu">' +
@@ -5280,6 +5564,12 @@ function openTaskModal(taskId){
   });
   document.getElementById('btnExportScheduledIcs').addEventListener('click', function(){
     exportTaskIcs(getTask(t.id));
+  });
+  var myDayBtn = document.getElementById('myDayToggleBtn');
+  if(myDayBtn) myDayBtn.addEventListener('click', function(){
+    var on = toggleMyDay(t.id);
+    myDayBtn.querySelector('span').textContent = on ? 'Auf Mein Tag ✓' : 'Zu Mein Tag';
+    renderAll();
   });
   document.getElementById('pinToggleBtn').addEventListener('click', function(){
     updateTask(t.id, {pinned: !t.pinned});
