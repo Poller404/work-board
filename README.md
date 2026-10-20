@@ -725,6 +725,13 @@ manuelles Exportieren/Importieren. Einzelne Tasks lassen sich zusätzlich über 
 - **📓 Journal**: freie Notizen, getrennt von Tasks.
 - **⏰ Erinnerungen**: freistehend, unabhängig von Tasks, per Toast/Notification fällig.
 - **🌅 Morgen-Ritual**: Tagesprioritäten aus dem Backlog wählen, hervorgehoben im Board.
+- **☀️ Mein Tag** (wie in Microsoft To Do): eigene Liste nur für heute, ganz oben in der Seitenleiste.
+  Tasks kommen per „Zu Mein Tag“ im Task-Fenster, per Rechtsklick auf eine Karte, über die Vorschläge
+  (von gestern offen, überfällig, heute fällig/eingeplant, in Bearbeitung, angeheftet) oder direkt über
+  das Eingabefeld darauf. Abhaken schiebt den Task nach „Erledigt“, die Reihenfolge lässt sich per
+  Drag & Drop ändern, am nächsten Tag ist die Liste wieder leer. Dieselbe Liste wie das Morgen-Ritual.
+  Auch im Control-Center (kleines schwebendes Fenster) mit Abhaken, Start/Pause und ☀ zum Hinzufügen;
+  neue Tasks aus dem Control-Center landen automatisch auf Mein Tag (per ☀ neben dem Feld abschaltbar).
 - **🗓️ Tages-Vorlagen**: wiederkehrende Routinen (z.B. "Montags-Setup") als Vorlage mit mehreren
   Tasks auf einmal anlegen.
 - **Rückfragen-Feld** im Task (getrennt vom Notizen-Log, für später zu klärende Punkte).
