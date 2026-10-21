@@ -292,6 +292,29 @@ grant select, insert, update, delete on user_keys to authenticated;
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
 
+## 📝 Seite pro Task (Whiteboard fürs Troubleshooting)
+
+Jeder Task hat eine eigene **Seite**, ähnlich wie in OneNote: eine freie Fläche, auf der Texte und Bilder
+irgendwo platziert werden können. Öffnen über **Seite öffnen** im Task-Fenster oder per Rechtsklick auf die
+Karte. Karten mit Inhalt zeigen 📝 und die Anzahl Elemente.
+
+- **Klick ins Leere** legt dort ein Textfeld an. Leere Textfelder verschwinden wieder.
+- **Strg+V** fügt Screenshots oder Text an der Mausposition ein, Bilder und Texte lassen sich auch hineinziehen.
+  Eingefügte Logs und Fehlermeldungen erscheinen automatisch in Code-Schrift.
+- **Verschieben:** Bilder direkt ziehen, Textfelder an der gepunkteten Leiste oben. Die blaue Ecke ändert die Grösse.
+- Ein markiertes Textfeld kann Code-Schrift und eine Farbe (gelb, grün, rot, blau) bekommen.
+  🕒 **Zeitstempel** legt ein Textfeld mit Datum und Uhrzeit an, praktisch für ein Protokoll der Schritte.
+- **Doppelklick auf ein Bild** zeigt es gross. **Entf** löscht das Markierte (mit „Rückgängig“).
+- Leere Fläche ziehen oder Mausrad = verschieben, **Strg+Mausrad** = zoomen, **Strg+0** = alles anzeigen.
+  Auf dem Handy mit einem Finger verschieben, mit zwei Fingern zoomen. **Esc** = zurück zum Task.
+
+**Speicherung:** Texte und Positionen sind Teil des Tasks und werden wie alles andere verschlüsselt abgeglichen.
+Bilder würden das Board zu gross machen und liegen deshalb separat: lokal im Browser (IndexedDB) und
+verschlüsselt in der Supabase-Tabelle `task_files` (jedes Bild mit eigenem Schlüssel, der nur im Task steht).
+In geteilten Boards sehen alle Mitglieder die Bilder. Die Tabelle einmalig anlegen mit
+[`supabase-task-seiten.sql`](supabase-task-seiten.sql). Solange sie fehlt, bleiben Bilder auf dem Gerät,
+auf dem sie eingefügt wurden, und werden danach automatisch hochgeladen. Der JSON-Export enthält die Bilder nicht.
+
 ## 🚀 Tag-Autopilot, lernende Schätzung, Sprachbefehle & mehr
 
 Kein zusätzliches SQL nötig, alles liegt im verschlüsselten Board bzw. in den Einstellungen.

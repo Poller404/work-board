@@ -1181,6 +1181,63 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
 #printArea .qrb-box::after{right:0; bottom:0; border-left:none; border-top:none;}
 #printArea .qrb-corner{right:0; top:0; border-left:none; border-bottom:none;}
 #printArea .qi-detail{padding:15mm 20mm;}
+/* Seite pro Task (Whiteboard) */
+.wbp{position:fixed; inset:0; z-index:1300; background:var(--bg); display:flex; flex-direction:column; padding-top:env(safe-area-inset-top);}
+.wbp-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--border);}
+.wbp-title{display:flex; flex-direction:column; min-width:0; flex:0 1 260px;}
+.wbp-kicker{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;}
+.wbp-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wbp-tools{display:flex; align-items:center; gap:4px; flex-wrap:wrap; flex:1 1 auto; min-width:0;}
+.wbp-sep{width:1px; height:22px; background:var(--border); margin:0 4px;}
+.wbp-sel{display:flex; align-items:center; gap:4px; flex-wrap:wrap;}
+.wbp-sel .btn.on{color:var(--accent); background:var(--accent-soft);}
+.wbp .danger-text{color:var(--danger);}
+.wbp-zoom{display:flex; align-items:center; gap:2px; margin-left:auto;}
+.wbp-zv{min-width:58px; justify-content:center;}
+.wbp-colors{display:inline-flex; gap:4px; margin:0 4px;}
+.wbp-color{width:20px; height:20px; border-radius:50%; border:1px solid var(--border-strong); cursor:pointer; padding:0; background:var(--surface);}
+.wbp-color.on{box-shadow:0 0 0 2px var(--accent);}
+.wbp-color.c-none{background:linear-gradient(135deg, var(--surface) 45%, var(--danger) 47%, var(--danger) 53%, var(--surface) 55%);}
+.wbp-cloud{padding:6px 14px; background:var(--accent-soft); border-bottom:1px solid var(--border); margin:0;}
+.wbp-cloud[hidden]{display:none;}
+.wbp-view{position:relative; flex:1; overflow:hidden; touch-action:none; outline:none; cursor:text;
+  background-color:var(--surface); background-image:radial-gradient(circle, var(--border-strong) 1px, transparent 1.2px);}
+.wbp-canvas{position:absolute; left:0; top:0; width:0; height:0; transform-origin:0 0;}
+.wbp-empty{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); color:var(--text-faint); text-align:center; pointer-events:none; line-height:1.6; padding:0 16px;}
+.wbp-empty[hidden]{display:none;}
+.wbp-item{position:absolute; border:1px solid transparent; border-radius:6px; cursor:default;}
+.wbp-item:hover{border-color:var(--border-strong);}
+.wbp-item.sel{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-glow);}
+.wbp-grip{height:10px; border-radius:6px 6px 0 0; cursor:move; background:transparent;}
+.wbp-item:hover .wbp-grip, .wbp-item.sel .wbp-grip{background:repeating-linear-gradient(90deg, var(--border-strong) 0 2px, transparent 2px 5px); background-size:auto 2px; background-repeat:repeat-x; background-position:center;}
+.wbp-text textarea{display:block; width:100%; resize:none; overflow:hidden; border:none; background:transparent; padding:2px 8px 8px; font-size:14px; line-height:1.45; box-shadow:none; color:var(--text); white-space:pre-wrap; overflow-wrap:anywhere;}
+.wbp-text textarea:focus{box-shadow:none; outline:none;}
+.wbp-text.mono textarea{font-family:ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size:12.5px; line-height:1.4;}
+.wbp-text.mono{background:var(--surface-2);}
+.wbp-text.c-yellow{background:#fff6c4;} .wbp-text.c-green{background:#dcf5e3;} .wbp-text.c-red{background:#fde2e2;} .wbp-text.c-blue{background:#e1ebff;}
+.wbp-color.c-yellow{background:#fff6c4;} .wbp-color.c-green{background:#dcf5e3;} .wbp-color.c-red{background:#fde2e2;} .wbp-color.c-blue{background:#e1ebff;}
+:root[data-theme="dark"] .wbp-text.c-yellow{background:#3d3612;} :root[data-theme="dark"] .wbp-text.c-green{background:#163524;} :root[data-theme="dark"] .wbp-text.c-red{background:#3f1a1c;} :root[data-theme="dark"] .wbp-text.c-blue{background:#1a2747;}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .wbp-text.c-yellow{background:#3d3612;} :root:not([data-theme="light"]) .wbp-text.c-green{background:#163524;} :root:not([data-theme="light"]) .wbp-text.c-red{background:#3f1a1c;} :root:not([data-theme="light"]) .wbp-text.c-blue{background:#1a2747;}
+}
+.wbp-img{cursor:move; background:var(--surface-2);}
+.wbp-img img{display:block; width:100%; height:100%; object-fit:contain; border-radius:5px; user-select:none; -webkit-user-drag:none;}
+.wbp-imgph{display:flex; align-items:center; justify-content:center; height:100%; padding:10px; text-align:center; font-size:12.5px; color:var(--text-dim);}
+.wbp-rs{position:absolute; right:-6px; bottom:-6px; width:14px; height:14px; border-radius:4px; background:var(--accent); border:2px solid var(--surface); cursor:nwse-resize; display:none;}
+.wbp-text .wbp-rs{cursor:ew-resize; top:50%; bottom:auto; margin-top:-7px;}
+.wbp-item.sel .wbp-rs{display:block;}
+.wbp-lightbox{position:fixed; inset:0; z-index:1350; background:rgba(9,12,20,.86); display:flex; align-items:center; justify-content:center; padding:24px; cursor:zoom-out;}
+.wbp-lightbox img{max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; background:#fff;}
+.pg-badge{color:var(--accent);}
+.task-page-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+@media (max-width: 680px){
+  .wbp-bar{gap:6px; padding:6px 8px;}
+  .wbp-title{flex:1 1 140px;}
+  .wbp-tools{order:3; flex-basis:100%;}
+  .wbp-tools .btn{padding:6px 8px;}
+  .wbp-rs{width:22px; height:22px; right:-10px; bottom:-10px;}
+  .wbp-text .wbp-rs{margin-top:-11px;}
+}
 /*@@EXTRA-CSS@@*/
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
@@ -1676,6 +1733,7 @@ function normalizeTask(t){
   if(t.mail !== undefined){ var nm = normalizeMail(t.mail); if(nm) t.mail = nm; else delete t.mail; }
   if(t.autoPlan !== undefined && t.autoPlan !== true) delete t.autoPlan;
   if(t.solutionAuto !== undefined && t.solutionAuto !== true) delete t.solutionAuto;
+  if(t.page !== undefined){ var np = normalizePage(t.page); if(np && np.items.length) t.page = np; else delete t.page; }
   return t;
 }
 
@@ -3122,6 +3180,7 @@ function openCardContextMenu(t, x, y){
   var running = isRunning(t);
   var html =
     item('data-ctx="open"', 'search', 'Öffnen') +
+    item('data-ctx="page"', 'grid', pageItemCount(t) ? 'Seite öffnen (' + pageItemCount(t) + ')' : 'Seite öffnen') +
     item('data-ctx="timer"', running ? 'pause' : 'play', running ? 'Timer pausieren' : (myOpenBooking(t) ? 'Buchung fortsetzen' : 'Timer starten')) +
     (myOpenBooking(t) ? item('data-ctx="finish"', 'check', 'Buchung abschliessen') : '') +
     item('data-ctx="timeblock"', 'clock', 'Zeitblock buchen…') +
@@ -3157,13 +3216,14 @@ function openCardContextMenu(t, x, y){
     var item = e.target.closest('[data-ctx], [data-ctx-prio], [data-ctx-move], [data-ctx-assign]');
     if(!item) return;
     if(item.dataset.ctx === 'open') openTaskModal(t.id);
+    else if(item.dataset.ctx === 'page') openTaskPage(t.id);
     else if(item.dataset.ctx === 'timer'){ if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); renderAll(); }
     else if(item.dataset.ctx === 'finish'){ finishBooking(t.id); }
     else if(item.dataset.ctx === 'timeblock'){ openTimeBlockDialog(t.id); }
     else if(item.dataset.ctx === 'myday'){ toggleMyDay(t.id); renderAll(); }
     else if(item.dataset.ctx === 'pin'){ updateTask(t.id, {pinned: !t.pinned}); renderBoard(); }
     else if(item.dataset.ctx === 'duplicate'){
-      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null});
+      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null, page:undefined});
       delete copy.id;
       createTask(copy);
       renderAll();
@@ -3970,6 +4030,7 @@ function renderCard(t){
     '<div class="card-bottom">' +
       '<span class="time-badge'+(running?' running':'')+(myOpenBooking(t)?' booking':'')+'" data-time-for="'+t.id+'" title="'+(myOpenBooking(t) ? 'Aktuelle Buchung · Gesamt '+fmtHM(tsec) : 'Gesamtzeit')+'">'+svgIcon('clock')+'<span class="tv">'+fmtHMS(displaySeconds(t))+'</span></span>' +
       (t.comments && t.comments.length ? '<span class="cm-badge" title="Kommentare">💬 '+t.comments.length+'</span>' : '') +
+      (pageItemCount(t) ? '<span class="cm-badge pg-badge" title="Seite mit '+pageItemCount(t)+' Elementen">📝 '+pageItemCount(t)+'</span>' : '') +
       dueHtml +
       staleHtml +
       (!showArchive ? '<button class="timer-toggle'+(running?' running':'')+'" data-action="toggle-timer" data-task-id="'+t.id+'" title="'+(running?'Pause':'Start')+'" aria-label="'+(running?'Pause':'Start')+'">'+svgIcon(running?'pause':'play')+'</button>' : '') +
@@ -5315,6 +5376,11 @@ function openTaskModal(taskId){
             '<div id="aiResult"></div>' +
           '</div>' +
 
+          '<div class="task-block"><div class="task-block-title">Seite<span class="task-block-sub">freies Whiteboard für Screenshots, Logs und Notizen</span></div>' +
+            '<div class="task-page-row"><button type="button" class="btn" id="openPageBtn">'+svgIcon('grid')+'<span>'+(pageItemCount(t) ? 'Seite öffnen' : 'Seite anlegen')+'</span></button>' +
+            '<span class="hint" style="margin:0;">'+(pageItemCount(t) ? pageSummary(t) : 'Texte und Bilder frei platzieren, z.B. fürs Troubleshooting.')+'</span></div>' +
+          '</div>' +
+
           '<div class="task-block"><div class="task-block-title">Notizen'+(t.type==='hotline'?'<span class="task-block-sub">z.B. während des Anrufs</span>':'')+'</div>' +
             '<div class="form-row-inline input-btn-row">' +
               '<div class="form-row" style="flex:1; margin-bottom:8px;"><input id="newNoteText" placeholder="Notiz hinzufügen und Enter drücken…"></div>' +
@@ -5552,6 +5618,7 @@ function openTaskModal(taskId){
     var tid = t.id;
     finishBooking(tid, false, function(){ openTaskModal(tid); });
   });
+  document.getElementById('openPageBtn').addEventListener('click', function(){ openTaskPage(t.id, true); });
   document.getElementById('modalTimeBlockBtn').addEventListener('click', function(){
     var tid = t.id;
     openTimeBlockDialog(tid, function(){ openTaskModal(tid); });
@@ -11910,6 +11977,739 @@ function clipboardImageFile(e){
 }
 
 /* =========================================================
+   SEITE PRO TASK (freies Whiteboard wie in OneNote)
+   Jeder Task kann eine Seite haben, auf der Texte und Bilder frei platziert werden
+   (Klick ins Leere = Text, Strg+V oder Ziehen = Bild/Text). Gedacht für Troubleshooting:
+   Screenshots, Logs, Fehlermeldungen und Notizen nebeneinander.
+   - Texte und Positionen liegen im Task (Feld "page") und werden wie alles andere abgeglichen.
+   - Bilder liegen NICHT im Board-Zustand (der wäre sonst schnell zu gross für localStorage
+     und den Abgleich), sondern lokal in IndexedDB ("wb-page-files") und verschlüsselt in der
+     Supabase-Tabelle "task_files". Jedes Bild hat einen eigenen zufälligen AES-Schlüssel,
+     der nur im (selbst verschlüsselten) Task steht. Fehlt die Tabelle, bleiben Bilder auf
+     diesem Gerät und werden hochgeladen, sobald sie existiert.
+   ========================================================= */
+var PAGE_COLORS = ['yellow', 'green', 'red', 'blue'];
+var PAGE_COLOR_LABELS = {yellow:'Gelb', green:'Grün', red:'Rot', blue:'Blau'};
+function pageNum(v, min, max, def){
+  return (typeof v === 'number' && isFinite(v)) ? Math.max(min, Math.min(max, Math.round(v))) : def;
+}
+function normalizePage(p){
+  if(!p || typeof p !== 'object' || !Array.isArray(p.items)) return null;
+  var items = p.items.slice(0, 400).map(function(it){
+    if(!it || typeof it !== 'object' || typeof it.id !== 'string' || !SAFE_ID_RE.test(it.id)) return null;
+    var o = {id: it.id, type: it.type, x: pageNum(it.x, -100000, 100000, 0), y: pageNum(it.y, -100000, 100000, 0), w: pageNum(it.w, 40, 6000, 320)};
+    if(it.type === 'text'){
+      o.text = typeof it.text === 'string' ? it.text.slice(0, 60000) : '';
+      if(it.mono === true) o.mono = true;
+      if(PAGE_COLORS.indexOf(it.color) >= 0) o.color = it.color;
+    } else if(it.type === 'img'){
+      if(typeof it.file !== 'string' || !SAFE_ID_RE.test(it.file) || typeof it.key !== 'string' || !/^[A-Za-z0-9+\/]{43}=$/.test(it.key)) return null;
+      o.file = it.file; o.key = it.key;
+      o.h = pageNum(it.h, 20, 12000, 200);
+    } else return null;
+    if(typeof it.ts === 'string' && it.ts.length < 40) o.ts = it.ts;
+    return o;
+  }).filter(Boolean);
+  return {items: items, updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt.slice(0, 40) : ''};
+}
+function pageItemCount(t){ return t.page && t.page.items ? t.page.items.length : 0; }
+function pageSummary(t){
+  var imgs = t.page.items.filter(function(it){ return it.type === 'img'; }).length;
+  var texts = t.page.items.length - imgs;
+  var parts = [];
+  if(texts) parts.push(texts + (texts === 1 ? ' Text' : ' Texte'));
+  if(imgs) parts.push(imgs + (imgs === 1 ? ' Bild' : ' Bilder'));
+  return parts.join(', ') + (t.page.updatedAt ? ' · zuletzt ' + new Date(t.page.updatedAt).toLocaleString('de-CH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '');
+}
+
+/* ---- Lokaler Bildspeicher (IndexedDB, Fallback im Arbeitsspeicher) ---- */
+var pageDbPromise = null;
+var pageMemFiles = {};
+function pageDb(){
+  if(!pageDbPromise){
+    pageDbPromise = new Promise(function(resolve, reject){
+      var req = indexedDB.open('wb-page-files', 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore('files', {keyPath: 'id'}); };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error); };
+    });
+    pageDbPromise.catch(function(){ pageDbPromise = null; });
+  }
+  return pageDbPromise;
+}
+function pageDbRun(mode, fn){
+  return pageDb().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction('files', mode);
+      var req = fn(tx.objectStore('files'));
+      tx.oncomplete = function(){ resolve(req ? req.result : undefined); };
+      tx.onerror = function(){ reject(tx.error); };
+    });
+  });
+}
+function pageFileGet(id){
+  if(pageMemFiles[id]) return Promise.resolve(pageMemFiles[id]);
+  return pageDbRun('readonly', function(st){ return st.get(id); }).catch(function(){ return null; });
+}
+function pageFilePut(rec){
+  return pageDbRun('readwrite', function(st){ return st.put(rec); }).then(function(){ delete pageMemFiles[rec.id]; }).catch(function(){ pageMemFiles[rec.id] = rec; });
+}
+function pageFileDelete(id){
+  delete pageMemFiles[id];
+  return pageDbRun('readwrite', function(st){ return st.delete(id); }).catch(function(){});
+}
+function pageFilesPending(){
+  var mem = Object.keys(pageMemFiles).map(function(k){ return pageMemFiles[k]; });
+  return pageDbRun('readonly', function(st){ return st.getAll(); }).catch(function(){ return []; }).then(function(all){
+    return (all || []).concat(mem).filter(function(r){ return r && r.pending; });
+  });
+}
+
+/* ---- Verschlüsselung pro Bild ---- */
+function pageNewFileKey(){
+  return crypto.subtle.generateKey({name:'AES-GCM', length:256}, true, ['encrypt','decrypt']).then(function(k){
+    return crypto.subtle.exportKey('raw', k);
+  }).then(bufToB64);
+}
+function pageImportKey(keyB64){ return crypto.subtle.importKey('raw', b64ToBuf(keyB64), {name:'AES-GCM'}, false, ['encrypt','decrypt']); }
+function pageEncrypt(dataUrl, keyB64){
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return pageImportKey(keyB64).then(function(key){
+    return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, new TextEncoder().encode(dataUrl));
+  }).then(function(ct){ return JSON.stringify({v:1, iv:bufToB64(iv), data:bufToB64(ct)}); });
+}
+function pageDecrypt(payloadText, keyB64){
+  var p = JSON.parse(payloadText);
+  return pageImportKey(keyB64).then(function(key){
+    return crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(p.iv)}, key, b64ToBuf(p.data));
+  }).then(function(buf){ return new TextDecoder().decode(buf); });
+}
+
+/* ---- Supabase-Tabelle "task_files" ---- */
+var pageCloudMissing = false;
+var pageUploadBusy = false;
+function pageCloudErrMissing(err){
+  var msg = (err && err.message) || '';
+  return /task_files/i.test(msg) && /(find|exist|relation|schema)/i.test(msg);
+}
+function pageCloudWanted(rec){ return !!currentUser && (rec.boardId ? true : cloudIsReady(getCloudSyncConfig())); }
+function pageUploadPending(){
+  if(pageUploadBusy || !currentUser) return Promise.resolve();
+  var client = getSupabaseClient();
+  if(!client) return Promise.resolve();
+  pageUploadBusy = true;
+  return pageFilesPending().then(function(list){
+    list = list.filter(pageCloudWanted);
+    var chain = Promise.resolve();
+    list.forEach(function(rec){
+      chain = chain.then(function(){
+        if(pageCloudMissing) return;
+        return pageEncrypt(rec.data, rec.key).then(function(payload){
+          return client.from('task_files').insert({id: rec.id, owner_id: currentUser.id, board_id: rec.boardId || null, payload: payload});
+        }).then(function(res){
+          if(res.error && res.error.code !== '23505'){
+            if(pageCloudErrMissing(res.error)) pageCloudMissing = true;
+            throw res.error;
+          }
+          pageCloudMissing = false;
+          rec.pending = false;
+          return pageFilePut(rec);
+        });
+      });
+    });
+    return chain;
+  }).catch(function(){}).then(function(){
+    pageUploadBusy = false;
+    pageRenderCloudHint();
+  });
+}
+function pageFetchRemote(item){
+  var client = getSupabaseClient();
+  if(!client || !currentUser) return Promise.resolve(null);
+  return client.from('task_files').select('payload').eq('id', item.file).maybeSingle().then(function(res){
+    if(res.error){ if(pageCloudErrMissing(res.error)) pageCloudMissing = true; return null; }
+    if(!res.data) return null;
+    return pageDecrypt(res.data.payload, item.key).then(function(url){
+      if(!isSafeImageData(url)) return null;
+      pageFilePut({id: item.file, data: url, key: item.key, pending: false});
+      return url;
+    });
+  }).catch(function(){ return null; });
+}
+function pageLoadImage(item){
+  return pageFileGet(item.file).then(function(rec){ return rec && isSafeImageData(rec.data) ? rec.data : pageFetchRemote(item); });
+}
+function pageDeleteFile(fileId){
+  pageFileDelete(fileId);
+  var client = getSupabaseClient();
+  if(client && currentUser && !pageCloudMissing) client.from('task_files').delete().eq('id', fileId).then(function(){}, function(){});
+}
+
+/* ---- Ansicht ---- */
+var pg = null;
+function openTaskPage(taskId, fromModal){
+  var t = getTask(taskId);
+  if(!t) return;
+  if(pg) closeTaskPage(true);
+  if(fromModal) closeModal();
+  var el = document.createElement('div');
+  el.className = 'wbp';
+  el.id = 'wbPage';
+  el.innerHTML =
+    '<div class="wbp-bar">' +
+      '<button type="button" class="btn" data-pg="close" title="Zurück (Esc)">← Zurück</button>' +
+      '<div class="wbp-title"><span class="wbp-kicker">Seite</span><span class="wbp-name"></span></div>' +
+      '<div class="wbp-tools">' +
+        '<button type="button" class="btn ghost" data-pg="text" title="Textfeld einfügen (oder einfach ins Leere klicken)">T Text</button>' +
+        '<button type="button" class="btn ghost" data-pg="image" title="Bild einfügen (oder Strg+V / hineinziehen)">🖼️ Bild</button>' +
+        '<button type="button" class="btn ghost" data-pg="stamp" title="Textfeld mit Datum und Uhrzeit, z.B. für ein Protokoll">🕒 Zeitstempel</button>' +
+        '<span class="wbp-sep"></span>' +
+        '<span class="wbp-sel"></span>' +
+      '</div>' +
+      '<div class="wbp-zoom">' +
+        '<button type="button" class="btn ghost icon-btn" data-pg="zoom-out" title="Verkleinern (Strg+Mausrad)">−</button>' +
+        '<button type="button" class="btn ghost wbp-zv" data-pg="fit" title="Alles anzeigen">100%</button>' +
+        '<button type="button" class="btn ghost icon-btn" data-pg="zoom-in" title="Vergrössern (Strg+Mausrad)">+</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wbp-cloud hint" hidden></div>' +
+    '<div class="wbp-view" tabindex="-1"><div class="wbp-canvas"></div>' +
+      '<div class="wbp-empty">Klick irgendwo hin und schreib los. Screenshots mit Strg+V einfügen oder hineinziehen.<br>Leere Fläche ziehen = verschieben, Strg+Mausrad = zoomen.</div>' +
+    '</div>' +
+    '<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden class="wbp-file">';
+  document.body.appendChild(el);
+  el.querySelector('.wbp-name').textContent = t.title || 'Ohne Titel';
+  var page = normalizePage(t.page) || {items: []};
+  pg = {
+    taskId: taskId, fromModal: !!fromModal, el: el,
+    view: el.querySelector('.wbp-view'), canvas: el.querySelector('.wbp-canvas'),
+    items: JSON.parse(JSON.stringify(page.items)),
+    vx: 40, vy: 30, z: 1, sel: null, last: null, ptrs: {}, act: null, timer: null, urls: {}, tap: null
+  };
+  pageRenderItems();
+  if(pg.items.length) pageFit(true);
+  pageApplyView();
+  pageWire();
+  pageRenderCloudHint();
+  pageUploadPending();
+}
+function closeTaskPage(silent){
+  if(!pg) return;
+  pageCommit();
+  var p = pg;
+  pg = null;
+  window.removeEventListener('keydown', pageOnKey, true);
+  window.removeEventListener('paste', pageOnPaste, true);
+  p.el.remove();
+  var lb = document.getElementById('wbpLightbox');
+  if(lb) lb.remove();
+  if(silent) return;
+  renderAll();
+  if(p.fromModal && getTask(p.taskId)) openTaskModal(p.taskId);
+}
+function pageApplyView(){
+  pg.canvas.style.transform = 'translate(' + pg.vx + 'px,' + pg.vy + 'px) scale(' + pg.z + ')';
+  pg.el.querySelector('.wbp-zv').textContent = Math.round(pg.z * 100) + '%';
+  pg.view.style.backgroundPosition = pg.vx + 'px ' + pg.vy + 'px';
+  pg.view.style.backgroundSize = (24 * pg.z) + 'px ' + (24 * pg.z) + 'px';
+  pg.el.querySelector('.wbp-empty').hidden = pg.items.length > 0;
+}
+function pageZoomAt(nz, sx, sy){
+  nz = Math.max(0.2, Math.min(3, nz));
+  var r = pg.view.getBoundingClientRect();
+  if(sx === undefined){ sx = r.left + r.width / 2; sy = r.top + r.height / 2; }
+  var cx = (sx - r.left - pg.vx) / pg.z, cy = (sy - r.top - pg.vy) / pg.z;
+  pg.z = nz;
+  pg.vx = sx - r.left - cx * nz;
+  pg.vy = sy - r.top - cy * nz;
+  pageApplyView();
+}
+function pageItemHeight(it){
+  if(it.type === 'img') return it.h;
+  var el = pg.canvas.querySelector('[data-id="' + it.id + '"]');
+  return el ? el.offsetHeight : 60;
+}
+function pageFit(initial){
+  var r = pg.view.getBoundingClientRect();
+  if(!pg.items.length){ pg.vx = 40; pg.vy = 30; pg.z = 1; pageApplyView(); return; }
+  var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  pg.items.forEach(function(it){
+    x0 = Math.min(x0, it.x); y0 = Math.min(y0, it.y);
+    x1 = Math.max(x1, it.x + it.w); y1 = Math.max(y1, it.y + pageItemHeight(it));
+  });
+  var pad = 40;
+  var z = Math.min((r.width - pad * 2) / Math.max(1, x1 - x0), (r.height - pad * 2) / Math.max(1, y1 - y0));
+  /* Beim Öffnen höchstens auf 50 % verkleinern und oben links beginnen, damit Texte (auch auf dem iPhone) lesbar bleiben. */
+  z = initial ? Math.max(0.5, Math.min(1, z)) : Math.max(0.2, Math.min(2, z));
+  pg.z = z;
+  pg.vx = pad - x0 * z;
+  pg.vy = pad - y0 * z;
+  if(!initial){
+    pg.vx += Math.max(0, (r.width - pad * 2 - (x1 - x0) * z) / 2);
+    pg.vy += Math.max(0, (r.height - pad * 2 - (y1 - y0) * z) / 2);
+  }
+  pageApplyView();
+}
+function pageToCanvas(sx, sy){
+  var r = pg.view.getBoundingClientRect();
+  return {x: (sx - r.left - pg.vx) / pg.z, y: (sy - r.top - pg.vy) / pg.z};
+}
+function pageDropPoint(){
+  if(pg.last) return {x: pg.last.x, y: pg.last.y};
+  var r = pg.view.getBoundingClientRect();
+  return pageToCanvas(r.left + r.width / 3, r.top + r.height / 3);
+}
+function pageFree(p){
+  /* Mehrfach an dieselbe Stelle einfügen: leicht versetzt stapeln. */
+  var guard = 0;
+  while(guard++ < 40 && pg.items.some(function(it){ return Math.abs(it.x - p.x) < 6 && Math.abs(it.y - p.y) < 6; })){ p.x += 28; p.y += 28; }
+  return p;
+}
+
+function pageItemHtml(it){
+  if(it.type === 'text'){
+    return '<div class="wbp-item wbp-text' + (it.mono ? ' mono' : '') + (it.color ? ' c-' + it.color : '') + '" data-id="' + it.id + '">' +
+      '<div class="wbp-grip" title="Ziehen zum Verschieben"></div>' +
+      '<textarea rows="1" spellcheck="false" aria-label="Text"></textarea>' +
+      '<div class="wbp-rs" title="Breite ändern"></div></div>';
+  }
+  return '<div class="wbp-item wbp-img" data-id="' + it.id + '">' +
+    '<div class="wbp-imgph">Bild wird geladen…</div>' +
+    '<div class="wbp-rs" title="Grösse ändern"></div></div>';
+}
+function pagePlace(el, it){
+  el.style.left = it.x + 'px';
+  el.style.top = it.y + 'px';
+  el.style.width = it.w + 'px';
+  if(it.type === 'img') el.style.height = it.h + 'px';
+}
+function pageAutosize(ta){
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+function pageRenderItems(){
+  pg.canvas.innerHTML = pg.items.map(pageItemHtml).join('');
+  pg.items.forEach(function(it){
+    var el = pg.canvas.querySelector('[data-id="' + it.id + '"]');
+    pagePlace(el, it);
+    if(it.type === 'text'){
+      var ta = el.querySelector('textarea');
+      ta.value = it.text;
+      pageAutosize(ta);
+    } else pageShowImage(el, it);
+    if(pg.sel === it.id) el.classList.add('sel');
+  });
+  pageRenderSel();
+}
+function pageShowImage(el, it){
+  var put = function(url){
+    if(!pg || !el.isConnected) return;
+    var ph = el.querySelector('.wbp-imgph');
+    if(!url){
+      if(ph) ph.textContent = pageCloudMissing ? 'Bild liegt nur auf dem Gerät, auf dem es eingefügt wurde.' : 'Bild nicht verfügbar (noch nicht hochgeladen?).';
+      return;
+    }
+    pg.urls[it.id] = url;
+    var img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Bild';
+    img.draggable = false;
+    if(ph) ph.replaceWith(img); else el.insertBefore(img, el.firstChild);
+  };
+  if(pg.urls[it.id]) put(pg.urls[it.id]);
+  else pageLoadImage(it).then(put);
+}
+function pageFind(id){ return pg.items.find(function(it){ return it.id === id; }); }
+function pageSelect(id){
+  pg.sel = id || null;
+  pg.canvas.querySelectorAll('.wbp-item.sel').forEach(function(x){ x.classList.remove('sel'); });
+  if(id){ var el = pg.canvas.querySelector('[data-id="' + id + '"]'); if(el) el.classList.add('sel'); }
+  pageRenderSel();
+}
+function pageRenderSel(){
+  var box = pg.el.querySelector('.wbp-sel');
+  var it = pg.sel && pageFind(pg.sel);
+  if(!it){ box.innerHTML = ''; return; }
+  if(it.type === 'text'){
+    box.innerHTML =
+      '<button type="button" class="btn ghost' + (it.mono ? ' on' : '') + '" data-pg="mono" title="Code-/Log-Schrift mit fester Zeichenbreite">&lt;/&gt; Code</button>' +
+      '<span class="wbp-colors">' + ['none'].concat(PAGE_COLORS).map(function(c){
+        var on = (it.color || 'none') === c;
+        return '<button type="button" class="wbp-color c-' + c + (on ? ' on' : '') + '" data-pg-color="' + c + '" title="' + (c === 'none' ? 'Keine Farbe' : PAGE_COLOR_LABELS[c]) + '" aria-label="' + (c === 'none' ? 'Keine Farbe' : PAGE_COLOR_LABELS[c]) + '"></button>';
+      }).join('') + '</span>' +
+      '<button type="button" class="btn ghost danger-text" data-pg="delete" title="Löschen (Entf)">' + svgIcon('trash') + '</button>';
+  } else {
+    box.innerHTML =
+      '<button type="button" class="btn ghost" data-pg="zoom-img" title="Bild in voller Grösse (Doppelklick)">🔍 Gross</button>' +
+      '<button type="button" class="btn ghost" data-pg="real-size" title="Auf Originalgrösse setzen">1:1</button>' +
+      '<button type="button" class="btn ghost danger-text" data-pg="delete" title="Löschen (Entf)">' + svgIcon('trash') + '</button>';
+  }
+}
+function pageRenderCloudHint(){
+  if(!pg) return;
+  var h = pg.el.querySelector('.wbp-cloud');
+  var hasImg = pg.items.some(function(it){ return it.type === 'img'; });
+  h.hidden = !(pageCloudMissing && hasImg);
+  h.textContent = 'Bilder bleiben vorerst nur auf diesem Gerät: In Supabase fehlt die Tabelle "task_files" (SQL in der README unter "Seite pro Task"). Danach werden sie automatisch hochgeladen.';
+}
+
+/* ---- Speichern ---- */
+function pageCommit(){
+  if(!pg) return;
+  if(pg.timer){ clearTimeout(pg.timer); pg.timer = null; }
+  var t = getTask(pg.taskId);
+  if(!t) return;
+  var items = pg.items.filter(function(it){ return it.type !== 'text' || it.text.trim(); }).map(function(it){ return Object.assign({}, it); });
+  var before = canon(t.page && t.page.items ? t.page.items : []);
+  if(before === canon(items)) return;
+  if(items.length){
+    updateTask(pg.taskId, {page: {items: items, updatedAt: nowIso()}});
+  } else {
+    delete t.page;
+    t.updatedAt = nowIso();
+    save();
+  }
+}
+function pageCommitSoon(){
+  if(pg.timer) clearTimeout(pg.timer);
+  pg.timer = setTimeout(pageCommit, 500);
+}
+
+/* ---- Elemente anlegen und löschen ---- */
+function pageAddText(p, text, focus){
+  p = pageFree(p);
+  var it = {id: uid(), type: 'text', x: Math.round(p.x), y: Math.round(p.y), w: 320, text: text || '', ts: nowIso()};
+  if(text && /(\n\s{2,}|\t|Exception|Error|at [\w.$]+\(|^\d{4}-\d\d-\d\d[ T]\d\d:)/m.test(text)) it.mono = true;
+  if(text){
+    /* Eingefügte Texte (z.B. Logs) so breit, dass Zeilen möglichst nicht umbrechen. */
+    var longest = Math.max.apply(null, text.split('\n').map(function(l){ return l.length; }));
+    it.w = Math.max(320, Math.min(900, Math.round(longest * (it.mono ? 7.7 : 7.2) + 30)));
+  }
+  pg.items.push(it);
+  pageRenderItems();
+  pageSelect(it.id);
+  pageApplyView();
+  if(focus){
+    var ta = pg.canvas.querySelector('[data-id="' + it.id + '"] textarea');
+    ta.focus({preventScroll: true});
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+  if(text) pageCommitSoon();
+  return it;
+}
+function pageAddImage(dataUrl, p){
+  var taskId = pg.taskId;
+  shrinkImage(dataUrl, 2400).then(function(url){
+    if(!isSafeImageData(url)){ toast('Dieses Bild kann nicht eingefügt werden.'); return; }
+    var img = new Image();
+    img.onload = function(){
+      pageNewFileKey().then(function(key){
+        if(!pg || pg.taskId !== taskId) return;
+        var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        var w = Math.min(img.naturalWidth / dpr, 900);
+        var h = Math.max(20, Math.round(w * img.naturalHeight / Math.max(1, img.naturalWidth)));
+        var fileId = uid() + Math.random().toString(36).slice(2, 6);
+        var q = pageFree(p || pageDropPoint());
+        var it = {id: uid(), type: 'img', x: Math.round(q.x), y: Math.round(q.y), w: Math.max(40, Math.round(w)), h: h, file: fileId, key: key, ts: nowIso()};
+        pg.urls[it.id] = url;
+        return pageFilePut({id: fileId, data: url, key: key, pending: true, boardId: activeShared ? activeShared.id : '', at: nowIso()}).then(function(){
+          if(!pg) return;
+          pg.items.push(it);
+          pageRenderItems();
+          pageSelect(it.id);
+          pageApplyView();
+          pageCommit();
+          pageRenderCloudHint();
+          pageUploadPending();
+        });
+      }).catch(function(){ toast('Bild konnte nicht gespeichert werden.'); });
+    };
+    img.onerror = function(){ toast('Dieses Bild kann nicht gelesen werden.'); };
+    img.src = url;
+  });
+}
+function pageAddFiles(files, p){
+  [].slice.call(files || []).filter(function(f){ return /^image\/(png|jpeg|jpg|gif|webp)$/.test(f.type); }).slice(0, 10).forEach(function(f, i){
+    var r = new FileReader();
+    r.onload = function(){ if(pg) pageAddImage(r.result, p ? {x: p.x + i * 28, y: p.y + i * 28} : null); };
+    r.readAsDataURL(f);
+  });
+}
+function pageDelete(id){
+  var idx = pg.items.findIndex(function(it){ return it.id === id; });
+  if(idx < 0) return;
+  var it = pg.items[idx];
+  pg.items.splice(idx, 1);
+  pg.sel = null;
+  pageRenderItems();
+  pageApplyView();
+  pageCommit();
+  if(it.type === 'text' && !it.text.trim()) return;
+  var taskId = pg.taskId;
+  var undone = false;
+  /* Bilddatei erst löschen, wenn "Rückgängig" nicht mehr möglich ist. */
+  var killer = it.type === 'img' ? setTimeout(function(){ if(!undone) pageDeleteFile(it.file); }, 9000) : null;
+  toast(it.type === 'img' ? 'Bild gelöscht.' : 'Text gelöscht.', 8000, 'Rückgängig', function(){
+    undone = true;
+    if(killer) clearTimeout(killer);
+    if(pg && pg.taskId === taskId){
+      pg.items.push(it);
+      pageRenderItems();
+      pageApplyView();
+      pageCommit();
+    } else {
+      var t = getTask(taskId);
+      if(!t) return;
+      var items = (t.page && t.page.items ? t.page.items.slice() : []).concat([it]);
+      updateTask(taskId, {page: {items: items, updatedAt: nowIso()}});
+    }
+  });
+}
+function pageLightbox(url){
+  var lb = document.createElement('div');
+  lb.id = 'wbpLightbox';
+  lb.className = 'wbp-lightbox';
+  lb.title = 'Klicken zum Schliessen';
+  var img = document.createElement('img');
+  img.src = url; img.alt = 'Bild';
+  lb.appendChild(img);
+  lb.addEventListener('click', function(){ lb.remove(); });
+  document.body.appendChild(lb);
+}
+
+/* ---- Bedienung ---- */
+function pageOnKey(e){
+  if(!pg) return;
+  var inText = e.target && e.target.tagName === 'TEXTAREA' && pg.el.contains(e.target);
+  if((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's'){ pageCommit(); return; }
+  e.stopPropagation();
+  var lb = document.getElementById('wbpLightbox');
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    if(lb) lb.remove();
+    else if(inText) e.target.blur();
+    else if(pg.sel) pageSelect(null);
+    else closeTaskPage();
+    return;
+  }
+  if(inText || (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))) return;
+  if((e.key === 'Delete' || e.key === 'Backspace') && pg.sel){ e.preventDefault(); pageDelete(pg.sel); }
+  else if((e.ctrlKey || e.metaKey) && (e.key === '0')){ e.preventDefault(); pageFit(); }
+  else if((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')){ e.preventDefault(); pageZoomAt(pg.z * 1.2); }
+  else if((e.ctrlKey || e.metaKey) && e.key === '-'){ e.preventDefault(); pageZoomAt(pg.z / 1.2); }
+}
+function pageOnPaste(e){
+  if(!pg) return;
+  e.stopPropagation();
+  if(document.getElementById('wbpLightbox')) return;
+  var imgFile = clipboardImageFile(e);
+  var inText = e.target && e.target.tagName === 'TEXTAREA' && pg.el.contains(e.target);
+  if(imgFile){
+    e.preventDefault();
+    var p = null;
+    if(inText){
+      var host = pageFind(e.target.closest('.wbp-item').dataset.id);
+      if(host) p = {x: host.x, y: host.y + pageItemHeight(host) + 16};
+    }
+    var r = new FileReader();
+    r.onload = function(){ if(pg) pageAddImage(r.result, p); };
+    r.readAsDataURL(imgFile);
+    return;
+  }
+  if(inText) return;
+  var cd = e.clipboardData || window.clipboardData;
+  var text = cd ? cd.getData('text') : '';
+  if(text && text.trim()){
+    e.preventDefault();
+    pageAddText(pageDropPoint(), text.replace(/\r\n/g, '\n'), false);
+  }
+}
+function pageWire(){
+  var el = pg.el, view = pg.view, canvas = pg.canvas;
+  window.addEventListener('keydown', pageOnKey, true);
+  window.addEventListener('paste', pageOnPaste, true);
+  var fileInput = el.querySelector('.wbp-file');
+  fileInput.addEventListener('change', function(){ pageAddFiles(fileInput.files); fileInput.value = ''; });
+
+  el.querySelector('.wbp-bar').addEventListener('click', function(e){
+    var colorBtn = e.target.closest('[data-pg-color]');
+    var it = pg.sel && pageFind(pg.sel);
+    if(colorBtn && it){
+      if(colorBtn.dataset.pgColor === 'none') delete it.color; else it.color = colorBtn.dataset.pgColor;
+      pageRenderItems(); pageCommitSoon();
+      return;
+    }
+    var b = e.target.closest('[data-pg]');
+    if(!b) return;
+    var a = b.dataset.pg;
+    if(a === 'close') closeTaskPage();
+    else if(a === 'text') pageAddText(pageDropPoint(), '', true);
+    else if(a === 'stamp'){
+      var stamp = new Date().toLocaleString('de-CH', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' – ';
+      pageAddText(pageDropPoint(), stamp, true);
+    }
+    else if(a === 'image') fileInput.click();
+    else if(a === 'zoom-in') pageZoomAt(pg.z * 1.2);
+    else if(a === 'zoom-out') pageZoomAt(pg.z / 1.2);
+    else if(a === 'fit') pageFit();
+    else if(a === 'delete' && it) pageDelete(it.id);
+    else if(a === 'mono' && it){ it.mono = !it.mono; if(!it.mono) delete it.mono; pageRenderItems(); pageCommitSoon(); }
+    else if(a === 'zoom-img' && it && pg.urls[it.id]) pageLightbox(pg.urls[it.id]);
+    else if(a === 'real-size' && it && pg.urls[it.id]){
+      var im = new Image();
+      im.onload = function(){
+        if(!pg) return;
+        var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        it.w = Math.round(im.naturalWidth / dpr);
+        it.h = Math.round(im.naturalHeight / dpr);
+        pageRenderItems(); pageCommit();
+      };
+      im.src = pg.urls[it.id];
+    }
+  });
+
+  canvas.addEventListener('input', function(e){
+    if(e.target.tagName !== 'TEXTAREA') return;
+    var it = pageFind(e.target.closest('.wbp-item').dataset.id);
+    if(!it) return;
+    it.text = e.target.value.slice(0, 60000);
+    pageAutosize(e.target);
+    pageCommitSoon();
+  });
+  canvas.addEventListener('focusin', function(e){
+    if(e.target.tagName === 'TEXTAREA') pageSelect(e.target.closest('.wbp-item').dataset.id);
+  });
+  canvas.addEventListener('focusout', function(e){
+    if(e.target.tagName !== 'TEXTAREA') return;
+    var id = e.target.closest('.wbp-item').dataset.id;
+    var it = pageFind(id);
+    /* Leere Textfelder verschwinden wieder (wie in OneNote). */
+    if(it && !it.text.trim()){
+      setTimeout(function(){
+        if(!pg || document.activeElement === e.target) return;
+        var i = pg.items.indexOf(it);
+        if(i >= 0 && !it.text.trim()){ pg.items.splice(i, 1); if(pg.sel === id) pg.sel = null; pageRenderItems(); pageApplyView(); pageCommit(); }
+      }, 0);
+    } else pageCommit();
+  });
+
+  view.addEventListener('wheel', function(e){
+    e.preventDefault();
+    if(e.ctrlKey || e.metaKey){
+      pageZoomAt(pg.z * Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0018)), e.clientX, e.clientY);
+    } else {
+      var k = e.deltaMode === 1 ? 32 : 1;
+      pg.vx -= (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k;
+      pg.vy -= (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * k;
+      pageApplyView();
+    }
+  }, {passive: false});
+
+  view.addEventListener('pointermove', function(e){
+    if(!pg) return;
+    var p = pageToCanvas(e.clientX, e.clientY);
+    if(!e.target.closest('.wbp-item')) pg.last = p;
+    var ptr = pg.ptrs[e.pointerId];
+    if(!ptr) return;
+    ptr.x = e.clientX; ptr.y = e.clientY;
+    var act = pg.act;
+    if(!act) return;
+    var ids = Object.keys(pg.ptrs);
+    if(act.kind === 'pinch' && ids.length >= 2){
+      var a = pg.ptrs[ids[0]], b = pg.ptrs[ids[1]];
+      var dist = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      pg.vx += mx - act.mx; pg.vy += my - act.my;
+      act.mx = mx; act.my = my;
+      pageZoomAt(act.z0 * dist / act.d0, mx, my);
+      return;
+    }
+    var dx = e.clientX - act.sx, dy = e.clientY - act.sy;
+    if(Math.abs(dx) + Math.abs(dy) > 4) act.moved = true;
+    if(act.kind === 'pan'){
+      pg.vx = act.vx + dx; pg.vy = act.vy + dy; pageApplyView();
+    } else if(act.kind === 'move' && act.moved){
+      act.it.x = Math.round(act.x0 + dx / pg.z); act.it.y = Math.round(act.y0 + dy / pg.z);
+      pagePlace(act.el, act.it);
+    } else if(act.kind === 'resize'){
+      var w = Math.max(act.it.type === 'img' ? 40 : 120, Math.round(act.w0 + dx / pg.z));
+      act.it.w = w;
+      if(act.it.type === 'img') act.it.h = Math.max(20, Math.round(w * act.h0 / act.w0));
+      pagePlace(act.el, act.it);
+      if(act.it.type === 'text') pageAutosize(act.el.querySelector('textarea'));
+    }
+  });
+  view.addEventListener('pointerdown', function(e){
+    if(e.button > 0 && e.pointerType === 'mouse') return;
+    pg.ptrs[e.pointerId] = {x: e.clientX, y: e.clientY};
+    var ids = Object.keys(pg.ptrs);
+    if(ids.length === 2){
+      var a = pg.ptrs[ids[0]], b = pg.ptrs[ids[1]];
+      pg.act = {kind: 'pinch', d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z0: pg.z, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2};
+      return;
+    }
+    if(ids.length > 2) return;
+    var itEl = e.target.closest('.wbp-item');
+    var base = {sx: e.clientX, sy: e.clientY, moved: false};
+    if(itEl){
+      var it = pageFind(itEl.dataset.id);
+      if(!it) return;
+      if(e.target.tagName === 'TEXTAREA'){ pg.act = null; return; }
+      if(document.activeElement && document.activeElement.tagName === 'TEXTAREA' && !itEl.contains(document.activeElement)) document.activeElement.blur();
+      pageSelect(it.id);
+      e.preventDefault();
+      if(e.target.classList.contains('wbp-rs')) pg.act = Object.assign(base, {kind: 'resize', it: it, el: itEl, w0: it.w, h0: it.h || 0});
+      else pg.act = Object.assign(base, {kind: 'move', it: it, el: itEl, x0: it.x, y0: it.y});
+      try{ view.setPointerCapture(e.pointerId); }catch(err){}
+      return;
+    }
+    pg.act = Object.assign(base, {kind: 'pan', vx: pg.vx, vy: pg.vy, editing: !!(document.activeElement && document.activeElement.tagName === 'TEXTAREA')});
+    try{ view.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  function endPointer(e){
+    if(!pg) return;
+    delete pg.ptrs[e.pointerId];
+    var act = pg.act;
+    if(!act) return;
+    if(act.kind === 'pinch'){ if(!Object.keys(pg.ptrs).length) pg.act = null; return; }
+    pg.act = null;
+    if(e.type === 'pointercancel') return;
+    if(act.kind === 'pan' && !act.moved){
+      /* Klick ins Leere: neues Textfeld an dieser Stelle (ein offenes Textfeld wird nur verlassen). */
+      if(!act.editing && pg.sel){ pageSelect(null); return; }
+      var p = pageToCanvas(e.clientX, e.clientY);
+      pageAddText({x: p.x, y: p.y - 14}, '', true);
+    } else if(act.kind === 'move' || act.kind === 'resize'){
+      if(act.moved) pageCommit();
+      else if(act.kind === 'move' && act.it.type === 'img'){
+        /* Doppelklick bzw. Doppeltippen öffnet das Bild gross (dblclick kommt wegen der Pointer-Capture nicht an). */
+        var now = Date.now();
+        if(pg.tap && pg.tap.id === act.it.id && now - pg.tap.t < 450 && pg.urls[act.it.id]){ pg.tap = null; pageLightbox(pg.urls[act.it.id]); }
+        else pg.tap = {id: act.it.id, t: now};
+      }
+      else if(act.kind === 'move' && act.it.type === 'text'){
+        var ta = act.el.querySelector('textarea');
+        ta.focus({preventScroll: true});
+      }
+    }
+  }
+  view.addEventListener('pointerup', endPointer);
+  view.addEventListener('pointercancel', endPointer);
+
+  ['dragenter', 'dragover', 'dragleave'].forEach(function(type){
+    el.addEventListener(type, function(e){ e.stopPropagation(); if(type !== 'dragleave') e.preventDefault(); });
+  });
+  el.addEventListener('drop', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var p = pageToCanvas(e.clientX, e.clientY);
+    var dt = e.dataTransfer;
+    if(dt && dt.files && dt.files.length){ pageAddFiles(dt.files, p); return; }
+    var text = dt ? dt.getData('text') : '';
+    if(text && text.trim()) pageAddText(p, text, false);
+  });
+}
+
+/* =========================================================
    SPRACHBEFEHLE
    Taste V oder das Mikrofon unten rechts. Häufige Befehle versteht das Board selbst
    (auch ohne KI); alles andere geht mit KI-Key an den Assistenten.
@@ -14798,6 +15598,7 @@ function resetLocalBoardIfOtherUser(){
       localStorage.removeItem('kanban-state-backup');
     }catch(e){}
     setCloudSyncConfig(cloudSyncConfigDefaults());
+    try{ indexedDB.deleteDatabase('wb-page-files'); }catch(e){}
   }
   try{ localStorage.setItem(BOARD_OWNER_KEY, currentUser.id); }catch(e){}
 }
@@ -15196,6 +15997,8 @@ function init(){
     cloudPullNow();
     setInterval(cloudPullNow, 45000);
   }
+  setTimeout(pageUploadPending, 12000);
+  window.addEventListener('online', function(){ pageUploadPending(); });
 }
 
 startAuthGate();
