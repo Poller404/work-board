@@ -946,6 +946,13 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .project-chip i{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
 #filterProject{max-width:190px;}
 /* ---- Planer ---- */
+#board.archive-mode{display:block; overflow-x:hidden; overflow-y:auto; scroll-snap-type:none;}
+.archive-head{display:flex; align-items:center; gap:8px; padding:2px 4px 12px; font-weight:600; font-size:13.5px; color:var(--text);}
+.archive-head .count{color:var(--text-faint); font-size:12px; font-weight:500; font-variant-numeric:tabular-nums;}
+.column-body.archive-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); align-items:start; gap:12px; overflow:visible; padding:2px 2px 24px;}
+.archive-grid > .empty-state{grid-column:1 / -1;}
+#board.compact .column-body.archive-grid{grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px;}
+@media (max-width:680px){ .column-body.archive-grid{grid-template-columns:1fr;} }
 #board.planner-mode{display:block; overflow:hidden; padding:0;}
 .planner{display:flex; height:100%; min-height:0;}
 .pl-side{width:250px; flex-shrink:0; border-right:1px solid var(--border); padding:12px; display:flex; flex-direction:column; gap:8px; min-height:0; background:var(--surface);}
@@ -3598,6 +3605,8 @@ function renderBoard(){
   renderFilterBar();
   board.classList.toggle('dashboard-mode', FULL_VIEWS.indexOf(boardViewMode) >= 0);
   board.classList.toggle('planner-mode', boardViewMode === 'calendar');
+  var archiveScrollTop = board.classList.contains('archive-mode') ? board.scrollTop : null;
+  board.classList.remove('archive-mode');
   if(boardViewMode === 'myday'){ renderMyDayView(); return; }
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
@@ -3615,9 +3624,12 @@ function renderBoard(){
   board.querySelectorAll('.column-body').forEach(function(b){
     if(b.dataset.colId) scrollPositions[b.dataset.colId] = b.scrollTop;
   });
+  if(archiveScrollTop != null) scrollPositions.archive = archiveScrollTop;
   board.innerHTML = '';
   board.classList.toggle('compact', !!state.settings.compactView);
   var lanes = computeLanes();
+  if(showArchive){
+    board.classList.add('archive-mode'); renderArchiveGrid(board, lanes, scrollPositions); return; }
 
   lanes.forEach(function(col){
     var colTasks = state.tasks.filter(function(t){ return col.match(t) && taskMatchesFilters(t); });
@@ -3807,6 +3819,33 @@ function openSlaDashboard(){
    pro Kunde". In allen anderen Board-Ansichten (inkl. der dedizierten
    "Nach Gruppe"-Ansicht, wo die Spalte selbst schon die Gruppe ist) bleibt
    die flache Kartenliste wie bisher. */
+/* Archiv: keine Spalten, sondern alle archivierten Tasks als Kacheln
+   nebeneinander, die den ganzen Bildschirm füllen (neueste zuerst). */
+function renderArchiveGrid(board, lanes, scrollPositions){
+  var tasks = state.tasks.filter(function(t){
+    return taskMatchesFilters(t) && lanes.some(function(col){ return col.match(t); });
+  });
+  tasks.sort(function(a,b){
+    return (b.pinned?1:0) - (a.pinned?1:0) || String(b.updatedAt||b.completedAt||'').localeCompare(String(a.updatedAt||a.completedAt||''));
+  });
+  var head = document.createElement('div');
+  head.className = 'archive-head';
+  head.innerHTML = svgIcon('box') + '<span>Archiv</span><span class="count">'+tasks.length+'</span>';
+  board.appendChild(head);
+  var grid = document.createElement('div');
+  grid.className = 'column-body archive-grid';
+  grid.dataset.colId = 'archive';
+  if(tasks.length === 0){
+    var empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = anyFilterActive() ? 'Keine Treffer für die aktuellen Filter.' : 'Kein Archiv hier.';
+    grid.appendChild(empty);
+  }
+  tasks.forEach(function(t){ grid.appendChild(renderCard(t)); });
+  board.appendChild(grid);
+  if(scrollPositions.archive != null) board.scrollTop = scrollPositions.archive;
+  populateBulkColumnSelect();
+}
 function appendColumnCards(body, colTasks, colId){
   if(boardViewMode !== 'status'){
     colTasks.forEach(function(t){ body.appendChild(renderCard(t)); });
