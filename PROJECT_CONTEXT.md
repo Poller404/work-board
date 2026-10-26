@@ -24,6 +24,16 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-26: Reihenfolge pro Spalte (Branch `claude/project-thread-61xb4e`)
+
+Timo wollte Tasks durchnummerieren (was mache ich als Erstes, Zweites …), einsortiert in der jeweiligen Spalte.
+- Optionales Task-Feld `rank` (Ganzzahl 1–999), Teil des verschlüsselten Board-Zustands, also keine Supabase-Änderung.
+- Helfer vor `spawnRecurrenceIfDue`: `setTaskRank` (einreihen: wer Nr. n hat, rutscht nach hinten), `compactRanks`, `nextFreeRank`,
+  `compareRankPin` (Sortierung in `renderBoard`: nummeriert zuerst, dann angeheftet, dann Rest).
+- `updateTask` löscht `rank` beim Spaltenwechsel oder Archivieren und lässt die alte Spalte nachrücken.
+- Bedienung: Rechtsklick-Menü "Reihenfolge" (1…9, "–"), Task-Fenster Feld `#fRank` + "Nächste freie", Spaltenmenü "Alle durchnummerieren" / "Nummerierung entfernen".
+  Karte zeigt `.rank-badge`. Kein Umsortieren per Drag & Drop innerhalb der Spalte.
+
 ## ✅ Stand 2026-10-20: Seite pro Task (Whiteboard, Branch `claude/project-thread-mi03r0`)
 
 Timo wollte pro Task eine OneNote-artige Seite (frei platzierbare Screenshots/Texte, für Troubleshooting).
