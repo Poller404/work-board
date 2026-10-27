@@ -10464,28 +10464,510 @@ function exportTimeCsv(range, startMs, endMs){
 }
 
 /* =========================================================
-   LOKALE SICHERUNG (Export / Import als Datei)
+   BACKUP & WIEDERHERSTELLUNG
+   - Automatisch: einmal pro Tag ein verschlüsselter Sicherungspunkt in der
+     Supabase-Tabelle "board_snapshots" (persönlicher Stand inkl. Einstellungen,
+     nicht aktive Boards und eine Kopie der geteilten Boards). Aufbewahrt werden
+     die letzten BACKUP_DAILY_DAYS Tage täglich, danach einer pro Woche bis
+     BACKUP_WEEKLY_WEEKS Wochen.
+   - Datei: "Sichern" (Strg+S) lädt ein verschlüsseltes Backup inkl. Bilder der
+     Task-Seiten herunter (Passwort = Cloud-Passphrase, sonst ein eigenes).
+   - Wiederherstellen zeigt vorher, was sich ändert, und legt den aktuellen
+     Stand als "Rückgängig" ab. Danach wird die Cloud bewusst überschrieben.
+   - Gelöschte Bilder bleiben FILE_TRASH_DAYS Tage in der Cloud liegen, damit
+     sie mit einem älteren Stand zurückkommen.
    ========================================================= */
-function exportBackup(){
-  var blob = new Blob([serializePersonalState(2)], {type:'application/json'});
+var BACKUP_DAILY_DAYS = 14;
+var BACKUP_WEEKLY_WEEKS = 12;
+var FILE_TRASH_DAYS = 90;
+var BACKUP_KIND = 'work-board-backup';
+
+function backupStripSecrets(k, v){ return (k === 'aiApiKey' || k === 'geminiApiKey') ? '' : v; }
+/* Muss innerhalb von withPersonalState laufen. */
+function backupSharedCopies(){
+  return sharedList.map(function(sb){
+    var c = (activeShared && activeShared.id === sb.id) ? activeShared.content : sb.content;
+    return c ? {id: sb.id, name: sb.name, columns: c.columns, tasks: c.tasks} : null;
+  }).filter(Boolean);
+}
+function backupPlainText(files){
+  return withPersonalState(function(){
+    return JSON.stringify({wbBackup: 1, createdAt: nowIso(), state: state, shared: backupSharedCopies(), files: files || []}, backupStripSecrets);
+  });
+}
+function backupEncrypt(plain, passphrase, salt){
+  salt = salt || crypto.getRandomValues(new Uint8Array(16));
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return cloudDeriveKey(passphrase, salt, CLOUD_KDF_ITER).then(function(key){
+    return crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, key, new TextEncoder().encode(plain));
+  }).then(function(ct){
+    return {v:1, iter: CLOUD_KDF_ITER, salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(ct)};
+  });
+}
+/* Ältere Snapshots/Dateien enthalten nur den Zustand, neuere {wbBackup, state, shared, files}. */
+function backupUnpack(obj){
+  if(obj && typeof obj === 'object' && obj.wbBackup && obj.state && typeof obj.state === 'object'){
+    return {state: obj.state, shared: Array.isArray(obj.shared) ? obj.shared : [], files: Array.isArray(obj.files) ? obj.files : [], createdAt: typeof obj.createdAt === 'string' ? obj.createdAt : ''};
+  }
+  if(obj && typeof obj === 'object' && Array.isArray(obj.tasks)) return {state: obj, shared: [], files: [], createdAt: ''};
+  return null;
+}
+
+/* ---- Bilder der Task-Seiten ---- */
+function backupTaskFileIds(tasks, out){
+  (tasks || []).forEach(function(t){
+    if(t && t.page && Array.isArray(t.page.items)) t.page.items.forEach(function(it){ if(it && it.type === 'img' && it.file) out[it.file] = true; });
+  });
+  return out;
+}
+function backupReferencedFileIds(){
+  return withPersonalState(function(){
+    var ids = {};
+    backupTaskFileIds(state.tasks, ids);
+    (state.boards || []).forEach(function(b){ backupTaskFileIds(b.tasks, ids); });
+    backupSharedCopies().forEach(function(sb){ backupTaskFileIds(sb.tasks, ids); });
+    return Object.keys(ids);
+  });
+}
+/* Verschlüsselte Bild-Payloads (wie in task_files) einsammeln: aus der Cloud,
+   noch nicht hochgeladene aus dem lokalen Speicher. */
+function backupCollectFiles(){
+  var ids = backupReferencedFileIds();
+  var found = {};
+  var client = getSupabaseClient();
+  var chain = Promise.resolve();
+  if(client && currentUser && !pageCloudMissing){
+    for(var i = 0; i < ids.length; i += 20){
+      (function(chunk){
+        chain = chain.then(function(){
+          return client.from('task_files').select('id, payload').in('id', chunk).then(function(res){
+            (res.data || []).forEach(function(r){ if(r && r.id && typeof r.payload === 'string') found[r.id] = r.payload; });
+          });
+        });
+      })(ids.slice(i, i + 20));
+    }
+  }
+  return chain.catch(function(){}).then(function(){
+    return Promise.all(ids.filter(function(id){ return !found[id]; }).map(function(id){
+      return pageFileGet(id).then(function(rec){
+        if(rec && rec.key && isSafeImageData(rec.data)) return pageEncrypt(rec.data, rec.key).then(function(p){ found[id] = p; });
+      }).catch(function(){});
+    }));
+  }).then(function(){
+    return Object.keys(found).map(function(id){ return {id: id, payload: found[id]}; });
+  });
+}
+/* Fehlende Bilder aus einem Datei-Backup wieder hochladen (vorhandene bleiben). */
+function backupRestoreFiles(files){
+  var client = getSupabaseClient();
+  if(!client || !currentUser || !files.length) return Promise.resolve(0);
+  var count = 0;
+  var chain = Promise.resolve();
+  files.forEach(function(f){
+    if(!f || typeof f.id !== 'string' || !SAFE_ID_RE.test(f.id) || typeof f.payload !== 'string') return;
+    chain = chain.then(function(){
+      return client.from('task_files').insert({id: f.id, owner_id: currentUser.id, board_id: null, payload: f.payload}).then(function(res){
+        if(!res.error) count++;
+      });
+    }).catch(function(){});
+  });
+  return chain.then(function(){ return count; });
+}
+/* Papierkorb für Bilder: lokal sofort weg, in der Cloud erst nach FILE_TRASH_DAYS
+   (und nur, wenn kein Task mehr darauf zeigt). */
+function fileTrashKey(){ return 'wb-file-trash-' + (currentUser ? currentUser.id : 'x'); }
+function fileTrashLoad(){
+  try{ var v = JSON.parse(localStorage.getItem(fileTrashKey()) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; }
+}
+function fileTrashSave(list){ try{ localStorage.setItem(fileTrashKey(), JSON.stringify(list)); }catch(e){} }
+function fileTrashAdd(fileId){
+  var list = fileTrashLoad().filter(function(x){ return x && x.id !== fileId; });
+  list.push({id: fileId, at: nowIso()});
+  fileTrashSave(list);
+}
+function fileTrashPurge(){
+  var client = getSupabaseClient();
+  if(!client || !currentUser || pageCloudMissing) return;
+  var list = fileTrashLoad();
+  if(!list.length) return;
+  var cutoff = Date.now() - FILE_TRASH_DAYS*86400000;
+  var used = {};
+  backupReferencedFileIds().forEach(function(id){ used[id] = true; });
+  var keep = [];
+  list.forEach(function(x){
+    if(!x || typeof x.id !== 'string' || used[x.id]) return;
+    if(new Date(x.at).getTime() > cutoff){ keep.push(x); return; }
+    client.from('task_files').delete().eq('id', x.id).then(function(){}, function(){});
+  });
+  fileTrashSave(keep);
+}
+
+/* ---- Sicherungspunkte in der Cloud ---- */
+function backupDayTime(day){ return new Date(day + 'T00:00:00').getTime(); }
+function backupWeekKey(day){
+  var d = new Date(day + 'T00:00:00');
+  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+  return toDateInputValue(d);
+}
+/* Welche Tage weg dürfen: jünger als BACKUP_DAILY_DAYS bleibt alles, danach der
+   älteste Snapshot jeder Woche, älter als BACKUP_WEEKLY_WEEKS Wochen nichts. */
+function backupDaysToPrune(days){
+  var today = startOfDay(new Date()).getTime();
+  var weeks = {};
+  var del = [];
+  days.slice().sort().forEach(function(day){
+    var age = Math.round((today - backupDayTime(day)) / 86400000);
+    if(age < BACKUP_DAILY_DAYS) return;
+    if(age >= BACKUP_WEEKLY_WEEKS*7){ del.push(day); return; }
+    var wk = backupWeekKey(day);
+    if(weeks[wk]) del.push(day); else weeks[wk] = true;
+  });
+  return del;
+}
+function backupListCloud(){
+  var client = getSupabaseClient();
+  if(!client || !currentUser) return Promise.resolve([]);
+  return client.from('board_snapshots').select('day').eq('user_id', currentUser.id).then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    return (res.data || []).map(function(r){ return r.day; }).filter(function(d){ return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d); }).sort().reverse();
+  });
+}
+function backupPruneCloud(){
+  return backupListCloud().then(function(days){
+    var del = backupDaysToPrune(days);
+    if(!del.length) return;
+    return getSupabaseClient().from('board_snapshots').delete().eq('user_id', currentUser.id).in('day', del);
+  });
+}
+function backupSnapshotPayload(passphrase){
+  return backupEncrypt(backupPlainText(), passphrase, cloudEncSalt(passphrase)).then(function(p){
+    p.updatedAt = state.meta.updatedAt;
+    return JSON.stringify(p);
+  });
+}
+function backupFetchSnapshot(day){
+  return getSupabaseClient().from('board_snapshots').select('payload').eq('user_id', currentUser.id).eq('day', day).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    if(!res.data) throw new Error('Sicherungspunkt nicht gefunden.');
+    return res.data.payload;
+  });
+}
+/* Nach einer Passphrase-Änderung alle Sicherungspunkte neu verschlüsseln. */
+function backupReencryptSnapshots(oldPass, newPass){
+  if(!oldPass || oldPass === newPass) return Promise.resolve();
+  var client = getSupabaseClient();
+  return backupListCloud().then(function(days){
+    var chain = Promise.resolve();
+    days.forEach(function(day){
+      chain = chain.then(function(){
+        return backupFetchSnapshot(day).then(function(text){
+          var old = JSON.parse(text);
+          return cloudDecryptPayload(text, oldPass).then(function(r){
+            return backupEncrypt(JSON.stringify(r.state), newPass, cloudEncSalt(newPass)).then(function(p){
+              p.updatedAt = old.updatedAt;
+              return client.from('board_snapshots').update({payload: JSON.stringify(p)}).eq('user_id', currentUser.id).eq('day', day);
+            });
+          });
+        }).catch(function(){});
+      });
+    });
+    return chain;
+  }).catch(function(){});
+}
+
+/* ---- Datei ---- */
+function backupFileName(){ return 'work-board-backup-' + toDateInputValue(new Date()) + '.json'; }
+function backupDownloadText(text, name){
+  var blob = new Blob([text], {type:'application/json'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'work-board-daten.json';
+  a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
-  toast('Lokale Sicherung heruntergeladen (work-board-daten.json).');
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+function exportBackup(){
+  var cfg = getCloudSyncConfig();
+  if(cloudIsReady(cfg) && cfg.passphrase){ backupDownloadEncrypted(cfg.passphrase, 'deiner Cloud-Passphrase'); return; }
+  backupAskPassword({
+    title: '💾 Backup-Passwort festlegen',
+    text: 'Das Backup wird mit diesem Passwort verschlüsselt. Ohne Passwort lässt es sich nicht mehr öffnen.',
+    confirm: true,
+    ok: 'Verschlüsselt herunterladen'
+  }, function(pw){ closeModal(); backupDownloadEncrypted(pw, 'dem gewählten Passwort'); });
+}
+function backupDownloadEncrypted(passphrase, hint){
+  toast('💾 Backup wird erstellt…');
+  return backupCollectFiles().then(function(files){
+    return backupEncrypt(backupPlainText(files), passphrase).then(function(p){
+      p.kind = BACKUP_KIND;
+      p.createdAt = nowIso();
+      backupDownloadText(JSON.stringify(p), backupFileName());
+      try{ localStorage.setItem('wb-last-file-backup', nowIso()); }catch(e){}
+      toast('💾 Verschlüsseltes Backup heruntergeladen (' + backupFileName() + '). Öffnen mit ' + hint + '.', 6500);
+    });
+  }).catch(function(err){ toast('Backup fehlgeschlagen: ' + err.message); });
+}
+function exportBackupPlain(){
+  backupDownloadText(serializePersonalState(2), 'work-board-daten.json');
+  toast('Unverschlüsselte Sicherung heruntergeladen (work-board-daten.json). Bitte sicher aufbewahren.');
 }
 function importBackupFile(file){
   var reader = new FileReader();
   reader.onload = function(){
-    try{
-      withPersonalState(function(){ state = migrateState(safeJsonParse(reader.result)); });
-      save();
-      renderAll();
-      closeModal();
-      toast('Daten geladen.');
-    }catch(err){ toast('Ungültige Datei: ' + err.message); }
+    var obj;
+    try{ obj = safeJsonParse(reader.result); }catch(err){ toast('Ungültige Datei: ' + err.message); return; }
+    var label = 'Datei ' + file.name;
+    if(obj && obj.kind === BACKUP_KIND && obj.data){
+      backupDecryptInteractive(reader.result, {
+        title: '🔐 Backup-Datei öffnen',
+        text: 'Diese Datei ist verschlüsselt. Bitte das Passwort eingeben (meist deine Cloud-Passphrase vom Tag des Backups).'
+      }).then(function(plain){ backupPreview(label, plain); });
+      return;
+    }
+    var unpacked = backupUnpack(obj);
+    if(!unpacked){ toast('Ungültige Datei: kein work-board-Backup.'); return; }
+    backupPreview(label, unpacked);
   };
   reader.readAsText(file);
+}
+/* Entschlüsseln: zuerst mit der aktuellen Passphrase, sonst nachfragen. */
+function backupDecryptInteractive(text, ask){
+  var cfg = getCloudSyncConfig();
+  function attempt(pass){
+    return cloudDecryptPayload(text, pass).then(function(r){
+      var u = backupUnpack(r.state);
+      if(!u) throw new Error('Inhalt unbekannt');
+      return u;
+    });
+  }
+  return (cfg.passphrase ? attempt(cfg.passphrase) : Promise.reject(new Error('keine'))).catch(function(){
+    return new Promise(function(resolve){
+      function askOnce(wrong){
+        backupAskPassword({title: ask.title, text: ask.text, error: wrong ? 'Das Passwort passt nicht. Bitte nochmals versuchen.' : '', ok: 'Öffnen'}, function(pw, done){
+          attempt(pw).then(function(u){ closeModal(); resolve(u); }, function(){ done(); askOnce(true); });
+        });
+      }
+      askOnce(false);
+    });
+  });
+}
+function backupAskPassword(o, onOk){
+  var html =
+    '<div class="modal-header"><h2>' + escapeHtml(o.title) + '</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-top:0;">' + escapeHtml(o.text) + '</p>' +
+      '<div class="form-row"><label for="bkPw1">Passwort</label><input type="password" id="bkPw1" autocomplete="off"></div>' +
+      (o.confirm ? '<div class="form-row"><label for="bkPw2">Nochmals</label><input type="password" id="bkPw2" autocomplete="off"></div>' : '') +
+      '<div id="bkPwMsg" class="hint" style="color:var(--danger);">' + escapeHtml(o.error || '') + '</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="bkPwOk">' + escapeHtml(o.ok || 'OK') + '</button></div>';
+  openModal(html);
+  var p1 = document.getElementById('bkPw1');
+  var msg = document.getElementById('bkPwMsg');
+  var okBtn = document.getElementById('bkPwOk');
+  p1.focus();
+  function go(){
+    var pw = p1.value;
+    if(o.confirm){
+      if(pw.length < 12){ msg.textContent = 'Bitte mindestens 12 Zeichen.'; return; }
+      if(pw !== document.getElementById('bkPw2').value){ msg.textContent = 'Die beiden Eingaben stimmen nicht überein.'; return; }
+    } else if(!pw){ msg.textContent = 'Bitte Passwort eingeben.'; return; }
+    okBtn.disabled = true;
+    msg.textContent = '';
+    onOk(pw, function(){ okBtn.disabled = false; });
+  }
+  okBtn.addEventListener('click', go);
+  okBtn.closest('.modal').addEventListener('keydown', function(e){ if(e.key === 'Enter' && e.target.tagName === 'INPUT') go(); });
+}
+
+/* ---- Vorschau und Wiederherstellen ---- */
+function backupAllTasks(st){
+  var map = {};
+  function add(list){ (list || []).forEach(function(t){ if(t && typeof t === 'object' && t.id) map[t.id] = t; }); }
+  add(st.tasks);
+  (st.boards || []).forEach(function(b){ if(b) add(b.tasks); });
+  return map;
+}
+function backupCurrentTasks(){
+  return withPersonalState(function(){ return backupAllTasks(state); });
+}
+function backupStats(st){
+  var tasks = Array.isArray(st.tasks) ? st.tasks : [];
+  var all = backupAllTasks(st);
+  var sessions = 0;
+  Object.keys(all).forEach(function(id){ if(Array.isArray(all[id].timeSessions)) sessions += all[id].timeSessions.length; });
+  return {
+    active: tasks.filter(function(t){ return t && !t.archived; }).length,
+    archived: tasks.filter(function(t){ return t && t.archived; }).length,
+    boards: 1 + (Array.isArray(st.boards) ? st.boards.length : 0),
+    sessions: sessions,
+    journal: Array.isArray(st.journal) ? st.journal.length : 0
+  };
+}
+function backupDiff(st){
+  var snap = backupAllTasks(st), cur = backupCurrentTasks();
+  var back = [], gone = [], changed = 0;
+  Object.keys(snap).forEach(function(id){
+    if(!cur[id]) back.push(snap[id]);
+    else if(canon(cur[id]) !== canon(snap[id])) changed++;
+  });
+  Object.keys(cur).forEach(function(id){ if(!snap[id]) gone.push(cur[id]); });
+  return {back: back, gone: gone, changed: changed};
+}
+function backupTitleList(list){
+  if(!list.length) return '';
+  var shown = list.slice(0, 6).map(function(t){ return '<li>' + escapeHtml(stripMarkup(t.title, 90) || 'Ohne Titel') + '</li>'; }).join('');
+  return '<ul style="margin:4px 0 0; padding-left:18px; font-size:13px;">' + shown + (list.length > 6 ? '<li>… und ' + (list.length - 6) + ' weitere</li>' : '') + '</ul>';
+}
+function backupPreview(label, data){
+  var st = data.state;
+  var s = backupStats(st);
+  var d = backupDiff(st);
+  var when = data.createdAt || (st.meta && st.meta.updatedAt) || '';
+  var whenTxt = when ? new Date(when).toLocaleString('de-CH', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+  var shared = data.shared.filter(function(sb){ return sb && Array.isArray(sb.tasks); });
+  var html =
+    '<div class="modal-header"><h2>🛟 Stand wiederherstellen</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-top:0;"><strong>' + escapeHtml(label) + '</strong>' + (whenTxt ? '<br><span class="hint">Stand vom ' + escapeHtml(whenTxt) + '</span>' : '') + '</p>' +
+      '<p>' + s.active + ' offene und ' + s.archived + ' archivierte Tasks · ' + s.boards + (s.boards === 1 ? ' Board' : ' Boards') + ' · ' + s.sessions + ' Zeitbuchungen · ' + s.journal + ' Journal-Einträge</p>' +
+      '<div class="s-card" style="margin:10px 0;">' +
+        '<strong>Gegenüber jetzt</strong>' +
+        '<p style="margin:6px 0 0;">↩️ ' + d.back.length + ' Tasks kommen zurück' + backupTitleList(d.back) + '</p>' +
+        '<p style="margin:6px 0 0;">➖ ' + d.gone.length + ' Tasks fehlen in diesem Stand' + backupTitleList(d.gone) + '</p>' +
+        '<p style="margin:6px 0 0;">✏️ ' + d.changed + ' Tasks sind anders</p>' +
+      '</div>' +
+      (shared.length ? '<div class="form-row"><label>Geteilte Boards aus dem Backup als eigenes Board übernehmen</label>' +
+        shared.map(function(sb, i){
+          return '<label style="display:flex; gap:8px; align-items:center; font-weight:400;"><input type="checkbox" data-bk-shared="' + i + '"> ' + escapeHtml(stripMarkup(sb.name, 80) || 'Geteiltes Board') + ' (' + sb.tasks.length + ' Tasks)</label>';
+        }).join('') +
+        '<div class="hint">Das geteilte Board selbst bleibt unverändert, du bekommst eine persönliche Kopie.</div></div>' : '') +
+      '<div class="hint">Dein aktueller Stand wird vorher gemerkt, du kannst die Wiederherstellung danach rückgängig machen. Die Cloud und deine anderen Geräte übernehmen den wiederhergestellten Stand.</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn danger" id="bkRestoreGo">Diesen Stand wiederherstellen</button></div>';
+  openModal(html, {wide: true});
+  document.getElementById('bkRestoreGo').addEventListener('click', function(){
+    var picked = [];
+    document.querySelectorAll('[data-bk-shared]').forEach(function(cb){ if(cb.checked) picked.push(shared[+cb.dataset.bkShared]); });
+    closeModal();
+    backupApply(st, picked, label + (whenTxt ? ' (' + whenTxt + ')' : ''), data.files);
+  });
+}
+function backupUndoKey(){ return 'wb-restore-undo-' + (currentUser ? currentUser.id : 'x'); }
+function backupUndoLoad(){
+  try{ var v = JSON.parse(localStorage.getItem(backupUndoKey()) || 'null'); return v && v.text ? v : null; }catch(e){ return null; }
+}
+function backupUniqueBoardName(name){
+  var base = (stripMarkup(name, 60) || 'Board') + ' (Backup)';
+  var n = base, i = 2;
+  function taken(x){ return x === state.settings.activeBoardName || state.boards.some(function(b){ return b.name === x; }); }
+  while(taken(n)){ n = base + ' ' + i; i++; }
+  return n;
+}
+function backupApply(snapState, sharedCopies, label, files){
+  try{ localStorage.setItem(backupUndoKey(), JSON.stringify({at: nowIso(), text: serializePersonalState()})); }catch(e){}
+  var next = migrateState(JSON.parse(JSON.stringify(snapState)));
+  withPersonalState(function(){
+    state = next;
+    (sharedCopies || []).forEach(function(sb){
+      var cols = normalizeColumns(sb.columns);
+      state.boards.push({name: backupUniqueBoardName(sb.name), columns: cols.length ? cols : defaultState().columns,
+        tasks: sb.tasks.filter(function(t){ return t && typeof t === 'object'; }).map(normalizeTask), updatedAt: nowIso()});
+    });
+    state.meta.updatedAt = nowIso();
+  });
+  save();
+  renderAll();
+  var cfg = getCloudSyncConfig();
+  var pushed = cloudIsReady(cfg) ? cloudPushNow(true) : Promise.resolve();
+  pushed.then(function(){ return backupRestoreFiles(files || []); }).then(function(){
+    toast('🛟 Wiederhergestellt: ' + label, 9000, 'Rückgängig', backupUndoRestore);
+  });
+}
+function backupUndoRestore(){
+  var u = backupUndoLoad();
+  if(!u){ toast('Nichts zum Rückgängigmachen.'); return; }
+  var obj;
+  try{ obj = safeJsonParse(u.text); }catch(e){ toast('Der gemerkte Stand ist beschädigt.'); return; }
+  backupApply(obj, [], 'Stand vor der Wiederherstellung', []);
+}
+
+/* ---- Übersicht ---- */
+function backupDayLabel(day){
+  return new Date(day + 'T00:00:00').toLocaleDateString('de-CH', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function backupStatusLine(){
+  var cfg = getCloudSyncConfig();
+  var last = '';
+  try{ last = localStorage.getItem('wb-last-file-backup') || ''; }catch(e){}
+  var parts = [];
+  parts.push(cloudIsReady(cfg) ? (cfg.lastSnapshotDate ? 'Letzter Sicherungspunkt: ' + backupDayLabel(cfg.lastSnapshotDate) : 'Erster Sicherungspunkt folgt beim nächsten Abgleich') : 'Cloud-Speicher nicht eingerichtet, keine automatischen Sicherungspunkte');
+  parts.push(last ? 'Letzte Backup-Datei: ' + new Date(last).toLocaleDateString('de-CH') : 'Noch keine Backup-Datei heruntergeladen');
+  return parts.join(' · ');
+}
+function openBackupCenter(){
+  var cfg = getCloudSyncConfig();
+  var undo = backupUndoLoad();
+  var html =
+    '<div class="modal-header"><h2>🛟 Backup & Wiederherstellung</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p style="margin-top:0;">Jeden Tag wird automatisch ein <strong>verschlüsselter Sicherungspunkt</strong> in der Cloud abgelegt: alle Boards, Zeitbuchungen, Journal, Einstellungen und eine Kopie deiner geteilten Boards. Aufbewahrt werden die letzten ' + BACKUP_DAILY_DAYS + ' Tage und danach einer pro Woche für ' + BACKUP_WEEKLY_WEEKS + ' Wochen. Gelöschte Bilder bleiben ' + FILE_TRASH_DAYS + ' Tage abrufbar.</p>' +
+      '<p class="hint">' + escapeHtml(backupStatusLine()) + '</p>' +
+      (undo ? '<div class="s-card" style="margin:10px 0;"><strong>↩️ Letzte Wiederherstellung</strong><p style="margin:6px 0;">Der Stand davor (' + escapeHtml(new Date(undo.at).toLocaleString('de-CH')) + ') ist gemerkt.</p><button class="btn" id="bkUndo">Wiederherstellung rückgängig machen</button></div>' : '') +
+      '<h3 style="margin:14px 0 6px;">Sicherungspunkte in der Cloud</h3>' +
+      '<div id="bkList">' + (cloudIsReady(cfg) ? '<div class="hint">Lade…</div>' : '<div class="hint">Richte zuerst den Cloud-Speicher ein (⚙️ Einstellungen → Konto).</div>') + '</div>' +
+      '<h3 style="margin:16px 0 6px;">Backup-Datei</h3>' +
+      '<p class="hint" style="margin-top:0;">Zusätzlich zur Cloud: eine verschlüsselte Datei inkl. Bilder, z.B. für OneDrive oder einen USB-Stick. Passwort ist deine Cloud-Passphrase.</p>' +
+      '<div class="s-actions">' +
+        '<button class="btn primary" id="bkDownload">💾 Backup-Datei herunterladen</button>' +
+        '<label class="btn">📂 Backup-Datei laden<input type="file" id="bkFileInput" accept="application/json,.json" style="display:none;"></label>' +
+        '<button class="btn ghost" id="bkPlain" title="Lesbare JSON-Datei ohne Verschlüsselung und ohne Bilder">Unverschlüsselt exportieren</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide: true});
+  document.getElementById('bkDownload').addEventListener('click', exportBackup);
+  document.getElementById('bkPlain').addEventListener('click', exportBackupPlain);
+  document.getElementById('bkFileInput').addEventListener('change', function(e){ if(e.target.files[0]) importBackupFile(e.target.files[0]); });
+  var undoBtn = document.getElementById('bkUndo');
+  if(undoBtn) undoBtn.addEventListener('click', function(){
+    confirmDialog('Den Stand vor der letzten Wiederherstellung zurückholen?', 'Zurückholen', function(){ closeModal(); backupUndoRestore(); });
+  });
+  if(!cloudIsReady(cfg)) return;
+  backupListCloud().then(function(days){
+    var host = document.getElementById('bkList');
+    if(!host) return;
+    if(!days.length){ host.innerHTML = '<div class="hint">Noch keine Sicherungspunkte. Der erste entsteht beim nächsten Abgleich.</div>'; return; }
+    var today = startOfDay(new Date()).getTime();
+    host.innerHTML = days.map(function(day){
+      var age = Math.round((today - backupDayTime(day)) / 86400000);
+      var tag = age === 0 ? 'heute' : age === 1 ? 'gestern' : age < BACKUP_DAILY_DAYS ? 'vor ' + age + ' Tagen' : 'Wochen-Sicherung';
+      return '<div class="session-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+        '<span>' + escapeHtml(backupDayLabel(day)) + ' <span class="hint">· ' + tag + '</span></span>' +
+        '<button class="btn" data-bk-day="' + escapeAttr(day) + '">Ansehen…</button></div>';
+    }).join('');
+    host.querySelectorAll('[data-bk-day]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var day = btn.dataset.bkDay;
+        btn.disabled = true;
+        btn.textContent = 'Entschlüssle…';
+        backupFetchSnapshot(day).then(function(text){
+          return backupDecryptInteractive(text, {
+            title: '🔐 Älteren Sicherungspunkt öffnen',
+            text: 'Dieser Sicherungspunkt ist mit einer früheren Passphrase verschlüsselt. Bitte die Passphrase eingeben, die damals galt.'
+          });
+        }).then(function(data){
+          backupPreview('Sicherungspunkt ' + backupDayLabel(day), data);
+        }).catch(function(err){
+          toast('Konnte den Sicherungspunkt nicht laden: ' + err.message);
+          btn.disabled = false; btn.textContent = 'Ansehen…';
+        });
+      });
+    });
+  }).catch(function(err){
+    var host = document.getElementById('bkList');
+    if(host) host.innerHTML = '<div class="hint" style="color:var(--danger);">Fehler: ' + escapeHtml(err.message) + '</div>';
+  });
 }
 
 /* =========================================================
@@ -10501,7 +10983,6 @@ function importBackupFile(file){
    ========================================================= */
 var CLOUD_SYNC_KEY = 'wb-cloud-sync-config';
 var BOARD_OWNER_KEY = 'wb-board-owner';
-var CLOUD_SNAPSHOT_RETENTION_DAYS = 7;
 var cloudSyncPushTimer = null;
 var cloudSyncBusy = false;
 
@@ -10622,18 +11103,19 @@ function cloudRemotePut(payloadText){
   });
 }
 /* Einmal pro Tag zusätzlich zur laufenden Board-Zeile einen datierten
-   Snapshot ablegen und Snapshots älter als CLOUD_SNAPSHOT_RETENTION_DAYS
-   wieder entfernen. Best effort: fehlt die Tabelle "board_snapshots" oder
+   Sicherungspunkt ablegen (siehe BACKUP & WIEDERHERSTELLUNG) und alte nach
+   backupDaysToPrune() wieder entfernen. Best effort: fehlt die Tabelle "board_snapshots" oder
    schlägt der Aufruf fehl, läuft der normale Sync trotzdem weiter. */
 function cloudMaybeSnapshot(encrypted, cfg){
   var today = toDateInputValue(new Date());
   if(cfg.lastSnapshotDate === today) return Promise.resolve();
   var client = getSupabaseClient();
-  return client.from('board_snapshots').upsert({user_id: currentUser.id, day: today, payload: encrypted}).then(function(res){
+  return backupSnapshotPayload(cfg.passphrase).then(function(payload){
+    return client.from('board_snapshots').upsert({user_id: currentUser.id, day: today, payload: payload});
+  }).then(function(res){
     if(res.error) return;
     cfg.lastSnapshotDate = today;
-    var cutoff = toDateInputValue(new Date(Date.now() - CLOUD_SNAPSHOT_RETENTION_DAYS*86400000));
-    return client.from('board_snapshots').delete().eq('user_id', currentUser.id).lt('day', cutoff);
+    return backupPruneCloud();
   }).catch(function(){});
 }
 
@@ -11984,14 +12466,16 @@ function openSettings(){
       ) +
       sMore('So funktioniert\'s',
         '<p>Dein Board wird in diesem Browser verschlüsselt (AES-256), bevor es hochgeladen wird. Weder Supabase noch Admins können es lesen, und jede Person hat ihr eigenes Board. Neues Gerät: anmelden und einmalig dieselbe Passphrase eingeben.</p>' +
-        '<p>Einmal täglich wird ein Snapshot abgelegt (letzte '+CLOUD_SNAPSHOT_RETENTION_DAYS+' Tage), falls mal ein fehlerhafter Stand hochgeladen wird.</p>' +
+        '<p>Einmal täglich wird ein verschlüsselter Sicherungspunkt abgelegt (siehe 🛟 Backup &amp; Wiederherstellung), falls mal ein fehlerhafter Stand hochgeladen wird.</p>' +
         '<p><strong>Passphrase verloren = Cloud-Daten unwiederbringlich weg.</strong> Dein lokales Backup bleibt davon unberührt.</p>'
       )
     ) +
-    sCard('💾 Lokale Sicherung', 'Dein Board liegt bereits verschlüsselt in der Cloud. Zusätzlich kannst du es als Datei sichern (Strg+S) und wieder laden.',
+    sCard('🛟 Backup & Wiederherstellung', 'Täglich ein verschlüsselter Sicherungspunkt in der Cloud ('+BACKUP_DAILY_DAYS+' Tage täglich, danach '+BACKUP_WEEKLY_WEEKS+' Wochen wöchentlich). Zusätzlich als verschlüsselte Datei (Strg+S).',
+      '<p class="s-sub">' + escapeHtml(backupStatusLine()) + '</p>' +
       '<div class="s-actions">' +
-        '<button class="btn primary" id="btnExportJson">💾 Jetzt sichern</button>' +
-        '<label class="btn">📂 Datei laden<input type="file" id="importFileInput" accept="application/json" style="display:none;"></label>' +
+        '<button class="btn primary" id="btnBackupCenter">🛟 Sicherungen anzeigen & wiederherstellen</button>' +
+        '<button class="btn" id="btnExportJson">💾 Backup-Datei herunterladen</button>' +
+        '<label class="btn">📂 Datei laden<input type="file" id="importFileInput" accept="application/json,.json" style="display:none;"></label>' +
       '</div>'
     ) +
     sCard('🔒 Sichtschutz', 'Blendet beim Start eine PIN-Abfrage ein. Kein echter Schutz, nur gegen neugierige Blicke.',
@@ -12198,6 +12682,7 @@ function openSettings(){
   bkmBulkLink.addEventListener('click', function(e){ e.preventDefault(); toast('Bitte den Link in die Lesezeichenleiste ziehen, nicht anklicken.'); });
 
   document.getElementById('btnExportJson').addEventListener('click', exportBackup);
+  document.getElementById('btnBackupCenter').addEventListener('click', openBackupCenter);
   document.getElementById('importFileInput').addEventListener('change', function(e){
     var file = e.target.files[0];
     if(!file) return;
@@ -12267,12 +12752,14 @@ function openSettings(){
       function(){
         closeModal();
         var cfg = getCloudSyncConfig();
+        var oldPassphrase = cfg.passphrase;
         cfg.passphrase = passphrase;
         cfg.enabled = true; cfg.backend = 'supabase'; cfg.userId = currentUser.id;
         cfg.lastError = '';
         setCloudSyncConfig(cfg);
         cloudPushNow(true).then(function(){
           reencryptUserKeys(passphrase).catch(function(){});
+          if(!getCloudSyncConfig().lastError) backupReencryptSnapshots(oldPassphrase, passphrase);
           var err = getCloudSyncConfig().lastError;
           toast(err ? ('Fehler: ' + err) : '🔐 Neu verschlüsselt und hochgeladen.');
           openSettings();
@@ -12946,6 +13433,7 @@ function cmdActionsList(){
     {icon:'🏠', label:'Dashboard-Ansicht', run: function(){ setBoardViewMode('dashboard'); document.getElementById('boardViewSelect').value='dashboard'; }},
     {icon:'🗄️', label:'Archiv anzeigen', run: toggleArchiveView},
     {icon:'💾', label:'Jetzt sichern', run: exportBackup},
+    {icon:'🛟', label:'Backup & Wiederherstellung', run: openBackupCenter},
     {icon:'↩️', label:'Rückgängig (letzte Aktion)', run: undoLastAction},
     {icon:'☁️', label:'Cloud-Speicher jetzt synchronisieren', run: function(){
       if(!cloudIsReady(getCloudSyncConfig())){ toast('Cloud-Speicher ist nicht eingerichtet (⚙️ Einstellungen).'); return; }
@@ -14946,8 +15434,7 @@ function pageLoadImage(item){
 }
 function pageDeleteFile(fileId){
   pageFileDelete(fileId);
-  var client = getSupabaseClient();
-  if(client && currentUser && !pageCloudMissing) client.from('task_files').delete().eq('id', fileId).then(function(){}, function(){});
+  fileTrashAdd(fileId);
 }
 
 /* ---- Ansicht ---- */
@@ -18811,6 +19298,7 @@ function init(){
     setInterval(cloudPullNow, 45000);
   }
   setTimeout(pageUploadPending, 12000);
+  setTimeout(fileTrashPurge, 20000);
   window.addEventListener('online', function(){ pageUploadPending(); });
 }
 

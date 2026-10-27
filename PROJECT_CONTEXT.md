@@ -24,6 +24,29 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-27: Backup & Wiederherstellung (Branch `claude/project-thread-gdk0qv`)
+
+Nutzer: "automatisches verschlüsseltes und sicheres Backup, welches zurückgesetzt werden könnte, falls etwas nicht mehr funktionieren sollte".
+Vorher gab es tägliche Snapshots in `board_snapshots`, aber keine Möglichkeit, sie zurückzuholen, und sie enthielten weder geteilte Boards noch Bilder.
+
+- Block "BACKUP & WIEDERHERSTELLUNG" (ersetzt "LOKALE SICHERUNG"). Keine Datenbank-Änderung nötig.
+- **Sicherungspunkte:** `cloudMaybeSnapshot` schreibt jetzt `backupSnapshotPayload()` = verschlüsseltes `{wbBackup:1, createdAt, state, shared, files:[]}`
+  (gleiches Payload-Format wie `boards`, also mit `cloudDecryptPayload` lesbar; ältere Snapshots = nackter Zustand, `backupUnpack` kann beides).
+  Aufräumen per `backupDaysToPrune()`: < 14 Tage alles, danach ältester Snapshot pro Woche, ab 12 Wochen nichts.
+- **Wiederherstellen:** `openBackupCenter()` (Einstellungen → Konto, Befehlspalette) → `backupPreview()` (Zahlen, Tasks zurück/weg/geändert, geteilte Boards optional
+  als persönliche Kopie in `state.boards`) → `backupApply()`: merkt den aktuellen Stand in localStorage `wb-restore-undo-<userId>`, ersetzt den persönlichen Zustand,
+  `cloudPushNow(true)` (überschreibt die Cloud bewusst, Basis neu), Toast "Rückgängig" (`backupUndoRestore`).
+- **Passphrase:** Snapshots, die nicht mit der aktuellen Passphrase aufgehen, fragen nach der alten (`backupDecryptInteractive`). Beim Ändern der Passphrase werden alle
+  Snapshots neu verschlüsselt (`backupReencryptSnapshots`).
+- **Datei:** `exportBackup()` (Strg+S, 💾) = verschlüsselte Datei `{kind:'work-board-backup', v, iter, salt, iv, data}` inkl. Bild-Payloads aus `task_files`
+  (bzw. noch nicht hochgeladene lokal verschlüsselt). `importBackupFile()` erkennt verschlüsselt/alt, zeigt dieselbe Vorschau, lädt fehlende Bilder wieder hoch.
+  `exportBackupPlain()` = alte unverschlüsselte JSON-Datei.
+- **Bilder-Papierkorb:** `pageDeleteFile` löscht nur noch lokal; die Cloud-Zeile kommt in `wb-file-trash-<userId>` und wird von `fileTrashPurge()` (20 s nach Start)
+  erst nach 90 Tagen gelöscht, wenn kein Task mehr darauf zeigt.
+- Getestet mit Playwright gegen Supabase-Mock: Task löschen → Sicherungspunkt von vor 3 Tagen → Vorschau "1 Task kommt zurück" → Wiederherstellen (auch in der Cloud) →
+  Rückgängig; Aufräumen (14 Tage / wöchentlich / 100 Tage weg); verschlüsselte Datei (kein Klartext); Passphrase-Wechsel mit Neu-Verschlüsselung; alte Datei mit falschem
+  und richtigem Passwort. Bilder-Backup nur über den Code-Pfad, nicht mit echten Bildern geprüft.
+
 ## ✅ Stand 2026-10-27: Auslastung mit Pensum und lernendem "Was jetzt?" (Branch `claude/project-thread-9ojl3n`)
 
 Timo wollte eine Auslastungsanzeige mit einstellbarem Pensum, bestimmt durch einen lernenden Algorithmus; auch "Was jetzt?" soll dazulernen.
