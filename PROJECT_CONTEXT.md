@@ -24,6 +24,22 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-27: Aufräumen (Branch `claude/project-thread-bft2ob`, nach PR #23/#24)
+
+Timo wollte das Tool "gründlich aufräumen". Bewusst ohne Verhaltensänderung an Funktionen:
+- Seitenleiste gruppiert: oben Mein Tag/Board/Planer, dann "Auswertung" (Statistik, Arbeitszeit,
+  Wochenrückblick, Fristen-Prognose, Tagesabschluss), "Verwalten" (Projekte, Wissen, Team, Archiv),
+  "Ansichten" wie bisher. i18n-Schlüssel `navEvaluate`, `navManage`. `.sb-label` etwas enger.
+- Doppelten Knopf `#tbPip` in der Timer-Pille entfernt (machte dasselbe wie `#btnControlCenter` daneben).
+- Befehlspalette: doppelter Eintrag für `openQuickCapture` zusammengelegt.
+- Toter Code entfernt: `personalTaskCount`, ungenutzte Variablen (`draggedColId`, `plannerNowTimer`,
+  `firstDs/lastDs`, `origCol/origLeft/origWidth`, `weekEndMs`), CSS ohne Verwendung (`.afx-label`,
+  `.big-action`, `.bookmarklet-box`, `.calendar-entry*`, `.calendar-today`, `.column-footer`,
+  `.jira-key`, `.md-why`, `.settings-grid`, `.st-bad`), doppelte Regeln (`.sb-brand`, `.sb-meta`,
+  `.sb-user`, `.empty-state`) und vier verwaiste Abschnitts-Überschriften ohne Code darunter.
+- Prüfung: Skript sucht Funktionen/Variablen mit nur einer Fundstelle und CSS-Klassen ohne Verwendung
+  (dynamische Klassen wie `prio-*`, `ty-*`, `c-*`, `st-*` sind absichtlich nicht entfernt).
+
 ## ✅ Stand 2026-10-27: Arbeitszeitkonto, Fristen-Prognose, Wochenrückblick (Branch `claude/project-thread-ia3u8v`)
 
 Timo wollte "3 grosse Features, die alles positiv verändern"; Auswahl durch Claude. Block vor "STATUS BAR" in index.html:
@@ -123,7 +139,7 @@ Advisor-Warnungen zu SECURITY-DEFINER-Funktionen (`is_board_member`, `is_board_o
 
 Nutzer wollte "einige praktische Erweiterungen" (neue Funktionen, Designoptimierungen). Umgesetzt, ohne das gespeicherte Datenformat zu ändern:
 - **Kopfzeile** (CSS-Block nach `.menu`-Regeln): ab 1240 px einzeilig (`flex-wrap:nowrap`, Suche/Filter/Timer-Titel schrumpfen), 681–1239 px zweizeilig
-  (`.tb-secondary` mit den Filtern als zweite Zeile). Timer-Knöpfe bis 1500 px nur als Symbol, `#tbPip` bis 1400 px ausgeblendet (Control-Center-Knopf daneben).
+  (`.tb-secondary` mit den Filtern als zweite Zeile). Timer-Knöpfe bis 1500 px nur als Symbol. (`#tbPip` in der Timer-Pille wurde am 2026-10-27 entfernt; das Control-Center öffnet nur noch `#btnControlCenter`.)
   Verträgt sich mit PR #2 (ohne Konflikt zusammengeführt und geprüft).
 - **Spalten einklappen:** Knopf im Spaltenkopf (`data-action="col-collapse"`), eingeklappt = schmaler Streifen mit Name und Anzahl, Drag & Drop darauf geht
   (`wireColumnDrop`). Pro Gerät in localStorage `wb-collapsed-cols`, nicht im Board-Zustand und nicht synchronisiert.
