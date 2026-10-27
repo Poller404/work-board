@@ -115,7 +115,6 @@ button.icon-btn:active{transform:scale(.92);}
 }
 #mainCol{display:flex; flex-direction:column; min-width:0; min-height:0; height:100%;}
 #sbBackdrop{display:none;}
-.sb-brand{display:flex; align-items:center; gap:10px; padding:4px 8px 16px;}
 .sb-logo{width:26px; height:26px; border-radius:7px; background:var(--text); color:var(--bg); display:grid; place-items:center; font-weight:700; font-size:13px; flex-shrink:0;}
 .sb-name{font-weight:600; font-size:14.5px; line-height:1.2;}
 .sb-board{font-size:11.5px; color:var(--text-faint); line-height:1.3; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -127,13 +126,13 @@ button.icon-btn:active{transform:scale(.92);}
 .sb-item:hover{background:var(--hover); color:var(--text);}
 .sb-item.on{background:var(--hover); color:var(--text);}
 .sb-item.on svg.i{color:var(--accent);}
-.sb-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); padding:16px 10px 6px; font-weight:600;}
+.sb-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); padding:12px 10px 4px; font-weight:600;}
 .sb-user{
   display:flex; align-items:center; gap:10px; width:100%; padding:10px 8px 2px; border:none;
   border-top:1px solid var(--border); border-radius:0; background:transparent; color:var(--text); text-align:left;
 }
 .sb-user:hover .sb-user-sub{color:var(--text);}
-.sb-meta{margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px;}
+.sb-meta{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px;}
 .sb-avatar{width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; font-size:11.5px; font-weight:600; flex-shrink:0;}
 .sb-user-name{font-weight:500; font-size:13.5px; line-height:1.25; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .sb-user-sub{font-size:11.5px; color:var(--text-faint);}
@@ -215,8 +214,6 @@ button.btn.primary svg.i{color:inherit;}
 }
 @media (min-width:681px) and (max-width:1699px){ #timerBanner .btn .lbl{display:none;} }
 @media (min-width:1240px) and (max-width:1399px){ #timerBanner .tb-title{max-width:80px;} }
-/* Das schwebende Timer-Fenster bleibt über den Control-Center-Knopf daneben erreichbar. */
-@media (min-width:681px) and (max-width:1400px){ #tbPip{display:none;} }
 @media (min-width:1240px){ #topbar{flex-wrap:nowrap;} }
 @media (min-width:681px) and (max-width:1239px){
   .tb-search{flex:1 1 110px; min-width:100px; max-width:320px;}
@@ -266,8 +263,6 @@ button.btn.primary svg.i{color:inherit;}
 .column-body{flex:1; overflow-y:auto; padding:2px 2px 8px; display:flex; flex-direction:column; gap:9px; min-height:40px;}
 .column-body.dragover{background:var(--accent-glow); border-radius:var(--radius-sm); outline:1px dashed var(--accent);}
 .column-add{margin:0 2px 10px !important; justify-content:flex-start; color:var(--text-faint);}
-.column-footer{padding:6px 10px; display:flex; justify-content:space-between; gap:4px;}
-.empty-state{padding:22px 10px;}
 
 .add-column-btn{width:260px; min-width:260px; height:42px; border:1.5px dashed var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text-faint); font-weight:600; transition:color var(--t-fast), border-color var(--t-fast), background-color var(--t-fast);}
 .add-column-btn:hover{color:var(--text); border-color:var(--accent); background:var(--accent-glow);}
@@ -299,7 +294,6 @@ button.btn.primary svg.i{color:inherit;}
 .card .prio-medium i:nth-child(-n+2){background:var(--p-medium);}
 .card .prio-low i:nth-child(1){background:var(--p-low);}
 .card .card-title{flex:1; font-weight:500; font-size:13.5px; line-height:1.4; word-break:break-word; color:var(--text);}
-.jira-key{font-size:11px; font-weight:600; color:var(--accent);}
 .card .group-badge, .card .reporter-badge{gap:5px; align-items:center; display:inline-flex; align-self:flex-start; font-size:11.5px; font-weight:500; color:var(--text-dim); background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:0 6px;}
 .card .pin-badge{font-size:11px; opacity:.8;}
 .card .rank-badge{min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; line-height:20px; text-align:center; flex-shrink:0; font-variant-numeric:tabular-nums;}
@@ -314,11 +308,6 @@ button.btn.primary svg.i{color:inherit;}
 .group-block[draggable="true"]:active{cursor:grabbing;}
 .group-block.dragging{opacity:.4;}
 .group-block.dragover{background:var(--accent-glow); border-color:var(--accent); border-style:solid;}
-.column.calendar-today{border-top:3px solid var(--accent);}
-.calendar-entry .calendar-time-input{border:1px solid var(--border); background:var(--surface-2); color:var(--text); border-radius:4px; font-size:11px; padding:1px 3px; width:64px;}
-.calendar-entry .time-badge.running{color:var(--ok);}
-.calendar-entry-title{cursor:pointer;}
-.calendar-entry-title:hover{text-decoration:underline;}
 .autocomplete-wrap{position:relative;}
 .autocomplete-list{position:absolute; top:100%; left:0; right:0; margin-top:2px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); z-index:50; max-height:180px; overflow-y:auto; display:none;}
 .autocomplete-list.show{display:block;}
@@ -381,8 +370,6 @@ button.btn.primary svg.i{color:inherit;}
 .afx-bit{position:fixed; border-radius:50%; will-change:transform, opacity;}
 .afx-flame{position:absolute; left:50%; bottom:-26px; width:22px; margin-left:-11px; height:30px; border-radius:50% 50% 50% 50% / 30% 30% 70% 70%;
   background:radial-gradient(circle at 50% 30%, #fff6c2 0%, #ffb547 40%, #ff5a1f 75%, transparent 76%); filter:blur(.5px);}
-.afx-label{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%); font-size:22px; font-weight:700; color:var(--text);
-  background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:10px 22px; box-shadow:var(--shadow-lg); white-space:nowrap;}
 .column-header .archive-done-btn{color:var(--text-dim);}
 .column-header .archive-done-btn:hover{color:var(--accent);}
 .column-header .archive-done-btn[disabled]{opacity:.4; cursor:default;}
@@ -462,7 +449,6 @@ textarea{resize:vertical; min-height:70px;}
 .columns-list{display:flex; flex-direction:column; gap:6px;}
 .columns-list .col-row{display:flex; align-items:center; gap:6px;}
 .columns-list input{flex:1;}
-.settings-grid{display:flex; flex-direction:column; gap:0;}
 /* ---- Einstellungsmenü: Seitenleiste + Karten ---- */
 .modal.wide:has(.s-layout){max-width:880px;}
 .s-body{padding-top:14px;}
@@ -518,8 +504,6 @@ textarea{resize:vertical; min-height:70px;}
 table.dyce-table{width:100%; border-collapse:collapse; font-size:13px;}
 table.dyce-table th, table.dyce-table td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--border);}
 table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); border-bottom:none;}
-.bookmarklet-box{display:flex; align-items:center; gap:10px; background:var(--surface-2); border:1px dashed var(--border); border-radius:8px; padding:14px; margin:10px 0;}
-.bookmarklet-box a.bkm{background:var(--accent); color:#fff !important; padding:9px 16px; border-radius:6px; font-weight:700; text-decoration:none; white-space:nowrap;}
 .kbd{background:var(--surface-2); border:1px solid var(--border); border-bottom-width:2px; border-radius:4px; padding:1px 6px; font-size:11.5px; font-family:monospace;}
 #toastHost{position:fixed; bottom:18px; right:18px; display:flex; flex-direction:column; gap:8px; z-index:2000;}
 @keyframes toastIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -535,7 +519,6 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .pill.high{background:var(--warn-bg); color:var(--p-high);}
 .pill.medium{background:rgba(0,101,255,.1); color:var(--p-medium);}
 .pill.low{background:var(--surface-2); color:var(--p-low); border:1px solid var(--border);}
-.big-action{display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:8px; font-weight:700; font-size:14px;}
 .empty-state{color:var(--text-faint); font-size:13px; text-align:center; padding:30px 10px;}
 ::-webkit-scrollbar{width:10px; height:10px;}
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:5px; transition:background-color var(--t-base);}
@@ -591,8 +574,6 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .sb-today-sub{font-size:11.5px; color:var(--text-faint); margin-top:3px;}
 .sb-tools{display:flex; align-items:center; gap:2px; padding:0 2px;}
 .sb-tools .sb-meta{margin:0 0 0 auto; padding:0;}
-.sb-meta{margin-top:0;}
-.sb-user{margin-top:0;}
 @media (min-width:681px){
   body.sb-collapsed #app{grid-template-columns:64px minmax(0,1fr);}
   body.sb-collapsed #sidebar{padding-left:8px; padding-right:8px; align-items:center;}
@@ -694,11 +675,10 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .md-btn .i{width:15px; height:15px;}
 .md-sec{display:flex; align-items:center; gap:8px; margin:4px 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}
 .md-sec button{margin-left:auto; text-transform:none; letter-spacing:0;}
-.md-why{font-size:11.5px; color:var(--text-faint); flex-shrink:0;}
 .md-empty{padding:28px 16px; text-align:center; color:var(--text-dim);}
 .md-empty b{display:block; font-size:15px; color:var(--text); margin-bottom:4px;}
 .sun-badge{font-size:11px;}
-@media (max-width:680px){ .md-row{padding:10px 8px; gap:8px;} .md-why{display:none;} }
+@media (max-width:680px){ .md-row{padding:10px 8px; gap:8px;} }
 /* ---- Arbeitszeitkonto ---- */
 .wt-kpis, .fc-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
 .wt-setup{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--warn-bg); color:var(--text); border-radius:var(--radius); padding:11px 14px; margin-bottom:14px; font-size:13px;}
@@ -996,7 +976,7 @@ button.mobile-only{display:none;}
   .card .timer-toggle{width:34px; height:34px; font-size:14px;}
   .card .select-check{width:22px; height:22px;}
   .add-column-btn{width:86vw; min-width:86vw; height:52px; border-radius:14px;}
-  .column-add button, .column-footer button{min-height:38px;}
+  .column-add button{min-height:38px;}
   .modal-overlay{padding:0; align-items:stretch;}
   .modal{
     max-width:100%; width:100%; height:100%; border-radius:0; max-height:100%;
@@ -1008,7 +988,6 @@ button.mobile-only{display:none;}
   .modal-footer{padding-left:max(18px, env(safe-area-inset-left)); padding-right:max(18px, env(safe-area-inset-right)); padding-bottom:max(14px, env(safe-area-inset-bottom));}
   .form-row-inline{flex-direction:column; gap:13px;}
   #bulkBar{flex-wrap:wrap;}
-  button.btn.big-action{white-space:normal; text-align:center; line-height:1.35; min-height:48px;}
   .modal-body button.btn{white-space:normal; text-align:left; line-height:1.3;}
   .modal-body div[style*="display:flex"]{flex-wrap:wrap;}
   .modal-footer{flex-wrap:wrap; justify-content:flex-start;}
@@ -1045,7 +1024,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
   .column-header{min-height:44px;}
   .column-header button.icon-btn{min-width:40px; min-height:40px;}
   .card .timer-toggle{width:40px; height:40px;}
-  .column-add button, .column-footer button{min-height:44px;}
+  .column-add button{min-height:44px;}
   .ai-fab{right:max(16px, env(safe-area-inset-right)); bottom:calc(52px + env(safe-area-inset-bottom)); width:52px; height:52px;}
   .voice-fab{right:calc(max(16px, env(safe-area-inset-right)) + 62px); bottom:calc(58px + env(safe-area-inset-bottom)); width:42px; height:42px;}
   .menu .btn{min-height:44px;}
@@ -1183,7 +1162,6 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .week-table tr.sel td{background:var(--accent-soft);}
 .week-table .st-ok{color:var(--ok); font-weight:600;}
 .week-table .st-warn{color:var(--warn); font-weight:600;}
-.week-table .st-bad{color:var(--danger); font-weight:600;}
 .week-hints{margin-top:10px; display:flex; flex-direction:column; gap:6px; font-size:13px;}
 /* ---- Wissensdatenbank ---- */
 .kb-search{display:flex; gap:8px; margin-bottom:10px;}
@@ -1450,15 +1428,17 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="myday" title="Mein Tag"><svg class="i"><use href="#i-sun"/></svg><span class="lbl" data-i18n="navMyDay">Mein Tag</span></button>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
+    <div class="sb-label" data-i18n="navEvaluate">Auswertung</div>
+    <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
+    <button class="sb-item" data-view="worktime"><svg class="i"><use href="#i-clock"/></svg><span class="lbl" data-i18n="navWorktime">Arbeitszeit</span></button>
+    <button class="sb-item" id="btnWeekReview"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="navWeekReview">Wochenrückblick</span></button>
+    <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
+    <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
+    <div class="sb-label" data-i18n="navManage">Verwalten</div>
     <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
     <button class="sb-item" data-view="kb"><svg class="i"><use href="#i-book"/></svg><span class="lbl" data-i18n="navKb">Wissen</span></button>
     <button class="sb-item" data-view="teamdash"><svg class="i"><use href="#i-pulse"/></svg><span class="lbl" data-i18n="navTeamDash">Team</span></button>
-    <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
-    <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
-    <button class="sb-item" data-view="worktime"><svg class="i"><use href="#i-clock"/></svg><span class="lbl" data-i18n="navWorktime">Arbeitszeit</span></button>
-    <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
-    <button class="sb-item" id="btnWeekReview"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="navWeekReview">Wochenrückblick</span></button>
     <div class="sb-label" data-i18n="navViews">Ansichten</div>
     <button class="sb-item" data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg><span class="lbl" data-i18n="viewDashboard">Dashboard</span></button>
     <button class="sb-item" data-view="priority"><svg class="i"><use href="#i-flag"/></svg><span class="lbl" data-i18n="viewPriority">Nach Priorität</span></button>
@@ -1518,7 +1498,6 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
       <span class="tb-dot"></span>
       <span class="tb-title" id="tbTitle"></span>
       <span class="tb-time" id="tbTime">00:00:00</span>
-      <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Fenster: Timer und Mein Tag" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
       <button class="btn" id="tbPause" title="Pausieren – die Buchung bleibt offen und kann fortgesetzt werden"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
       <button class="btn" id="tbFinish" title="Buchung abschliessen – der nächste Start beginnt eine neue Buchung"><svg class="i"><use href="#i-check"/></svg><span class="lbl">Abschliessen</span></button>
     </div>
@@ -1916,7 +1895,6 @@ var authHold = /[#&?]type=recovery/.test(location.hash + location.search) ? 'rec
 var saveTimer = null;
 var tickInterval = null;
 var draggedTaskId = null;
-var draggedColId = null;
 var draggedGroupTaskIds = null;
 var searchQuery = '';
 var filterType = '';
@@ -2420,7 +2398,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
+    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navEvaluate:'Auswertung', navManage:'Verwalten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -2429,7 +2407,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
+    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navEvaluate:'Insights', navManage:'Manage', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -3549,9 +3527,6 @@ function openWhatNow(){
   openTaskModal(t.id);
 }
 
-/* =========================================================
-   RENDER: BOARD
-   ========================================================= */
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
@@ -6067,7 +6042,6 @@ function renderWorktimeView(){
   if(!/^\d{4}-\d{2}$/.test(wtMonth)) wtMonth = s.today.slice(0, 7);
   var y = parseInt(wtMonth.slice(0, 4), 10), mo = parseInt(wtMonth.slice(5, 7), 10) - 1;
   var first = new Date(y, mo, 1), last = new Date(y, mo + 1, 0);
-  var firstDs = toDateInputValue(first), lastDs = toDateInputValue(last);
   var ist = wtIstMap(first.getTime(), Math.min(Date.now(), last.getTime() + 86400000));
   var monthLabel = first.toLocaleDateString('de-CH', {month: 'long', year: 'numeric'});
   var cells = '', lead = (first.getDay() + 6) % 7;
@@ -7512,9 +7486,6 @@ function openColumnMenu(colId, anchorEl){
   });
 }
 
-/* =========================================================
-   HOTLINE / MEETING QUICK ACTIONS
-   ========================================================= */
 /* =========================================================
    ÄHNLICHE TASKS (Autofill-Vorschläge)
    Findet frühere Tasks (auch erledigte und archivierte) mit überlappenden
@@ -9561,7 +9532,6 @@ function setCloudSyncConfig(cfg){
 /* Sync läuft nur, wenn die gespeicherte Konfiguration zur aktuell
    angemeldeten Person gehört (verhindert, dass auf einem geteilten Gerät
    die Passphrase/das Board der vorherigen Person verwendet wird). */
-function personalTaskCount(){ return withPersonalState(function(){ return state.tasks.length; }); }
 function cloudIsReady(cfg){
   return !!(cfg.enabled && cfg.passphrase && cfg.backend === 'supabase' && currentUser && cfg.userId === currentUser.id && getSupabaseClient());
 }
@@ -11950,11 +11920,10 @@ function cmdActionsList(){
     {icon:'➕', label:'Neuer Task', run:function(){ var t=createTask({columnId:state.columns[0].id}); renderAll(); openTaskModal(t.id); }},
     {icon:'📞', label:'Hotline-Anruf starten', run:openHotlineDialog},
     {icon:'🪟', label:'Control-Center öffnen (schwebendes Fenster)', run:toggleControlCenter},
-    {icon:'✨', label:'Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
     {icon:'📅', label:'Meeting starten', run:startMeeting},
     {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
     {icon:'📝', label:'Zeit ohne Task buchen (nur Text)', run: function(){ openTimeBlockDialog(null); }},
-    {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
+    {icon:'✨', label:'Schnellerfassung: Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
     {icon:'✨', label:'Tag automatisch planen (Autopilot)', run: function(){ openAutopilot(); }},
     {icon:'🎙️', label:'Sprachbefehl (Taste V)', run: startVoiceCommand},
@@ -12336,9 +12305,6 @@ function toggleArchiveView(){
 }
 
 /* =========================================================
-   AUTO-ARCHIVE
-   ========================================================= */
-/* =========================================================
    ZEITREISE – TÄGLICHE SNAPSHOTS
    ========================================================= */
 function captureDailySnapshotIfNeeded(){
@@ -12686,7 +12652,6 @@ document.getElementById('tbFinish').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) finishBooking(id);
 });
-document.getElementById('tbPip').addEventListener('click', toggleControlCenter);
 document.getElementById('btnControlCenter').addEventListener('click', toggleControlCenter);
 document.getElementById('btnReloadCloud').addEventListener('click', function(){
   if(window.__pendingCloudState){
@@ -12813,9 +12778,6 @@ function handleCardKeyNav(e){
   }
 }
 
-/* =========================================================
-   INIT
-   ========================================================= */
 /* =========================================================
    KURZBEFEHLE / SIRI-INTEGRATION (iOS Shortcuts öffnen die App
    mit einem "action"-URL-Parameter, z.B. index.html?action=hotline)
@@ -15117,7 +15079,6 @@ var PL_HPX = 52;
 var plannerWeek = null;
 var plannerScroll = null;
 var plannerSearch = '';
-var plannerNowTimer = null;
 
 function plannedMinutes(t){
   var m = t.scheduledMinutes || learnedMinutes(t) || t.estimatedMinutes || 60;
@@ -15203,7 +15164,6 @@ function renderPlannerView(){
   var days = [];
   for(var i = 0; i < nDays; i++){ var d = new Date(week); d.setDate(d.getDate() + i); days.push(d); }
   var todayStr = toDateInputValue(new Date());
-  var weekEndMs = new Date(week.getFullYear(), week.getMonth(), week.getDate() + nDays).getTime();
 
   /* Datenaufbereitung pro Tag */
   var dayData = days.map(function(d){
@@ -15435,8 +15395,6 @@ function plStartDrag(e, blk, axS){
   var blkRect = blk.getBoundingClientRect();
   var grab = (e.clientY - blkRect.top) / PL_HPX * 60;
   var target = {ds: blk.closest('.pl-col').dataset.date, start: plDayMinutes(new Date(t.scheduledAt)), dur: dur};
-  var origCol = blk.closest('.pl-col');
-  var origLeft = blk.style.left, origWidth = blk.style.width;
   function onMove(ev){
     if(!moved && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 5) return;
     if(!moved){ moved = true; blk.classList.add('dragging'); }
