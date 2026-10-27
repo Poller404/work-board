@@ -24,6 +24,19 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-27: Task auf anderes Board verschieben (Branch `claude/project-thread-hpxlra`)
+
+Timo wollte Tasks auf ein anderes Board verschieben. Block "TASK AUF ANDERES BOARD VERSCHIEBEN" nach `createNewBoard`:
+- Ziele (`moveTargets`): andere persönliche Boards (`state.boards`, bzw. `personalStash`, wenn ein geteiltes Board offen ist) und geteilte Boards aus `sharedList`.
+- Dialog `openMoveToBoardDialog` (Board + Spalte; Vorauswahl = gleichnamige Spalte). Einstieg: Rechtsklick "Auf anderes Board…", Task-Fenster "Mehr" (`#moveBoardBtn`).
+- Task kommt komplett mit (Notizen, Buchungen, Sitzungen, Ticket, Checkliste, Seite); `rank` und `blockedBy` fallen weg; `completedAt` passt sich der Zielspalte an.
+  In geteilte Boards bekommen Sitzungen/Buchungen ohne `by` die eigene ID.
+- Geteiltes Ziel: `addTaskToSharedBoard` schreibt direkt (holen, anhängen, verschlüsseln, Versionsprüfung, 3 Wiederholungen); erst danach wird der Task im Quell-Board entfernt.
+- Seitenbilder: beim Wechsel persönlich↔geteilt neue Datei-IDs mit der `board_id` des Ziels (`moveCopyPageImages`), alte Dateien werden nach dem Hochladen gelöscht. Keine Supabase-Änderung nötig.
+- Inaktive persönliche Boards haben jetzt `updatedAt` (gesetzt in `stashCurrentBoard` und beim Hineinverschieben); `mergeInactiveBoards` im persönlichen Abgleich nimmt die neuere Fassung, damit ein anderes Gerät den verschobenen Task nicht überschreibt.
+- Kein Strg+Z für das Verschieben (Undo-Stapel wird geleert).
+Getestet: Playwright mit Supabase-Mock (persönlich→persönlich, persönlich→geteilt inkl. Bild, geteilt→persönlich), PC 1440px und iPhone 402px. Nicht getestet: echtes Supabase, zwei Geräte gleichzeitig.
+
 ## ✅ Stand 2026-10-26: Reihenfolge pro Spalte (Branch `claude/project-thread-61xb4e`)
 
 Timo wollte Tasks durchnummerieren (was mache ich als Erstes, Zweites …), einsortiert in der jeweiligen Spalte.
