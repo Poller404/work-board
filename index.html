@@ -762,6 +762,82 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .fc-chip.late, .fc-chip.overdue{background:var(--danger-bg); color:var(--danger);}
 .fc-explain{font-size:13px; color:var(--text-dim);}
 .fc-explain p{margin:0 0 8px;}
+/* ---- Auslastung ---- */
+.ld-badge{display:inline-flex; align-items:center; gap:6px; margin-top:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:99px; padding:3px 10px; font:inherit; font-size:12.5px; font-weight:500; cursor:pointer;}
+.ld-badge::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--text-faint);}
+.ld-badge.low::before{background:var(--accent);} .ld-badge.ok::before{background:var(--ok);} .ld-badge.full::before{background:var(--warn);}
+.ld-badge.over::before, .ld-badge.over2::before{background:var(--danger);}
+.ld-badge.over, .ld-badge.over2{color:var(--danger); border-color:var(--danger-bg); background:var(--danger-bg);}
+.ld-badge:hover{border-color:var(--border-strong);}
+.ld-hero{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:14px;}
+.ld-main{text-align:center; padding-bottom:16px;}
+.ld-gwrap{max-width:300px; margin:0 auto;}
+.ld-gauge{width:100%; height:auto; display:block;}
+.ld-gauge .z{fill:none; stroke-width:16; opacity:.35;}
+.ld-gauge .z-low{stroke:var(--accent);} .ld-gauge .z-ok{stroke:var(--ok);} .ld-gauge .z-full{stroke:var(--warn);}
+.ld-gauge .z-over{stroke:var(--danger);} .ld-gauge .z-over2{stroke:var(--danger); opacity:.6;}
+.ld-gauge.low .z-low, .ld-gauge.ok .z-ok, .ld-gauge.full .z-full, .ld-gauge.over .z-over, .ld-gauge.over2 .z-over2{opacity:1;}
+.ld-gauge .mark{fill:var(--text); stroke:var(--surface); stroke-width:4;}
+.ld-g-val{font-family:inherit; font-size:34px; font-weight:700; fill:var(--text); font-variant-numeric:tabular-nums;}
+.ld-level{font-size:19px; font-weight:600; margin-top:2px;}
+.ld-level.low{color:var(--accent);} .ld-level.ok{color:var(--ok);} .ld-level.full{color:var(--warn);} .ld-level.over, .ld-level.over2{color:var(--danger);}
+.ld-tip{color:var(--text-dim); font-size:13px; margin:4px auto 0; max-width:420px;}
+.ld-sum{font-size:12.5px; color:var(--text-faint); margin-top:8px;}
+.ld-hz{display:flex; justify-content:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
+.ld-hz-i{display:flex; flex-direction:column; align-items:center; border:1px solid var(--border); border-radius:var(--radius-sm); padding:5px 12px; font-size:11.5px; color:var(--text-faint); min-width:76px;}
+.ld-hz-i b{font-size:15px; color:var(--text); font-variant-numeric:tabular-nums;}
+.ld-hz-i.over b, .ld-hz-i.over2 b{color:var(--danger);} .ld-hz-i.full b{color:var(--warn);} .ld-hz-i.ok b{color:var(--ok);}
+.ld-side .seg{flex-wrap:wrap; margin-bottom:8px;}
+.ld-pinput{display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:13px; color:var(--text-dim);}
+.wt-unit{display:flex; align-items:center; gap:6px;}
+.wt-unit input{width:90px;}
+.wt-unit span{color:var(--text-dim); font-size:13px; white-space:nowrap;}
+.ld-feel{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-bottom:6px;}
+.ld-feel .btn{padding:7px 4px; font-size:12.5px; justify-content:center;}
+.ld-feel .btn.on{border-color:var(--accent); background:var(--accent-soft); color:var(--accent);}
+.ld-bar{position:relative; padding-top:20px;}
+.ld-stack{display:flex; height:16px; border-radius:99px; overflow:hidden; background:var(--surface-2); border:1px solid var(--border);}
+.ld-stack i, .ld-leg i{display:block; height:100%;}
+.b-due{background:var(--danger);} .b-later{background:var(--warn);} .b-undated{background:var(--accent);} .b-meet{background:var(--ty-meeting); opacity:.7;} .b-unpl{background:var(--text-faint);}
+.ld-capline{position:absolute; top:0; bottom:-4px; border-left:2px dashed var(--text); transform:translateX(-1px);}
+.ld-capline span{position:absolute; top:0; left:0; transform:translateX(-50%); font-size:11px; color:var(--text-dim); white-space:nowrap;}
+.ld-capline.right span{transform:translateX(calc(-100% - 6px));}
+.ld-legend{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 18px; margin-top:12px;}
+.ld-leg{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim);}
+.ld-leg i{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+.ld-leg span{flex:1; min-width:0;}
+.ld-leg b{color:var(--text); font-variant-numeric:tabular-nums; font-weight:600;}
+.ld-chart{max-height:160px;}
+.ld-chart .bar{stroke:none;}
+.ld-chart .bar.low{fill:var(--accent);} .ld-chart .bar.ok{fill:var(--ok);} .ld-chart .bar.full{fill:var(--warn);} .ld-chart .bar.over, .ld-chart .bar.over2{fill:var(--danger);}
+.ld-chart .bar.hist{fill:var(--accent); opacity:.55;}
+.ld-chart .bar.future{opacity:.9;}
+.ld-chart-lbl{display:flex; margin-top:4px;}
+.ld-chart-lbl span{flex:1; display:flex; flex-direction:column; align-items:center; font-size:10.5px; color:var(--text-faint); min-width:0; white-space:nowrap;}
+.ld-chart-lbl b{font-size:11px; color:var(--text); font-variant-numeric:tabular-nums;}
+.ld-chart-lbl .future{color:var(--accent); font-weight:600;}
+.ld-w-name{width:170px; flex-shrink:0; color:var(--text-dim); font-size:12.5px;}
+/* ---- Was jetzt? ---- */
+.wn-top{border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; background:var(--surface-2);}
+.wn-title{font-size:18px; font-weight:600; overflow-wrap:anywhere; margin-bottom:2px;}
+.wn-why{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;}
+.wn-why span{font-size:12px; background:var(--accent-soft); color:var(--accent); border-radius:6px; padding:2px 8px;}
+.wn-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+.wn-alt{display:flex; align-items:center; gap:10px; padding:8px 4px; border-top:1px solid var(--border);}
+.wr-sec + .wn-alt{border-top:none;}
+.wn-learn{margin-top:12px;}
+@media (max-width:900px){ .ld-hero{grid-template-columns:1fr;} }
+@media (max-width:680px){
+  .ld-legend{grid-template-columns:1fr;}
+  .ld-gwrap{max-width:230px;}
+  .ld-side .seg{display:grid; grid-template-columns:repeat(3,minmax(0,1fr));}
+  .ld-feel{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .ld-wrap .dash-row{flex-wrap:wrap; gap:2px 10px;}
+  .ld-wrap .dash-row-title{flex-basis:100%; white-space:normal;}
+  .ld-w-name{width:130px;}
+  .ld-chart-lbl span{font-size:9px;}
+  .ld-chart-lbl b{font-size:9.5px;}
+}
 /* ---- Wochenrückblick ---- */
 .wr-steps{display:flex; gap:6px; padding:10px 20px 0; flex-wrap:wrap;}
 .wr-step{font-size:12px; padding:3px 10px; border-radius:99px; border:1px solid var(--border); color:var(--text-faint);}
@@ -1441,6 +1517,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-6"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="4" rx="1"/><path d="M5.5 9v8.5a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></symbol>
     <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><path d="M3.5 19c.5-3 2.8-4.5 5.5-4.5s5 1.5 5.5 4.5M16 6.5a3 3 0 0 1 0 5.5M17.5 14.7c1.7.6 2.7 2 3 4.3"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 16.5a7.5 7.5 0 1 1 15 0"/><path d="m12 16.5 3.5-4.5"/><path d="M4.5 19.5h15"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -1494,6 +1571,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
     <button class="sb-item" data-view="worktime"><svg class="i"><use href="#i-clock"/></svg><span class="lbl" data-i18n="navWorktime">Arbeitszeit</span></button>
     <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
+    <button class="sb-item" data-view="load"><svg class="i"><use href="#i-gauge"/></svg><span class="lbl" data-i18n="navLoad">Auslastung</span></button>
     <button class="sb-item" id="btnWeekReview"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="navWeekReview">Wochenrückblick</span></button>
     <div class="sb-label" data-i18n="navViews">Ansichten</div>
     <button class="sb-item" data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg><span class="lbl" data-i18n="viewDashboard">Dashboard</span></button>
@@ -1503,7 +1581,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="myday">Mein Tag</option><option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option><option value="load">Auslastung</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -2233,6 +2311,7 @@ function parseDurationInput(str){
 }
 
 function startTimer(taskId){
+  nxLearnFromStart(taskId);
   var prevId = state.settings.activeTaskId;
   if(prevId && prevId !== taskId){
     state.settings.resumeCandidateTaskId = prevId;
@@ -2456,7 +2535,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
+    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navLoad:'Auslastung', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -2465,7 +2544,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
+    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navLoad:'Workload', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -3542,47 +3621,190 @@ function openSnippetMenu(anchorBtn, targetEl){
 /* =========================================================
    "WAS JETZT?" – NÄCHSTEN TASK VORSCHLAGEN
    ========================================================= */
-/* Leichtgewichtiger "Lernalgorithmus": schaut, welcher Task-Typ zu dieser
-   Tageszeit historisch am häufigsten bearbeitet wurde (aus timeSessions),
-   und bevorzugt bei gleicher Priorität Tasks von diesem Typ. Kein echtes
-   ML, aber macht "Was jetzt?" mit der Zeit passender zum eigenen Rhythmus. */
-function typeAffinityForHour(hour){
-  var counts = {};
-  state.tasks.forEach(function(t){
-    t.timeSessions.forEach(function(s){
-      if(new Date(s.start).getHours() === hour) counts[t.type] = (counts[t.type]||0) + 1;
-    });
+/* Lernende Rangfolge: jeder offene Task bekommt Merkmale zwischen 0 und 1 (Priorität,
+   Frist, Reihenfolge, Mein Tag, Tageszeit-Gewohnheit, passt in die freie Zeit …).
+   Punkte = Summe Gewicht × Merkmal. Die Gewichte starten mit Erfahrungswerten und
+   lernen paarweise mit (Perceptron): Startest du einen anderen Task als den Vorschlag,
+   rücken die Gewichte ein Stück in Richtung der Merkmale deiner Wahl. So lernt
+   "Was jetzt?", ob dir Fristen, Prioritäten oder kurze Aufgaben wichtiger sind.
+   Modell in state.settings.nextModel {w, n, updatedAt}. */
+var NX_FEATURES = [
+  {key:'pinned',  w0:3.0, label:'angeheftet'},
+  {key:'prio',    w0:2.5, label:'hohe Priorität'},
+  {key:'due',     w0:2.2, label:'Frist drängt'},
+  {key:'sla',     w0:2.0, label:'SLA-Risiko'},
+  {key:'myday',   w0:1.5, label:'auf Mein Tag / Wochenziel'},
+  {key:'rank',    w0:1.2, label:'deine Reihenfolge'},
+  {key:'hour',    w0:0.8, label:'machst du um diese Zeit oft'},
+  {key:'started', w0:0.7, label:'schon angefangen'},
+  {key:'fit',     w0:0.6, label:'passt in die freie Zeit'},
+  {key:'resume',  w0:0.4, label:'zuletzt unterbrochen'},
+  {key:'quick',   w0:0.3, label:'schnell erledigt'},
+  {key:'age',     w0:0.3, label:'liegt schon lange'}
+];
+var NX_PRIO = {critical:1, high:0.66, medium:0.33, low:0};
+function nxModel(){
+  var m = state.settings.nextModel;
+  if(!m || typeof m !== 'object' || Array.isArray(m)) m = {};
+  var w = {};
+  NX_FEATURES.forEach(function(f){
+    var v = m.w && parseFloat(m.w[f.key]);
+    w[f.key] = isFinite(v) ? Math.max(-2, Math.min(6, v)) : f.w0;
   });
-  var best = null, bestCount = 0;
-  Object.keys(counts).forEach(function(k){ if(counts[k] > bestCount){ best = k; bestCount = counts[k]; } });
-  return best;
+  var n = parseInt(m.n, 10);
+  return {w: w, n: isFinite(n) && n > 0 ? n : 0};
 }
-function pickWhatNowTask(){
+function nxCandidates(){
   /* Tasks in "Erledigt" und in "Wartet" (wartet auf Rückmeldung) nie vorschlagen. */
   var skipColIds = state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name) || WAITING_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; });
-  var candidates = state.tasks.filter(function(t){
-    return !t.archived && !t.completedAt && skipColIds.indexOf(t.columnId) < 0 && !isSnoozed(t);
+  return state.tasks.filter(function(t){
+    if(t.archived || t.completedAt || skipColIds.indexOf(t.columnId) >= 0 || isSnoozed(t)) return false;
+    if(activeShared && t.assigneeId && t.assigneeId !== myUserId()) return false;
+    return true;
   });
-  if(!candidates.length) return null;
-  var preferredType = typeAffinityForHour(new Date().getHours());
-  candidates.sort(function(a,b){
-    if(a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    var pd = PRIORITIES[a.priority].order - PRIORITIES[b.priority].order;
-    if(pd !== 0) return pd;
-    if(preferredType){
-      var ap = a.type === preferredType ? 0 : 1;
-      var bp = b.type === preferredType ? 0 : 1;
-      if(ap !== bp) return ap - bp;
-    }
-    return new Date(a.createdAt) - new Date(b.createdAt);
-  });
-  return candidates[0];
 }
-function openWhatNow(){
-  var t = pickWhatNowTask();
-  if(!t){ toast('🎉 Keine offenen Tasks – alles erledigt!'); return; }
-  toast('🧭 Vorschlag: ' + (TYPES[t.type]||TYPES.adhoc).icon + ' ' + t.title, 6000);
-  openTaskModal(t.id);
+/* Was alle Kandidaten gemeinsam brauchen, einmal pro Aufruf: Tageszeit-Gewohnheit pro Typ und freie Minuten bis zum nächsten Termin. */
+function nxContext(){
+  var now = new Date(), hour = now.getHours(), since = Date.now() - 60 * 86400000;
+  var byType = {}, total = 0;
+  timeTasks().forEach(function(t){
+    (t.timeSessions || []).forEach(function(s){
+      if(!isMySession(s)) return;
+      var st = new Date(s.start);
+      if(st.getTime() < since || Math.abs(st.getHours() - hour) > 1) return;
+      byType[t.type] = (byType[t.type] || 0) + 1; total++;
+    });
+  });
+  var endMin = parseHM(state.settings.dyceWorkEnd, 17 * 60), nowMin = plDayMinutes(now);
+  var free = Math.max(0, endMin - nowMin), todayStr = toDateInputValue(now);
+  state.tasks.forEach(function(t){
+    if(t.archived || t.type !== 'meeting' || !t.scheduledAt) return;
+    var st = new Date(t.scheduledAt);
+    if(isNaN(st.getTime()) || toDateInputValue(st) !== todayStr || st.getTime() <= Date.now()) return;
+    free = Math.min(free, Math.round((st.getTime() - Date.now()) / 60000));
+  });
+  var goals = typeof weekGoalIds === 'function' ? weekGoalIds() : [];
+  return {hourShare: function(type){ return total >= 4 ? (byType[type] || 0) / total : 0; }, free: free, today: todayStr,
+    myday: myDayIds().concat(goals), resume: state.settings.resumeCandidateTaskId || ''};
+}
+function nxFeatures(t, ctx){
+  var f = {};
+  f.pinned = t.pinned ? 1 : 0;
+  f.prio = NX_PRIO[t.priority] != null ? NX_PRIO[t.priority] : 0.33;
+  var due = 0;
+  if(t.dueDate && DATE_RE.test(t.dueDate)){
+    var days = Math.round((dayStartMs(t.dueDate) - dayStartMs(ctx.today)) / 86400000);
+    due = days < 0 ? 1 : days === 0 ? 0.9 : days === 1 ? 0.7 : days <= 3 ? 0.5 : days <= 7 ? 0.3 : 0.1;
+    var fc = forecastFor(t);
+    if(fc && (fc.status === 'late' || fc.status === 'tight')) due = Math.max(due, 0.8);
+  }
+  f.due = due;
+  f.sla = slaLevel(t) ? 1 : 0;
+  f.myday = ctx.myday.indexOf(t.id) >= 0 ? 1 : 0;
+  f.rank = t.rank ? Math.max(0, 1 - (t.rank - 1) / 10) : 0;
+  f.hour = ctx.hourShare(t.type);
+  var logged = secondsInRange(t, 0, Date.now()) / 60;
+  f.started = logged >= 1 ? 1 : 0;
+  var est = t.estimatedMinutes || learnedMinutes(t) || 60;
+  var rest = Math.max(5, est - logged);
+  f.fit = ctx.free <= 0 ? 0 : (rest <= ctx.free ? 1 : ctx.free / rest);
+  f.resume = ctx.resume === t.id ? 1 : 0;
+  f.quick = rest <= 15 ? 1 : 0;
+  f.age = Math.min(1, (Date.now() - new Date(t.createdAt).getTime()) / (30 * 86400000)) || 0;
+  return f;
+}
+function nxScore(f, w){ return NX_FEATURES.reduce(function(s, x){ return s + w[x.key] * (f[x.key] || 0); }, 0); }
+/* Sortierte Liste [{t, f, score}], beste zuerst. */
+function rankWhatNow(){
+  var cands = nxCandidates();
+  if(!cands.length) return [];
+  var ctx = nxContext(), w = nxModel().w;
+  return cands.map(function(t){ var f = nxFeatures(t, ctx); return {t: t, f: f, score: nxScore(f, w)}; })
+    .sort(function(a, b){ return b.score - a.score || new Date(a.t.createdAt) - new Date(b.t.createdAt); });
+}
+function pickWhatNowTask(){ var r = rankWhatNow(); return r.length ? r[0].t : null; }
+/* Paarweise lernen: "chosen" wurde "over" vorgezogen. strength 1 = bewusst im Vorschlag gewählt, 0.5 = einfach irgendwo gestartet. */
+function nxLearn(chosen, over, strength){
+  if(!chosen || !over || chosen.t.id === over.t.id) return false;
+  if(chosen.score > over.score + 0.25) return false;
+  var m = nxModel();
+  var lr = 0.25 * (strength || 1) / Math.sqrt(1 + m.n / 20);
+  NX_FEATURES.forEach(function(x){
+    var d = (chosen.f[x.key] || 0) - (over.f[x.key] || 0);
+    m.w[x.key] = Math.round(Math.max(-2, Math.min(6, m.w[x.key] + lr * d)) * 1000) / 1000;
+  });
+  state.settings.nextModel = {w: m.w, n: m.n + 1, updatedAt: nowIso()};
+  return true;
+}
+/* Wird von startTimer aufgerufen, bevor der Timer läuft: war es nicht der Vorschlag, lernt das Modell leise mit. */
+var nxSuppressImplicit = false;
+function nxLearnFromStart(taskId){
+  if(nxSuppressImplicit || state.settings.activeTaskId === taskId) return;
+  try{
+    var r = rankWhatNow();
+    if(r.length < 2) return;
+    var chosen = r.find(function(x){ return x.t.id === taskId; });
+    if(chosen && chosen !== r[0]) nxLearn(chosen, r[0], 0.5);
+  }catch(e){}
+}
+function nxReasons(item, w){
+  return NX_FEATURES.map(function(x){ return {x: x, v: w[x.key] * (item.f[x.key] || 0)}; })
+    .filter(function(r){ return r.v > 0.25; }).sort(function(a, b){ return b.v - a.v; }).slice(0, 3)
+    .map(function(r){
+      if(r.x.key === 'due' && item.t.dueDate) return 'Frist ' + shortDateLabel(item.t.dueDate);
+      if(r.x.key === 'prio') return 'Priorität ' + (PRIORITIES[item.t.priority] || PRIORITIES.medium).label;
+      if(r.x.key === 'rank') return 'Nr. ' + item.t.rank + ' in deiner Reihenfolge';
+      return r.x.label;
+    });
+}
+var wnSkipped = [];
+function openWhatNow(keepSkip){
+  if(keepSkip !== true) wnSkipped = [];
+  var r = rankWhatNow();
+  if(!r.length){ toast('🎉 Keine offenen Tasks – alles erledigt!'); return; }
+  var w = nxModel().w;
+  var list = r.filter(function(x){ return wnSkipped.indexOf(x.t.id) < 0; });
+  if(!list.length){ wnSkipped = []; list = r; }
+  var top = list[0], alts = list.slice(1, 4);
+  function meta(item){
+    var t = item.t, est = t.estimatedMinutes || learnedMinutes(t);
+    return (TYPES[t.type] || TYPES.adhoc).icon + ' ' + escapeHtml((TYPES[t.type] || TYPES.adhoc).label) + (est ? ' · ca. ' + fmtHM(Math.max(0, est * 60 - secondsInRange(t, 0, Date.now()))) + ' übrig' : '');
+  }
+  var n = nxModel().n;
+  var html =
+    '<div class="modal-header"><h2>🧭 Was jetzt?</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="wn-top"><div class="wn-title">' + escapeHtml(top.t.title) + '</div><div class="md-meta">' + meta(top) + '</div>' +
+        '<div class="wn-why">' + nxReasons(top, w).map(function(s){ return '<span>' + escapeHtml(s) + '</span>'; }).join('') + '</div>' +
+        '<div class="wn-actions"><button class="btn primary" data-wn-start="' + top.t.id + '">' + svgIcon('play') + '<span>Jetzt starten</span></button>' +
+          '<button class="btn" data-wn-open="' + top.t.id + '">Öffnen</button>' +
+          (list.length > 1 ? '<button class="btn ghost" id="wnSkip">Anderer Vorschlag</button>' : '') + '</div></div>' +
+      (alts.length ? '<div class="wr-sec">Oder lieber</div>' + alts.map(function(a){
+        return '<div class="wn-alt"><div class="fc-main" data-wn-open="' + a.t.id + '"><div class="md-title">' + escapeHtml(a.t.title) + '</div><div class="md-meta">' + escapeHtml(nxReasons(a, w).join(' · ') || (TYPES[a.t.type] || TYPES.adhoc).label) + '</div></div>' +
+          '<button class="md-btn" data-wn-start="' + a.t.id + '" title="Diesen Task starten" aria-label="Starten">' + svgIcon('play') + '</button></div>';
+      }).join('') : '') +
+      '<div class="hint wn-learn">📈 Lernt mit: Startest du einen anderen Task als den Vorschlag, merkt sich das Board, was dir wichtiger ist' + (n ? ' (bisher ' + n + '× gelernt)' : '') + '. <a href="#" id="wnModel">Was es gelernt hat</a></div>' +
+    '</div>';
+  openModal(html);
+  var root = document.getElementById('modalRoot');
+  root.querySelector('.modal-body').addEventListener('click', function(e){
+    var el = e.target.closest('[data-wn-start], [data-wn-open], #wnSkip, #wnModel');
+    if(!el) return;
+    e.preventDefault();
+    if(el.id === 'wnSkip'){ wnSkipped.push(top.t.id); closeModal(); openWhatNow(true); return; }
+    if(el.id === 'wnModel'){ closeModal(); switchToView('load'); setTimeout(function(){ var s = document.getElementById('ldModel'); if(s) s.scrollIntoView({block: 'start'}); }, 60); return; }
+    var id = el.dataset.wnStart || el.dataset.wnOpen;
+    var chosen = r.find(function(x){ return x.t.id === id; });
+    if(chosen && chosen !== top) nxLearn(chosen, top, 1);
+    wnSkipped.forEach(function(sid){ var s = r.find(function(x){ return x.t.id === sid; }); if(chosen && s) nxLearn(chosen, s, 0.6); });
+    wnSkipped = [];
+    closeModal();
+    if(el.dataset.wnStart){
+      nxSuppressImplicit = true;
+      try{ startTimer(id); } finally { nxSuppressImplicit = false; }
+      toast('▶ ' + (getTask(id) || {title: ''}).title);
+    } else { save(); openTaskModal(id); }
+  });
 }
 
 /* =========================================================
@@ -3591,7 +3813,7 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast'];
+var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast', 'load'];
 var quickFilters = {};
 var filterTag = '';
 var filterClient = '';
@@ -4115,6 +4337,7 @@ function renderBoard(){
   if(boardViewMode === 'teamdash'){ renderTeamView(); return; }
   if(boardViewMode === 'worktime'){ renderWorktimeView(); return; }
   if(boardViewMode === 'forecast'){ renderForecastView(); return; }
+  if(boardViewMode === 'load'){ renderLoadView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   if(globalBoardActive()){ renderGlobalTagBoard(board); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
@@ -5851,7 +6074,7 @@ function renderMyDayView(){
     '<div class="md-list md-goals">' + goals.map(grow).join('') + '</div>' : '';
   board.innerHTML = '<div class="dash md-wrap">' +
     '<div class="dash-head"><div><h1>☀️ Mein Tag</h1><p>' + escapeHtml(dateLabel) + ' · ' +
-      (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p></div>' +
+      (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p>' + loadBadgeHtml() + '</div>' +
       '<div class="dash-actions"><button class="btn" id="mdPip" title="Mein Tag und Timer in einem kleinen Fenster, das immer im Vordergrund bleibt">' + svgIcon('pip') + '<span>Kleines Fenster</span></button>' +
       '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button>' +
       (goals.length ? '' : '<button class="btn" id="mdReview" title="Woche durchgehen, aufräumen und bis zu 3 Wochenziele setzen">🗓️ Wochenrückblick</button>') + '</div></div>' +
@@ -6145,8 +6368,12 @@ function wtConfig(){
   var vac = parseFloat(w.vacationDays);
   var hol = {};
   WT_HOLIDAYS.forEach(function(x){ hol[x.key] = w.holidays && typeof w.holidays[x.key] === 'boolean' ? w.holidays[x.key] : !x.off; });
+  var fullWeek = parseFloat(w.fullWeek);
+  if(!(fullWeek >= 1 && fullWeek <= 80)) fullWeek = 42;
+  var pensum = parseFloat(w.pensum);
+  if(!(pensum >= 1 && pensum <= 100)) pensum = Math.min(200, Math.round(hours.reduce(function(a, b){ return a + b; }, 0) / fullWeek * 100));
   return {configured: !!w.configured, start: start, carryMin: isFinite(carry) ? Math.max(-99999, Math.min(99999, carry)) : 0, hours: hours,
-    vacationDays: isFinite(vac) && vac >= 0 && vac <= 365 ? vac : 25, holidays: hol};
+    vacationDays: isFinite(vac) && vac >= 0 && vac <= 365 ? vac : 25, holidays: hol, pensum: pensum, fullWeek: fullWeek};
 }
 function wtHolidayMap(year, cfg){
   var key = year + '|' + JSON.stringify(cfg.holidays);
@@ -6343,7 +6570,7 @@ function renderWorktimeView(){
   var weekHours = cfg.hours.reduce(function(a, b){ return a + b; }, 0);
   var monthDiff = mPastIst - mPastSoll;
   board.innerHTML = '<div class="dash wt-wrap">' +
-    '<div class="dash-head"><div><h1>⏱️ Arbeitszeit</h1><p>Gleitzeit-Saldo, Ferien und Abwesenheiten · gezählt ab ' + escapeHtml(shortDateLabel(cfg.start)) + ' ' + cfg.start.slice(0, 4) + '</p></div>' +
+    '<div class="dash-head"><div><h1>⏱️ Arbeitszeit</h1><p>Gleitzeit-Saldo, Ferien und Abwesenheiten · gezählt ab ' + escapeHtml(shortDateLabel(cfg.start)) + ' ' + cfg.start.slice(0, 4) + ' · Pensum ' + Math.round(cfg.pensum) + ' %</p>' + loadBadgeHtml() + '</div>' +
       '<div class="dash-actions"><button class="btn primary" id="wtAddAbs">' + svgIcon('plus') + '<span>Abwesenheit</span></button>' +
       '<button class="btn" id="wtSettingsBtn">⚙️ <span>Sollzeit &amp; Ferien</span></button></div></div>' +
     (!cfg.configured ? '<div class="wt-setup"><b>Stimmt deine Sollzeit?</b> Ich rechne im Moment mit ' + String(Math.round(weekHours * 100) / 100).replace('.', ',') + ' Std. pro Woche (' +
@@ -6469,6 +6696,9 @@ function openWorktimeSettings(){
   var html =
     '<div class="modal-header"><h2>Sollzeit &amp; Ferien</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
+      '<div class="form-row-inline"><div class="form-row"><label for="wtPensum">Pensum (Beschäftigungsgrad)</label><div class="wt-unit"><input type="number" id="wtPensum" min="5" max="100" step="5" value="' + Math.min(100, cfg.pensum) + '"><span>%</span></div></div>' +
+        '<div class="form-row"><label for="wtFull">100 % entspricht</label><div class="wt-unit"><input type="number" id="wtFull" min="1" max="80" step="0.5" value="' + cfg.fullWeek + '"><span>Std./Woche</span></div></div></div>' +
+      '<div class="hint" style="margin:-4px 0 10px;">Änderst du das Pensum, verteile ich die Sollzeit neu auf deine Arbeitstage. Einzelne Tage kannst du danach unten anpassen (z.B. Freitag frei).</div>' +
       '<div class="form-row"><label>Sollzeit pro Wochentag (Stunden, z.B. 8,4 = 8 Std. 24 Min.)</label><div class="wt-hours">' + order.map(function(i){
         return '<label><span>' + WT_DAYS[i] + '</span><input type="number" min="0" max="24" step="0.05" data-wt-h="' + i + '" value="' + (cfg.hours[i] || 0) + '"></label>'; }).join('') + '</div>' +
         '<div class="hint" id="wtWeekSum"></div></div>' +
@@ -6486,6 +6716,15 @@ function openWorktimeSettings(){
   function hoursNow(){ var h = [0,0,0,0,0,0,0]; root.querySelectorAll('[data-wt-h]').forEach(function(inp){ var v = parseFloat(String(inp.value).replace(',', '.')); h[+inp.dataset.wtH] = isFinite(v) && v >= 0 && v <= 24 ? v : 0; }); return h; }
   function sum(){ var t = hoursNow().reduce(function(a, b){ return a + b; }, 0); document.getElementById('wtWeekSum').textContent = 'Pro Woche: ' + fmtHMin(t * 60) + ' Std.'; }
   root.querySelectorAll('[data-wt-h]').forEach(function(inp){ inp.addEventListener('input', sum); });
+  function pensumChanged(){
+    var p = parseFloat(document.getElementById('wtPensum').value), full = parseFloat(document.getElementById('wtFull').value);
+    if(!(p >= 5 && p <= 100) || !(full >= 1 && full <= 80)) return;
+    var h = wtScaleHours(hoursNow(), full * p / 100);
+    root.querySelectorAll('[data-wt-h]').forEach(function(inp){ inp.value = h[+inp.dataset.wtH]; });
+    sum();
+  }
+  document.getElementById('wtPensum').addEventListener('change', pensumChanged);
+  document.getElementById('wtFull').addEventListener('change', pensumChanged);
   sum();
   document.getElementById('wtSave').addEventListener('click', function(){
     var carry = parseSignedDuration(document.getElementById('wtCarry').value);
@@ -6495,7 +6734,9 @@ function openWorktimeSettings(){
     var hol = {};
     root.querySelectorAll('[data-wt-hol]').forEach(function(cb){ hol[cb.dataset.wtHol] = cb.checked; });
     var vac = parseFloat(document.getElementById('wtVac').value);
-    state.settings.worktime = {configured: true, start: start, carryMin: carry, hours: hoursNow(), vacationDays: isFinite(vac) && vac >= 0 ? vac : 25, holidays: hol};
+    var pen = parseFloat(document.getElementById('wtPensum').value), full = parseFloat(document.getElementById('wtFull').value);
+    state.settings.worktime = {configured: true, start: start, carryMin: carry, hours: hoursNow(), vacationDays: isFinite(vac) && vac >= 0 ? vac : 25, holidays: hol,
+      pensum: pen >= 1 && pen <= 100 ? pen : null, fullWeek: full >= 1 && full <= 80 ? full : 42};
     save();
     fcCacheKey = '';
     closeModal();
@@ -6681,6 +6922,346 @@ function renderForecastView(){
     else if(el.id === 'fcWorktime') openWorktimeSettings();
   });
 }
+
+/* =========================================================
+   AUSLASTUNG (lernend)
+   Wie voll bin ich in den nächsten Arbeitstagen? Bedarf / Kapazität:
+   - Kapazität = Sollzeit aus dem Arbeitszeitkonto (Pensum, Feiertage, Ferien), heute nur der Rest.
+   - Bedarf = Restaufwand offener Tasks (Schätzung, korrigiert mit der gelernten Abweichung)
+     + geplante Meetings + erwartete ungeplante Arbeit.
+   Gelernt wird aus der eigenen Zeiterfassung (letzte 8 Wochen bzw. 180 Tage):
+   - Anteil ungeplanter Arbeit (Zeit ohne Task und Tasks, die am selben Tag entstanden sind),
+   - typische Durchlaufzeit pro Priorität (wann Tasks ohne Frist voraussichtlich drankommen),
+   - und aus deinem Feedback ("fühlt sich zu viel an"), ein Korrekturfaktor.
+   Tasks mit Frist nach dem Zeitraum zählen anteilig (gleichmässig bis zur Frist verteilt).
+   Modell in state.settings.loadModel {k, feedback:[{d, raw, felt}]}, Zeitraum in settings.loadHorizon.
+   ========================================================= */
+var LOAD_HORIZONS = [{d: 5, label: '1 Woche'}, {d: 10, label: '2 Wochen'}, {d: 20, label: '4 Wochen'}];
+var LOAD_FEEL = [
+  {key: 'wenig', label: 'Zu wenig', icon: '😌', target: 0.6},
+  {key: 'passt', label: 'Passt', icon: '🙂', target: 0.85},
+  {key: 'voll', label: 'Sehr voll', icon: '😅', target: 1.0},
+  {key: 'zuviel', label: 'Zu viel', icon: '🥵', target: 1.2}
+];
+var LEAD_DEFAULT = {critical: 2, high: 5, medium: 12, low: 25};
+var ldCache = null, ldCacheKey = '';
+function loadHorizon(){ var h = parseInt(state.settings.loadHorizon, 10); return LOAD_HORIZONS.some(function(x){ return x.d === h; }) ? h : 10; }
+function loadModelSettings(){
+  var m = state.settings.loadModel;
+  if(!m || typeof m !== 'object' || Array.isArray(m)) m = {};
+  var k = parseFloat(m.k);
+  return {k: k >= 0.6 && k <= 1.6 ? k : 1, feedback: Array.isArray(m.feedback) ? m.feedback.filter(function(f){ return f && typeof f.d === 'string'; }).slice(-30) : []};
+}
+/* Stunden pro Wochentag auf eine neue Wochensumme bringen, Verteilung bleibt. */
+function wtScaleHours(hours, target){
+  var sum = hours.reduce(function(a, b){ return a + b; }, 0);
+  var out = sum > 0 ? hours.map(function(h){ return h * target / sum; }) : [0, 1, 1, 1, 1, 1, 0].map(function(x){ return x * target / 5; });
+  return out.map(function(h){ return Math.round(Math.min(24, h) * 100) / 100; });
+}
+function wtApplyPensum(p){
+  var cfg = wtConfig();
+  var w = Object.assign({}, state.settings.worktime || {}, {configured: true, start: cfg.start, carryMin: cfg.carryMin, vacationDays: cfg.vacationDays, holidays: cfg.holidays,
+    fullWeek: cfg.fullWeek, pensum: p, hours: wtScaleHours(cfg.hours, cfg.fullWeek * p / 100)});
+  state.settings.worktime = w;
+  save();
+  fcCacheKey = ''; ldCacheKey = '';
+}
+/* Alle eigenen offenen Tasks über alle persönlichen Boards (und das offene geteilte Board, soweit mir zugewiesen oder niemandem). */
+function ldOpenTasks(){
+  var out = [];
+  function add(tasks, cols, shared){
+    var skip = (cols || []).filter(function(c){ return c && (DONE_COLUMN_RE.test(c.name) || WAITING_COLUMN_RE.test(c.name)); }).map(function(c){ return c.id; });
+    (tasks || []).forEach(function(t){
+      if(!t || t.archived || t.completedAt || isSnoozed(t) || skip.indexOf(t.columnId) >= 0) return;
+      if(shared && t.assigneeId && t.assigneeId !== myUserId()) return;
+      out.push(t);
+    });
+  }
+  add(state.tasks, state.columns, !!activeShared);
+  (state.boards || []).forEach(function(b){ if(b && Array.isArray(b.tasks)) add(b.tasks, b.columns, false); });
+  if(activeShared && personalStash) add(personalStash.tasks, personalStash.columns, false);
+  return out;
+}
+function ldAllTasks(){
+  var pool = state.tasks.slice();
+  (state.boards || []).forEach(function(b){ if(b && Array.isArray(b.tasks)) pool = pool.concat(b.tasks); });
+  if(activeShared && personalStash && Array.isArray(personalStash.tasks)) pool = pool.concat(personalStash.tasks);
+  return pool;
+}
+/* Was das Board aus deiner Vergangenheit lernt. */
+function ldLearn(cfg){
+  var weekStart = toDateInputValue(startOfWeek(new Date()));
+  var from = shiftDate(weekStart, -56);
+  var fromMs = dayStartMs(from), toMs = dayStartMs(weekStart);
+  var weeks = [];
+  for(var i = 0; i < 8; i++){ var ws = shiftDate(from, i * 7); weeks.push({from: ws, soll: 0, ist: 0, unpl: 0}); }
+  function wIdx(ms){ var i = Math.floor((ms - fromMs) / (7 * 86400000)); return i >= 0 && i < 8 ? i : -1; }
+  weeks.forEach(function(w){ var r = wtRange(w.from, shiftDate(w.from, 6), cfg, {}); w.soll = r.soll; });
+  /* Ist und ungeplanter Anteil: Sitzungen nach Woche aufteilen. */
+  ldAllTasks().concat(freeTimeTasks()).forEach(function(t){
+    var created = new Date(t.createdAt).getTime();
+    var plannedMeeting = t.type === 'meeting' && !!t.scheduledAt;
+    (t.timeSessions || []).forEach(function(s){
+      if(!isMySession(s)) return;
+      var st = Math.max(new Date(s.start).getTime(), fromMs), en = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), toMs);
+      if(!(en > st)) return;
+      var idx = wIdx(st);
+      if(idx < 0) return;
+      var min = (en - st) / 60000;
+      weeks[idx].ist += min;
+      var spontaneous = t._free || (!plannedMeeting && isFinite(created) && new Date(s.start).getTime() - created < 24 * 3600000);
+      if(spontaneous) weeks[idx].unpl += min;
+    });
+  });
+  var used = weeks.filter(function(w){ return w.soll > 60 && w.ist > 60; });
+  /* Gewichteter Schnitt (neuere Wochen zählen mehr), mit 2 Wochen Vorannahme 25 % gemischt. */
+  var num = 0.25 * 2, den = 2, wsum = 0, wnum = 0;
+  used.forEach(function(w, i){ var g = Math.pow(1.3, i); num += g * Math.min(0.9, w.unpl / w.soll); den += g; wnum += g * (w.ist / w.soll); wsum += g; });
+  var unplShare = Math.max(0, Math.min(0.8, num / den));
+  var workShare = wsum ? wnum / wsum : 0;
+  /* Durchlaufzeit (Tage von Erstellung bis erledigt) pro Priorität, letzte 180 Tage. */
+  var since = Date.now() - 180 * 86400000, leads = {critical: [], high: [], medium: [], low: []};
+  ldAllTasks().forEach(function(t){
+    if(!t || !t.completedAt || t.type === 'meeting') return;
+    var c = new Date(t.completedAt).getTime(), cr = new Date(t.createdAt).getTime();
+    if(!(c > since) || !(c >= cr)) return;
+    (leads[t.priority] || leads.medium).push((c - cr) / 86400000);
+  });
+  var lead = {}, leadN = {};
+  Object.keys(LEAD_DEFAULT).forEach(function(p){
+    var arr = leads[p], n = arr.length;
+    leadN[p] = n;
+    /* Median, mit der Vorannahme gemischt, solange es wenige Beispiele gibt. */
+    lead[p] = n ? (medianOf(arr) * n + LEAD_DEFAULT[p] * 3) / (n + 3) : LEAD_DEFAULT[p];
+    lead[p] = Math.max(0.5, Math.min(90, lead[p]));
+  });
+  return {weeks: weeks, usedWeeks: used.length, unplShare: unplShare, workShare: workShare, lead: lead, leadN: leadN};
+}
+function ldRemaining(t){
+  var logged = secondsInRange(t, 0, Date.now()) / 60;
+  var l = learnedEstimate(t);
+  var est = (l && l.basis === 'ratio') ? l.minutes : (t.estimatedMinutes || (l ? l.minutes : 0));
+  var assumed = !est;
+  if(!est) est = t.type === 'meeting' ? plannedMinutes(t) : 60;
+  return {min: Math.max(t.estimatedMinutes || l ? 0 : 15, est - logged), assumed: assumed, corrected: !!(l && l.basis === 'ratio')};
+}
+function computeLoad(horizonDays){
+  var H = horizonDays || loadHorizon();
+  var key = (state.meta && state.meta.updatedAt) + '|' + Math.floor(Date.now() / 60000) + '|' + H + '|' + JSON.stringify(state.settings.worktime || {}) + '|' + JSON.stringify(state.settings.loadModel || {}) + '|' + (activeShared ? activeShared.id : '');
+  if(ldCache && ldCacheKey === key) return ldCache;
+  var cfg = wtConfig(), todayStr = toDateInputValue(new Date());
+  var learn = ldLearn(cfg);
+  var istToday = (wtIstMap(dayStartMs(todayStr), Date.now())[todayStr] || 0) / 60;
+  /* Arbeitstage im Zeitraum ab heute (heute zählt, solange noch Soll übrig ist). */
+  var days = [], ds = todayStr, cap = 0, workdaysToDate = {};
+  for(var g = 0; g < 400 && days.length < H; g++){
+    var info = wtDayInfo(ds, cfg);
+    var c = info.soll;
+    if(ds === todayStr) c = Math.max(0, c - istToday);
+    if(info.soll > 0){ days.push({ds: ds, cap: c}); cap += c; }
+    ds = shiftDate(ds, 1);
+  }
+  var endDs = days.length ? days[days.length - 1].ds : todayStr;
+  var calDays = Math.max(1, Math.round((dayStartMs(endDs) - dayStartMs(todayStr)) / 86400000) + 1);
+  function workdaysUntil(target){
+    if(workdaysToDate[target] != null) return workdaysToDate[target];
+    var n = 0;
+    for(var x = todayStr, i = 0; x <= target && i < 800; x = shiftDate(x, 1), i++) if(wtDayInfo(x, cfg).soll > 0) n++;
+    return (workdaysToDate[target] = Math.max(1, n));
+  }
+  var parts = {due: 0, later: 0, undated: 0, meetings: 0, unplanned: 0};
+  var items = [], assumed = 0, corrected = 0;
+  var endMs = dayStartMs(shiftDate(endDs, 1));
+  ldOpenTasks().forEach(function(t){
+    if(t.type === 'meeting' && t.scheduledAt){
+      var st = new Date(t.scheduledAt).getTime(), en = st + plannedMinutes(t) * 60000;
+      if(isFinite(st) && en > Date.now() && st < endMs){ var m = (Math.min(en, endMs) - Math.max(st, Date.now())) / 60000; parts.meetings += m; items.push({t: t, min: m, kind: 'meetings'}); }
+      return;
+    }
+    var r = ldRemaining(t);
+    if(r.min <= 0) return;
+    var share, kind;
+    if(t.dueDate && DATE_RE.test(t.dueDate)){
+      if(t.dueDate <= endDs){ share = 1; kind = 'due'; }
+      else { share = Math.min(1, H / workdaysUntil(t.dueDate)); kind = 'later'; }
+    } else {
+      var age = (Date.now() - new Date(t.createdAt).getTime()) / 86400000 || 0;
+      var lead = learn.lead[t.priority] || learn.lead.medium;
+      var left = Math.max(lead - age, lead * 0.5);
+      share = Math.min(1, calDays / left);
+      kind = 'undated';
+    }
+    var min = r.min * share;
+    parts[kind] += min;
+    if(r.assumed) assumed++;
+    if(r.corrected) corrected++;
+    items.push({t: t, min: min, share: share, kind: kind});
+  });
+  parts.unplanned = cap * learn.unplShare;
+  var demand = parts.due + parts.later + parts.undated + parts.meetings + parts.unplanned;
+  var lm = loadModelSettings();
+  var raw = cap > 0 ? demand / cap : null;
+  var res = {H: H, cap: cap, demand: demand, parts: parts, raw: raw, pct: raw == null ? null : Math.round(raw * lm.k * 100), k: lm.k,
+    learn: learn, days: days, endDs: endDs, items: items.sort(function(a, b){ return b.min - a.min; }), assumed: assumed, corrected: corrected, cfg: cfg, today: todayStr};
+  ldCache = res; ldCacheKey = key;
+  return res;
+}
+function loadLevel(pct){
+  if(pct == null) return {cls: 'off', label: 'Kein Soll im Zeitraum', tip: 'In diesem Zeitraum hast du keine Sollzeit (Ferien, Wochenende oder Pensum 0 %).'};
+  if(pct < 60) return {cls: 'low', label: 'Viel Luft', tip: 'Du hast Platz für mehr. Guter Moment für liegengebliebene Tasks oder Weiterbildung.'};
+  if(pct < 85) return {cls: 'ok', label: 'Gut ausgelastet', tip: 'Gesunde Auslastung mit etwas Puffer für Unvorhergesehenes.'};
+  if(pct < 100) return {cls: 'full', label: 'Voll', tip: 'Es geht auf, aber ohne viel Puffer. Neue Anfragen eher einplanen als sofort zusagen.'};
+  if(pct < 120) return {cls: 'over', label: 'Überlastet', tip: 'Mehr Arbeit als Zeit. Fristen verschieben, abgeben oder Prioritäten klären.'};
+  return {cls: 'over2', label: 'Stark überlastet', tip: 'Deutlich mehr Arbeit als Zeit. Sprich mit deinem Team oder deiner Führung über Prioritäten.'};
+}
+function loadGaugeSvg(pct, lvl){
+  var v = pct == null ? 0 : Math.max(0, Math.min(150, pct));
+  var a = Math.PI * (1 - v / 150);
+  function pt(ang, r){ return (100 + r * Math.cos(ang)).toFixed(1) + ' ' + (100 - r * Math.sin(ang)).toFixed(1); }
+  function arc(from, to, cls){ var a1 = Math.PI * (1 - from / 150), a2 = Math.PI * (1 - to / 150); return '<path class="' + cls + '" d="M' + pt(a1, 80) + ' A80 80 0 0 1 ' + pt(a2, 80) + '"/>'; }
+  return '<svg class="ld-gauge ' + lvl.cls + '" viewBox="0 0 200 118" role="img" aria-label="Auslastung ' + (pct == null ? 'unbekannt' : pct + ' Prozent') + '">' +
+    arc(0, 60, 'z z-low') + arc(60, 85, 'z z-ok') + arc(85, 100, 'z z-full') + arc(100, 120, 'z z-over') + arc(120, 150, 'z z-over2') +
+    (pct == null ? '' : '<circle class="mark" cx="' + pt(a, 80).split(' ')[0] + '" cy="' + pt(a, 80).split(' ')[1] + '" r="10"/>') +
+    '<text class="ld-g-val" x="100" y="96" text-anchor="middle">' + (pct == null ? '–' : pct + ' %') + '</text></svg>';
+}
+/* Kurzanzeige für Mein Tag und das Arbeitszeitkonto. */
+function loadBadgeHtml(){
+  try{
+    var L = computeLoad(), lvl = loadLevel(L.pct);
+    return '<button type="button" class="ld-badge ' + lvl.cls + '" data-ld-open="1" title="' + escapeAttr(lvl.tip) + '">Auslastung ' + (L.pct == null ? '–' : L.pct + ' %') + ' · ' + escapeHtml(lvl.label) + '</button>';
+  }catch(e){ return ''; }
+}
+function loadFeedback(key){
+  var opt = LOAD_FEEL.find(function(o){ return o.key === key; });
+  var L = computeLoad();
+  if(!opt || L.raw == null || L.raw < 0.05) return;
+  var lm = loadModelSettings();
+  var shown = L.raw * lm.k;
+  /* 40 % Richtung des Empfindens, damit ein einzelner Tag den Faktor nicht umwirft. */
+  var k = Math.max(0.6, Math.min(1.6, lm.k * Math.pow(opt.target / shown, 0.4)));
+  var today = toDateInputValue(new Date());
+  var fb = lm.feedback.filter(function(f){ return f.d !== today; }).concat([{d: today, raw: Math.round(L.raw * 100), felt: key}]).slice(-30);
+  state.settings.loadModel = {k: Math.round(k * 1000) / 1000, feedback: fb};
+  save();
+  ldCacheKey = '';
+  renderLoadView();
+  toast('📈 Danke! Ich rechne ab jetzt mit ' + Math.round(L.raw * k * 100) + ' % statt ' + Math.round(shown * 100) + ' %.');
+}
+function renderLoadView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  ldCacheKey = '';
+  var L = computeLoad(), lvl = loadLevel(L.pct), cfg = L.cfg, learn = L.learn;
+  var horizons = LOAD_HORIZONS.map(function(h){ var x = computeLoad(h.d); return {h: h, pct: x.pct}; });
+  ldCacheKey = '';
+  L = computeLoad();
+  var k = L.k;
+  function seg(arr, cur, attr){ return '<div class="seg" role="group">' + arr.map(function(x){ return '<button class="seg-btn' + (x.v === cur ? ' on' : '') + '" ' + attr + '="' + x.v + '">' + x.l + '</button>'; }).join('') + '</div>'; }
+  var pens = [100, 90, 80, 70, 60, 50].map(function(p){ return {v: p, l: p + ' %'}; });
+  var curPensum = Math.min(100, Math.round(cfg.pensum));
+  var weekH = cfg.hours.reduce(function(a, b){ return a + b; }, 0);
+  var P = L.parts, scale = Math.max(L.cap, L.demand, 1) * k;
+  var bars = [
+    {key: 'due', label: 'Tasks mit Frist im Zeitraum', cls: 'b-due'},
+    {key: 'later', label: 'Tasks mit späterer Frist (anteilig)', cls: 'b-later'},
+    {key: 'undated', label: 'Tasks ohne Frist (anteilig)', cls: 'b-undated'},
+    {key: 'meetings', label: 'Geplante Meetings', cls: 'b-meet'},
+    {key: 'unplanned', label: 'Ungeplantes (gelernt, ' + Math.round(learn.unplShare * 100) + ' % der Sollzeit)', cls: 'b-unpl'}
+  ];
+  var stack = '<div class="ld-stack" aria-hidden="true">' + bars.map(function(b){ var w = P[b.key] * k / scale * 100; return w > 0.3 ? '<i class="' + b.cls + '" style="width:' + w.toFixed(2) + '%"></i>' : ''; }).join('') + '</div>' +
+    '<div class="ld-capline' + (L.cap * k / scale > 0.8 ? ' right' : '') + '" style="left:' + Math.min(100, L.cap * k / scale * 100).toFixed(2) + '%"><span>Sollzeit</span></div>';
+  var legend = bars.map(function(b){
+    return '<div class="ld-leg"><i class="' + b.cls + '"></i><span>' + escapeHtml(b.label) + '</span><b>' + fmtHM(P[b.key] * 60) + '</b></div>';
+  }).join('');
+  /* Verlauf: gearbeitet gegenüber Soll in den letzten 8 Wochen, dazu die Prognose. */
+  var hist = learn.weeks.map(function(w){ return {label: 'KW ' + isoWeekNumber(new Date(w.from + 'T00:00:00')), pct: w.soll > 0 ? Math.round(w.ist / w.soll * 100) : null}; });
+  hist.push({label: 'Prognose', pct: L.pct, future: true});
+  var maxPct = Math.max(130, Math.max.apply(null, hist.map(function(h){ return h.pct || 0; })));
+  var bw = 100 / hist.length;
+  var chart = '<svg class="dash-chart ld-chart" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Verlauf der Auslastung">' +
+    '<line class="goal" x1="0" x2="100" y1="' + (40 - 100 / maxPct * 36).toFixed(2) + '" y2="' + (40 - 100 / maxPct * 36).toFixed(2) + '" vector-effect="non-scaling-stroke"/>' +
+    hist.map(function(h, i){
+      if(h.pct == null) return '';
+      var hh = h.pct / maxPct * 36, x = i * bw + bw * 0.18;
+      var cls = h.future ? loadLevel(h.pct).cls + ' future' : (h.pct > 110 ? 'over' : 'hist');
+      return '<rect class="bar ' + cls + '" x="' + x.toFixed(2) + '" y="' + (40 - hh).toFixed(2) + '" width="' + (bw * 0.64).toFixed(2) + '" height="' + hh.toFixed(2) + '" rx="0.6"/>';
+    }).join('') + '</svg>' +
+    '<div class="ld-chart-lbl">' + hist.map(function(h){ return '<span' + (h.future ? ' class="future"' : '') + '><b>' + (h.pct == null ? '–' : h.pct + '%') + '</b>' + escapeHtml(h.label) + '</span>'; }).join('') + '</div>';
+  var top = L.items.filter(function(x){ return x.min >= 5; }).slice(0, 8).map(function(x){
+    var why = x.kind === 'due' ? 'Frist ' + shortDateLabel(x.t.dueDate) : x.kind === 'later' ? Math.round(x.share * 100) + ' % davon, Frist ' + shortDateLabel(x.t.dueDate) :
+      x.kind === 'meetings' ? 'Meeting' : Math.round(x.share * 100) + ' % davon (ohne Frist, ' + (PRIORITIES[x.t.priority] || PRIORITIES.medium).label + ')';
+    return '<div class="dash-row" data-ld-task="' + x.t.id + '"><span class="dash-row-title">' + escapeHtml(x.t.title) + '</span><span class="dash-row-extra">' + escapeHtml(why) + ' · <b>' + fmtHM(x.min * 60) + '</b></span></div>';
+  }).join('');
+  var m = nxModel();
+  var maxW = Math.max.apply(null, NX_FEATURES.map(function(f){ return Math.abs(m.w[f.key]); }).concat([1]));
+  var modelRows = NX_FEATURES.slice().sort(function(a, b){ return m.w[b.key] - m.w[a.key]; }).map(function(f){
+    var w = m.w[f.key], d = w - f.w0;
+    return '<div class="type-bar"><span class="ld-w-name">' + escapeHtml(f.label) + '</span><span class="type-bar-track"><i style="width:' + Math.max(0, w / maxW * 100).toFixed(1) + '%;background:var(--accent);"></i></span>' +
+      '<span class="type-bar-val" title="Startwert ' + f.w0 + '">' + (Math.abs(d) >= 0.05 ? (d > 0 ? '▲' : '▼') : '') + '</span></div>';
+  }).join('');
+  var lastFb = loadModelSettings().feedback.slice(-1)[0];
+  var leadTxt = ['critical', 'high', 'medium', 'low'].map(function(p){ return PRIORITIES[p].label + ' ' + String(Math.round(learn.lead[p] * 10) / 10).replace('.', ',') + ' T.' + (learn.leadN[p] ? '' : '*'); }).join(' · ');
+  var est = estimateStats().all;
+  board.innerHTML = '<div class="dash ld-wrap">' +
+    '<div class="dash-head"><div><h1>🌡️ Auslastung</h1><p>Wie voll bist du in den nächsten Arbeitstagen? Lernt aus deiner Zeiterfassung und deinem Feedback.</p></div>' +
+      '<div class="dash-actions"><div class="form-row"><label>Zeitraum</label>' + seg(LOAD_HORIZONS.map(function(h){ return {v: h.d, l: h.label}; }), L.H, 'data-ld-h') + '</div></div></div>' +
+    '<div class="ld-hero">' +
+      '<section class="dcard ld-main"><div class="ld-gwrap">' + loadGaugeSvg(L.pct, lvl) + '</div>' +
+        '<div class="ld-level ' + lvl.cls + '">' + escapeHtml(lvl.label) + '</div><div class="ld-tip">' + escapeHtml(lvl.tip) + '</div>' +
+        '<div class="ld-sum">' + fmtHM(L.demand * k * 60) + ' Arbeit für ' + fmtHM(L.cap * 60) + ' Sollzeit · bis ' + escapeHtml(shortDateLabel(L.endDs)) + '</div>' +
+        '<div class="ld-hz">' + horizons.map(function(x){ var lv = loadLevel(x.pct); return '<span class="ld-hz-i ' + lv.cls + '"><b>' + (x.pct == null ? '–' : x.pct + ' %') + '</b>' + escapeHtml(x.h.label) + '</span>'; }).join('') + '</div>' +
+      '</section>' +
+      '<section class="dcard ld-side">' +
+        '<div class="dcard-head"><h3>Dein Pensum</h3><button class="btn ghost" id="ldWt">⚙️ Sollzeit</button></div>' +
+        seg(pens, pens.some(function(p){ return p.v === curPensum; }) ? curPensum : -1, 'data-ld-p') +
+        '<div class="ld-pinput"><label for="ldPensum">Eigenes Pensum</label><div class="wt-unit"><input type="number" id="ldPensum" min="5" max="100" step="5" value="' + curPensum + '"><span>%</span></div></div>' +
+        '<div class="hint">= ' + fmtHMin(weekH * 60) + ' Std. pro Woche (' + escapeHtml([1,2,3,4,5,6,0].filter(function(i){ return cfg.hours[i]; }).map(function(i){ return WT_DAYS[i] + ' ' + String(cfg.hours[i]).replace('.', ','); }).join(', ') || 'keine Arbeitstage') + '). 100 % = ' + String(cfg.fullWeek).replace('.', ',') + ' Std.</div>' +
+        '<div class="wr-sec">Wie fühlt sich das an?</div>' +
+        '<div class="ld-feel">' + LOAD_FEEL.map(function(o){ return '<button class="btn' + (lastFb && lastFb.d === L.today && lastFb.felt === o.key ? ' on' : '') + '" data-ld-feel="' + o.key + '">' + o.icon + ' ' + escapeHtml(o.label) + '</button>'; }).join('') + '</div>' +
+        '<div class="hint">Dein Gefühl hilft dem Algorithmus: ' + (Math.abs(k - 1) >= 0.02 ? 'bisher korrigiert er um ' + (k > 1 ? '+' : '−') + Math.abs(Math.round((k - 1) * 100)) + ' %.' : 'noch keine Korrektur nötig.') + '</div>' +
+      '</section>' +
+    '</div>' +
+    '<section class="dcard wide" style="margin-top:14px;"><div class="dcard-head"><h3>Woraus sich das zusammensetzt</h3><span class="hint">' + fmtHM(L.demand * k * 60) + ' / ' + fmtHM(L.cap * 60) + '</span></div>' +
+      '<div class="ld-bar">' + stack + '</div><div class="ld-legend">' + legend + '</div>' +
+      (Math.abs(k - 1) >= 0.02 ? '<div class="hint" style="margin-top:6px;">Inklusive deines Gefühls-Faktors ×' + String(Math.round(k * 100) / 100).replace('.', ',') + '.</div>' : '') +
+    '</section>' +
+    '<div class="dash-grid" style="margin-top:14px;">' +
+      '<section class="dcard"><div class="dcard-head"><h3>Verlauf</h3><span class="hint">gearbeitet ÷ Soll pro Woche</span></div>' + chart + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Was am meisten Zeit braucht</h3></div>' + (top || '<div class="empty-state">Keine offenen Tasks mit Aufwand im Zeitraum.</div>') + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Was das Board gelernt hat</h3></div><div class="fc-explain">' +
+        '<p><b>Ungeplantes:</b> ' + Math.round(learn.unplShare * 100) + ' % deiner Sollzeit geht für Spontanes drauf (Zeit ohne Task und Tasks, die am selben Tag reinkamen)' + (learn.usedWeeks ? ', aus ' + learn.usedWeeks + ' Woche(n).' : '. Noch keine Daten, ich starte mit 25 %.') + '</p>' +
+        '<p><b>Schätzungen:</b> ' + (est.ratios.length >= EST_MIN_SAMPLES + 2 ? 'deine Tasks ' + escapeHtml(ratioPhrase(est.ratio)) + '. ' + L.corrected + ' Task(s) sind entsprechend korrigiert.' : 'noch zu wenig erledigte Tasks mit Schätzung zum Vergleich.') +
+          (L.assumed ? ' ' + L.assumed + ' Task(s) ohne Schätzung zähle ich mit 1 Std.' : '') + '</p>' +
+        '<p><b>Durchlaufzeit</b> (bis ein Task ohne Frist erledigt ist): ' + escapeHtml(leadTxt) + '</p>' +
+        (learn.workShare ? '<p><b>Gearbeitet:</b> im Schnitt ' + Math.round(learn.workShare * 100) + ' % deiner Sollzeit erfasst.</p>' : '') +
+        '<p class="hint">* noch keine erledigten Tasks dieser Priorität, Vorannahme.</p>' +
+      '</div></section>' +
+      '<section class="dcard" id="ldModel"><div class="dcard-head"><h3>🧭 "Was jetzt?" gewichtet</h3>' + (m.n ? '<button class="btn ghost" id="ldNxReset">Zurücksetzen</button>' : '') + '</div>' + modelRows +
+        '<div class="hint" style="margin-top:6px;">' + (m.n ? m.n + '× aus deinen Entscheidungen gelernt. ▲/▼ = wichtiger/unwichtiger als am Anfang.' : 'Noch nichts gelernt. Startest du einen anderen Task als den Vorschlag, passt das Board die Gewichte an.') + '</div></section>' +
+    '</div>' +
+  '</div>';
+  var wrap = board.querySelector('.ld-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-ld-h], [data-ld-p], [data-ld-feel], [data-ld-task], #ldWt, #ldNxReset');
+    if(!el) return;
+    if(el.dataset.ldH){ state.settings.loadHorizon = parseInt(el.dataset.ldH, 10); save(); renderLoadView(); }
+    else if(el.dataset.ldP){ wtApplyPensum(parseInt(el.dataset.ldP, 10)); renderLoadView(); toast('Pensum ' + el.dataset.ldP + ' % gespeichert, Sollzeit angepasst.'); }
+    else if(el.dataset.ldFeel) loadFeedback(el.dataset.ldFeel);
+    else if(el.dataset.ldTask){ if(getTask(el.dataset.ldTask)) openTaskModal(el.dataset.ldTask); else toast('Dieser Task liegt auf einem anderen Board.'); }
+    else if(el.id === 'ldWt') openWorktimeSettings();
+    else if(el.id === 'ldNxReset') confirmDialog('Gelernte Gewichte für "Was jetzt?" zurücksetzen?', 'Zurücksetzen', function(){ delete state.settings.nextModel; save(); closeModal(); renderLoadView(); });
+  });
+  document.getElementById('ldPensum').addEventListener('change', function(e){
+    var p = parseInt(e.target.value, 10);
+    if(!(p >= 5 && p <= 100)){ toast('Pensum zwischen 5 und 100 %.'); return; }
+    wtApplyPensum(p); renderLoadView(); toast('Pensum ' + p + ' % gespeichert, Sollzeit angepasst.');
+  });
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-ld-open]');
+  if(b){ e.preventDefault(); switchToView('load'); }
+});
 
 /* =========================================================
    WOCHENRÜCKBLICK (geführt, ca. 5 Minuten)
@@ -12388,6 +12969,7 @@ function cmdActionsList(){
     {icon:'⏱️', label:'Arbeitszeit: Gleitzeit-Saldo und Ferien', run: function(){ switchToView('worktime'); }},
     {icon:'🏖️', label:'Ferien / Abwesenheit eintragen', run: function(){ openAbsenceDialog(toDateInputValue(new Date()), ''); }},
     {icon:'🔮', label:'Fristen-Prognose: Schaffe ich meine Fristen?', run: function(){ switchToView('forecast'); }},
+    {icon:'🌡️', label:'Auslastung: Wie voll bin ich? (Pensum)', run: function(){ switchToView('load'); }},
     {icon:'📄', label:'Wochenbericht erstellen', run: openWeeklyReport},
     {icon:'🖨️', label:'Wochenbericht als PDF (Druckdialog)', run: printWeeklyReportPdf},
     {icon:'🤝', label:'Schichtübergabe-Report', run: openHandoffReport},
