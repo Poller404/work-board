@@ -42,6 +42,21 @@ Timo wollte "5 weitere grosse Features, die das Tool weiterbringen"; Auswahl dur
 Getestet: Playwright mit Supabase-Mock, PC 1440px, iPhone 402px, Dunkelmodus, Schadcode-Test in allen neuen Feldern.
 Nicht getestet: echtes Supabase, Abgleich der Gesprächsthemen zwischen zwei Geräten.
 
+## ✅ Stand 2026-10-27: Auslastung mit Pensum und lernendem "Was jetzt?" (Branch `claude/project-thread-9ojl3n`)
+
+Timo wollte eine Auslastungsanzeige mit einstellbarem Pensum, bestimmt durch einen lernenden Algorithmus; auch "Was jetzt?" soll dazulernen.
+- **Pensum**: `wtConfig` liefert `pensum` (1–100, sonst aus Wochenstunden ÷ `fullWeek` abgeleitet) und `fullWeek` (Std. bei 100 %, Standard 42). Im Dialog Sollzeit & Ferien
+  verteilt eine Pensum-Änderung die Wochenstunden proportional neu (`wtScaleHours`); `wtApplyPensum` macht dasselbe aus der Auslastungs-Ansicht.
+- **Auslastung** (Ansicht `load`, Block "AUSLASTUNG (lernend)" vor dem Wochenrückblick): `computeLoad(H)` = Bedarf ÷ Kapazität über H Arbeitstage (5/10/20, `settings.loadHorizon`).
+  Kapazität = Soll (heute nur der Rest). Bedarf = Restaufwand offener Tasks aller persönlichen Boards (`ldOpenTasks`, Schätzung mit gelerntem Korrekturfaktor), Frist im Zeitraum voll,
+  spätere Frist anteilig, ohne Frist anteilig nach gelernter Durchlaufzeit pro Priorität; dazu Meetings mit `scheduledAt` und ungeplante Arbeit.
+  `ldLearn`: ungeplanter Anteil (Zeit ohne Task + Sitzungen < 24 h nach Task-Erstellung) der letzten 8 Wochen, gewichtet, mit Vorannahme 25 % gemischt; Durchlaufzeit (Median, Vorannahme `LEAD_DEFAULT`).
+  Feedback "Wie fühlt sich das an?" passt Faktor `settings.loadModel.k` (0,6–1,6) an. Stufen in `loadLevel`. Kurzanzeige `loadBadgeHtml` in Mein Tag und Arbeitszeit.
+- **"Was jetzt?"**: `rankWhatNow` bewertet Merkmale (`NX_FEATURES`) mit Gewichten aus `settings.nextModel`; `nxLearn` = paarweises Perceptron-Update.
+  Gelernt wird im neuen Dialog (anderer Task gewählt / "Anderer Vorschlag") und leise in `startTimer` über `nxLearnFromStart`. Gewichte und Reset in der Auslastungs-Ansicht.
+- Einstellungen (Modelle, Pensum) werden wie andere Einstellungen nicht Eintrag für Eintrag zwischen Geräten abgeglichen.
+Getestet: Playwright mit Supabase-Mock, PC 1440px, iPhone 402px, Dunkelmodus. Nicht getestet: echtes Supabase.
+
 ## ✅ Stand 2026-10-27: Arbeitszeitkonto, Fristen-Prognose, Wochenrückblick (Branch `claude/project-thread-ia3u8v`)
 
 Timo wollte "3 grosse Features, die alles positiv verändern"; Auswahl durch Claude. Block vor "STATUS BAR" in index.html:
