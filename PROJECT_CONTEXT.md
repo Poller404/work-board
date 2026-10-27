@@ -24,6 +24,22 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-27: Arbeitszeitkonto, Fristen-Prognose, Wochenrückblick (Branch `claude/project-thread-ia3u8v`)
+
+Timo wollte "3 grosse Features, die alles positiv verändern"; Auswahl durch Claude. Block vor "STATUS BAR" in index.html:
+- **Arbeitszeitkonto** (Ansicht `worktime`): `wtConfig` (settings.worktime {configured,start,carryMin,hours[getDay],vacationDays,holidays}),
+  `wtHolidayMap` (CH-Feiertage, Ostern per `easterSunday`), Abwesenheiten `settings.absences` ({id 'ab-',from,to,kind,half,text,updatedAt})
+  in `SYNC_LISTS` + `normalizeAbsence`. `wtIstMap` zählt eigene Sitzungen aus `wtTaskPool` (aktives Board, state.boards, personalStash, freeTime).
+  Saldo = Übertrag + Ist−Soll vom Start bis gestern. Dialoge `openAbsenceDialog`, `openWorktimeSettings`.
+- **Fristen-Prognose** (Ansicht `forecast`): `computeForecast` (Cache pro Minute/Speicherstand), Kapazität `fcDayCapacity` = Soll − Ist heute −
+  Meetings, × `settings.forecastFocusPct` (Standard 75). EDF-Simulation, Status ok/tight/late/overdue, `shortMin`. Karten: `forecastDueInfo` färbt
+  die Fälligkeit; Schnellfilter `risk`. Nichts davon wird gespeichert.
+- **Wochenrückblick** (`openWeekReview`, Modal mit 3 Schritten, Zustand `wr`): `wrBuildQueue`, `wrGoalCandidates`, `settings.weekGoals`
+  {week: Montag, ids}, `settings.lastWeekReview`, Erinnerung `wrMaybeNudge` (localStorage `wb-wr-nudged`, `settings.weekReviewNudge`).
+  Wochenziele in Mein Tag (`#mdReview`) und 🎯 auf Karten.
+Getestet: Playwright mit Supabase-Mock, PC 1440px und iPhone 402px. Nicht getestet: echtes Supabase, Abgleich der Abwesenheiten zwischen zwei Geräten.
+Zeit in geteilten Boards zählt im Arbeitszeitkonto nur, solange das geteilte Board offen ist.
+
 ## ✅ Stand 2026-10-27: Task auf anderes Board verschieben (Branch `claude/project-thread-hpxlra`)
 
 Timo wollte Tasks auf ein anderes Board verschieben. Block "TASK AUF ANDERES BOARD VERSCHIEBEN" nach `createNewBoard`:
