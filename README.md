@@ -142,9 +142,20 @@ Damit der Link der Reset-E-Mail wieder in der App landet, muss in Supabase unter
    (siehe "☁️ Cloud-Speicher" unten). Auf jedem Gerät, auf dem du angemeldet bist, ist derselbe Stand.
 2. **Lokal im Browser (laufend):** Jede Änderung wird sofort im Browser gespeichert (localStorage), damit
    die App auch offline funktioniert. Beim nächsten Online-Moment wird abgeglichen.
-3. **Lokale Sicherung als Datei (optional):** **💾 Sichern** oben (oder `Strg+S`) lädt eine Datei
-   `work-board-daten.json` herunter, z.B. als zusätzliches Backup. Über ⚙️ Einstellungen → Konto →
-   **📂 Datei laden** liest du sie wieder ein. Der Anthropic-API-Key ist nicht enthalten.
+3. **🛟 Backup & Wiederherstellung (automatisch):** Einmal pro Tag wird ein verschlüsselter
+   Sicherungspunkt in der Cloud abgelegt (Tabelle `board_snapshots`): alle persönlichen Boards,
+   Zeitbuchungen, Journal, Einstellungen und eine Kopie der geteilten Boards. Aufbewahrt werden die
+   letzten 14 Tage täglich und danach einer pro Woche für 12 Wochen. Unter ⚙️ Einstellungen → Konto →
+   **🛟 Sicherungen anzeigen & wiederherstellen** (oder `Strg+K` → "Backup") siehst du jeden
+   Sicherungspunkt mit einer Vorschau, welche Tasks zurückkommen oder wegfallen. Vor dem
+   Wiederherstellen wird der aktuelle Stand gemerkt, **Rückgängig** holt ihn zurück. Gelöschte Bilder
+   der Task-Seiten bleiben 90 Tage in der Cloud, damit sie mit einem älteren Stand wiederkommen.
+4. **Backup-Datei (zusätzlich):** **💾 Sichern** oben (oder `Strg+S`) lädt eine **verschlüsselte** Datei
+   `work-board-backup-JJJJ-MM-TT.json` herunter, inkl. Bilder der Task-Seiten. Passwort ist deine
+   Cloud-Passphrase (ohne Cloud-Speicher fragt die App nach einem eigenen Passwort). Über
+   **📂 Datei laden** liest du sie wieder ein, auch nach einem Passphrase-Wechsel (die App fragt dann nach
+   der alten). "Unverschlüsselt exportieren" gibt es im Backup-Fenster weiterhin für Sonderfälle.
+   KI-API-Keys sind nie enthalten.
 
 Die Statusleiste unten zeigt den Cloud-Status (aktiv, Fehler, nicht eingerichtet) und die Zahl der aktiven Tasks.
 
@@ -806,8 +817,8 @@ manuelles Exportieren/Importieren. Einzelne Tasks lassen sich zusätzlich über 
   Wochenberichte als E-Mail-Entwurf statt nur Kopieren.
 
 **Daten & Zugriff**
-- Der Cloud-Speicher legt automatisch täglich einen **Snapshot** (Tabelle `board_snapshots`) ab (letzte 7 Tage) –
-  zusätzliche Absicherung gegen einen fehlerhaft hochgeladenen Stand.
+- Der Cloud-Speicher legt automatisch täglich einen verschlüsselten **Sicherungspunkt** (Tabelle `board_snapshots`) ab
+  (14 Tage täglich, danach 12 Wochen wöchentlich), wiederherstellbar unter **🛟 Backup & Wiederherstellung**.
 - **Automatischer Sync-Retry**: meldet der Browser die Internetverbindung zurück (z.B. nach
   VPN-Wechsel oder WLAN-Aussetzer), synchronisiert Cloud-Sync sofort statt bis zu 45s auf das
   nächste Poll-Intervall zu warten.
