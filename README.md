@@ -574,6 +574,21 @@ findet, einfach Titel/Beschreibung manuell markieren, kopieren und stattdessen
   dann heisst der Task "Zeiterfassung HH:MM" und kann jederzeit im Task selbst umbenannt werden.
   Auch über die Command Palette (`Strg+K`) erreichbar.
 
+## ⏳ Kurzzeit-Timer & Control-Center
+
+- **Kurzzeit-Timer** (Sanduhr ⏳ in der Kopfzeile): z.B. „20 Min. warten“. Schnellwahl 5 Min. bis 1 Std.
+  oder eigene Dauer (`20`, `1h30`, `1:30`) und optional ein Text („Waschmaschine“). Mehrere Timer
+  gleichzeitig, je mit +5 Min., Anhalten und Löschen. Die Sanduhr zeigt ruhig die Restzeit an, ohne
+  Blinken. Am Ende: leiser Zweiklang (Einstellungen → Darstellung abschaltbar), ein Hinweis unten mit
+  „+5 Min.“ und, falls erlaubt, eine System-Mitteilung. Unabhängig von der Zeiterfassung und nur auf
+  dem Gerät gespeichert, auf dem der Timer läuft. Auch per Sprachbefehl („Timer 20 Minuten für
+  Waschmaschine“) und in der Befehlspalette (Strg+K).
+- **Control-Center** (kleines schwebendes Fenster): zwei Grössen, umschaltbar mit ⤡ / ⤢.
+  *Kompakt* zeigt nur den laufenden Task, die Kurzzeit-Timer und „Als Nächstes“ aus Mein Tag, das
+  Fenster schrumpft passend. *Ausführlich* hat zusätzlich Notiz, Schnell-Anlegen, Hotline, Meeting,
+  Zeit erfassen, Mein Tag und Zuletzt bearbeitet. Abschnitte lassen sich einklappen, ohne laufenden
+  Timer gibt es „Weiter mit: …“, und neben „Heute“ steht das Tagesziel mit dünnem Fortschrittsbalken.
+
 ## Mail zu Task
 
 Eine vollautomatische Mail-Überwachung ist mit einer rein lokalen Datei technisch nicht möglich

@@ -40,6 +40,25 @@ Timo wollte "3 grosse Features, die alles positiv verändern"; Auswahl durch Cla
 Getestet: Playwright mit Supabase-Mock, PC 1440px und iPhone 402px. Nicht getestet: echtes Supabase, Abgleich der Abwesenheiten zwischen zwei Geräten.
 Zeit in geteilten Boards zählt im Arbeitszeitkonto nur, solange das geteilte Board offen ist.
 
+## ✅ Stand 2026-10-27: Kurzzeit-Timer und Control-Center (Branch `claude/project-thread-bft2ob`)
+
+Timo wollte dezente Timer („20 Minuten warten“) und eine bessere Miniaturansicht.
+- Block "KURZZEIT-TIMER" nach den freistehenden Erinnerungen: `countdowns` in localStorage `wb-countdowns`
+  (bewusst nur pro Gerät, damit PC und Handy nicht doppelt klingeln), `startCountdown`, `cdAction`
+  (stop/ok/pause/plus5), `cdCheck` (1-s-Intervall plus `cdSchedule` mit einem setTimeout auf den nächsten
+  Ablauf, weil Hintergrund-Tabs setInterval drosseln), `cdFire` (leiser Zweiklang `cdChime`, Toast mit
+  „+5 Min.“, Notification). Abgelaufene unbestätigte Timer fallen nach 2 h still weg.
+- `cdFill(host, {compact})` baut das Panel für das Kopfzeilen-Menü `#cdPop` (Knopf `#btnCountdown`) und
+  das Control-Center; die Liste wird nur bei geänderter Struktur neu gebaut, sonst nur Zeiten/Balken.
+  `CD_CSS` steht vor `CC_CSS`, weil es in beide Dokumente (Seite und PiP-Fenster) eingefügt wird.
+- Einstellung `countdownSound` (Standard an). Sprachbefehl „Timer/Wecker 20 Minuten [für …]“.
+- Control-Center: `state.settings.ccCompact` (Kompakt: nur laufender Task, Timer, „Als Nächstes“;
+  PiP-Fenster per `ccFitWindow` → `resizeTo`, geht nur nach einem Klick), `ccCollapsed` pro Abschnitt
+  (`ccSection`), „Weiter mit“ (`ccResumeTask`), Tagesziel-Balken, Buchungsbeginn und Gesamtzeit.
+- Getestet mit Playwright (Mock-Supabase): Start per Schnellwahl und eigener Dauer, Ablauf mit Toast,
+  OK, Kompakt/Ausführlich, Einklappen, iPhone 402 px, Dunkelmodus. Die PiP-Grössenänderung lässt sich
+  headless nicht prüfen.
+
 ## ✅ Stand 2026-10-27: Task auf anderes Board verschieben (Branch `claude/project-thread-hpxlra`)
 
 Timo wollte Tasks auf ein anderes Board verschieben. Block "TASK AUF ANDERES BOARD VERSCHIEBEN" nach `createNewBoard`:
