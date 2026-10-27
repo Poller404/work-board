@@ -3241,7 +3241,8 @@ function openCardContextMenu(t, x, y){
     item('data-ctx="timeblock"', 'clock', 'Zeitblock buchen…') +
     item('data-ctx="myday"', 'sun', isInMyDay(t.id) ? 'Aus Mein Tag entfernen' : 'Zu Mein Tag hinzufügen') +
     item('data-ctx="pin"', 'pin', t.pinned ? 'Anheften lösen' : 'Anheften') +
-    item('data-ctx="duplicate"', 'layers', 'Duplizieren');
+    item('data-ctx="duplicate"', 'layers', 'Duplizieren') +
+    item('data-ctx="board"', 'board', 'Auf anderes Board…');
   html += '<div class="ctx-label">Priorität</div><div class="ctx-prios">' +
     Object.keys(PRIORITIES).map(function(k){
       return '<button type="button" class="ctx-prio prio-'+k+(t.priority===k?' on':'')+'" data-ctx-prio="'+k+'" title="'+escapeAttr(PRIORITIES[k].label)+'"><span class="prio prio-'+k+'"><i></i><i></i><i></i></span>'+escapeHtml(PRIORITIES[k].label)+'</button>';
@@ -3290,6 +3291,7 @@ function openCardContextMenu(t, x, y){
       createTask(copy);
       renderAll();
     }
+    else if(item.dataset.ctx === 'board'){ openMoveToBoardDialog(t.id); }
     else if(item.dataset.ctx === 'archive'){ pushUndoSnapshot(); updateTask(t.id, {archived:true}); renderAll(); }
     else if(item.dataset.ctx === 'delete'){
       confirmDialog('Task "'+t.title+'" wirklich löschen?', 'Löschen', function(){ deleteTask(t.id); closeModal(); renderAll(); });
@@ -5622,6 +5624,7 @@ function openTaskModal(taskId){
             '<button class="btn" id="askAiBtn">'+svgIcon('chat')+'<span>Assistent fragen…</span></button>' +
             '<button class="btn" id="qrShareBtn">'+svgIcon('grid')+'<span>QR-Code</span></button>' +
             '<div class="sep"></div>' +
+            '<button class="btn" id="moveBoardBtn">'+svgIcon('board')+'<span>Auf anderes Board…</span></button>' +
             (!t.archived ? '<button class="btn" id="archiveTaskBtn">'+svgIcon('box')+'<span>Archivieren</span></button>' : '<button class="btn" id="unarchiveTaskBtn">'+svgIcon('box')+'<span>Wiederherstellen</span></button>') +
           '</div>' +
         '</div>' +
@@ -5967,6 +5970,7 @@ function openTaskModal(taskId){
       openTaskModal(t.id);
     });
   });
+  document.getElementById('moveBoardBtn').addEventListener('click', function(){ openMoveToBoardDialog(t.id, true); });
   var archBtn = document.getElementById('archiveTaskBtn');
   if(archBtn) archBtn.addEventListener('click', function(){
     pushUndoSnapshot();
@@ -8299,6 +8303,25 @@ function applyMergedTasksTo(container, merged){
   if(canon(container.columns) !== canon(merged.columns)){ container.columns = merged.columns; changed = true; }
   return changed;
 }
+/* Nicht aktive persönliche Boards (state.boards) als Ganzes abgleichen: die neuere Fassung
+   (updatedAt, gesetzt beim Wegwechseln oder wenn ein Task hineinverschoben wird) gewinnt.
+   Sonst würde ein anderes Gerät mit altem Stand einen hineinverschobenen Task wieder überschreiben. */
+function mergeInactiveBoards(remoteBoards){
+  var out = {applied: false, differs: false};
+  if(!Array.isArray(remoteBoards)) return out;
+  state.boards.forEach(function(b, i){
+    var r = remoteBoards.find(function(x){ return x && x.name === b.name; });
+    if(!r) return;
+    var lt = b.updatedAt || '', rt = typeof r.updatedAt === 'string' ? r.updatedAt : '';
+    if(rt > lt){
+      var cols = normalizeColumns(r.columns);
+      state.boards[i] = {name: b.name, columns: Array.isArray(cols) && cols.length ? cols : b.columns,
+        tasks: (Array.isArray(r.tasks) ? r.tasks : []).filter(function(t){ return t && typeof t === 'object'; }).map(normalizeTask), updatedAt: rt};
+      out.applied = true;
+    } else if(lt > rt) out.differs = true;
+  });
+  return out;
+}
 /* Läuft synchron mit dem persönlichen Stand (withPersonalState). */
 function mergePersonalRemote(result){
   var rs = result.state || {};
@@ -8333,6 +8356,9 @@ function mergePersonalRemote(result){
   var listMerge = mergeSyncLists(base, rs.settings);
   if(listMerge.applied) changed = true;
   if(listMerge.differs) differsFromRemote = true;
+  var boardMerge = mergeInactiveBoards(rs.boards);
+  if(boardMerge.applied) changed = true;
+  if(boardMerge.differs) differsFromRemote = true;
   if(changed) out.applied = true;
   if(differsFromRemote) state.meta.updatedAt = nowIso();
   else if(changed) state.meta.updatedAt = result.updatedAt;
@@ -10583,7 +10609,7 @@ function cmdMoveSelection(delta){
    ========================================================= */
 function stashCurrentBoard(){
   var idx = state.boards.findIndex(function(b){ return b.name === state.settings.activeBoardName; });
-  var snapshot = {name: state.settings.activeBoardName, columns: state.columns, tasks: state.tasks};
+  var snapshot = {name: state.settings.activeBoardName, columns: state.columns, tasks: state.tasks, updatedAt: nowIso()};
   if(idx >= 0) state.boards[idx] = snapshot; else state.boards.push(snapshot);
 }
 function switchBoard(name){
@@ -10617,6 +10643,237 @@ function createNewBoard(name){
   save();
   renderAll();
   toast('📋 Neues Board erstellt: ' + name);
+}
+
+/* =========================================================
+   TASK AUF ANDERES BOARD VERSCHIEBEN
+   Ziel ist ein anderes persönliches Board (state.boards, bzw. personalStash,
+   wenn gerade ein geteiltes Board offen ist) oder ein geteiltes Board, in dem
+   man Mitglied ist. Der Task behält Notizen, Buchungen, Zeit, Ticket und Seite.
+   In ein geteiltes Board wird direkt geschrieben (holen, anhängen, verschlüsseln,
+   mit Versionsprüfung hochladen); erst wenn das geklappt hat, verschwindet der
+   Task hier. Bilder der Seite bekommen beim Wechsel zwischen persönlich und
+   geteilt neue Dateien mit der board_id des Ziels (task_files kennt kein Update),
+   damit die Mitglieder sie sehen.
+   ========================================================= */
+function moveTargets(){
+  var out = [];
+  if(activeShared && personalStash) out.push({kind: 'local', name: state.settings.activeBoardName, columns: personalStash.columns, active: true});
+  state.boards.forEach(function(b){
+    if(activeShared || b.name !== state.settings.activeBoardName) out.push({kind: 'local', name: b.name, columns: b.columns});
+  });
+  sharedList.forEach(function(sb){
+    if(!activeShared || sb.id !== activeShared.id) out.push({kind: 'shared', id: sb.id, name: sb.name, columns: (sb.content && sb.content.columns) || []});
+  });
+  return out;
+}
+/* Gewählte Spalte, sonst gleichnamige Spalte, sonst die erste. */
+function pickMoveColumn(columns, wantedId, srcName){
+  if(!columns || !columns.length) return '';
+  if(wantedId && columns.some(function(c){ return c.id === wantedId; })) return wantedId;
+  var n = (srcName || '').trim().toLowerCase();
+  var same = n && columns.find(function(c){ return c.name.trim().toLowerCase() === n; });
+  return same ? same.id : columns[0].id;
+}
+function movedTaskCopy(t, target){
+  var c = JSON.parse(JSON.stringify(t));
+  delete c.rank;
+  c.blockedBy = [];
+  if(target.kind === 'shared'){
+    /* In geteilten Boards gehört jede Sitzung/Buchung einer Person, sonst zählt sie bei allen. */
+    var me = myUserId();
+    c.timeSessions.forEach(function(s){ if(!s.by) s.by = me; });
+    (c.bookings || []).forEach(function(b){ if(!b.by) b.by = me; });
+  }
+  logActivity(c, 'Board gewechselt: ' + currentBoardName() + ' → ' + target.name);
+  c.updatedAt = nowIso();
+  return c;
+}
+function placeMovedTask(task, columns, colId, srcColName){
+  task.columnId = pickMoveColumn(columns, colId, srcColName);
+  var col = columns.find(function(c){ return c.id === task.columnId; });
+  var done = !!(col && DONE_COLUMN_RE.test(col.name));
+  if(done && !task.completedAt) task.completedAt = nowIso();
+  else if(!done && task.completedAt) task.completedAt = null;
+  return task;
+}
+function moveCopyPageImages(task, toBoardId){
+  var res = {added: [], old: []};
+  var imgs = task.page && task.page.items ? task.page.items.filter(function(it){ return it.type === 'img'; }) : [];
+  var fromBoardId = activeShared ? activeShared.id : '';
+  if(!imgs.length || fromBoardId === toBoardId) return Promise.resolve(res);
+  return Promise.all(imgs.map(function(it){
+    return pageLoadImage(it).then(function(url){
+      if(!url) return;
+      var fileId = uid() + Math.random().toString(36).slice(2, 6);
+      return pageFilePut({id: fileId, data: url, key: it.key, pending: true, boardId: toBoardId, at: nowIso()}).then(function(){
+        res.old.push(it.file);
+        res.added.push(fileId);
+        it.file = fileId;
+      });
+    }).catch(function(){});
+  })).then(function(){ return res; });
+}
+/* Alte Bilddateien erst löschen, wenn die neuen hochgeladen sind. */
+function moveFinishPageImages(res){
+  if(!res.added.length) return;
+  pageUploadPending().then(function(){
+    res.added.forEach(function(id, i){
+      pageFileGet(id).then(function(rec){ if(rec && !rec.pending) pageDeleteFile(res.old[i]); });
+    });
+  });
+}
+function addTaskToSharedBoard(boardId, task, colId, srcColName, attempt){
+  attempt = attempt || 0;
+  var entry = sharedList.find(function(x){ return x.id === boardId; });
+  if(!entry) return Promise.reject(new Error('Dieses Board ist nicht mehr verfügbar.'));
+  var client = getSupabaseClient();
+  return client.from('shared_boards').select('payload, version').eq('id', boardId).maybeSingle().then(function(res){
+    if(res.error) throw new Error(res.error.message);
+    if(!res.data) throw new Error('Du hast keinen Zugriff mehr auf dieses Board.');
+    var version = res.data.version;
+    return boardDecrypt(res.data.payload, entry.key).then(function(remote){
+      var columns = normalizeColumns(remote.columns);
+      var tasks = (Array.isArray(remote.tasks) ? remote.tasks : []).filter(function(x){ return x && typeof x === 'object' && x.id !== task.id; });
+      tasks.unshift(placeMovedTask(task, columns, colId, srcColName));
+      var content = {v: 1, name: remote.name, columns: remote.columns, tasks: tasks};
+      return boardEncrypt(content, entry.key).then(function(payload){
+        return client.from('shared_boards').update({payload: payload, version: version + 1, updated_at: nowIso()}).eq('id', boardId).eq('version', version).select('version');
+      }).then(function(up){
+        if(up.error) throw new Error(up.error.message);
+        if(!up.data || !up.data.length){
+          if(attempt < 3) return addTaskToSharedBoard(boardId, task, colId, srcColName, attempt + 1);
+          throw new Error('Das Board wurde gleichzeitig geändert. Bitte nochmals versuchen.');
+        }
+        /* Eintrag in der Liste auf den neuen Stand bringen, damit das Board beim Öffnen den Task schon zeigt. */
+        var fresh = JSON.parse(JSON.stringify({columns: columns, tasks: tasks}));
+        entry.content = {columns: fresh.columns, tasks: fresh.tasks.map(normalizeTask)};
+        entry.version = version + 1;
+        entry.base = sharedMakeBase({name: entry.name, columns: entry.content.columns, tasks: entry.content.tasks});
+      });
+    }, function(){ throw new Error('Board konnte nicht entschlüsselt werden.'); });
+  });
+}
+function addTaskToLocalBoard(target, task, colId, srcColName){
+  var cont = target.active ? personalStash : state.boards.find(function(b){ return b.name === target.name; });
+  if(!cont) throw new Error('Dieses Board gibt es nicht mehr.');
+  cont.tasks.unshift(normalizeTask(placeMovedTask(task, cont.columns, colId, srcColName)));
+  if(!target.active) cont.updatedAt = nowIso();
+}
+function moveTaskToBoard(taskId, target, colId){
+  var t = getTask(taskId);
+  if(!t) return Promise.reject(new Error('Task nicht gefunden.'));
+  if(isRunning(t)) stopTimer(t.id, true);
+  var srcCol = state.columns.find(function(c){ return c.id === t.columnId; });
+  var srcColName = srcCol ? srcCol.name : '';
+  var sourceShared = activeShared, sourceName = state.settings.activeBoardName;
+  var copy = movedTaskCopy(t, target);
+  var files = {added: [], old: []};
+  return moveCopyPageImages(copy, target.kind === 'shared' ? target.id : '').then(function(r){
+    files = r;
+    if(target.kind === 'shared') return addTaskToSharedBoard(target.id, copy, colId, srcColName);
+    addTaskToLocalBoard(target, copy, colId, srcColName);
+  }).then(function(){
+    if(activeShared !== sourceShared || (!activeShared && state.settings.activeBoardName !== sourceName) || !getTask(taskId)){
+      /* Während des Hochladens wurde das Board gewechselt: lieber doppelt als verloren. */
+      toast('Der Task ist jetzt auch in "' + target.name + '". Bitte im ursprünglichen Board von Hand löschen.', 10000);
+      save();
+      return;
+    }
+    var rankCol = t.rank ? t.columnId : null;
+    state.tasks = state.tasks.filter(function(x){ return x.id !== taskId; });
+    state.tasks.forEach(function(x){
+      if(x.blockedBy.indexOf(taskId) >= 0){ x.blockedBy = x.blockedBy.filter(function(b){ return b !== taskId; }); x.updatedAt = nowIso(); }
+    });
+    if(state.settings.activeTaskId === taskId) state.settings.activeTaskId = null;
+    if(isInMyDay(taskId)) setMyDay(taskId, false);
+    if(rankCol) compactRanks(rankCol);
+    undoStack = [];
+    save();
+    moveFinishPageImages(files);
+  }, function(err){
+    files.added.forEach(pageFileDelete);
+    throw err;
+  });
+}
+function openMoveToBoardDialog(taskId, fromModal){
+  var t = getTask(taskId);
+  if(!t) return;
+  var srcCol = state.columns.find(function(c){ return c.id === t.columnId; });
+  var targets = [];
+  var html =
+    '<div class="modal-header"><h2>Auf anderes Board verschieben</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + ' · jetzt in "' + escapeHtml(currentBoardName()) + '"</p>' +
+      '<div class="form-row"><label for="mvBoard">Board</label><select id="mvBoard"></select></div>' +
+      '<div class="form-row"><label for="mvCol">Spalte</label><select id="mvCol"></select></div>' +
+      '<div class="hint" id="mvHint"></div>' +
+      '<div id="mvErr" class="hint" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" id="mvCancel">Abbrechen</button><button class="btn primary" id="mvGo">Verschieben</button></div>';
+  openModal(html);
+  var boardSel = document.getElementById('mvBoard'), colSel = document.getElementById('mvCol');
+  function current(){ return targets[parseInt(boardSel.value, 10)] || null; }
+  function fillBoards(){
+    var keep = current();
+    targets = moveTargets();
+    var mine = [], shared = [];
+    targets.forEach(function(x, i){
+      var o = '<option value="' + i + '">' + escapeHtml(x.name) + '</option>';
+      (x.kind === 'shared' ? shared : mine).push(o);
+    });
+    boardSel.innerHTML = (mine.length ? '<optgroup label="Meine Boards">' + mine.join('') + '</optgroup>' : '') +
+      (shared.length ? '<optgroup label="Geteilte Boards">' + shared.join('') + '</optgroup>' : '');
+    if(keep){
+      var idx = targets.findIndex(function(x){ return x.kind === keep.kind && (x.kind === 'shared' ? x.id === keep.id : x.name === keep.name); });
+      if(idx >= 0) boardSel.value = String(idx);
+    }
+    fillColumns();
+  }
+  function fillColumns(){
+    var tg = current();
+    var cols = tg ? tg.columns : [];
+    var pick = pickMoveColumn(cols, '', srcCol ? srcCol.name : '');
+    colSel.innerHTML = cols.map(function(c){ return '<option value="' + escapeAttr(c.id) + '"' + (c.id === pick ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>'; }).join('');
+    colSel.disabled = !cols.length;
+    var hint = '';
+    if(!targets.length){
+      hint = cloudReadyForSharing() && !sharedListLoaded ? 'Geteilte Boards werden geladen…' :
+        'Es gibt noch kein anderes Board. Lege eines über den Board-Umschalter oben links an.';
+    } else {
+      hint = 'Notizen, Buchungen und Zeit, Ticket-Link, Checkliste und Seite kommen mit. Abhängigkeiten zu anderen Tasks und die Nummer in der Reihenfolge fallen weg.';
+      if(tg && tg.kind === 'shared') hint += ' Alle Mitglieder von "' + tg.name + '" sehen den Task danach.';
+      else if(activeShared) hint += ' Der Task ist danach nur noch für dich sichtbar.';
+    }
+    document.getElementById('mvHint').textContent = hint;
+    document.getElementById('mvGo').disabled = !tg;
+  }
+  boardSel.addEventListener('change', fillColumns);
+  fillBoards();
+  if(cloudReadyForSharing()) loadSharedBoards().then(function(){ if(document.getElementById('mvBoard') === boardSel) fillBoards(); });
+  document.getElementById('mvCancel').addEventListener('click', function(){
+    if(fromModal) openTaskModal(taskId); else closeModal();
+  });
+  document.getElementById('mvGo').addEventListener('click', function(){
+    var tg = current();
+    if(!tg) return;
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Wird verschoben…';
+    document.getElementById('mvErr').textContent = '';
+    moveTaskToBoard(taskId, tg, colSel.value).then(function(){
+      if(document.getElementById('mvBoard') === boardSel) closeModal();
+      renderAll();
+      toast('Verschoben nach "' + tg.name + '".', 8000, 'Zum Board', function(){
+        if(tg.kind === 'shared') enterSharedBoard(tg.id); else activateLocalBoard(tg.name);
+      });
+    }, function(err){
+      if(document.getElementById('mvBoard') !== boardSel){ toast('Verschieben fehlgeschlagen: ' + (err.message || err), 9000); return; }
+      document.getElementById('mvErr').textContent = 'Verschieben fehlgeschlagen: ' + (err.message || err);
+      btn.disabled = false;
+      btn.textContent = 'Verschieben';
+    });
+  });
 }
 
 /* =========================================================
