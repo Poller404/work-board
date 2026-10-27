@@ -164,6 +164,20 @@ svg.i{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7;
 #timerBanner .tb-time{font-weight:600; font-size:13.5px; color:var(--text);}
 #timerBanner button{padding:5px 9px;}
 
+/* Kurzzeit-Timer: Sanduhr in der Kopfzeile, zeigt die Restzeit ruhig (ohne Blinken) an */
+#btnCountdown{gap:6px; font-variant-numeric:tabular-nums;}
+#btnCountdown .cd-btn-time{font-size:12.5px; font-weight:600;}
+#btnCountdown .cd-btn-time:empty{display:none;}
+#btnCountdown.cd-on{color:var(--accent); background:var(--accent-soft); padding:4px 9px;}
+#btnCountdown.cd-done{color:var(--ok); background:var(--ok-bg); padding:4px 9px;}
+.menu.cd-pop{width:340px; max-width:calc(100vw - 24px); padding:10px;}
+.menu.cd-pop.open{display:block;}
+#btnCountdown .cd-btn-more{font-size:11.5px; font-weight:500; opacity:.8;}
+/* Handy: Menü über die ganze Breite unter die Kopfzeile legen (der Knopf sitzt mitten in der wischbaren Zeile). */
+@media (max-width:680px){
+  .menu.cd-pop{position:fixed; left:12px; right:12px; top:var(--cd-top, 140px); width:auto; max-width:none;}
+  #btnCountdown .cd-btn-more{display:none;}
+}
 @media (max-width:1400px) and (min-width:681px){ #btnCloudSyncTopbar .lbl{display:none;} }
 @media (max-width:1500px) and (min-width:681px){
   #btnWhatNow .lbl, #btnFocus .lbl{display:none;}
@@ -939,7 +953,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
   .tb-secondary{flex:1 1 0; min-width:0; order:10;}
   /* "Was jetzt?" und Fokus zuerst, damit sie ohne Wischen sichtbar sind. */
   #btnWhatNow, #btnFocus{order:-1;}
-  #btnControlCenter, #btnCloudSyncTopbar{order:11; flex-shrink:0;}
+  #cdWrap, #btnControlCenter, #btnCloudSyncTopbar{order:11; flex-shrink:0;}
   .tb-search{min-width:0;}
   #topbar .split-caret{padding-left:8px; padding-right:8px;}
 }
@@ -1301,6 +1315,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
     <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 8 4.5-8 4.5-8-4.5z"/><path d="m4 12.5 8 4.5 8-4.5M4 16.5l8 4.5 8-4.5"/></symbol>
     <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-2.5-1.5L13 20.5 10.5 19 8 20.5 6 19z"/><path d="M9 8.5h6M9 12h6"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 4 5.5 4 8.5s-4 4-4 8.5M16 3.5c0 4.5-4 5.5-4 8.5s4 4 4 8.5"/></symbol>
     <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><rect x="12" y="11.5" width="6.5" height="5" rx="1"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V4.5h6V7M7 7l.8 12.5h8.4L17 7M10 11v5M14 11v5"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v1.5H7V12l3-3z"/><path d="M12 13.5V20"/></symbol>
@@ -1388,6 +1403,10 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
       <button class="btn ghost icon-btn" id="tbPip" title="Schwebendes Fenster: Timer und Mein Tag" aria-label="Schwebendes Timer-Fenster"><svg class="i"><use href="#i-pip"/></svg></button>
       <button class="btn" id="tbPause" title="Pausieren – die Buchung bleibt offen und kann fortgesetzt werden"><svg class="i"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
       <button class="btn" id="tbFinish" title="Buchung abschliessen – der nächste Start beginnt eine neue Buchung"><svg class="i"><use href="#i-check"/></svg><span class="lbl">Abschliessen</span></button>
+    </div>
+    <div class="menu-wrap" id="cdWrap">
+      <button class="btn ghost icon-btn" id="btnCountdown" title="Kurzzeit-Timer, z.B. 20 Min. warten" aria-label="Kurzzeit-Timer" aria-haspopup="true"><svg class="i"><use href="#i-hourglass"/></svg><span class="cd-btn-time" id="cdBtnTime"></span></button>
+      <div class="menu cd-pop" id="cdPop"></div>
     </div>
     <button class="btn ghost icon-btn" id="btnControlCenter" title="Control-Center: Timer und Mein Tag (schwebendes Fenster)" aria-label="Control-Center öffnen"><svg class="i"><use href="#i-pip"/></svg></button>
     <button class="btn ghost" id="btnCloudSyncTopbar" title="Cloud-Speicher jetzt synchronisieren"><svg class="i"><use href="#i-cloud"/></svg><span class="lbl" data-i18n="btnCloudSyncTopbar">Sync</span></button>
@@ -4285,74 +4304,126 @@ function renderTimerBanner(){
   ccRefresh(true);
 }
 
+/* Aussehen der Kurzzeit-Timer (Kopfzeilen-Menü und Control-Center, siehe KURZZEIT-TIMER). */
+var CD_CSS =
+  '.cdp{display:flex; flex-direction:column; gap:8px;}' +
+  '.cdp-list{display:flex; flex-direction:column; gap:6px;}' +
+  '.cdp-list:empty{display:none;}' +
+  '.cdp-item{display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:10px; padding:7px 8px 7px 10px; background:var(--surface);}' +
+  '.cdp-item.done{border-color:var(--ok); background:var(--ok-bg);}' +
+  '.cdp-item.paused .cdp-left{color:var(--text-faint);}' +
+  '.cdp-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}' +
+  '.cdp-label{font-size:12.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}' +
+  '.cdp-item.done .cdp-label{color:var(--text); font-weight:500;}' +
+  '.cdp-bar{height:3px; border-radius:99px; background:var(--border); overflow:hidden;}' +
+  '.cdp-bar i{display:block; height:100%; background:var(--accent); border-radius:99px; transition:width 1s linear;}' +
+  '.cdp-left{font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--text);}' +
+  '.cdp-item.done .cdp-left{font-size:12.5px; color:var(--ok);}' +
+  '.cdp-mini{border:1px solid transparent; background:transparent; color:var(--text-dim); border-radius:7px; padding:3px 7px; font:inherit; font-size:12px; cursor:pointer; min-width:28px; min-height:26px;}' +
+  '.cdp-mini:hover{background:var(--hover); color:var(--text);}' +
+  '.cdp-mini.strong{border-color:var(--border); background:var(--surface); color:var(--text); font-weight:500;}' +
+  '.cdp-presets{display:flex; flex-wrap:wrap; gap:6px;}' +
+  '.cdp-preset{border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:99px; padding:5px 11px; font:inherit; font-size:12.5px; cursor:pointer; font-variant-numeric:tabular-nums;}' +
+  '.cdp-preset:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}' +
+  '.cdp-form{display:flex; gap:6px;}' +
+  '.cdp-form input{flex:1 1 0; min-width:0; border:1px solid var(--border); border-radius:8px; padding:7px 9px; background:var(--surface); color:var(--text); font:inherit; font-size:13px;}' +
+  '.cdp-form input[name="dur"]{flex:0 0 74px;}' +
+  '.cdp-form input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow);}' +
+  '.cdp-form button{border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:8px; padding:7px 12px; font:inherit; font-size:13px; font-weight:500; cursor:pointer;}' +
+  '.cdp-hint{font-size:11.5px; color:var(--text-faint);}' +
+  '@media (max-width:680px){ .cdp-form input{font-size:16px;} .cdp-preset{padding:8px 13px; font-size:14px;} .cdp-mini{min-width:36px; min-height:36px; font-size:13px;} }';
+
 /* =========================================================
-   SCHWEBENDES TIMER-FENSTER (Picture-in-Picture)
-   Bleibt als kleines Always-on-Top-Fenster sichtbar, auch wenn das
-   Board-Tab im Hintergrund ist (z.B. während der Arbeit in Jira/Outlook).
-   Nutzt die Document-PiP-API (Chrome/Edge); ohne Unterstützung schlägt
-   requestWindow() fehl und wir zeigen einen Hinweis statt eines Fehlers.
-   ========================================================= */
-/* =========================================================
-   CONTROL-CENTER (schwebendes Fenster)
+   CONTROL-CENTER (schwebendes Fenster, "Miniaturansicht")
    Kleines Always-on-Top-Fenster (Document Picture-in-Picture, Chrome/Edge ab v116),
    das auch sichtbar bleibt, wenn das Board im Hintergrund ist - z.B. während der Arbeit
    in Jira oder Outlook. Ohne PiP-Unterstützung erscheint dasselbe Panel als Overlay
-   unten rechts in der Seite. Inhalt: laufender Timer, Schnell-Anlegen, Hotline-Anruf,
-   Meeting, Zeit erfassen, die Liste „Mein Tag“ zum Abhaken und die zuletzt
-   bearbeiteten Tasks mit Start/Pause und ☀ (auf Mein Tag setzen).
+   unten rechts in der Seite.
+   Zwei Grössen (⤡ oben rechts, wird gemerkt):
+   - Ausführlich: laufender Timer, Kurzzeit-Timer, Schnell-Anlegen, Hotline-Anruf, Meeting,
+     Zeit erfassen, „Mein Tag“ zum Abhaken und die zuletzt bearbeiteten Tasks.
+   - Kompakt: nur laufender Timer, laufende Kurzzeit-Timer und der nächste Task von Mein Tag;
+     das PiP-Fenster schrumpft passend dazu.
+   Die Abschnitte lassen sich einzeln einklappen (state.settings.ccCollapsed).
    ========================================================= */
 var CC_CSS =
   '.cc{font-family:var(--font); color:var(--text); background:var(--surface); display:flex; flex-direction:column; gap:10px; padding:12px; box-sizing:border-box; height:100%; overflow-y:auto; font-size:13px; line-height:1.4;}' +
+  '.cc.compact{height:auto; overflow:visible; gap:8px; padding:10px;}' +
   '.cc *{box-sizing:border-box;}' +
   '.cc button{font:inherit; cursor:pointer;}' +
-  '.cc-head{display:flex; align-items:center; gap:8px;}' +
-  '.cc-title{font-weight:600; font-size:14px; flex:1;}' +
-  '.cc-today{font-size:12px; color:var(--text-dim);}' +
-  '.cc-icon{border:0; background:transparent; color:var(--text-dim); padding:3px 7px; border-radius:6px; font-size:14px;}' +
+  '.cc-head{display:flex; align-items:center; gap:6px;}' +
+  '.cc-title{font-weight:600; font-size:14px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}' +
+  '.cc-today{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; white-space:nowrap;}' +
+  '.cc-goal{height:3px; border-radius:99px; background:var(--border); overflow:hidden; margin-top:-4px;}' +
+  '.cc-goal i{display:block; height:100%; background:var(--ok); border-radius:99px;}' +
+  '.cc-icon{border:0; background:transparent; color:var(--text-dim); padding:3px 7px; border-radius:6px; font-size:14px; line-height:1.2;}' +
   '.cc-icon:hover{background:var(--hover); color:var(--text);}' +
-  '.cc-now{border:1px solid var(--border); border-radius:10px; padding:12px; background:var(--surface-2);}' +
+  '.cc-now{border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface-2);}' +
   '.cc-now.run{border-color:var(--accent); background:var(--accent-soft);}' +
+  '.cc.compact .cc-now{padding:9px 10px;}' +
   '.cc-idle{color:var(--text-dim);}' +
   '.cc-run-title{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}' +
-  '.cc-time{font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; margin:4px 0 10px;}' +
-  '.cc-actions{display:flex; gap:8px;}' +
-  '.cc-btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:8px; padding:7px 12px; font-weight:500;}' +
+  '.cc-run-title:hover{text-decoration:underline;}' +
+  '.cc-meta{font-size:11.5px; color:var(--text-dim); font-variant-numeric:tabular-nums;}' +
+  '.cc-time{font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; margin:2px 0 8px; letter-spacing:-.01em;}' +
+  '.cc.compact .cc-time{font-size:22px; margin:0;}' +
+  '.cc-now-row{display:flex; align-items:center; gap:8px;}' +
+  '.cc-now-row .cc-time{flex:1;}' +
+  '.cc-actions{display:flex; gap:6px; flex-wrap:wrap;}' +
+  '.cc-btn{border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:8px; padding:6px 11px; font-weight:500;}' +
   '.cc-btn:hover{background:var(--hover);}' +
   '.cc-btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}' +
   '.cc-btn.primary:hover{background:var(--accent-hover);}' +
+  '.cc-resume{display:flex; align-items:center; gap:8px; width:100%; margin-top:8px; text-align:left;}' +
+  '.cc-resume span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}' +
   '.cc-field{width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); color:var(--text); font:inherit;}' +
   '.cc-field:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow);}' +
   'textarea.cc-field{resize:vertical; min-height:54px;}' +
   '.cc-add{display:flex; gap:6px;}' +
   '.cc-quick{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}' +
-  '.cc-quick .cc-btn{padding:8px 4px; font-size:12.5px; text-align:center;}' +
+  '.cc-quick .cc-btn{padding:7px 4px; font-size:12.5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}' +
   '.cc-form{border:1px solid var(--border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px;}' +
   '.cc-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}' +
-  '.cc-row{display:flex; align-items:center; gap:8px; padding:6px; border-radius:8px;}' +
+  '.cc-sec{display:flex; flex-direction:column; gap:6px;}' +
+  '.cc-sec-head{display:flex; align-items:center; gap:6px; width:100%; border:0; background:transparent; padding:2px 0; color:var(--text-faint); text-align:left;}' +
+  '.cc-sec-head:hover{color:var(--text-dim);}' +
+  '.cc-sec-head .cc-label{flex:1; color:inherit;}' +
+  '.cc-sec-head .cc-count{font-size:11.5px; font-weight:500;}' +
+  '.cc-chev{display:inline-block; font-size:10px; transition:transform .15s;}' +
+  '.cc-sec.collapsed .cc-chev{transform:rotate(-90deg);}' +
+  '.cc-sec.collapsed .cc-sec-body{display:none;}' +
+  '.cc-row{display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:8px;}' +
   '.cc-row:hover{background:var(--hover);}' +
   '.cc-row-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}' +
   '.cc-row-time{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums;}' +
-  '.cc-play{width:26px; height:26px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text-dim); display:grid; place-items:center; padding:0; font-size:11px;}' +
+  '.cc-play{width:26px; height:26px; flex-shrink:0; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text-dim); display:grid; place-items:center; padding:0; font-size:11px;}' +
   '.cc-play:hover{border-color:var(--accent); color:var(--accent);}' +
   '.cc-play.on{background:var(--accent); border-color:var(--accent); color:#fff;}' +
-  '.cc-msg{font-size:12px; color:var(--ok); min-height:16px;}' +
-  '.cc-label-row{display:flex; align-items:center; justify-content:space-between;}' +
-  '.cc-label-row span:last-child{letter-spacing:0; text-transform:none; font-weight:500;}' +
+  '.cc-msg{font-size:12px; color:var(--ok);}' +
+  '.cc-msg:empty{display:none;}' +
   '.cc-check{width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid var(--border-strong); background:transparent; color:transparent; padding:0; display:grid; place-items:center; font-size:11px; line-height:1;}' +
   '.cc-check:hover{border-color:var(--ok); color:var(--ok);}' +
   '.cc-row.done .cc-check{background:var(--ok); border-color:var(--ok); color:#fff;}' +
   '.cc-row.done .cc-row-title{text-decoration:line-through; color:var(--text-dim);}' +
   '.cc-row.run{background:var(--accent-soft);}' +
-  '.cc-sun{width:26px; height:26px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--text-faint); display:grid; place-items:center; padding:0; font-size:13px; filter:grayscale(1); opacity:.6;}' +
+  '.cc-next{border:1px dashed var(--border-strong); border-radius:10px; padding:4px 6px 4px 10px;}' +
+  '.cc-next .cc-label{flex-shrink:0;}' +
+  '.cc-sun{width:26px; height:26px; flex-shrink:0; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--text-faint); display:grid; place-items:center; padding:0; font-size:13px; filter:grayscale(1); opacity:.6;}' +
   '.cc-sun:hover, .cc-sun.on{filter:none; opacity:1; border-color:var(--border);}' +
   '.cc-more{font-size:12px; color:var(--text-dim); padding:2px 6px;}' +
-  '[hidden]{display:none !important;}';
+  '.cc.compact [data-cc-full]{display:none !important;}' +
+  '.cc:not(.compact) [data-cc-compact]{display:none !important;}' +
+  '[hidden]{display:none !important;}' +
+  '@media (max-width:680px){ .cc{font-size:14px;} .cc-icon{min-width:36px; min-height:36px;} .cc-play, .cc-sun{width:34px; height:34px;} .cc-check{width:24px; height:24px;} .cc-btn{min-height:38px;} .cc-field{font-size:16px;} }' +
+  CD_CSS;
 var CC_VARS = ['--bg','--side','--surface','--surface-2','--hover','--border','--border-strong','--text','--text-dim','--text-faint',
   '--accent','--accent-hover','--accent-glow','--accent-soft','--danger','--danger-bg','--ok','--ok-bg','--warn','--font'];
+var CC_SIZE_FULL = {width:360, height:700};
 var ccWindow = null;
 var ccRoot = null;
 var ccPanelEl = null;
 
+function ccIsCompact(){ return !!state.settings.ccCompact; }
 function ccApplyVars(targetEl){
   var cs = getComputedStyle(document.documentElement);
   CC_VARS.forEach(function(v){ targetEl.style.setProperty(v, cs.getPropertyValue(v)); });
@@ -4361,7 +4432,7 @@ function toggleControlCenter(){
   if(ccWindow){ ccWindow.close(); return; }
   if(ccPanelEl){ closeCcPanel(); return; }
   if(!('documentPictureInPicture' in window)){ openCcPanel(); return; }
-  documentPictureInPicture.requestWindow({width:360, height:700}).then(function(win){
+  documentPictureInPicture.requestWindow(ccIsCompact() ? {width:CC_SIZE_FULL.width, height:240} : CC_SIZE_FULL).then(function(win){
     ccWindow = win;
     win.document.title = 'Work Board – Control-Center';
     var st = win.document.createElement('style');
@@ -4373,19 +4444,32 @@ function toggleControlCenter(){
     win.document.body.appendChild(root);
     ccRoot = root;
     ccBuild(root, false);
+    if(ccIsCompact()) setTimeout(ccFitWindow, 30);
     win.addEventListener('pagehide', function(){ if(ccWindow === win){ ccWindow = null; ccRoot = null; } });
   }).catch(function(){ openCcPanel(); });
+}
+/* Kompakt: PiP-Fenster auf die Höhe des Inhalts bringen (geht nur direkt nach einem Klick). */
+function ccFitWindow(){
+  if(!ccWindow || !ccRoot) return;
+  try{
+    var cc = ccRoot.querySelector('.cc');
+    var chrome = Math.max(0, ccWindow.outerHeight - ccWindow.innerHeight);
+    if(ccIsCompact()) ccWindow.resizeTo(ccWindow.outerWidth, Math.min(CC_SIZE_FULL.height, Math.ceil(cc.offsetHeight) + chrome));
+    else ccWindow.resizeTo(Math.max(ccWindow.outerWidth, CC_SIZE_FULL.width), CC_SIZE_FULL.height + chrome);
+  }catch(e){}
 }
 function openCcPanel(){
   if(!document.getElementById('ccStyle')){
     var st = document.createElement('style');
     st.id = 'ccStyle';
     st.textContent = CC_CSS + ' #ccPanel{position:fixed; right:18px; bottom:18px; width:340px; max-height:86vh; height:640px; z-index:1200; border:1px solid var(--border-strong); border-radius:14px; box-shadow:var(--shadow-lg); overflow:hidden; background:var(--surface);}' +
-      ' @media (max-width:680px){ #ccPanel{left:8px; right:8px; bottom:8px; width:auto;} }';
+      ' #ccPanel.compact{height:auto; overflow-y:auto;}' +
+      ' @media (max-width:680px){ #ccPanel{left:8px; right:8px; bottom:max(8px, env(safe-area-inset-bottom)); width:auto;} }';
     document.head.appendChild(st);
   }
   ccPanelEl = document.createElement('div');
   ccPanelEl.id = 'ccPanel';
+  ccPanelEl.classList.toggle('compact', ccIsCompact());
   document.body.appendChild(ccPanelEl);
   ccRoot = ccPanelEl;
   ccBuild(ccPanelEl, true);
@@ -4393,26 +4477,36 @@ function openCcPanel(){
 function closeCcPanel(){
   if(ccPanelEl){ ccPanelEl.remove(); ccPanelEl = null; if(!ccWindow) ccRoot = null; }
 }
+function ccSection(key, label, bodyHtml, attrs){
+  var collapsed = (state.settings.ccCollapsed || {})[key];
+  return '<div class="cc-sec' + (collapsed ? ' collapsed' : '') + '" data-cc-sec="' + key + '"' + (attrs || '') + '>' +
+    '<button class="cc-sec-head" type="button" data-cc-collapse="' + key + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '">' +
+      '<span class="cc-chev">▾</span><span class="cc-label">' + label + '</span><span class="cc-count" data-cc-count="' + key + '"></span></button>' +
+    '<div class="cc-sec-body">' + bodyHtml + '</div>' +
+  '</div>';
+}
 function ccBuild(root, withClose){
   var reporters = uniqueReporters();
   root.innerHTML =
-    '<div class="cc">' +
+    '<div class="cc' + (ccIsCompact() ? ' compact' : '') + '">' +
       '<div class="cc-head"><span class="cc-title">Control-Center</span><span class="cc-today" data-cc-today></span>' +
+        '<button class="cc-icon" data-cc="compact"></button>' +
         '<button class="cc-icon" data-cc="main" title="Hauptfenster in den Vordergrund">↗</button>' +
-        (withClose ? '<button class="cc-icon" data-cc="close" title="Schliessen">✕</button>' : '') +
+        (withClose ? '<button class="cc-icon" data-cc="close" title="Schliessen" aria-label="Schliessen">✕</button>' : '') +
       '</div>' +
+      '<div class="cc-goal" data-cc-goal hidden><i></i></div>' +
       '<div class="cc-now" data-cc-now></div>' +
-      '<form class="cc-add" data-cc-noteform hidden><input class="cc-field" data-cc-noteinput placeholder="Notiz zum laufenden Task…" autocomplete="off"><button class="cc-btn" type="submit">Notiz</button></form>' +
-      '<form class="cc-add" data-cc-addform><input class="cc-field" data-cc-addinput placeholder="Neuer Task… (PROJ-123, #tag, !hoch)" autocomplete="off">' +
+      '<div class="cc-msg" data-cc-msg></div>' +
+      '<form class="cc-add" data-cc-noteform data-cc-full hidden><input class="cc-field" data-cc-noteinput placeholder="Notiz zum laufenden Task…" autocomplete="off"><button class="cc-btn" type="submit">Notiz</button></form>' +
+      ccSection('cd', '⏳ Timer', '<div data-cc-cd></div>') +
+      '<div class="cc-row cc-next" data-cc-next data-cc-compact hidden></div>' +
+      '<form class="cc-add" data-cc-addform data-cc-full><input class="cc-field" data-cc-addinput placeholder="Neuer Task… (PROJ-123, #tag, !hoch)" autocomplete="off">' +
         '<button class="cc-sun" type="button" data-cc="addsun" title="Neuen Task direkt auf Mein Tag setzen" aria-label="Neuen Task auf Mein Tag setzen">☀️</button>' +
         '<button class="cc-btn primary" type="submit" title="Task anlegen">+</button></form>' +
-      '<div class="cc-quick"><button class="cc-btn" data-cc="hotline">Hotline-Anruf</button><button class="cc-btn" data-cc="meeting">Meeting</button><button class="cc-btn" data-cc="time">Zeit erfassen</button></div>' +
+      '<div class="cc-quick" data-cc-full><button class="cc-btn" data-cc="hotline">📞 Hotline</button><button class="cc-btn" data-cc="meeting">📅 Meeting</button><button class="cc-btn" data-cc="time">⏱ Zeit erfassen</button></div>' +
       '<div data-cc-formhost></div>' +
-      '<div class="cc-msg" data-cc-msg></div>' +
-      '<div class="cc-label cc-label-row"><span>☀️ Mein Tag</span><span data-cc-mdcount></span></div>' +
-      '<div data-cc-myday></div>' +
-      '<div class="cc-label">Zuletzt bearbeitet</div>' +
-      '<div data-cc-recent></div>' +
+      ccSection('myday', '☀️ Mein Tag', '<div data-cc-myday></div>', ' data-cc-full') +
+      ccSection('recent', 'Zuletzt bearbeitet', '<div data-cc-recent></div>', ' data-cc-full') +
       '<datalist id="ccReporters">'+reporters.map(function(c){ return '<option value="'+escapeAttr(c)+'">'; }).join('')+'</datalist>' +
     '</div>';
   var q = function(sel){ return root.querySelector(sel); };
@@ -4421,7 +4515,7 @@ function ccBuild(root, withClose){
     var m = q('[data-cc-msg]');
     if(!m) return;
     m.textContent = msg;
-    setTimeout(function(){ if(m.textContent === msg) m.textContent = ''; }, 3500);
+    setTimeout(function(){ if(m.textContent === msg){ m.textContent = ''; if(ccIsCompact()) ccFitWindow(); } }, 3500);
   }
   function showForm(kind, arg){
     var host = q('[data-cc-formhost]');
@@ -4468,9 +4562,18 @@ function ccBuild(root, withClose){
   function clearForm(){ var h = q('[data-cc-formhost]'); h.innerHTML = ''; h.dataset.kind = ''; }
 
   root.addEventListener('click', function(e){
-    var el = e.target.closest('[data-cc], [data-cc-toggle], [data-cc-open], [data-cc-done], [data-cc-sun]');
+    if(cdHandleClick(e)){ if(ccIsCompact()) setTimeout(ccFitWindow, 0); return; }
+    var el = e.target.closest('[data-cc], [data-cc-toggle], [data-cc-open], [data-cc-done], [data-cc-sun], [data-cc-collapse]');
     if(!el) return;
-    if(el.dataset.ccDone){
+    if(el.dataset.ccCollapse){
+      var cl = state.settings.ccCollapsed = Object.assign({}, state.settings.ccCollapsed);
+      cl[el.dataset.ccCollapse] = !cl[el.dataset.ccCollapse];
+      save();
+      var sec = el.closest('.cc-sec');
+      sec.classList.toggle('collapsed', !!cl[el.dataset.ccCollapse]);
+      el.setAttribute('aria-expanded', cl[el.dataset.ccCollapse] ? 'false' : 'true');
+      if(ccIsCompact()) ccFitWindow();
+    } else if(el.dataset.ccDone){
       var dt = getTask(el.dataset.ccDone);
       if(dt){ setTaskDone(dt.id, !dt.completedAt); renderAll(); say(dt.completedAt ? 'Task erledigt.' : 'Task wieder offen.'); }
     } else if(el.dataset.ccSun){
@@ -4487,7 +4590,17 @@ function ccBuild(root, withClose){
     } else if(el.dataset.ccOpen){
       window.focus();
       openTaskModal(el.dataset.ccOpen);
-    } else if(el.dataset.cc === 'main'){ window.focus(); }
+    } else if(el.dataset.cc === 'compact'){
+      state.settings.ccCompact = !ccIsCompact();
+      save();
+      q('.cc').classList.toggle('compact', ccIsCompact());
+      if(ccPanelEl) ccPanelEl.classList.toggle('compact', ccIsCompact());
+      var cdHost = q('[data-cc-cd]');
+      if(cdHost) cdHost.innerHTML = '';
+      ccRefresh(true);
+      ccFitWindow();
+    }
+    else if(el.dataset.cc === 'main'){ window.focus(); }
     else if(el.dataset.cc === 'close'){ closeCcPanel(); }
     else if(el.dataset.cc === 'pause'){ var id = state.settings.activeTaskId; if(id) stopTimer(id); }
     else if(el.dataset.cc === 'finish'){
@@ -4523,7 +4636,9 @@ function ccBuild(root, withClose){
   root.addEventListener('submit', function(e){
     e.preventDefault();
     var form = e.target;
-    if(form.hasAttribute('data-cc-addform')){
+    if(form.hasAttribute('data-cd-form')){
+      cdHandleSubmit(form);
+    } else if(form.hasAttribute('data-cc-addform')){
       var inp = q('[data-cc-addinput]');
       var val = inp.value.trim();
       if(!val) return;
@@ -4568,69 +4683,131 @@ function ccBuild(root, withClose){
   });
   ccRefresh(true);
 }
+/* Zuletzt bearbeitete offene Tasks (ohne die auf Mein Tag), neueste zuerst. */
+function ccRecentTasks(limit){
+  return state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x) && !isInMyDay(x.id); })
+    .map(function(x){
+      var last = x.timeSessions.length ? new Date(x.timeSessions[x.timeSessions.length-1].start).getTime() : 0;
+      return {t: x, at: Math.max(last, new Date(x.updatedAt || 0).getTime())};
+    })
+    .sort(function(a, b){ return b.at - a.at; }).slice(0, limit).map(function(r){ return r.t; });
+}
+/* Task, mit dem es ohne laufenden Timer am ehesten weitergeht: der zuletzt pausierte,
+   sonst der erste offene von Mein Tag. */
+function ccResumeTask(){
+  var cand = state.settings.resumeCandidateTaskId ? getTask(state.settings.resumeCandidateTaskId) : null;
+  if(cand && !cand.completedAt && !cand.archived) return cand;
+  var withOpen = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && myOpenBooking(x); });
+  if(withOpen.length) return withOpen[0];
+  return myDayTasks().find(function(x){ return !x.completedAt; }) || null;
+}
+function ccRefreshCountdowns(){
+  if(!ccRoot) return;
+  var host = ccRoot.querySelector('[data-cc-cd]');
+  if(!host) return;
+  var compact = ccIsCompact();
+  cdFill(host, {compact: compact});
+  var sec = ccRoot.querySelector('[data-cc-sec="cd"]');
+  var running = countdowns.length;
+  if(sec) sec.hidden = compact && !running;
+  var cnt = ccRoot.querySelector('[data-cc-count="cd"]');
+  if(cnt) cnt.textContent = running ? running + ' läuft' + (running > 1 ? 'en' : '') : '';
+  var sig = running + (compact ? 'c' : '');
+  if(compact && ccWindow && ccRoot.dataset.cdSig !== sig) setTimeout(ccFitWindow, 0);
+  ccRoot.dataset.cdSig = sig;
+}
 function ccRefresh(full){
   if(!ccRoot) return;
   var q = function(sel){ return ccRoot.querySelector(sel); };
   var id = state.settings.activeTaskId;
   var t = id ? getTask(id) : null;
+  var compact = ccIsCompact();
   if(full){
     if(ccWindow) ccApplyVars(ccWindow.document.documentElement);
+    var cbtn = q('[data-cc="compact"]');
+    if(cbtn){
+      cbtn.textContent = compact ? '⤢' : '⤡';
+      cbtn.title = compact ? 'Ausführliche Ansicht' : 'Kompakte Ansicht (nur Timer)';
+      cbtn.setAttribute('aria-label', cbtn.title);
+    }
     var now = q('[data-cc-now]');
     if(now){
       now.className = 'cc-now' + (t ? ' run' : '');
-      now.innerHTML = t ?
-        '<div class="cc-run-title" data-cc-open="'+t.id+'" title="Task öffnen">'+escapeHtml((t.jiraKey ? t.jiraKey + ' · ' : '') + t.title)+'</div>' +
-        '<div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' +
-        '<div class="cc-actions"><button class="cc-btn" data-cc="pause" title="Buchung bleibt offen">Pause</button><button class="cc-btn" data-cc="finish" title="Buchung abschliessen">Abschliessen</button><button class="cc-btn" data-cc="done">Erledigt</button></div>'
-        : '<div class="cc-idle">Kein Timer aktiv. Starte unten einen Task oder lege einen neuen an.</div>';
+      if(t){
+        var b = myOpenBooking(t);
+        var since = b ? new Date(b.start).toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'}) : '';
+        var actions = '<div class="cc-actions"><button class="cc-btn" data-cc="pause" title="Buchung bleibt offen">Pause</button><button class="cc-btn" data-cc="finish" title="Buchung abschliessen">Abschliessen</button>' +
+          (compact ? '' : '<button class="cc-btn" data-cc="done">Erledigt</button>') + '</div>';
+        now.innerHTML =
+          '<div class="cc-run-title" data-cc-open="'+t.id+'" title="Task öffnen">'+escapeHtml((t.jiraKey ? t.jiraKey + ' · ' : '') + t.title)+'</div>' +
+          (compact
+            ? '<div class="cc-now-row"><div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' + actions + '</div>'
+            : '<div class="cc-meta">' + (since ? 'Buchung seit ' + since + ' · ' : '') + 'Gesamt <span data-cc-total>' + fmtHM(totalSeconds(t)) + '</span></div>' +
+              '<div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' + actions);
+      } else {
+        var rt = ccResumeTask();
+        now.innerHTML = '<div class="cc-idle">Kein Timer aktiv.</div>' +
+          (rt ? '<button class="cc-btn cc-resume" data-cc-toggle="' + rt.id + '" title="Timer starten">▶ <span>Weiter mit: ' + escapeHtml(rt.title) + '</span></button>' : '');
+      }
     }
     var noteForm = q('[data-cc-noteform]');
     if(noteForm) noteForm.hidden = !t;
     var dayStart = startOfDay(new Date()).getTime();
     var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+    var goal = (parseFloat(state.settings.targetHoursPerDay) || 0) * 3600;
     var todayEl = q('[data-cc-today]');
-    if(todayEl) todayEl.textContent = 'Heute ' + fmtHM(todaySec);
+    if(todayEl){
+      todayEl.textContent = 'Heute ' + fmtHM(todaySec) + (goal ? ' / ' + fmtHM(goal).replace(' 00m', '') : '');
+      todayEl.title = goal ? Math.min(100, Math.round(todaySec / goal * 100)) + ' % vom Tagesziel' : 'Heute erfasste Zeit';
+    }
+    var goalEl = q('[data-cc-goal]');
+    if(goalEl){
+      goalEl.hidden = !goal;
+      goalEl.firstChild.style.width = (goal ? Math.min(100, todaySec / goal * 100) : 0) + '%';
+    }
     var addSun = q('[data-cc="addsun"]');
     if(addSun) addSun.classList.toggle('on', state.settings.ccAddToMyDay !== false);
     var md = myDayTasks();
     var mdOpen = md.filter(function(x){ return !x.completedAt; });
     var mdDone = md.filter(function(x){ return x.completedAt; });
-    var mdCount = q('[data-cc-mdcount]');
+    var mdCount = q('[data-cc-count="myday"]');
     if(mdCount) mdCount.textContent = md.length ? mdDone.length + ' / ' + md.length + ' erledigt' : '';
+    var taskRow = function(x, opts){
+      var isDone = !!x.completedAt, run = isRunning(x);
+      return '<div class="cc-row' + (isDone ? ' done' : '') + (run ? ' run' : '') + '">' +
+        (opts.check ? '<button class="cc-check" data-cc-done="' + x.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' : '') +
+        '<span class="cc-row-title" data-cc-open="' + x.id + '" title="' + escapeAttr(x.title) + '">' + escapeHtml(x.title) + '</span>' +
+        (totalSeconds(x) ? '<span class="cc-row-time">' + fmtHM(totalSeconds(x)) + '</span>' : '') +
+        (opts.sun ? '<button class="cc-sun" data-cc-sun="' + x.id + '" title="Zu Mein Tag hinzufügen" aria-label="Zu Mein Tag hinzufügen">☀️</button>' : '') +
+        (isDone ? '' : '<button class="cc-play' + (run ? ' on' : '') + '" data-cc-toggle="' + x.id + '" title="' + (run ? 'Pause' : 'Start') + '" aria-label="' + (run ? 'Pause' : 'Start') + '">' + (run ? '⏸' : '▶') + '</button>') +
+      '</div>';
+    };
     var mdList = q('[data-cc-myday]');
     if(mdList){
-      var mdRow = function(x){
-        var isDone = !!x.completedAt, run = isRunning(x);
-        return '<div class="cc-row' + (isDone ? ' done' : '') + (run ? ' run' : '') + '">' +
-          '<button class="cc-check" data-cc-done="' + x.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' +
-          '<span class="cc-row-title" data-cc-open="' + x.id + '" title="' + escapeAttr(x.title) + '">' + escapeHtml(x.title) + '</span>' +
-          (totalSeconds(x) ? '<span class="cc-row-time">' + fmtHM(totalSeconds(x)) + '</span>' : '') +
-          (isDone ? '' : '<button class="cc-play' + (run ? ' on' : '') + '" data-cc-toggle="' + x.id + '" title="' + (run ? 'Pause' : 'Start') + '" aria-label="' + (run ? 'Pause' : 'Start') + '">' + (run ? '⏸' : '▶') + '</button>') +
-        '</div>';
-      };
-      mdList.innerHTML = md.length ? mdOpen.map(mdRow).join('') + mdDone.slice(-3).map(mdRow).join('') +
+      mdList.innerHTML = md.length ? mdOpen.map(function(x){ return taskRow(x, {check:true}); }).join('') + mdDone.slice(-3).map(function(x){ return taskRow(x, {check:true}); }).join('') +
           (mdDone.length > 3 ? '<div class="cc-more">+ ' + (mdDone.length - 3) + ' weitere erledigt</div>' : '')
         : '<div class="cc-idle">Noch nichts für heute. Tippe unten auf ☀️, um einen Task auf Mein Tag zu setzen.</div>';
     }
-    var recent = state.tasks.filter(function(x){ return !x.archived && !x.completedAt && !isSnoozed(x) && !isInMyDay(x.id); })
-      .map(function(x){
-        var last = x.timeSessions.length ? new Date(x.timeSessions[x.timeSessions.length-1].start).getTime() : 0;
-        return {t: x, at: Math.max(last, new Date(x.updatedAt || 0).getTime())};
-      })
-      .sort(function(a, b){ return b.at - a.at; }).slice(0, 6);
+    var nextEl = q('[data-cc-next]');
+    if(nextEl){
+      var resume = t ? null : ccResumeTask();
+      var nx = mdOpen.find(function(x){ return !isRunning(x) && !(resume && resume.id === x.id); });
+      nextEl.hidden = !nx;
+      nextEl.innerHTML = nx ? '<span class="cc-label">Als Nächstes</span><span class="cc-row-title" data-cc-open="' + nx.id + '" title="' + escapeAttr(nx.title) + '">' + escapeHtml(nx.title) + '</span>' +
+        '<button class="cc-play" data-cc-toggle="' + nx.id + '" title="Start" aria-label="Start">▶</button>' : '';
+    }
     var list = q('[data-cc-recent]');
     if(list){
-      list.innerHTML = recent.length ? recent.map(function(r){
-        var x = r.t, run = isRunning(x);
-        return '<div class="cc-row"><span class="cc-row-title" data-cc-open="'+x.id+'" title="'+escapeAttr(x.title)+'">'+escapeHtml(x.title)+'</span>' +
-          '<span class="cc-row-time">'+fmtHM(totalSeconds(x))+'</span>' +
-          '<button class="cc-sun" data-cc-sun="'+x.id+'" title="Zu Mein Tag hinzufügen" aria-label="Zu Mein Tag hinzufügen">☀️</button>' +
-          '<button class="cc-play'+(run?' on':'')+'" data-cc-toggle="'+x.id+'" title="'+(run?'Pause':'Start')+'" aria-label="'+(run?'Pause':'Start')+'">'+(run?'⏸':'▶')+'</button></div>';
-      }).join('') : '<div class="cc-idle">' + (md.length ? 'Alle offenen Tasks sind schon auf Mein Tag.' : 'Noch keine Tasks.') + '</div>';
+      var recent = ccRecentTasks(6);
+      list.innerHTML = recent.length ? recent.map(function(x){ return taskRow(x, {sun:true}); }).join('')
+        : '<div class="cc-idle">' + (md.length ? 'Alle offenen Tasks sind schon auf Mein Tag.' : 'Noch keine Tasks.') + '</div>';
     }
+    ccRefreshCountdowns();
   }
   var tm = q('[data-cc-time]');
   if(tm && t) tm.textContent = fmtHMS(currentBookingSeconds(t));
+  var tot = q('[data-cc-total]');
+  if(tot && t) tot.textContent = fmtHM(totalSeconds(t));
 }
 
 function tick(){
@@ -4869,6 +5046,249 @@ function openReminders(){
       openReminders();
     });
   });
+}
+
+/* =========================================================
+   KURZZEIT-TIMER (Countdown, z.B. "20 Min. warten")
+   Unabhängig von der Zeiterfassung und bewusst zurückhaltend: kein Blinken, kein
+   Dauerton. Am Ende ein leiser Zweiklang, ein Hinweis unten und, falls erlaubt, eine
+   System-Mitteilung. Die Timer liegen nur auf diesem Gerät (localStorage), damit nicht
+   PC und Handy gleichzeitig klingeln. Bedienung über ⏳ in der Kopfzeile und im Control-Center.
+   ========================================================= */
+var CD_KEY = 'wb-countdowns';
+var CD_PRESETS = [5, 10, 15, 20, 30, 45, 60];
+var countdowns = loadCountdowns();
+var cdTimeout = null;
+function loadCountdowns(){
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem(CD_KEY) || '[]'); }catch(e){}
+  if(!Array.isArray(list)) return [];
+  /* Abgelaufene Timer, die niemand bestätigt hat, nach 2 Stunden still entfernen. */
+  var cutoff = Date.now() - 2 * 3600000;
+  return list.filter(function(c){ return c && c.id && c.durationSec > 0 && !(c.done && (c.doneAt || c.endsAt) < cutoff); });
+}
+function saveCountdowns(){ try{ localStorage.setItem(CD_KEY, JSON.stringify(countdowns)); }catch(e){} }
+function getCountdown(id){ return countdowns.find(function(c){ return c.id === id; }); }
+function cdLeftSec(c){
+  if(c.done) return 0;
+  return c.pausedLeft != null ? c.pausedLeft : Math.max(0, Math.ceil((c.endsAt - Date.now()) / 1000));
+}
+function fmtCountdown(sec){
+  var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+}
+function fmtCdMinutes(min){
+  if(min < 60) return min + ' Min.';
+  return min % 60 ? Math.floor(min / 60) + 'h' + String(min % 60).padStart(2, '0') : (min / 60) + ' Std.';
+}
+function cdTitle(c){ return c.label || fmtCdMinutes(Math.round(c.durationSec / 60)) + ' Timer'; }
+/* Der leise Zweiklang braucht einen AudioContext, den Browser erst nach einem Klick
+   erlauben: deshalb beim Starten eines Timers schon einmal anlegen. */
+function cdUnlockAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+function cdChime(){
+  if(state.settings.countdownSound === false) return;
+  try{
+    cdUnlockAudio();
+    var now = audioCtx.currentTime;
+    [659.25, 880].forEach(function(f, i){
+      var osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), t0 = now + i * 0.35;
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.08, t0 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.4);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(t0); osc.stop(t0 + 1.5);
+    });
+  }catch(e){}
+}
+function startCountdown(minutes, label){
+  minutes = Math.max(1, Math.min(24 * 60, Math.round(minutes)));
+  var c = {id: uid(), label: String(label || '').trim().slice(0, 80), durationSec: minutes * 60, endsAt: Date.now() + minutes * 60000, pausedLeft: null, done: false};
+  countdowns.push(c);
+  saveCountdowns();
+  cdUnlockAudio();
+  if('Notification' in window && Notification.permission === 'default'){ try{ Notification.requestPermission(); }catch(e){} }
+  cdRenderAll();
+  return c;
+}
+function cdAction(id, act){
+  var c = getCountdown(id);
+  if(!c) return;
+  if(act === 'stop' || act === 'ok'){
+    countdowns = countdowns.filter(function(x){ return x.id !== id; });
+  } else if(act === 'pause'){
+    if(c.pausedLeft == null) c.pausedLeft = cdLeftSec(c);
+    else { c.endsAt = Date.now() + c.pausedLeft * 1000; c.pausedLeft = null; }
+  } else if(act === 'plus5'){
+    if(c.done){ c.done = false; c.doneAt = null; c.durationSec = 300; c.endsAt = Date.now() + 300000; }
+    else if(c.pausedLeft != null){ c.pausedLeft += 300; c.durationSec += 300; }
+    else { c.endsAt += 300000; c.durationSec += 300; }
+  }
+  saveCountdowns();
+  cdRenderAll();
+}
+function cdFire(c){
+  c.done = true;
+  c.doneAt = Date.now();
+  cdChime();
+  var msg = c.label ? '⏳ Zeit um: ' + c.label : '⏳ ' + fmtCdMinutes(Math.round(c.durationSec / 60)) + ' sind um.';
+  toast(msg, 30000, '+5 Min.', function(){ cdAction(c.id, 'plus5'); });
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{ new Notification(c.label ? 'Zeit um: ' + c.label : 'Timer abgelaufen', {body: fmtCdMinutes(Math.round(c.durationSec / 60)) + ' sind vorbei.', tag: 'wb-cd-' + c.id}); }catch(e){}
+  }
+}
+function cdCheck(){
+  var fired = false;
+  countdowns.forEach(function(c){
+    if(!c.done && c.pausedLeft == null && c.endsAt <= Date.now()){ cdFire(c); fired = true; }
+  });
+  if(fired) saveCountdowns();
+  cdRenderAll();
+}
+/* Hintergrund-Tabs drosseln setInterval stark; ein einzelnes setTimeout auf den nächsten
+   Ablauf sorgt dafür, dass der Hinweis trotzdem pünktlich kommt. */
+function cdSchedule(){
+  if(cdTimeout) clearTimeout(cdTimeout);
+  cdTimeout = null;
+  var next = countdowns.filter(function(c){ return !c.done && c.pausedLeft == null; })
+    .reduce(function(mn, c){ return Math.min(mn, c.endsAt); }, Infinity);
+  if(next < Infinity) cdTimeout = setTimeout(cdCheck, Math.max(50, next - Date.now() + 50));
+}
+function cdSorted(){
+  return countdowns.slice().sort(function(a, b){
+    if(a.done !== b.done) return a.done ? -1 : 1;
+    return cdLeftSec(a) - cdLeftSec(b);
+  });
+}
+function cdItemHtml(c){
+  var left = cdLeftSec(c), paused = c.pausedLeft != null;
+  var pct = c.done ? 100 : Math.max(0, Math.min(100, 100 - left / c.durationSec * 100));
+  if(c.done){
+    return '<div class="cdp-item done" data-cd-item="' + c.id + '">' +
+      '<div class="cdp-main"><div class="cdp-label" title="' + escapeAttr(cdTitle(c)) + '">' + escapeHtml(cdTitle(c)) + '</div></div>' +
+      '<span class="cdp-left">Abgelaufen</span>' +
+      '<button class="cdp-mini" type="button" data-cd="plus5" data-cd-id="' + c.id + '" title="Noch 5 Minuten">+5</button>' +
+      '<button class="cdp-mini strong" type="button" data-cd="ok" data-cd-id="' + c.id + '">OK</button>' +
+    '</div>';
+  }
+  return '<div class="cdp-item' + (paused ? ' paused' : '') + '" data-cd-item="' + c.id + '">' +
+    '<div class="cdp-main"><div class="cdp-label" title="' + escapeAttr(cdTitle(c)) + '">' + escapeHtml(cdTitle(c)) + (paused ? ' · pausiert' : '') + '</div>' +
+      '<div class="cdp-bar"><i data-cd-bar="' + c.id + '" style="width:' + pct.toFixed(1) + '%"></i></div></div>' +
+    '<span class="cdp-left" data-cd-left="' + c.id + '">' + fmtCountdown(left) + '</span>' +
+    '<button class="cdp-mini" type="button" data-cd="plus5" data-cd-id="' + c.id + '" title="5 Minuten dazu">+5</button>' +
+    '<button class="cdp-mini" type="button" data-cd="pause" data-cd-id="' + c.id + '" title="' + (paused ? 'Weiter' : 'Anhalten') + '" aria-label="' + (paused ? 'Weiter' : 'Anhalten') + '">' + (paused ? '▶' : '❚❚') + '</button>' +
+    '<button class="cdp-mini" type="button" data-cd="stop" data-cd-id="' + c.id + '" title="Timer löschen" aria-label="Timer löschen">✕</button>' +
+  '</div>';
+}
+/* Füllt ein Timer-Panel (Kopfzeilen-Menü oder Control-Center). Formular und Schnellwahl werden
+   nur einmal gebaut, damit eine angefangene Eingabe beim sekündlichen Aktualisieren erhalten bleibt. */
+function cdFill(host, opts){
+  if(!host) return;
+  opts = opts || {};
+  if(!host.querySelector('.cdp')){
+    host.innerHTML =
+      '<div class="cdp">' +
+        '<div class="cdp-list" data-cd-list></div>' +
+        (opts.compact ? '' :
+        '<div class="cdp-presets">' + CD_PRESETS.map(function(m){ return '<button class="cdp-preset" type="button" data-cd-start="' + m + '">' + fmtCdMinutes(m) + '</button>'; }).join('') + '</div>' +
+        '<form class="cdp-form" data-cd-form>' +
+          '<input name="dur" autocomplete="off" placeholder="Min." aria-label="Dauer" title="Dauer, z.B. 20, 1h30 oder 1:30">' +
+          '<input name="label" autocomplete="off" placeholder="Wofür? (optional)" aria-label="Wofür">' +
+          '<button type="submit">Start</button>' +
+        '</form>' +
+        (opts.hint ? '<div class="cdp-hint">' + opts.hint + '</div>' : '')) +
+      '</div>';
+  }
+  var list = host.querySelector('[data-cd-list]');
+  var sorted = cdSorted();
+  var sig = sorted.map(function(c){ return c.id + (c.done ? 'd' : c.pausedLeft != null ? 'p' : 'r') + c.durationSec + (c.label || ''); }).join('|');
+  if(list.dataset.sig !== sig){
+    list.dataset.sig = sig;
+    list.innerHTML = sorted.map(cdItemHtml).join('');
+  } else {
+    sorted.forEach(function(c){
+      if(c.done) return;
+      var left = cdLeftSec(c);
+      var el = list.querySelector('[data-cd-left="' + c.id + '"]');
+      if(el) el.textContent = fmtCountdown(left);
+      var bar = list.querySelector('[data-cd-bar="' + c.id + '"]');
+      if(bar) bar.style.width = Math.max(0, Math.min(100, 100 - left / c.durationSec * 100)).toFixed(1) + '%';
+    });
+  }
+}
+/* Klicks und Formulare im Timer-Panel; true, wenn das Ereignis zum Panel gehörte. */
+function cdHandleClick(e){
+  var el = e.target.closest('[data-cd], [data-cd-start]');
+  if(!el) return false;
+  if(el.dataset.cdStart){
+    var form = el.closest('.cdp').querySelector('[data-cd-form]');
+    startCountdown(+el.dataset.cdStart, form ? form.label.value : '');
+    if(form) form.reset();
+  } else {
+    cdAction(el.dataset.cdId, el.dataset.cd);
+  }
+  return true;
+}
+function cdHandleSubmit(form){
+  var min = parseDurationInput(form.dur.value);
+  if(!min){ form.dur.focus(); form.dur.style.borderColor = 'var(--danger)'; return; }
+  form.dur.style.borderColor = '';
+  startCountdown(min, form.label.value);
+  form.reset();
+}
+function cdRenderButton(){
+  var btn = document.getElementById('btnCountdown');
+  if(!btn) return;
+  var sorted = cdSorted();
+  var first = sorted[0];
+  var timeEl = document.getElementById('cdBtnTime');
+  btn.classList.toggle('cd-on', !!first && !first.done);
+  btn.classList.toggle('cd-done', !!first && first.done);
+  timeEl.innerHTML = !first ? '' : first.done ? 'Zeit um' : fmtCountdown(cdLeftSec(first)) + (sorted.length > 1 ? ' <span class="cd-btn-more">+' + (sorted.length - 1) + '</span>' : '');
+  btn.title = first ? sorted.map(function(c){ return cdTitle(c) + ': ' + (c.done ? 'abgelaufen' : fmtCountdown(cdLeftSec(c))); }).join('\n') : 'Kurzzeit-Timer, z.B. 20 Min. warten';
+}
+function cdRenderAll(){
+  cdRenderButton();
+  var pop = document.getElementById('cdPop');
+  if(pop && pop.classList.contains('open')) cdFill(pop, {hint: 'Leiser Ton und Hinweis, wenn die Zeit um ist.'});
+  ccRefreshCountdowns();
+  cdSchedule();
+}
+function initCountdowns(){
+  if(!document.getElementById('cdStyle')){
+    var st = document.createElement('style');
+    st.id = 'cdStyle';
+    st.textContent = CD_CSS;
+    document.head.appendChild(st);
+  }
+  var btn = document.getElementById('btnCountdown');
+  var pop = document.getElementById('cdPop');
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var wasOpen = pop.classList.contains('open');
+    closeAllMenus();
+    if(wasOpen) return;
+    pop.style.setProperty('--cd-top', Math.round(btn.getBoundingClientRect().bottom + 6) + 'px');
+    pop.classList.add('open');
+    cdFill(pop, {hint: 'Leiser Ton und Hinweis, wenn die Zeit um ist.'});
+    var first = cdSorted()[0];
+    if(!first && window.matchMedia('(hover:hover)').matches){ var d = pop.querySelector('[name="dur"]'); if(d) d.focus(); }
+  });
+  pop.addEventListener('click', function(e){
+    e.stopPropagation();
+    cdHandleClick(e);
+  });
+  pop.addEventListener('submit', function(e){ e.preventDefault(); cdHandleSubmit(e.target); });
+  /* Abgelaufene Timer, die während der Abwesenheit fällig wurden, sofort melden. */
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) cdCheck(); });
+  setInterval(function(){ if(countdowns.length) cdCheck(); }, 1000);
+  cdCheck();
 }
 
 /* =========================================================
@@ -9670,7 +10090,8 @@ function openSettings(){
         '<option value="de"'+(state.settings.language==='de'?' selected':'')+'>Deutsch</option>' +
         '<option value="en"'+(state.settings.language==='en'?' selected':'')+'>English</option>' +
       '</select>', 'Übersetzt nur die Hauptnavigation.') +
-      sRow('🔊 Sound-Effekte', sCheck('sSoundEnabled', state.settings.soundEnabled), 'Timer-Start und Task erledigt')
+      sRow('🔊 Sound-Effekte', sCheck('sSoundEnabled', state.settings.soundEnabled), 'Timer-Start und Task erledigt') +
+      sRow('⏳ Ton bei Kurzzeit-Timern', sCheck('sCountdownSound', state.settings.countdownSound !== false), 'Leiser Zweiklang, wenn ein Kurzzeit-Timer abgelaufen ist')
     ) +
     sCard('Hintergrund & Farbe', '',
       sRow('Hintergrundbild',
@@ -9947,6 +10368,11 @@ function openSettings(){
     state.settings.language = e.target.value;
     applyLanguage();
     save();
+  });
+  document.getElementById('sCountdownSound').addEventListener('change', function(e){
+    state.settings.countdownSound = e.target.checked;
+    save();
+    if(e.target.checked) cdChime();
   });
   document.getElementById('sSoundEnabled').addEventListener('change', function(e){
     state.settings.soundEnabled = e.target.checked;
@@ -10591,6 +11017,7 @@ function cmdActionsList(){
     {icon:'🔍', label:'Lösungs-Wissensdatenbank durchsuchen', run: function(){ openKnowledgeBase(''); }},
     {icon:'📓', label:'Journal öffnen', run: openJournal},
     {icon:'⏰', label:'Erinnerungen', run: openReminders},
+    {icon:'⏳', label:'Kurzzeit-Timer (z.B. 20 Min. warten)', run: function(){ setTimeout(function(){ document.getElementById('btnCountdown').click(); }, 0); }},
     {icon:'🌅', label:'Morgen-Ritual (Tagesprioritäten wählen)', run: openMorningRitual},
     {icon:'🗓️', label:'Tages-Vorlagen', run: openDayTemplates},
     {icon:'🏠', label:'Dashboard-Ansicht', run: function(){ setBoardViewMode('dashboard'); document.getElementById('boardViewSelect').value='dashboard'; }},
@@ -13205,6 +13632,11 @@ function runVoiceCommand(raw){
     var aid = state.settings.activeTaskId;
     if(!aid) return 'Es läuft kein Timer';
     stopTimer(aid); return 'Timer pausiert';
+  }
+  if((m = s.match(/^(?:timer|wecker|countdown)(?: auf| von| für)?\s+(\d+(?:[.,]\d+)?)\s*(minuten|minute|min|stunden|stunde|std)(?:\s+(?:für\s+)?(.+))?$/))){
+    var cdMin = parseFloat(m[1].replace(',', '.')) * (/^st/.test(m[2]) ? 60 : 1);
+    var cd = startCountdown(cdMin, m[3] || '');
+    return '⏳ Timer: ' + fmtCdMinutes(Math.round(cd.durationSec / 60)) + (cd.label ? ' · ' + cd.label : '');
   }
   if((m = s.match(/^(?:starte|start|timer starten|starte den timer|starte timer)(?: den timer| timer)?(?: bei| für| auf| mit)?\s*(.*)$/))){
     t = m[1] ? voiceFindTask(m[1]) : voiceCurrentTask();
@@ -16426,6 +16858,7 @@ function init(){
   showLockScreenIfNeeded();
   renderAll();
   applyLanguage();
+  initCountdowns();
   handleUrlShortcutAction();
   tickInterval = setInterval(tick, 1000);
   setInterval(runAutoArchive, 60000);
