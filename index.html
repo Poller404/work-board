@@ -715,14 +715,24 @@ a.jira-link:hover, a.jira-link:focus-visible{color:var(--accent); text-decoratio
 .booking-row .bk-right{display:inline-flex; align-items:center; gap:4px;}
 .booking-row .bk-edit{padding:0 5px; min-width:0; min-height:0; font-size:12px; line-height:1.4;}
 .bk-add{margin-top:6px; width:100%; justify-content:center;}
-.bke-row{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px; align-items:end;}
-#bkeRows.multi .bke-row{grid-template-columns:1.4fr 1fr 1fr auto;}
+.bke-row{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:8px; align-items:end;}
+#bkeRows.multi .bke-row{grid-template-columns:1.4fr 1fr 1fr 1fr auto;}
 .bke-row .form-row{margin-bottom:6px;}
 .bke-del{margin-bottom:10px;}
 .bke-row .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
 .tbk-chips{display:flex; flex-wrap:wrap; gap:6px;}
+#tbkDur.invalid, .bke-row [data-f="dur"].invalid{border-color:var(--danger);}
+.tbk-times > .form-row, .bke-row > .form-row{min-width:0;}
+.tbk-times input, .bke-row input{width:100%; min-width:0; box-sizing:border-box;}
 .tbk-chip.on{background:var(--accent-soft); color:var(--accent); border-color:var(--accent);}
-.tbk-times{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px;}
+.tbk-times{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:8px;}
+@media (max-width:520px){
+  .tbk-times{grid-template-columns:1fr 1fr;}
+  .bke-row, #bkeRows.multi .bke-row{grid-template-columns:1fr 1fr;}
+  #bkeRows.multi .bke-row{border-bottom:1px solid var(--border); padding-bottom:4px; margin-bottom:6px;}
+  #bkeRows.multi .bke-row .sr-only{position:static; width:auto; height:auto; overflow:visible; clip:auto;}
+  .bke-del{grid-column:1 / -1; justify-self:end; margin-bottom:4px;}
+}
 .tbk-deduct{border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; margin:8px 0 10px; background:var(--surface-2);}
 .tbk-row{display:flex; align-items:center; gap:6px; font-size:13px; margin-top:4px;}
 .booking-row .bk-comment{flex-basis:100%; color:var(--text); font-weight:400; white-space:pre-wrap; padding:2px 0 2px 8px; border-left:2px solid var(--border-strong); margin:3px 0 2px;}
@@ -2032,6 +2042,21 @@ function fmtHM(totalSec){
   var totalMin = Math.round(totalSec/60);
   var h = Math.floor(totalMin/60), m = totalMin%60;
   return h + 'h ' + String(m).padStart(2,'0') + 'm';
+}
+/* Dauer aus einem Eingabefeld in Minuten, null wenn unlesbar. Versteht z.B. "1h30", "1h 30m", "1:30",
+   "1,5h", "1,5" (Komma = Stunden), "90" oder "90 Min." (ganze Zahl = Minuten), "2 Std.". */
+function parseDurationInput(str){
+  var v = String(str || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if(!v) return null;
+  var m = v.match(/^(\d{1,2}):(\d{1,2})$/);
+  if(m) return +m[1] * 60 + +m[2];
+  m = v.match(/^(\d+(?:[.,]\d+)?) ?(?:h|std\.?|stunden?)(?: ?(\d{1,2}) ?(?:m|min\.?|minuten)?)?$/);
+  if(m) return Math.round(parseFloat(m[1].replace(',', '.')) * 60) + (m[2] ? +m[2] : 0);
+  m = v.match(/^(\d+) ?(?:m|min\.?|minuten)?$/);
+  if(m) return +m[1];
+  m = v.match(/^(\d*[.,]\d+)$/);
+  if(m) return Math.round(parseFloat(m[1].replace(',', '.')) * 60);
+  return null;
 }
 
 function startTimer(taskId){
@@ -7272,6 +7297,7 @@ function openTimeBlockDialog(taskId, onDone, opts){
         '<div class="form-row"><label for="tbkDate">Datum</label><input type="date" id="tbkDate" value="' + toDateInputValue(start) + '"></div>' +
         '<div class="form-row"><label for="tbkFrom">Von</label><input type="time" id="tbkFrom" value="' + two(start.getHours()) + ':' + two(start.getMinutes()) + '"></div>' +
         '<div class="form-row"><label for="tbkTo">Bis</label><input type="time" id="tbkTo" value="' + two(end.getHours()) + ':' + two(end.getMinutes()) + '"></div>' +
+        '<div class="form-row"><label for="tbkDur">Dauer</label><input id="tbkDur" inputmode="text" autocomplete="off" placeholder="z.B. 1h30" title="Dauer eingeben, z.B. 1h30, 1:30, 1,5 oder 90 (Minuten). Von wird passend zu Bis gesetzt."></div>' +
       '</div>' +
       '<div id="tbkSummary" class="hint"></div>' +
       '<div id="tbkDeduct"></div>' +
@@ -7292,6 +7318,8 @@ function openTimeBlockDialog(taskId, onDone, opts){
   function refresh(){
     var r = range(), sum = document.getElementById('tbkSummary'), box = document.getElementById('tbkDeduct');
     document.querySelectorAll('.tbk-chip').forEach(function(c){ c.classList.toggle('on', !!r && Math.round((r.b - r.a) / 60000) === +c.dataset.min); });
+    var dur = document.getElementById('tbkDur');
+    if(document.activeElement !== dur){ dur.value = r ? fmtHM((r.b - r.a) / 1000) : ''; dur.classList.remove('invalid'); }
     if(!r){ sum.textContent = ''; box.innerHTML = ''; return; }
     sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + (free ? ' ohne Task.' : ' auf diesen Task.');
     var ov = entry ? [] : sessionOverlapsWith(r.a, Math.min(r.b, Date.now()), t ? t.id : null);
@@ -7303,14 +7331,24 @@ function openTimeBlockDialog(taskId, onDone, opts){
       cb.addEventListener('change', function(){ unchecked[cb.dataset.deduct] = !cb.checked; });
     });
   }
+  /* Dauer setzen: Bis bleibt, Von rückt passend nach vorne (wie bei den Knöpfen). */
+  function setDuration(min){
+    var r = range() || {b: Date.now()};
+    var from = new Date(r.b - min * 60000);
+    document.getElementById('tbkFrom').value = two(from.getHours()) + ':' + two(from.getMinutes());
+    refresh();
+  }
   document.querySelectorAll('.tbk-chip').forEach(function(c){
-    c.addEventListener('click', function(){
-      var r = range() || {b: Date.now()};
-      var from = new Date(r.b - c.dataset.min * 60000);
-      document.getElementById('tbkFrom').value = two(from.getHours()) + ':' + two(from.getMinutes());
-      refresh();
-    });
+    c.addEventListener('click', function(){ setDuration(+c.dataset.min); });
   });
+  var durEl = document.getElementById('tbkDur');
+  durEl.addEventListener('input', function(){
+    var min = parseDurationInput(durEl.value);
+    durEl.classList.toggle('invalid', !!durEl.value.trim() && !(min > 0 && min <= 12 * 60));
+    if(min > 0 && min <= 12 * 60) setDuration(min);
+  });
+  durEl.addEventListener('blur', refresh);
+  durEl.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ durEl.blur(); document.getElementById('tbkSave').click(); } });
   ['tbkDate', 'tbkFrom', 'tbkTo'].forEach(function(id){ document.getElementById(id).addEventListener('input', refresh); });
   function done(){
     closeModal();
@@ -7407,6 +7445,7 @@ function openBookingEditDialog(taskId, bookingId, onDone){
       '<div class="form-row"><label' + (i ? ' class="sr-only"' : '') + '>Datum</label><input type="date" data-f="date" value="' + toDateInputValue(a) + '"></div>' +
       '<div class="form-row"><label' + (i ? ' class="sr-only"' : '') + '>Von</label><input type="time" data-f="from" value="' + hmOf(a) + '"></div>' +
       '<div class="form-row"><label' + (i ? ' class="sr-only"' : '') + '>Bis</label><input type="time" data-f="to" value="' + hmOf(e) + '"></div>' +
+      '<div class="form-row"><label' + (i ? ' class="sr-only"' : '') + '>Dauer</label><input data-f="dur" autocomplete="off" placeholder="z.B. 1h30" value="' + fmtHM((e - a) / 1000) + '" title="Dauer eingeben, z.B. 1h30, 1:30, 1,5 oder 90 (Minuten). Bis wird passend zu Von gesetzt."></div>' +
       (multi ? '<button type="button" class="icon-btn bke-del" data-bke-del="' + i + '" title="Abschnitt entfernen" aria-label="Abschnitt entfernen">✕</button>' : '') +
     '</div>';
   }
@@ -7447,8 +7486,31 @@ function openBookingEditDialog(taskId, bookingId, onDone){
   function refresh(){
     var r = ranges(), sum = document.getElementById('bkeSummary');
     sum.textContent = r ? 'Neu: ' + fmtHM(r.reduce(function(s, x){ return s + (x.b - x.a); }, 0) / 1000) + ' (bisher ' + fmtHM(bookingSeconds(t, b)) + ').' : '';
+    document.querySelectorAll('[data-bke-row]').forEach(function(row){
+      var dur = row.querySelector('[data-f="dur"]');
+      if(document.activeElement === dur) return;
+      var d = row.querySelector('[data-f="date"]').value, f = row.querySelector('[data-f="from"]').value, to = row.querySelector('[data-f="to"]').value;
+      var a = new Date(d + 'T' + f).getTime(), e = new Date(d + 'T' + to).getTime();
+      if(e <= a) e += 86400000;
+      dur.value = d && f && to ? fmtHM((e - a) / 1000) : '';
+      dur.classList.remove('invalid');
+    });
   }
-  document.getElementById('bkeRows').addEventListener('input', refresh);
+  /* Dauer geändert: Von bleibt, Bis rückt passend nach. */
+  document.getElementById('bkeRows').addEventListener('input', function(ev){
+    var dur = ev.target;
+    if(dur.dataset && dur.dataset.f === 'dur'){
+      var row = dur.closest('[data-bke-row]'), f = row.querySelector('[data-f="from"]').value;
+      var min = parseDurationInput(dur.value), ok = min > 0 && min <= 12 * 60;
+      dur.classList.toggle('invalid', !!dur.value.trim() && !ok);
+      if(ok && f){
+        var mins = (+f.slice(0, 2) * 60 + +f.slice(3, 5) + min) % 1440;
+        row.querySelector('[data-f="to"]').value = two(Math.floor(mins / 60)) + ':' + two(mins % 60);
+      }
+    }
+    refresh();
+  });
+  document.getElementById('bkeRows').addEventListener('focusout', refresh);
   document.querySelectorAll('[data-bke-del]').forEach(function(btn){
     btn.addEventListener('click', function(){
       if(document.querySelectorAll('[data-bke-row]').length <= 1) return;
