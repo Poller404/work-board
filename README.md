@@ -292,6 +292,25 @@ grant select, insert, update, delete on user_keys to authenticated;
   Zugriff und können dich nach dem Neustart erneut hinzufügen.
 - Geteilte Boards benötigen den eingerichteten Cloud-Speicher (Passphrase) und die Tabellen oben.
 
+## ⏱️ Arbeitszeit, 🔮 Fristen-Prognose & 🗓️ Wochenrückblick
+
+**Arbeitszeit** (Seitenleiste): Gleitzeit-Saldo wie ein Arbeitszeitkonto. Soll pro Wochentag (unter „Sollzeit & Ferien“,
+sonst die Zielarbeitszeit Mo–Fr), Startdatum und Übertrag einstellbar. Schweizer Feiertage (Neujahr, Berchtoldstag, Karfreitag,
+Ostermontag, Auffahrt, Pfingstmontag, 1. August, Weihnachten, Stephanstag; 1. Mai optional) zählen nicht als Soll.
+Ferien, Krankheit, freie Tage, andere Abwesenheiten (ganz oder halb) und Gleitzeit-Bezug trägst du per Tipp auf einen Tag im
+Monatskalender ein. Kacheln: Saldo bis gestern, heute (inkl. „fertig ca. 17:39“ bei laufendem Timer), diese Woche, Ferien übrig.
+Ist = eigene erfasste Zeit auf allen persönlichen Boards plus Zeit ohne Task. Abwesenheiten werden zwischen Geräten abgeglichen.
+
+**Fristen-Prognose** (Seitenleiste): rechnet die nächsten Arbeitstage durch (Sollzeit minus Feiertage, Ferien und geplante
+Meetings, davon ein einstellbarer Anteil für Tasks) und arbeitet die Tasks mit Frist nach Frist, Priorität und Reihenfolge ab.
+Restaufwand = Schätzung (oder gelernte Dauer, sonst 1 Std.) minus Gebuchtes. Gefährdete Fristen werden auf der Karte rot (⚠️),
+knappe orange markiert; Schnellfilter „Frist gefährdet“. Ein Klick setzt die Frist auf den machbaren Tag oder den Task auf Mein Tag.
+
+**Wochenrückblick** (Seitenleiste, Mein Tag, Befehlspalette): 1. Rückblick (erledigt, erfasst gegen Soll, wofür die Zeit ging),
+2. Aufräumen Task für Task (überfällig, Frist gefährdet, lange wartend, lange nicht angefasst, volle Erledigt-Spalte) mit
+Erledigt/Behalten/Nächste Woche/Archivieren/Frist, 3. bis zu 3 Wochenziele, die in Mein Tag oben stehen und auf der Karte 🎯 tragen.
+Freitags ab 14 Uhr und Montagmorgen erinnert ein Hinweis, wenn der Rückblick noch fehlt (abschaltbar im letzten Schritt).
+
 ## 📝 Seite pro Task (Whiteboard fürs Troubleshooting)
 
 Jeder Task hat eine eigene **Seite**, ähnlich wie in OneNote: eine freie Fläche, auf der Texte und Bilder

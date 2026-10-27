@@ -699,6 +699,121 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .md-empty b{display:block; font-size:15px; color:var(--text); margin-bottom:4px;}
 .sun-badge{font-size:11px;}
 @media (max-width:680px){ .md-row{padding:10px 8px; gap:8px;} .md-why{display:none;} }
+/* ---- Arbeitszeitkonto ---- */
+.wt-kpis, .fc-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+.wt-setup{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--warn-bg); color:var(--text); border-radius:var(--radius); padding:11px 14px; margin-bottom:14px; font-size:13px;}
+.wt-setup .btn{margin-left:auto;}
+.wt-nav{display:flex; align-items:center; gap:4px;}
+.wt-nav h3{min-width:130px; text-align:center;}
+.wt-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-top:6px;}
+.wt-wd{font-size:11.5px; color:var(--text-faint); text-align:center; font-weight:600; padding-bottom:2px;}
+.wt-day{display:flex; flex-direction:column; align-items:flex-start; gap:1px; min-height:70px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--text); font:inherit; text-align:left; cursor:pointer; min-width:0; transition:border-color var(--t-fast), box-shadow var(--t-fast);}
+@media (hover:hover){ .wt-day:not(.blank):hover{border-color:var(--accent);} }
+.wt-wrap .dcard-head{flex-wrap:wrap;}
+.wt-day.blank{border:none; background:transparent; cursor:default;}
+.wt-day.off{background:var(--surface-2);}
+.wt-day.before{opacity:.55;}
+.wt-day.today{box-shadow:0 0 0 2px var(--accent) inset;}
+.wt-day.abs{background:var(--accent-soft);}
+.wt-dn{font-size:12px; font-weight:600; color:var(--text-dim);}
+.wt-dn i{font-style:normal;}
+.wt-ist{font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; min-height:17px;}
+.wt-diff{font-size:11.5px; font-variant-numeric:tabular-nums; color:var(--text-faint);}
+.wt-diff.pos, .wt-pos{color:var(--ok);}
+.wt-diff.neg, .wt-neg{color:var(--danger);}
+.wt-diff.soll{color:var(--text-faint);}
+.wt-legend{margin-top:10px;}
+.dash-row-extra .pos{color:var(--ok); font-weight:600;}
+.wt-dayinfo{display:flex; flex-wrap:wrap; gap:8px 18px; padding:10px 12px; background:var(--surface-2); border-radius:var(--radius-sm); margin-bottom:12px; font-size:13px;}
+.wt-abslist{margin-bottom:10px;}
+.wt-absrow{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;}
+.wt-absrow .btn{padding:3px 8px; font-size:12.5px;}
+.wt-h3{font-size:13px; margin:4px 0 8px;}
+.wt-h3:empty{display:none;}
+.wt-check{display:flex; align-items:center; gap:8px; font-size:13px; margin:2px 0 12px; cursor:pointer;}
+.wt-hours{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px;}
+.wt-hours label{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--text-dim); text-align:center;}
+.wt-hours input{width:100%; min-width:0; text-align:center; padding:7px 2px;}
+.wt-hol{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 12px;}
+.wt-hol .wt-check{margin:3px 0;}
+/* ---- Fristen-Prognose ---- */
+.card .due.risk{white-space:nowrap; font-weight:600; border-radius:6px; padding:1px 6px; margin:-1px 0;}
+.card .due.risk.late{background:var(--danger-bg); color:var(--danger);}
+.card .due.risk.tight{background:var(--warn-bg); color:var(--warn);}
+.card .goal-badge{font-size:11px;}
+.fc-row{display:flex; align-items:center; gap:10px; padding:9px 4px; border-top:1px solid var(--border);}
+.dcard-head + .fc-row{border-top:none;}
+.fc-row.late .md-meta, .fc-row.overdue .md-meta{color:var(--danger);}
+.fc-row.tight .md-meta{color:var(--warn);}
+.fc-main{flex:1; min-width:0; cursor:pointer;}
+.fc-row .md-meta, .fc-row .md-title{white-space:normal;}
+.fc-actions{display:flex; gap:6px; flex-shrink:0;}
+.fc-actions .btn{padding:4px 9px; font-size:12.5px;}
+.fc-tip{margin-top:10px;}
+.fc-day{display:grid; grid-template-columns:70px 1fr; gap:3px 10px; align-items:center; padding:8px 2px; border-top:1px solid var(--border);}
+.dcard-head + .fc-day{border-top:none;}
+.fc-dlabel{font-size:12.5px; font-weight:600;}
+.fc-dbar{height:9px; border-radius:99px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden;}
+.fc-dbar i{display:block; height:100%; background:var(--accent);}
+.fc-dtext{grid-column:2; font-size:12px; color:var(--text-dim);}
+.fc-dfin{grid-column:2; display:flex; flex-wrap:wrap; gap:4px;}
+.fc-chip{font-size:11.5px; background:var(--ok-bg); color:var(--ok); border-radius:5px; padding:1px 6px; cursor:pointer; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.fc-chip.tight{background:var(--warn-bg); color:var(--warn);}
+.fc-chip.late, .fc-chip.overdue{background:var(--danger-bg); color:var(--danger);}
+.fc-explain{font-size:13px; color:var(--text-dim);}
+.fc-explain p{margin:0 0 8px;}
+/* ---- Wochenrückblick ---- */
+.wr-steps{display:flex; gap:6px; padding:10px 20px 0; flex-wrap:wrap;}
+.wr-step{font-size:12px; padding:3px 10px; border-radius:99px; border:1px solid var(--border); color:var(--text-faint);}
+.wr-step.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft); font-weight:600;}
+.wr-step.done{color:var(--ok); border-color:var(--ok);}
+.wr-body{min-height:300px;}
+.wr-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+.wr-sec{margin:14px 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}
+.wr-top{display:grid; grid-template-columns:minmax(0,1.4fr) 1fr 64px; gap:10px; align-items:center; padding:4px 0; font-size:13px;}
+.wr-top-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.wr-top-bar{height:8px; border-radius:99px; background:var(--surface-2); overflow:hidden;}
+.wr-top-bar i{display:block; height:100%; background:var(--accent);}
+.wr-top-val{text-align:right; font-variant-numeric:tabular-nums; color:var(--text-dim);}
+.wr-done{display:flex; flex-wrap:wrap; gap:5px;}
+.wr-done span{font-size:12px; background:var(--ok-bg); color:var(--ok); border-radius:5px; padding:2px 7px;}
+.wr-done span.hint{background:none;}
+.wr-prog{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-dim);}
+.wr-prog .md-progress{flex:1; margin:0;}
+.wr-card{border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-top:12px; background:var(--surface);}
+.wr-why{display:inline-block; font-size:12.5px; font-weight:600; border-radius:6px; padding:3px 9px; margin-bottom:10px; background:var(--surface-2); color:var(--text-dim);}
+.wr-why.overdue, .wr-why.late{background:var(--danger-bg); color:var(--danger);}
+.wr-why.waiting{background:var(--warn-bg); color:var(--warn);}
+.wr-title{font-size:18px; font-weight:600; margin-bottom:3px; overflow-wrap:anywhere;}
+.wr-desc{font-size:13px; color:var(--text-dim); margin-top:8px; white-space:pre-wrap; max-height:90px; overflow:hidden;}
+.wr-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+.wr-due{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:12px; font-size:12.5px; color:var(--text-dim);}
+.wr-due .btn{padding:4px 9px; font-size:12.5px;}
+.wr-due input{padding:4px 8px; font:inherit; font-size:12.5px;}
+.wr-goals{display:flex; flex-direction:column; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
+.wr-goal{display:flex; align-items:center; gap:10px; padding:9px 12px; border-top:1px solid var(--border); cursor:pointer;}
+.wr-goal:first-child{border-top:none;}
+.wr-goal.on{background:var(--accent-soft);}
+.wr-goal input{width:18px; height:18px; flex-shrink:0;}
+.wr-goal-main{display:flex; flex-direction:column; min-width:0;}
+.md-goals .md-row .md-btn.goal{border-color:transparent;}
+@media (max-width:900px){ .wt-kpis, .fc-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:680px){
+  .wt-grid{gap:3px;}
+  .wt-day{min-height:54px; padding:4px 3px; align-items:center; text-align:center;}
+  .wt-ist{display:none;}
+  .wt-diff{font-size:10.5px;}
+  .wt-dn{font-size:11.5px;}
+  .wt-hours{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .wt-hol{grid-template-columns:1fr;}
+  .fc-row{flex-wrap:wrap;}
+  .fc-actions{width:100%;}
+  .wr-kpis{grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px;}
+  .wr-kpis .kpi{padding:10px;}
+  .wr-kpis .kpi-value{font-size:20px;}
+  .wr-top{grid-template-columns:minmax(0,1fr) 60px 56px;}
+  .wr-actions .btn{flex:1 1 auto;}
+}
 
 /* ---- Task-Fenster (zwei Spalten) ---- */
 .modal.wide:has(.task-layout){max-width:1040px;}
@@ -1341,6 +1456,9 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
+    <button class="sb-item" data-view="worktime"><svg class="i"><use href="#i-clock"/></svg><span class="lbl" data-i18n="navWorktime">Arbeitszeit</span></button>
+    <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
+    <button class="sb-item" id="btnWeekReview"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="navWeekReview">Wochenrückblick</span></button>
     <div class="sb-label" data-i18n="navViews">Ansichten</div>
     <button class="sb-item" data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg><span class="lbl" data-i18n="viewDashboard">Dashboard</span></button>
     <button class="sb-item" data-view="priority"><svg class="i"><use href="#i-flag"/></svg><span class="lbl" data-i18n="viewPriority">Nach Priorität</span></button>
@@ -1349,7 +1467,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="myday">Mein Tag</option><option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -2302,7 +2420,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navMyDay:'Mein Tag', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
+    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -2311,7 +2429,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navMyDay:'My Day', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
+    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -3437,7 +3555,7 @@ function openWhatNow(){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash'];
+var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast'];
 var quickFilters = {};
 var filterTag = '';
 var filterProject = '';
@@ -3447,6 +3565,7 @@ var QUICK_FILTERS = [
   {id:'overdue', label:'Überfällig',     fn:function(t){ return !t.completedAt && !!t.dueDate && t.dueDate < toDateInputValue(new Date()); }},
   {id:'high',    label:'Hohe Priorität', fn:function(t){ return !t.completedAt && (t.priority === 'critical' || t.priority === 'high'); }},
   {id:'sla',     label:'SLA-Risiko',     fn:function(t){ return !!slaLevel(t); }},
+  {id:'risk',    label:'Frist gefährdet', fn:function(t){ var f = forecastFor(t); return !!f && f.status === 'late'; }},
   {id:'pinned',  label:'Angeheftet',     fn:function(t){ return !!t.pinned; }},
   {id:'running', label:'Läuft',          fn:function(t){ return isRunning(t); }},
   {id:'mine',    label:'Mir zugewiesen', shared:true, fn:function(t){ return !t.completedAt && !!t.assigneeId && t.assigneeId === myUserId(); }}
@@ -3466,7 +3585,7 @@ function renderFilterBar(){
       var n = pool.filter(f.fn).length;
       var on = !!quickFilters[f.id];
       if(!n && !on) return;
-      html += '<button class="chip'+(on?' on':'')+(f.id==='overdue'||f.id==='sla'?' warn':'')+'" data-qf="'+f.id+'">'+f.label+'<b>'+n+'</b></button>';
+      html += '<button class="chip'+(on?' on':'')+(f.id==='overdue'||f.id==='sla'||f.id==='risk'?' warn':'')+'" data-qf="'+f.id+'">'+f.label+'<b>'+n+'</b></button>';
     });
     var tagCounts = {};
     pool.forEach(function(t){ t.tags.forEach(function(tag){ tagCounts[tag] = (tagCounts[tag]||0) + 1; }); });
@@ -3776,6 +3895,8 @@ function renderBoard(){
   if(boardViewMode === 'projects'){ renderProjectsView(); return; }
   if(boardViewMode === 'kb'){ renderKbView(); return; }
   if(boardViewMode === 'teamdash'){ renderTeamView(); return; }
+  if(boardViewMode === 'worktime'){ renderWorktimeView(); return; }
+  if(boardViewMode === 'forecast'){ renderForecastView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -4135,7 +4256,8 @@ function renderCard(t){
   var dueHtml = '';
   if(t.dueDate){
     var overdue = new Date(t.dueDate) < new Date(new Date().toDateString());
-    dueHtml = '<span class="due'+(overdue?' overdue':'')+'" title="Fällig am '+escapeAttr(t.dueDate)+'">'+svgIcon('cal')+escapeHtml(friendlyDueLabel(t.dueDate))+'</span>';
+    var risk = !overdue && !showArchive ? forecastDueInfo(t) : null;
+    dueHtml = '<span class="due'+(overdue?' overdue':'')+(risk?' risk '+risk.cls:'')+'" title="Fällig am '+escapeAttr(t.dueDate)+(risk?' · '+escapeAttr(risk.tip):'')+'">'+(risk && risk.cls === 'late' ? '⚠️' : svgIcon('cal'))+escapeHtml(friendlyDueLabel(t.dueDate))+'</span>';
   }
   var staleDays = (!running && !t.completedAt && !t.archived && t.updatedAt) ? Math.floor((Date.now() - new Date(t.updatedAt).getTime()) / 86400000) : 0;
   var staleHtml = staleDays >= STALE_TASK_DAYS ? '<span class="stale-badge" title="Seit '+staleDays+' Tagen nicht mehr bearbeitet">'+svgIcon('moon')+staleDays+' T.</span>' : '';
@@ -4157,6 +4279,7 @@ function renderCard(t){
       (sla ? '<span class="sla-dot '+sla+'" title="SLA: '+(sla==='critical'?'überfällig':'bald fällig')+'"></span>' : '') +
       (t.pinned ? '<span class="pin-badge" title="Angeheftet">📌</span>' : '') +
       (isTodayFocus ? '<span class="sun-badge" title="Auf Mein Tag">☀️</span>' : '') +
+      (!t.archived && isWeekGoal(t.id) ? '<span class="goal-badge" title="Wochenziel">🎯</span>' : '') +
       '<span class="prio prio-'+escapeAttr(t.priority||'medium')+'" title="Priorität: '+escapeAttr(prioInfo.label)+'"><i></i><i></i><i></i></span>' +
     '</div>' +
     '<div class="card-title">'+escapeHtml(t.title)+'</div>' +
@@ -5495,12 +5618,26 @@ function renderMyDayView(){
     '</div>';
   }
   var dateLabel = now.toLocaleDateString('de-CH', {weekday:'long', day:'numeric', month:'long'});
+  var goals = weekGoalIds().map(getTask).filter(function(t){ return t && !t.archived; });
+  var goalsDone = goals.filter(function(t){ return t.completedAt; }).length;
+  function grow(t){
+    var isDone = !!t.completedAt;
+    return '<div class="md-row' + (isDone ? ' done' : '') + '">' +
+      '<button class="md-check" data-md-done="' + t.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Als erledigt markieren') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' +
+      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">🎯 ' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t) + '</div></div>' +
+      (!isDone && !isInMyDay(t.id) ? '<button class="md-btn add" data-md-add="' + t.id + '" title="Heute daran arbeiten (zu Mein Tag hinzufügen)" aria-label="Zu Mein Tag hinzufügen">' + svgIcon('plus') + '</button>' : '') +
+    '</div>';
+  }
+  var goalsHtml = goals.length ? '<div class="md-sec">🎯 Wochenziele · ' + goalsDone + ' von ' + goals.length + ' erledigt<button class="btn ghost" id="mdReview">Ändern</button></div>' +
+    '<div class="md-list md-goals">' + goals.map(grow).join('') + '</div>' : '';
   board.innerHTML = '<div class="dash md-wrap">' +
     '<div class="dash-head"><div><h1>☀️ Mein Tag</h1><p>' + escapeHtml(dateLabel) + ' · ' +
       (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p></div>' +
       '<div class="dash-actions"><button class="btn" id="mdPip" title="Mein Tag und Timer in einem kleinen Fenster, das immer im Vordergrund bleibt">' + svgIcon('pip') + '<span>Kleines Fenster</span></button>' +
-      '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button></div></div>' +
+      '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button>' +
+      (goals.length ? '' : '<button class="btn" id="mdReview" title="Woche durchgehen, aufräumen und bis zu 3 Wochenziele setzen">🗓️ Wochenrückblick</button>') + '</div></div>' +
     (list.length ? '<div class="md-progress" title="' + pct + ' % erledigt"><i style="width:' + pct + '%"></i></div>' : '') +
+    goalsHtml +
     '<form class="md-add" id="mdAddForm"><input id="mdAddInput" placeholder="Task für heute hinzufügen… (PROJ-123, #tag, !hoch)" autocomplete="off" aria-label="Neuer Task für Mein Tag">' +
       '<button class="btn primary" type="submit">' + svgIcon('plus') + '<span>Hinzufügen</span></button></form>' +
     (open.length ? '<div class="md-list" id="mdOpenList">' + open.map(row).join('') + '</div>' :
@@ -5514,7 +5651,7 @@ function renderMyDayView(){
 
   var wrap = board.querySelector('.md-wrap');
   wrap.addEventListener('click', function(e){
-    var el = e.target.closest('[data-md-done], [data-md-open], [data-md-timer], [data-md-remove], [data-md-add], #mdPip, #mdAutopilot, #mdSuggToggle');
+    var el = e.target.closest('[data-md-done], [data-md-open], [data-md-timer], [data-md-remove], [data-md-add], #mdPip, #mdAutopilot, #mdSuggToggle, #mdReview');
     if(!el) return;
     if(el.dataset.mdDone){ var dt = getTask(el.dataset.mdDone); if(dt) setTaskDone(dt.id, !dt.completedAt); renderAll(); }
     else if(el.dataset.mdTimer){ var tt = getTask(el.dataset.mdTimer); if(tt){ if(isRunning(tt)) stopTimer(tt.id); else startTimer(tt.id); } }
@@ -5524,6 +5661,7 @@ function renderMyDayView(){
     else if(el.id === 'mdPip'){ toggleControlCenter(); }
     else if(el.id === 'mdAutopilot'){ openAutopilot(toDateInputValue(new Date())); }
     else if(el.id === 'mdSuggToggle'){ myDayShowSuggest = !myDayShowSuggest; renderMyDayView(); }
+    else if(el.id === 'mdReview'){ openWeekReview(); }
   });
   document.getElementById('mdAddForm').addEventListener('submit', function(e){
     e.preventDefault();
@@ -5734,6 +5872,825 @@ function setBoardViewMode(mode){
   boardViewMode = mode;
   swimlaneMode = (mode !== 'status');
   renderBoard();
+}
+
+/* =========================================================
+   ARBEITSZEITKONTO (Gleitzeit-Saldo, Ferien, Feiertage)
+   Soll pro Wochentag aus state.settings.worktime.hours (Index = getDay(), So = 0),
+   sonst die Zielarbeitszeit Mo–Fr. Feiertage (CH, einzeln abwählbar) und
+   Abwesenheiten (state.settings.absences, über SYNC_LISTS Eintrag für Eintrag
+   abgeglichen) senken das Soll. Ist = eigene erfasste Zeit auf allen persönlichen
+   Boards plus Zeit ohne Task. Saldo = Übertrag + Summe (Ist − Soll) vom Startdatum
+   bis gestern; der laufende Tag wird separat gezeigt, damit der Saldo morgens nicht
+   schon mit einem ganzen Tag im Minus startet.
+   ========================================================= */
+var WT_HOLIDAYS = [
+  {key:'neujahr', label:'Neujahr', fixed:'01-01'},
+  {key:'berchtold', label:'Berchtoldstag', fixed:'01-02'},
+  {key:'karfreitag', label:'Karfreitag', easter:-2},
+  {key:'ostermontag', label:'Ostermontag', easter:1},
+  {key:'tagderarbeit', label:'Tag der Arbeit (1. Mai)', fixed:'05-01', off:true},
+  {key:'auffahrt', label:'Auffahrt', easter:39},
+  {key:'pfingstmontag', label:'Pfingstmontag', easter:50},
+  {key:'bundesfeier', label:'Bundesfeier (1. August)', fixed:'08-01'},
+  {key:'weihnachten', label:'Weihnachten', fixed:'12-25'},
+  {key:'stephan', label:'Stephanstag', fixed:'12-26'}
+];
+var ABSENCE_KINDS = {
+  ferien:    {icon:'🏖️', label:'Ferien'},
+  krank:     {icon:'🤒', label:'Krank'},
+  feiertag:  {icon:'🎉', label:'Frei / Feiertag'},
+  andere:    {icon:'📌', label:'Andere bezahlte Abwesenheit (Kurs, Militär, Arzt …)'},
+  gleitzeit: {icon:'⏳', label:'Gleitzeit-Bezug (Soll bleibt, Saldo sinkt)'}
+};
+var WT_DAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+var wtMonth = '';
+var wtHolidayCache = {};
+
+function easterSunday(y){
+  var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  var i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  var month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, month - 1, day);
+}
+function wtConfig(){
+  var w = state.settings.worktime;
+  if(!w || typeof w !== 'object' || Array.isArray(w)) w = {};
+  var base = parseFloat(state.settings.targetHoursPerDay) || 8.4;
+  var hours = Array.isArray(w.hours) && w.hours.length === 7 ? w.hours.map(function(h){ h = parseFloat(h); return isFinite(h) && h >= 0 && h <= 24 ? h : 0; })
+    : [0, base, base, base, base, base, 0];
+  var start = typeof w.start === 'string' && DATE_RE.test(w.start) && !isNaN(new Date(w.start + 'T00:00:00').getTime()) ? w.start : toDateInputValue(startOfMonth(new Date()));
+  var carry = parseFloat(w.carryMin);
+  var vac = parseFloat(w.vacationDays);
+  var hol = {};
+  WT_HOLIDAYS.forEach(function(x){ hol[x.key] = w.holidays && typeof w.holidays[x.key] === 'boolean' ? w.holidays[x.key] : !x.off; });
+  return {configured: !!w.configured, start: start, carryMin: isFinite(carry) ? Math.max(-99999, Math.min(99999, carry)) : 0, hours: hours,
+    vacationDays: isFinite(vac) && vac >= 0 && vac <= 365 ? vac : 25, holidays: hol};
+}
+function wtHolidayMap(year, cfg){
+  var key = year + '|' + JSON.stringify(cfg.holidays);
+  if(wtHolidayCache[key]) return wtHolidayCache[key];
+  var out = {}, easter = easterSunday(year);
+  WT_HOLIDAYS.forEach(function(x){
+    if(!cfg.holidays[x.key]) return;
+    var ds;
+    if(x.fixed) ds = year + '-' + x.fixed;
+    else { var d = new Date(easter); d.setDate(d.getDate() + x.easter); ds = toDateInputValue(d); }
+    out[ds] = x.label;
+  });
+  wtHolidayCache[key] = out;
+  return out;
+}
+function absenceList(){ return Array.isArray(state.settings.absences) ? state.settings.absences : []; }
+function normalizeAbsence(e){
+  if(!e || typeof e !== 'object') return null;
+  if(typeof e.from !== 'string' || !DATE_RE.test(e.from) || isNaN(new Date(e.from + 'T00:00:00').getTime())) return null;
+  var to = typeof e.to === 'string' && DATE_RE.test(e.to) && e.to >= e.from && !isNaN(new Date(e.to + 'T00:00:00').getTime()) ? e.to : e.from;
+  if((new Date(to + 'T00:00:00') - new Date(e.from + 'T00:00:00')) / 86400000 > 366) to = shiftDate(e.from, 366);
+  return {
+    id: (typeof e.id === 'string' && SAFE_ID_RE.test(e.id)) ? e.id : 'ab-' + uid(),
+    from: e.from, to: to,
+    kind: ABSENCE_KINDS[e.kind] ? e.kind : 'andere',
+    half: !!e.half,
+    text: cleanStr(e.text, 200).trim(),
+    updatedAt: typeof e.updatedAt === 'string' && !isNaN(new Date(e.updatedAt).getTime()) ? e.updatedAt : nowIso()
+  };
+}
+function wtDayInfo(ds, cfg){
+  var d = new Date(ds + 'T00:00:00');
+  var base = Math.round((cfg.hours[d.getDay()] || 0) * 60);
+  var info = {ds: ds, base: base, soll: base, hol: wtHolidayMap(d.getFullYear(), cfg)[ds] || '', abs: [], vac: 0};
+  absenceList().forEach(function(a){ if(a.from <= ds && a.to >= ds) info.abs.push(a); });
+  if(!base || info.hol){ info.soll = 0; return info; }
+  var off = 0;
+  info.abs.forEach(function(a){
+    if(a.kind === 'gleitzeit') return;
+    var f = a.half ? 0.5 : 1;
+    off += f;
+    if(a.kind === 'ferien') info.vac += f;
+  });
+  info.vac = Math.min(1, info.vac);
+  info.soll = Math.round(base * (1 - Math.min(1, off)));
+  return info;
+}
+/* Alle Tasks mit eigener Zeit: aktives Board, inaktive persönliche Boards, das persönliche Board hinter einem
+   geöffneten geteilten Board und Zeit ohne Task. */
+function wtTaskPool(){
+  var pool = timeTasks();
+  (state.boards || []).forEach(function(b){ if(b && Array.isArray(b.tasks)) pool = pool.concat(b.tasks); });
+  if(activeShared && personalStash && Array.isArray(personalStash.tasks)) pool = pool.concat(personalStash.tasks);
+  return pool;
+}
+/* Eigene erfasste Sekunden pro Tag {datum: sekunden} im Bereich [fromMs, toMs). */
+function wtIstMap(fromMs, toMs){
+  var out = {};
+  wtTaskPool().forEach(function(t){
+    (t && Array.isArray(t.timeSessions) ? t.timeSessions : []).forEach(function(s){
+      if(!isMySession(s)) return;
+      var cur = Math.max(new Date(s.start).getTime(), fromMs);
+      var last = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), toMs);
+      var guard = 0;
+      while(cur < last && guard++ < 400){
+        var dayEnd = new Date(cur); dayEnd.setHours(24, 0, 0, 0);
+        var seg = Math.min(dayEnd.getTime(), last);
+        var ds = toDateInputValue(new Date(cur));
+        out[ds] = (out[ds] || 0) + (seg - cur) / 1000;
+        cur = seg;
+      }
+    });
+  });
+  return out;
+}
+/* Summen für [fromDs, toDs] (beide inklusive): Ist und Soll in Minuten. */
+function wtRange(fromDs, toDs, cfg, ist){
+  var res = {ist: 0, soll: 0, vac: 0};
+  if(toDs < fromDs) return res;
+  ist = ist || wtIstMap(dayStartMs(fromDs), dayStartMs(shiftDate(toDs, 1)));
+  for(var ds = fromDs, guard = 0; ds <= toDs && guard < 4000; ds = shiftDate(ds, 1), guard++){
+    var info = wtDayInfo(ds, cfg);
+    res.ist += (ist[ds] || 0) / 60;
+    res.soll += info.soll;
+    res.vac += info.vac;
+  }
+  return res;
+}
+function wtSummary(){
+  var cfg = wtConfig();
+  var today = toDateInputValue(new Date());
+  var yesterday = shiftDate(today, -1);
+  var from = cfg.start < today ? cfg.start : today;
+  var ist = wtIstMap(dayStartMs(from), Date.now());
+  var past = cfg.start <= yesterday ? wtRange(cfg.start, yesterday, cfg, ist) : {ist: 0, soll: 0};
+  var todayInfo = wtDayInfo(today, cfg);
+  var todayIst = (wtIstMap(dayStartMs(today), Date.now())[today] || 0) / 60;
+  var weekStart = toDateInputValue(startOfWeek(new Date()));
+  var week = wtRange(weekStart, shiftDate(weekStart, 6), cfg, wtIstMap(dayStartMs(weekStart), Date.now()));
+  var year = new Date().getFullYear();
+  var vacTaken = wtRange(year + '-01-01', today, cfg, {}).vac;
+  var vacPlanned = wtRange(shiftDate(today, 1), year + '-12-31', cfg, {}).vac;
+  return {cfg: cfg, today: today, saldo: cfg.carryMin + past.ist - past.soll, todayIst: todayIst, todaySoll: todayInfo.soll, todayInfo: todayInfo,
+    week: week, weekStart: weekStart, vacTaken: vacTaken, vacPlanned: vacPlanned, vacLeft: cfg.vacationDays - vacTaken - vacPlanned};
+}
+function fmtSignedMin(min){
+  var m = Math.round(min);
+  var sign = m > 0 ? '+' : (m < 0 ? '−' : '±');
+  m = Math.abs(m);
+  return sign + Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+}
+function fmtHMin(min){ var m = Math.max(0, Math.round(min)); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+function fmtDays(n){ n = Math.round(n * 10) / 10; return String(n).replace('.', ',') + (n === 1 ? ' Tag' : ' Tage'); }
+function shortDateLabel(ds){
+  var d = new Date(ds + 'T00:00:00');
+  return WT_DAYS[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
+}
+function absenceLabel(a){
+  var k = ABSENCE_KINDS[a.kind] || ABSENCE_KINDS.andere;
+  return k.icon + ' ' + (a.text || k.label.replace(/ \(.*\)$/, '')) + (a.half ? ' (halber Tag)' : '');
+}
+/* "+2h30", "-1:15", "3,5" → Minuten mit Vorzeichen, null wenn unlesbar */
+function parseSignedDuration(str){
+  var v = String(str || '').trim().replace('−', '-');
+  if(!v || v === '0') return 0;
+  var neg = /^-/.test(v);
+  var m = parseDurationInput(v.replace(/^[+-]\s*/, ''));
+  return m == null ? null : (neg ? -m : m);
+}
+function runningTask(){ return state.tasks.find(function(t){ return isRunning(t); }) || null; }
+
+function renderWorktimeView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var s = wtSummary(), cfg = s.cfg;
+  if(!/^\d{4}-\d{2}$/.test(wtMonth)) wtMonth = s.today.slice(0, 7);
+  var y = parseInt(wtMonth.slice(0, 4), 10), mo = parseInt(wtMonth.slice(5, 7), 10) - 1;
+  var first = new Date(y, mo, 1), last = new Date(y, mo + 1, 0);
+  var firstDs = toDateInputValue(first), lastDs = toDateInputValue(last);
+  var ist = wtIstMap(first.getTime(), Math.min(Date.now(), last.getTime() + 86400000));
+  var monthLabel = first.toLocaleDateString('de-CH', {month: 'long', year: 'numeric'});
+  var cells = '', lead = (first.getDay() + 6) % 7;
+  for(var i = 0; i < lead; i++) cells += '<span class="wt-day blank"></span>';
+  var mIst = 0, mSoll = 0, mPastIst = 0, mPastSoll = 0;
+  var weeks = [], wk = null;
+  for(var d = new Date(first); d <= last; d.setDate(d.getDate() + 1)){
+    var ds = toDateInputValue(d);
+    var info = wtDayInfo(ds, cfg);
+    var sec = ist[ds] || 0, min = sec / 60;
+    var isPast = ds < s.today, isToday = ds === s.today;
+    var counted = ds >= cfg.start;
+    mIst += min; mSoll += info.soll;
+    if((isPast || isToday) && counted){ mPastIst += min; mPastSoll += isToday ? Math.min(info.soll, min) : info.soll; }
+    var dow = d.getDay();
+    if(!wk || dow === 1){ wk = {from: ds, to: ds, ist: 0, soll: 0, pastIst: 0, pastSoll: 0}; weeks.push(wk); }
+    wk.to = ds; wk.ist += min; wk.soll += info.soll;
+    if(isPast && counted){ wk.pastIst += min; wk.pastSoll += info.soll; }
+    var icon = info.hol ? '🎉' : (info.abs.length ? (ABSENCE_KINDS[info.abs[0].kind] || ABSENCE_KINDS.andere).icon : '');
+    var title = shortDateLabel(ds) + (info.hol ? ' · ' + info.hol : '') + info.abs.map(function(a){ return ' · ' + absenceLabel(a); }).join('') +
+      ' · Ist ' + fmtHMin(min) + ' / Soll ' + fmtHMin(info.soll);
+    var diffHtml = '';
+    if(isPast && counted && (info.soll || min)){
+      var diff = min - info.soll;
+      diffHtml = '<span class="wt-diff ' + (diff >= 0.5 ? 'pos' : (diff <= -0.5 ? 'neg' : '')) + '">' + fmtSignedMin(diff) + '</span>';
+    } else if(isToday && info.soll){
+      diffHtml = '<span class="wt-diff">' + (min >= info.soll ? '✓' : 'noch ' + fmtHMin(info.soll - min)) + '</span>';
+    } else if(!isPast && info.soll && !isToday){
+      diffHtml = '<span class="wt-diff soll">' + fmtHMin(info.soll) + '</span>';
+    }
+    cells += '<button type="button" class="wt-day' + (info.base ? '' : ' off') + (isToday ? ' today' : '') + (isPast || isToday ? '' : ' future') + (counted ? '' : ' before') +
+      (info.hol || info.abs.length ? ' abs' : '') + '" data-wt-day="' + ds + '" title="' + escapeAttr(title) + '">' +
+      '<span class="wt-dn">' + d.getDate() + (icon ? ' <i>' + icon + '</i>' : '') + '</span>' +
+      (min >= 1 ? '<span class="wt-ist">' + fmtHMin(min) + '</span>' : '<span class="wt-ist"></span>') + diffHtml + '</button>';
+  }
+  var weekRows = weeks.map(function(w){
+    var diff = w.pastIst - w.pastSoll;
+    var kw = isoWeekNumber(new Date(w.from + 'T00:00:00'));
+    return '<div class="dash-row" data-wt-day="' + w.from + '"><span class="dash-row-title">KW ' + kw + ' <span class="hint">' + shortDateLabel(w.from) + '–' + shortDateLabel(w.to) + '</span></span>' +
+      '<span class="dash-row-extra">' + fmtHMin(w.ist) + ' / ' + fmtHMin(w.soll) + (w.pastSoll || w.pastIst ? ' · <b class="' + (diff < -0.5 ? 'neg' : 'pos') + '">' + fmtSignedMin(diff) + '</b>' : '') + '</span></div>';
+  }).join('');
+  var yearStr = String(new Date().getFullYear());
+  var absRows = absenceList().filter(function(a){ return a.to >= s.today || a.from.slice(0, 4) === yearStr; })
+    .sort(function(a, b){ return a.from < b.from ? -1 : 1; }).slice(0, 30).map(function(a){
+      return '<div class="dash-row" data-wt-abs="' + a.id + '"><span class="dash-row-title">' + escapeHtml(absenceLabel(a)) + '</span>' +
+        '<span class="dash-row-extra">' + shortDateLabel(a.from) + (a.to !== a.from ? ' – ' + shortDateLabel(a.to) : '') + '</span></div>';
+    }).join('');
+  var leftToday = s.todaySoll - s.todayIst;
+  var todaySub = !s.todaySoll ? (s.todayInfo.hol ? '🎉 ' + escapeHtml(s.todayInfo.hol) : (s.todayInfo.abs.length ? escapeHtml(absenceLabel(s.todayInfo.abs[0])) : 'heute kein Soll'))
+    : (leftToday <= 0 ? 'Soll erreicht ✓' : 'noch ' + fmtHMin(leftToday) + (runningTask() ? ' · fertig ca. ' + fmtClock(Date.now() + leftToday * 60000) : ''));
+  function tile(label, value, sub, tone, id){
+    return '<div class="kpi' + (tone ? ' ' + tone : '') + (id ? ' link' : '') + '"' + (id ? ' id="' + id + '" role="button" tabindex="0"' : '') + '><div class="kpi-label">' + label + '</div><div class="kpi-value">' + value + '</div><div class="kpi-sub">' + sub + '</div></div>';
+  }
+  var weekHours = cfg.hours.reduce(function(a, b){ return a + b; }, 0);
+  var monthDiff = mPastIst - mPastSoll;
+  board.innerHTML = '<div class="dash wt-wrap">' +
+    '<div class="dash-head"><div><h1>⏱️ Arbeitszeit</h1><p>Gleitzeit-Saldo, Ferien und Abwesenheiten · gezählt ab ' + escapeHtml(shortDateLabel(cfg.start)) + ' ' + cfg.start.slice(0, 4) + '</p></div>' +
+      '<div class="dash-actions"><button class="btn primary" id="wtAddAbs">' + svgIcon('plus') + '<span>Abwesenheit</span></button>' +
+      '<button class="btn" id="wtSettingsBtn">⚙️ <span>Sollzeit &amp; Ferien</span></button></div></div>' +
+    (!cfg.configured ? '<div class="wt-setup"><b>Stimmt deine Sollzeit?</b> Ich rechne im Moment mit ' + String(Math.round(weekHours * 100) / 100).replace('.', ',') + ' Std. pro Woche (' +
+      [1,2,3,4,5,6,0].filter(function(i){ return cfg.hours[i]; }).map(function(i){ return WT_DAYS[i] + ' ' + String(cfg.hours[i]).replace('.', ','); }).join(', ') + '), ' + cfg.vacationDays + ' Ferientagen und Startdatum ' + shortDateLabel(cfg.start) + '. ' +
+      '<button class="btn" id="wtSetupBtn">Jetzt einrichten</button></div>' : '') +
+    '<div class="kpis wt-kpis">' +
+      tile('Gleitzeit-Saldo', fmtSignedMin(s.saldo) + '<small> h</small>', 'bis gestern' + (s.todayIst > s.todaySoll ? ' · mit heute ' + fmtSignedMin(s.saldo + s.todayIst - s.todaySoll) : ''), s.saldo < -0.5 ? 'bad' : (s.saldo > 0.5 ? 'good' : '')) +
+      tile('Heute', fmtHMin(s.todayIst) + '<small> / ' + fmtHMin(s.todaySoll) + '</small>', todaySub, '') +
+      tile('Diese Woche', fmtHMin(s.week.ist) + '<small> / ' + fmtHMin(s.week.soll) + '</small>', 'Ist / Soll Mo–So', '') +
+      tile('Ferien ' + yearStr, fmtDays(s.vacLeft).replace(/ Tage?$/, '') + '<small> übrig</small>', fmtDays(s.vacTaken) + ' bezogen' + (s.vacPlanned ? ' · ' + fmtDays(s.vacPlanned) + ' geplant' : '') + ' · ' + cfg.vacationDays + ' pro Jahr', s.vacLeft < 0 ? 'bad' : '', 'wtVacTile') +
+    '</div>' +
+    '<section class="dcard wide"><div class="dcard-head"><div class="wt-nav"><button class="btn ghost icon-btn" data-wt-month="-1" aria-label="Vorheriger Monat">‹</button>' +
+      '<h3>' + escapeHtml(monthLabel) + '</h3><button class="btn ghost icon-btn" data-wt-month="1" aria-label="Nächster Monat">›</button>' +
+      (wtMonth !== s.today.slice(0, 7) ? '<button class="btn ghost" data-wt-month="0">Heute</button>' : '') + '</div>' +
+      '<span class="hint">Monat: ' + fmtHMin(mIst) + ' / ' + fmtHMin(mSoll) + ' · bis heute <b class="' + (monthDiff < -0.5 ? 'wt-neg' : 'wt-pos') + '">' + fmtSignedMin(monthDiff) + '</b></span></div>' +
+      '<div class="wt-grid">' + ['Mo','Di','Mi','Do','Fr','Sa','So'].map(function(x){ return '<span class="wt-wd">' + x + '</span>'; }).join('') + cells + '</div>' +
+      '<div class="hint wt-legend">Tippe auf einen Tag, um Ferien, Krankheit oder einen freien Tag einzutragen. Grün = Plus, rot = Minus gegenüber dem Soll.</div>' +
+    '</section>' +
+    '<div class="dash-grid" style="margin-top:14px;">' +
+      '<section class="dcard"><div class="dcard-head"><h3>Wochen im ' + escapeHtml(first.toLocaleDateString('de-CH', {month: 'long'})) + '</h3></div>' + weekRows + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>Abwesenheiten</h3><button class="btn ghost" id="wtAddAbs2">+ Eintragen</button></div>' +
+        (absRows || '<div class="empty-state">Noch keine Ferien oder Abwesenheiten eingetragen.</div>') + '</section>' +
+    '</div>' +
+  '</div>';
+  var wrap = board.querySelector('.wt-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-wt-day], [data-wt-abs], [data-wt-month], #wtAddAbs, #wtAddAbs2, #wtSettingsBtn, #wtSetupBtn, #wtVacTile');
+    if(!el) return;
+    if(el.dataset.wtMonth != null){
+      var step = parseInt(el.dataset.wtMonth, 10);
+      if(!step) wtMonth = s.today.slice(0, 7);
+      else { var nd = new Date(y, mo + step, 1); wtMonth = toDateInputValue(nd).slice(0, 7); }
+      renderWorktimeView();
+    } else if(el.dataset.wtDay) openAbsenceDialog(el.dataset.wtDay, '');
+    else if(el.dataset.wtAbs){ var a = absenceList().find(function(x){ return x.id === el.dataset.wtAbs; }); if(a) openAbsenceDialog(a.from, a.id); }
+    else if(el.id === 'wtSettingsBtn' || el.id === 'wtSetupBtn' || el.id === 'wtVacTile') openWorktimeSettings();
+    else openAbsenceDialog(s.today, '');
+  });
+}
+function isoWeekNumber(d){
+  var x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var day = x.getUTCDay() || 7;
+  x.setUTCDate(x.getUTCDate() + 4 - day);
+  var y0 = new Date(Date.UTC(x.getUTCFullYear(), 0, 1));
+  return Math.ceil(((x - y0) / 86400000 + 1) / 7);
+}
+function saveAbsences(list){
+  state.settings.absences = list;
+  save();
+  fcCacheKey = '';
+  renderAll();
+}
+function openAbsenceDialog(ds, editId){
+  var cfg = wtConfig();
+  var edit = editId ? absenceList().find(function(a){ return a.id === editId; }) : null;
+  var info = wtDayInfo(ds, cfg);
+  var today = toDateInputValue(new Date());
+  var min = ((ds <= today ? wtIstMap(dayStartMs(ds), Math.min(Date.now(), dayStartMs(shiftDate(ds, 1)))) : {})[ds] || 0) / 60;
+  var dayLabel = new Date(ds + 'T00:00:00').toLocaleDateString('de-CH', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+  var existing = info.abs.filter(function(a){ return !edit || a.id !== edit.id; });
+  var a = edit || {from: ds, to: ds, kind: 'ferien', half: false, text: ''};
+  var html =
+    '<div class="modal-header"><h2>' + (edit ? 'Abwesenheit bearbeiten' : escapeHtml(dayLabel)) + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      (!edit ? '<div class="wt-dayinfo"><span>Soll <b>' + fmtHMin(info.soll) + '</b></span><span>Ist <b>' + fmtHMin(min) + '</b></span>' +
+        (ds <= today && ds >= cfg.start && (info.soll || min) ? '<span>Differenz <b class="' + (min - info.soll < -0.5 ? 'wt-neg' : 'wt-pos') + '">' + fmtSignedMin(min - info.soll) + '</b></span>' : '') +
+        (info.hol ? '<span>🎉 ' + escapeHtml(info.hol) + '</span>' : '') + (!info.base && !info.hol ? '<span class="hint">Kein Arbeitstag</span>' : '') + '</div>' : '') +
+      (existing.length ? '<div class="wt-abslist">' + existing.map(function(x){
+        return '<div class="wt-absrow"><span>' + escapeHtml(absenceLabel(x)) + ' <span class="hint">' + shortDateLabel(x.from) + (x.to !== x.from ? ' – ' + shortDateLabel(x.to) : '') + '</span></span>' +
+          '<span><button class="btn ghost" data-ab-edit="' + x.id + '">Bearbeiten</button><button class="btn ghost" data-ab-del="' + x.id + '">Löschen</button></span></div>';
+      }).join('') + '</div>' : '') +
+      '<h3 class="wt-h3">' + (edit ? '' : 'Abwesenheit eintragen') + '</h3>' +
+      '<div class="form-row"><label for="abKind">Art</label><select id="abKind">' + Object.keys(ABSENCE_KINDS).map(function(k){
+        return '<option value="' + k + '"' + (a.kind === k ? ' selected' : '') + '>' + ABSENCE_KINDS[k].icon + ' ' + escapeHtml(ABSENCE_KINDS[k].label) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="form-row-inline"><div class="form-row"><label for="abFrom">Von</label><input type="date" id="abFrom" value="' + escapeAttr(a.from) + '"></div>' +
+        '<div class="form-row"><label for="abTo">Bis und mit</label><input type="date" id="abTo" value="' + escapeAttr(a.to) + '"></div></div>' +
+      '<label class="wt-check"><input type="checkbox" id="abHalf"' + (a.half ? ' checked' : '') + '> Nur halber Tag</label>' +
+      '<div class="form-row"><label for="abText">Notiz (optional)</label><input id="abText" maxlength="200" value="' + escapeAttr(a.text) + '" placeholder="z.B. Sommerferien, Arzttermin"></div>' +
+      '<div class="hint" id="abHint"></div>' +
+    '</div>' +
+    '<div class="modal-footer">' + (!edit ? '<button class="btn ghost" id="abDyce" style="margin-right:auto;">Tagesabschluss öffnen</button>' : '') +
+      '<button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="abSave">' + (edit ? 'Speichern' : 'Eintragen') + '</button></div>';
+  openModal(html);
+  var fromEl = document.getElementById('abFrom'), toEl = document.getElementById('abTo'), kindEl = document.getElementById('abKind'), halfEl = document.getElementById('abHalf');
+  function preview(){
+    var f = fromEl.value, t = toEl.value || f, hint = document.getElementById('abHint');
+    if(!DATE_RE.test(f) || t < f){ hint.textContent = 'Bitte ein gültiges Datum wählen (Bis nicht vor Von).'; return; }
+    var n = 0, sollOff = 0;
+    for(var x = f, g = 0; x <= t && g < 400; x = shiftDate(x, 1), g++){
+      var di = wtDayInfo(x, cfg);
+      if(di.base && !di.hol){ n += halfEl.checked ? 0.5 : 1; sollOff += di.base * (halfEl.checked ? 0.5 : 1); }
+    }
+    hint.textContent = n ? (kindEl.value === 'gleitzeit' ? fmtDays(n) + ' Gleitzeit-Bezug: dein Saldo sinkt um ' + fmtHMin(sollOff) + ' h.' :
+      fmtDays(n) + (kindEl.value === 'ferien' ? ' Ferien' : '') + ', Soll sinkt um ' + fmtHMin(sollOff) + ' h.') : 'In diesem Zeitraum liegt kein Arbeitstag (Wochenende oder Feiertag).';
+  }
+  [fromEl, toEl, kindEl, halfEl].forEach(function(el){ el.addEventListener('change', function(){ if(el === fromEl && toEl.value < fromEl.value) toEl.value = fromEl.value; preview(); }); });
+  preview();
+  var root = document.getElementById('modalRoot');
+  root.querySelector('.modal-body').addEventListener('click', function(e){
+    var del = e.target.closest('[data-ab-del]'), ed = e.target.closest('[data-ab-edit]');
+    if(del){
+      var removed = absenceList().find(function(x){ return x.id === del.dataset.abDel; });
+      saveAbsences(absenceList().filter(function(x){ return x.id !== del.dataset.abDel; }));
+      closeModal();
+      if(removed) toast('Abwesenheit gelöscht.', 6000, 'Rückgängig', function(){ saveAbsences(absenceList().concat([removed])); });
+    } else if(ed){ openAbsenceDialog(ds, ed.dataset.abEdit); }
+  });
+  var dyceBtn = document.getElementById('abDyce');
+  if(dyceBtn) dyceBtn.addEventListener('click', function(){ closeModal(); dyceDateStr = ds; switchToView('dyce'); });
+  document.getElementById('abSave').addEventListener('click', function(){
+    var entry = normalizeAbsence({id: edit ? edit.id : '', from: fromEl.value, to: toEl.value || fromEl.value, kind: kindEl.value, half: halfEl.checked,
+      text: document.getElementById('abText').value, updatedAt: nowIso()});
+    if(!entry || (toEl.value && toEl.value < fromEl.value)){ document.getElementById('abHint').textContent = 'Bitte ein gültiges Datum wählen (Bis nicht vor Von).'; return; }
+    var list = absenceList().filter(function(x){ return x.id !== entry.id; }).concat([entry]);
+    saveAbsences(list);
+    closeModal();
+    toast(absenceLabel(entry) + ' eingetragen: ' + shortDateLabel(entry.from) + (entry.to !== entry.from ? ' – ' + shortDateLabel(entry.to) : '') + '.');
+  });
+}
+function openWorktimeSettings(){
+  var cfg = wtConfig();
+  var order = [1,2,3,4,5,6,0];
+  var html =
+    '<div class="modal-header"><h2>Sollzeit &amp; Ferien</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><label>Sollzeit pro Wochentag (Stunden, z.B. 8,4 = 8 Std. 24 Min.)</label><div class="wt-hours">' + order.map(function(i){
+        return '<label><span>' + WT_DAYS[i] + '</span><input type="number" min="0" max="24" step="0.05" data-wt-h="' + i + '" value="' + (cfg.hours[i] || 0) + '"></label>'; }).join('') + '</div>' +
+        '<div class="hint" id="wtWeekSum"></div></div>' +
+      '<div class="form-row-inline"><div class="form-row"><label for="wtStart">Zählen ab</label><input type="date" id="wtStart" value="' + escapeAttr(cfg.start) + '"></div>' +
+        '<div class="form-row"><label for="wtCarry">Saldo am Startdatum (Übertrag)</label><input id="wtCarry" value="' + (cfg.carryMin ? escapeAttr(fmtSignedMin(cfg.carryMin)) : '') + '" placeholder="z.B. +12:30 oder -2h"></div></div>' +
+      '<div class="form-row"><label for="wtVac">Ferientage pro Jahr</label><input type="number" id="wtVac" min="0" max="365" step="0.5" value="' + cfg.vacationDays + '"></div>' +
+      '<div class="form-row"><label>Feiertage (frei, zählen nicht als Soll)</label><div class="wt-hol">' + WT_HOLIDAYS.map(function(h){
+        return '<label class="wt-check"><input type="checkbox" data-wt-hol="' + h.key + '"' + (cfg.holidays[h.key] ? ' checked' : '') + '> ' + escapeHtml(h.label) + '</label>'; }).join('') + '</div>' +
+        '<div class="hint">Kantonale Feiertage (z.B. Fronleichnam) trägst du als Abwesenheit "Frei / Feiertag" ein.</div></div>' +
+      '<div class="hint" id="wtErr" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="wtSave">Speichern</button></div>';
+  openModal(html);
+  var root = document.getElementById('modalRoot');
+  function hoursNow(){ var h = [0,0,0,0,0,0,0]; root.querySelectorAll('[data-wt-h]').forEach(function(inp){ var v = parseFloat(String(inp.value).replace(',', '.')); h[+inp.dataset.wtH] = isFinite(v) && v >= 0 && v <= 24 ? v : 0; }); return h; }
+  function sum(){ var t = hoursNow().reduce(function(a, b){ return a + b; }, 0); document.getElementById('wtWeekSum').textContent = 'Pro Woche: ' + fmtHMin(t * 60) + ' Std.'; }
+  root.querySelectorAll('[data-wt-h]').forEach(function(inp){ inp.addEventListener('input', sum); });
+  sum();
+  document.getElementById('wtSave').addEventListener('click', function(){
+    var carry = parseSignedDuration(document.getElementById('wtCarry').value);
+    if(carry == null){ document.getElementById('wtErr').textContent = 'Den Übertrag verstehe ich nicht. Beispiele: +12:30, -2h, 1h30.'; return; }
+    var start = document.getElementById('wtStart').value;
+    if(!DATE_RE.test(start)){ document.getElementById('wtErr').textContent = 'Bitte ein Startdatum wählen.'; return; }
+    var hol = {};
+    root.querySelectorAll('[data-wt-hol]').forEach(function(cb){ hol[cb.dataset.wtHol] = cb.checked; });
+    var vac = parseFloat(document.getElementById('wtVac').value);
+    state.settings.worktime = {configured: true, start: start, carryMin: carry, hours: hoursNow(), vacationDays: isFinite(vac) && vac >= 0 ? vac : 25, holidays: hol};
+    save();
+    fcCacheKey = '';
+    closeModal();
+    renderAll();
+    toast('Sollzeit gespeichert.');
+  });
+}
+
+/* =========================================================
+   FRISTEN-PROGNOSE ("Schaffe ich das?")
+   Simuliert die nächsten Arbeitstage: Kapazität pro Tag = Soll aus dem
+   Arbeitszeitkonto (Feiertage, Ferien zählen mit) minus geplante Meetings,
+   davon nur der Fokus-Anteil (Rest für Hotline, Mails, Unvorhergesehenes).
+   Offene Tasks mit Frist werden nach Frist, dann Priorität und Reihenfolge
+   abgearbeitet (Restaufwand = Schätzung bzw. gelernte Schätzung minus Gebuchtes).
+   Ergebnis pro Task: voraussichtlicher Fertig-Tag und Status ok/knapp/gefährdet.
+   Nur berechnet, nichts davon wird gespeichert.
+   ========================================================= */
+var fcCache = null, fcCacheKey = '';
+var FC_PRIO_WEIGHT = {critical: 0, high: 1, medium: 2, low: 3};
+function forecastFocusPct(){ var p = parseInt(state.settings.forecastFocusPct, 10); return p >= 30 && p <= 100 ? p : 75; }
+function fcRemaining(t){
+  var logged = secondsInRange(t, 0, Date.now()) / 60;
+  var est = t.estimatedMinutes || learnedMinutes(t) || 0;
+  var assumed = !t.estimatedMinutes;
+  if(!est) est = 60;
+  return {min: Math.max(15, Math.round(est - logged)), assumed: assumed, est: est, logged: logged};
+}
+function fcCandidates(){
+  var done = apDoneColumnIds(), waiting = apWaitingColumnIds();
+  return state.tasks.filter(function(t){
+    if(t.archived || t.completedAt || t.type === 'meeting') return false;
+    if(done.indexOf(t.columnId) >= 0 || waiting.indexOf(t.columnId) >= 0) return false;
+    if(activeShared && t.assigneeId && t.assigneeId !== myUserId()) return false;
+    return true;
+  });
+}
+function fcDayCapacity(ds, cfg, todayStr, istTodayMin){
+  var info = wtDayInfo(ds, cfg);
+  var cap = info.soll, meet = 0;
+  state.tasks.forEach(function(t){
+    if(t.archived || t.type !== 'meeting' || !t.scheduledAt) return;
+    var st = new Date(t.scheduledAt);
+    if(isNaN(st.getTime()) || toDateInputValue(st) !== ds) return;
+    var endMs = st.getTime() + plannedMinutes(t) * 60000;
+    if(endMs <= Date.now()) return;
+    meet += (endMs - Math.max(st.getTime(), Date.now())) / 60000;
+  });
+  if(ds === todayStr){
+    cap = Math.max(0, cap - istTodayMin);
+    var endMin = parseHM(state.settings.dyceWorkEnd, 17 * 60);
+    cap = Math.min(cap, Math.max(0, endMin - plDayMinutes(new Date())));
+  }
+  cap = Math.max(0, cap - meet);
+  return {cap: Math.round(cap * forecastFocusPct() / 100), meet: Math.round(meet), soll: info.soll, info: info};
+}
+function computeForecast(){
+  var key = (state.meta && state.meta.updatedAt) + '|' + Math.floor(Date.now() / 60000) + '|' + (activeShared ? activeShared.id : state.settings.activeBoardName) + '|' + state.tasks.length + '|' + forecastFocusPct();
+  if(fcCache && fcCacheKey === key) return fcCache;
+  var cfg = wtConfig();
+  var todayStr = toDateInputValue(new Date());
+  var istToday = (wtIstMap(dayStartMs(todayStr), Date.now())[todayStr] || 0) / 60;
+  var cands = fcCandidates().map(function(t){ var r = fcRemaining(t); return {t: t, rem: r.min, left: r.min, assumed: r.assumed, finish: ''}; });
+  var dated = cands.filter(function(c){ return c.t.dueDate && DATE_RE.test(c.t.dueDate); }).sort(function(a, b){
+    if(a.t.dueDate !== b.t.dueDate) return a.t.dueDate < b.t.dueDate ? -1 : 1;
+    var pa = FC_PRIO_WEIGHT[a.t.priority] != null ? FC_PRIO_WEIGHT[a.t.priority] : 2, pb = FC_PRIO_WEIGHT[b.t.priority] != null ? FC_PRIO_WEIGHT[b.t.priority] : 2;
+    if(pa !== pb) return pa - pb;
+    if((a.t.rank || 999) !== (b.t.rank || 999)) return (a.t.rank || 999) - (b.t.rank || 999);
+    return new Date(a.t.createdAt) - new Date(b.t.createdAt);
+  });
+  var undated = cands.filter(function(c){ return !c.t.dueDate || !DATE_RE.test(c.t.dueDate); });
+  var res = {byId: {}, days: [], late: [], tight: [], overdue: [], ok: [], undated: undated, datedMin: 0, undatedMin: 0, assumed: 0, cumCap: {}, today: todayStr};
+  var qi = 0, cum = 0, ds = todayStr;
+  for(var i = 0; i < 240 && (qi < dated.length || res.days.length < 14); i++){
+    var c = fcDayCapacity(ds, cfg, todayStr, istToday);
+    var free = c.cap, day = {ds: ds, cap: c.cap, soll: c.soll, meet: c.meet, used: 0, finish: [], info: c.info};
+    while(qi < dated.length && free > 0){
+      var q = dated[qi], take = Math.min(free, q.left);
+      q.left -= take; free -= take; day.used += take;
+      if(q.left <= 0){ q.finish = ds; day.finish.push(q.t); qi++; }
+    }
+    cum += c.cap;
+    res.cumCap[ds] = cum;
+    if(res.days.length < 14 && (c.soll > 0 || ds === todayStr)) res.days.push(day);
+    ds = shiftDate(ds, 1);
+  }
+  var cumRem = 0;
+  dated.forEach(function(q){
+    cumRem += q.rem;
+    var due = q.t.dueDate, status;
+    if(due < todayStr) status = 'overdue';
+    else if(!q.finish || q.finish > due) status = 'late';
+    else if(q.finish === due) status = 'tight';
+    else status = 'ok';
+    var capUntil = res.cumCap[due] != null ? res.cumCap[due] : 0;
+    var item = {t: q.t, status: status, finish: q.finish, rem: q.rem, assumed: q.assumed, due: due, shortMin: Math.max(0, Math.round(cumRem - capUntil))};
+    res.byId[q.t.id] = item;
+    res[status].push(item);
+    res.datedMin += q.rem;
+    if(q.assumed) res.assumed++;
+  });
+  undated.forEach(function(q){ res.undatedMin += q.rem; });
+  fcCache = res; fcCacheKey = key;
+  return res;
+}
+function forecastFor(t){
+  if(!t || t.archived || t.completedAt || !t.dueDate) return null;
+  try{ return computeForecast().byId[t.id] || null; }catch(e){ return null; }
+}
+/* Hinweis auf der Karte: die Fälligkeit wird rot (gefährdet) bzw. orange (knapp) und erklärt im Tooltip, warum. */
+function forecastDueInfo(t){
+  var f = forecastFor(t);
+  if(!f || (f.status !== 'late' && f.status !== 'tight')) return null;
+  var tip = f.status === 'late' ? 'Frist gefährdet: voraussichtlich fertig ' + (f.finish ? shortDateLabel(f.finish) : 'erst viel später') + (f.shortMin ? ', es fehlen ca. ' + fmtHM(f.shortMin * 60) : '')
+    : 'Knapp: voraussichtlich erst am Tag der Frist fertig';
+  return {cls: f.status, tip: tip + ' (Fristen-Prognose aus Sollzeit, Meetings und Schätzungen)'};
+}
+function renderForecastView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  fcCacheKey = '';
+  var f = computeForecast();
+  var cfg = wtConfig();
+  function riskRow(x){
+    var why = x.status === 'overdue' ? 'Überfällig seit ' + shortDateLabel(x.due) :
+      (x.status === 'late' ? 'Frist ' + shortDateLabel(x.due) + ' · voraussichtlich fertig ' + (x.finish ? shortDateLabel(x.finish) : 'erst in Monaten') + (x.shortMin ? ' · es fehlen ca. ' + fmtHM(x.shortMin * 60) : '')
+        : 'Frist ' + shortDateLabel(x.due) + ' · wird erst am Fristtag fertig');
+    return '<div class="fc-row ' + x.status + '"><div class="fc-main" data-fc-open="' + x.t.id + '"><div class="md-title">' + escapeHtml(x.t.title) + '</div>' +
+      '<div class="md-meta">' + escapeHtml(why) + ' · Rest ' + fmtHM(x.rem * 60) + (x.assumed ? ' (geschätzt)' : '') + '</div></div>' +
+      '<div class="fc-actions">' + (x.finish && x.finish !== x.due ? '<button class="btn" data-fc-due="' + x.t.id + '" data-ds="' + x.finish + '" title="Frist auf den voraussichtlichen Fertig-Tag setzen">📅 ' + shortDateLabel(x.finish) + '</button>' : '') +
+      (isInMyDay(x.t.id) ? '' : '<button class="btn" data-fc-myday="' + x.t.id + '" title="Heute daran arbeiten">☀️ Heute</button>') + '</div></div>';
+  }
+  var risky = f.overdue.concat(f.late, f.tight);
+  var maxCap = Math.max.apply(null, f.days.map(function(d){ return Math.max(d.cap, d.used); }).concat([60]));
+  var dayRows = f.days.map(function(d){
+    var label = d.ds === f.today ? 'Heute' : shortDateLabel(d.ds);
+    var pct = d.cap ? Math.min(100, Math.round(d.used / d.cap * 100)) : 0;
+    var note = d.info.hol ? '🎉 ' + d.info.hol : (d.info.abs.length ? absenceLabel(d.info.abs[0]) : '');
+    return '<div class="fc-day"><span class="fc-dlabel">' + escapeHtml(label) + '</span>' +
+      '<div class="fc-dbar" style="width:' + Math.max(8, Math.round(d.cap / maxCap * 100)) + '%"><i style="width:' + pct + '%"></i></div>' +
+      '<span class="fc-dtext">' + (d.cap ? fmtHM(d.used * 60) + ' von ' + fmtHM(d.cap * 60) : (note ? escapeHtml(note) : 'keine Zeit frei')) + (d.meet ? ' · 📅 ' + fmtHM(d.meet * 60) + ' Meetings' : '') + '</span>' +
+      (d.finish.length ? '<div class="fc-dfin">' + d.finish.slice(0, 6).map(function(t){ var st = f.byId[t.id] ? f.byId[t.id].status : ''; return '<span class="fc-chip ' + st + '" data-fc-open="' + t.id + '" title="' + escapeAttr(t.title) + '">✓ ' + escapeHtml(t.title.slice(0, 40)) + '</span>'; }).join('') + (d.finish.length > 6 ? '<span class="hint">+' + (d.finish.length - 6) + '</span>' : '') + '</div>' : '') +
+    '</div>';
+  }).join('');
+  var pct = forecastFocusPct();
+  var seg = '<div class="seg" role="group" aria-label="Anteil der Sollzeit für Tasks">' + [50, 65, 75, 90, 100].map(function(p){
+    return '<button class="seg-btn' + (pct === p ? ' on' : '') + '" data-fc-pct="' + p + '">' + p + ' %</button>'; }).join('') + '</div>';
+  function tile(label, value, sub, tone){ return '<div class="kpi' + (tone ? ' ' + tone : '') + '"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + value + '</div><div class="kpi-sub">' + sub + '</div></div>'; }
+  var lastDue = f.ok.concat(f.tight, f.late).reduce(function(m, x){ return x.due > m ? x.due : m; }, '');
+  board.innerHTML = '<div class="dash fc-wrap">' +
+    '<div class="dash-head"><div><h1>🔮 Fristen-Prognose</h1><p>Schaffst du deine Fristen? Gerechnet mit deiner Sollzeit, Ferien, Meetings und den Schätzungen der Tasks.</p></div>' +
+      '<div class="dash-actions"><div class="form-row"><label>Zeit für Tasks (Rest für Hotline, Mails …)</label>' + seg + '</div></div></div>' +
+    '<div class="kpis fc-kpis">' +
+      tile('Gefährdet', String(f.late.length), f.late.length ? 'schaffst du so nicht rechtzeitig' : 'alles im grünen Bereich', f.late.length ? 'bad' : 'good') +
+      tile('Knapp', String(f.tight.length), 'erst am Fristtag fertig', '') +
+      tile('Überfällig', String(f.overdue.length), 'Frist schon vorbei', f.overdue.length ? 'bad' : '') +
+      tile('Restaufwand mit Frist', fmtHMin(f.datedMin) + '<small> h</small>', lastDue ? 'letzte Frist ' + shortDateLabel(lastDue) : 'keine Tasks mit Frist', '') +
+    '</div>' +
+    '<section class="dcard wide"><div class="dcard-head"><h3>' + (risky.length ? 'Darauf solltest du achten' : 'Alle Fristen sind machbar 🎉') + '</h3></div>' +
+      (risky.length ? risky.map(riskRow).join('') : '<div class="empty-state">Mit deiner Sollzeit und den Schätzungen wird jeder Task mit Frist rechtzeitig fertig.</div>') +
+      (f.late.length ? '<div class="hint fc-tip">Tipp: Frist verschieben, Teile abgeben, oder den Task heute auf Mein Tag setzen. Wenn eine Schätzung nicht stimmt, passe sie im Task an, die Prognose rechnet sofort neu.</div>' : '') +
+    '</section>' +
+    '<div class="dash-grid" style="margin-top:14px;">' +
+      '<section class="dcard"><div class="dcard-head"><h3>Die nächsten Arbeitstage</h3></div>' + dayRows + '</section>' +
+      '<section class="dcard"><div class="dcard-head"><h3>So rechne ich</h3></div><div class="fc-explain">' +
+        '<p>Pro Tag nehme ich deine Sollzeit (' + escapeHtml([1,2,3,4,5].map(function(i){ return WT_DAYS[i] + ' ' + String(cfg.hours[i]).replace('.', ','); }).join(', ')) + ' Std.), ziehe Feiertage, Ferien und geplante Meetings ab und rechne davon ' + pct + ' % für Tasks.</p>' +
+        '<p>Die Tasks mit Frist arbeite ich der Reihe nach ab: früheste Frist zuerst, dann Priorität und deine Reihenfolge-Nummer. Tasks in "Wartet" und "Erledigt" zählen nicht.</p>' +
+        '<p>' + (f.assumed ? f.assumed + ' Task(s) mit Frist haben keine eigene Schätzung, dort nehme ich die gelernte Dauer oder 1 Std. ' : '') +
+          (f.undated.length ? f.undated.length + ' offene Task(s) ohne Frist (zusammen ca. ' + fmtHM(f.undatedMin * 60) + ') kommen erst danach dran.' : '') + '</p>' +
+        '<p><button class="btn" id="fcWorktime">⏱️ Sollzeit und Ferien anpassen</button></p>' +
+      '</div></section>' +
+    '</div>' +
+  '</div>';
+  var wrap = board.querySelector('.fc-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-fc-open], [data-fc-due], [data-fc-myday], [data-fc-pct], #fcWorktime');
+    if(!el) return;
+    if(el.dataset.fcPct){ state.settings.forecastFocusPct = parseInt(el.dataset.fcPct, 10); save(); renderForecastView(); }
+    else if(el.dataset.fcDue){ updateTask(el.dataset.fcDue, {dueDate: el.dataset.ds}); toast('📅 Frist verschoben auf ' + shortDateLabel(el.dataset.ds) + '.'); renderAll(); }
+    else if(el.dataset.fcMyday){ setMyDay(el.dataset.fcMyday, true); toast('☀️ Auf Mein Tag gesetzt.'); renderAll(); }
+    else if(el.dataset.fcOpen) openTaskModal(el.dataset.fcOpen);
+    else if(el.id === 'fcWorktime') openWorktimeSettings();
+  });
+}
+
+/* =========================================================
+   WOCHENRÜCKBLICK (geführt, ca. 5 Minuten)
+   1. Rückblick: erledigt, erfasste Zeit gegen Soll, wofür die Zeit ging.
+   2. Aufräumen: ein Task nach dem anderen (überfällig, Frist gefährdet,
+      lange wartend, lange nicht angefasst) mit Ein-Klick-Aktionen.
+   3. Wochenziele: bis zu 3 Tasks für die (nächste) Woche, gespeichert in
+      state.settings.weekGoals = {week: Montag als Datum, ids: [...]};
+      sie erscheinen in Mein Tag und mit 🎯 auf den Karten.
+   Freitags ab 14 Uhr und Montagmorgen erinnert ein Toast, wenn der
+   Rückblick noch fehlt (abschaltbar).
+   ========================================================= */
+var wr = null;
+function wrWeeks(){
+  var now = new Date(), dow = now.getDay();
+  var thisMon = toDateInputValue(startOfWeek(now));
+  var late = dow === 5 || dow === 6 || dow === 0;
+  return {
+    reviewFrom: late ? thisMon : shiftDate(thisMon, -7),
+    reviewTo: late ? toDateInputValue(now) : shiftDate(thisMon, -1),
+    goalWeek: late ? shiftDate(thisMon, 7) : thisMon,
+    goalLabel: late ? 'nächste Woche' : 'diese Woche'
+  };
+}
+function weekGoalIds(){
+  var g = state.settings.weekGoals;
+  if(!g || typeof g !== 'object' || !Array.isArray(g.ids)) return [];
+  var thisMon = toDateInputValue(startOfWeek(new Date()));
+  return g.week === thisMon ? g.ids.filter(function(id){ return typeof id === 'string'; }).slice(0, 3) : [];
+}
+function isWeekGoal(id){ return weekGoalIds().indexOf(id) >= 0; }
+function wrBuildQueue(){
+  var today = toDateInputValue(new Date());
+  var fc = computeForecast();
+  var waiting = apWaitingColumnIds(), done = apDoneColumnIds();
+  var order = {overdue: 0, late: 1, waiting: 2, stale: 3};
+  var items = [];
+  state.tasks.forEach(function(t){
+    if(t.archived || t.completedAt || isSnoozed(t) || done.indexOf(t.columnId) >= 0) return;
+    if(activeShared && t.assigneeId && t.assigneeId !== myUserId()) return;
+    var idle = t.updatedAt ? Math.floor((Date.now() - new Date(t.updatedAt).getTime()) / 86400000) : 0;
+    var f = fc.byId[t.id], kind = '', why = '';
+    if(t.dueDate && t.dueDate < today){ kind = 'overdue'; why = 'Überfällig seit ' + shortDateLabel(t.dueDate); }
+    else if(f && f.status === 'late'){ kind = 'late'; why = 'Frist ' + shortDateLabel(f.due) + ' gefährdet, voraussichtlich fertig ' + (f.finish ? shortDateLabel(f.finish) : 'viel später'); }
+    else if(waiting.indexOf(t.columnId) >= 0 && idle >= 5){ kind = 'waiting'; why = 'Wartet seit ' + idle + ' Tagen. Nachfassen?'; }
+    else if(idle >= STALE_TASK_DAYS && !isRunning(t)){ kind = 'stale'; why = 'Seit ' + idle + ' Tagen nicht mehr angefasst. Noch wichtig?'; }
+    if(kind) items.push({t: t, kind: kind, why: why, finish: f && f.finish});
+  });
+  items.sort(function(a, b){ return order[a.kind] - order[b.kind] || (FC_PRIO_WEIGHT[a.t.priority] || 2) - (FC_PRIO_WEIGHT[b.t.priority] || 2); });
+  items = items.slice(0, 25);
+  var doneCount = state.tasks.filter(function(t){ return !t.archived && done.indexOf(t.columnId) >= 0; }).length;
+  if(doneCount) items.push({kind: 'donecol', count: doneCount, why: doneCount + ' erledigte Task(s) liegen noch in der Erledigt-Spalte.'});
+  return items;
+}
+function wrGoalCandidates(){
+  var fc = computeForecast(), w = wrWeeks();
+  var weekEnd = shiftDate(w.goalWeek, 6);
+  var done = apDoneColumnIds(), waiting = apWaitingColumnIds();
+  return state.tasks.filter(function(t){
+    if(t.archived || t.completedAt || done.indexOf(t.columnId) >= 0 || waiting.indexOf(t.columnId) >= 0 || t.type === 'meeting') return false;
+    return !(activeShared && t.assigneeId && t.assigneeId !== myUserId());
+  }).map(function(t){
+    var f = fc.byId[t.id], s = 0, why = '';
+    if(f && (f.status === 'late' || f.status === 'overdue')){ s += 50; why = f.status === 'late' ? 'Frist gefährdet' : 'überfällig'; }
+    else if(t.dueDate && t.dueDate <= weekEnd){ s += 35; why = 'Frist ' + shortDateLabel(t.dueDate); }
+    s += (3 - (FC_PRIO_WEIGHT[t.priority] != null ? FC_PRIO_WEIGHT[t.priority] : 2)) * 8;
+    if(t.rank) s += Math.max(0, 12 - t.rank);
+    if(t.pinned) s += 6;
+    if(totalSeconds(t) > 0) s += 4;
+    if(!why) why = (PRIORITIES[t.priority] || PRIORITIES.medium).label + (t.dueDate ? ' · Frist ' + shortDateLabel(t.dueDate) : '');
+    return {t: t, s: s, why: why};
+  }).sort(function(a, b){ return b.s - a.s; }).slice(0, 12);
+}
+function openWeekReview(){
+  var w = wrWeeks();
+  var g = state.settings.weekGoals;
+  var preset = g && g.week === w.goalWeek && Array.isArray(g.ids) ? g.ids.slice(0, 3) : [];
+  wr = {step: 0, queue: wrBuildQueue(), qi: 0, handled: 0, goals: preset, weeks: w};
+  wrRender();
+}
+function wrNextMonday(){ return shiftDate(toDateInputValue(startOfWeek(new Date())), 7); }
+function wrRender(){
+  if(!wr) return;
+  var w = wr.weeks;
+  var steps = ['Rückblick', 'Aufräumen', 'Wochenziele'];
+  var head = '<div class="modal-header"><h2>🗓️ Wochenrückblick</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="wr-steps">' + steps.map(function(s, i){ return '<span class="wr-step' + (i === wr.step ? ' on' : '') + (i < wr.step ? ' done' : '') + '">' + (i < wr.step ? '✓' : (i + 1)) + ' ' + s + '</span>'; }).join('') + '</div>';
+  var body = '', foot = '';
+  if(wr.step === 0){
+    var cfg = wtConfig();
+    var range = wtRange(w.reviewFrom, w.reviewTo, cfg, wtIstMap(dayStartMs(w.reviewFrom), Math.min(Date.now(), dayStartMs(shiftDate(w.reviewTo, 1)))));
+    var today = toDateInputValue(new Date());
+    var sollUntil = wtRange(w.reviewFrom, w.reviewTo < today ? w.reviewTo : shiftDate(today, -1), cfg, {}).soll + (w.reviewTo >= today ? Math.min(wtDayInfo(today, cfg).soll, (wtIstMap(dayStartMs(today), Date.now())[today] || 0) / 60) : 0);
+    var fromMs = dayStartMs(w.reviewFrom), toMs = dayStartMs(shiftDate(w.reviewTo, 1));
+    var doneList = state.tasks.filter(function(t){ var c = t.completedAt ? new Date(t.completedAt).getTime() : 0; return c >= fromMs && c < toMs; });
+    var created = state.tasks.filter(function(t){ var c = new Date(t.createdAt).getTime(); return c >= fromMs && c < toMs; }).length;
+    var top = timeTasks().map(function(t){ return {t: t, sec: secondsInRange(t, fromMs, toMs)}; }).filter(function(x){ return x.sec >= 60; })
+      .sort(function(a, b){ return b.sec - a.sec; }).slice(0, 5);
+    var totalSec = top.length ? top.reduce(function(s, x){ return s + x.sec; }, 0) : 0;
+    var diff = range.ist - sollUntil;
+    body = '<p class="hint" style="margin-top:0;">' + shortDateLabel(w.reviewFrom) + ' – ' + shortDateLabel(w.reviewTo) + '</p>' +
+      '<div class="kpis wr-kpis">' +
+        '<div class="kpi good"><div class="kpi-label">Erledigt</div><div class="kpi-value">' + doneList.length + '</div><div class="kpi-sub">' + created + ' neu angelegt</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Erfasst</div><div class="kpi-value">' + fmtHMin(range.ist) + '<small> h</small></div><div class="kpi-sub">Soll ' + fmtHMin(range.soll) + '</div></div>' +
+        '<div class="kpi ' + (diff < -0.5 ? 'bad' : 'good') + '"><div class="kpi-label">Gleitzeit</div><div class="kpi-value">' + fmtSignedMin(diff) + '</div><div class="kpi-sub">in diesem Zeitraum</div></div>' +
+      '</div>' +
+      (top.length ? '<div class="wr-sec">Hier ging deine Zeit hin</div>' + top.map(function(x){
+        var p = totalSec ? Math.round(x.sec / totalSec * 100) : 0;
+        return '<div class="wr-top"><span class="wr-top-title">' + escapeHtml(x.t.title) + '</span><span class="wr-top-bar"><i style="width:' + p + '%"></i></span><span class="wr-top-val">' + fmtHM(x.sec) + '</span></div>';
+      }).join('') : '<div class="hint">In diesem Zeitraum ist keine Zeit erfasst.</div>') +
+      (doneList.length ? '<div class="wr-sec">Geschafft</div><div class="wr-done">' + doneList.slice(0, 10).map(function(t){ return '<span>✓ ' + escapeHtml(t.title.slice(0, 60)) + '</span>'; }).join('') +
+        (doneList.length > 10 ? '<span class="hint">+ ' + (doneList.length - 10) + ' weitere</span>' : '') + '</div>' : '');
+    foot = '<button class="btn" data-close-modal>Später</button><button class="btn primary" data-wr="next">Weiter: Aufräumen (' + wr.queue.length + ')</button>';
+  } else if(wr.step === 1){
+    var item = wr.queue[wr.qi];
+    var total = wr.queue.length;
+    body = '<div class="wr-prog"><span>' + Math.min(wr.qi + 1, total) + ' von ' + total + '</span><div class="md-progress"><i style="width:' + (total ? Math.round(wr.qi / total * 100) : 100) + '%"></i></div></div>';
+    if(!item){
+      body += '<div class="md-empty"><b>' + (total ? 'Alles durchgesehen 🎉' : 'Nichts aufzuräumen 🎉') + '</b>' + (wr.handled ? wr.handled + ' Task(s) erledigt, verschoben oder bestätigt.' : 'Dein Board ist sauber.') + '</div>';
+    } else if(item.kind === 'donecol'){
+      body += '<div class="wr-card"><div class="wr-why donecol">📦 ' + escapeHtml(item.why) + '</div><div class="wr-title">Erledigt-Spalte leeren?</div>' +
+        '<div class="hint">Archivierte Tasks bleiben im Archiv und in der Statistik erhalten.</div>' +
+        '<div class="wr-actions"><button class="btn primary" data-wr="archivedone">📦 Alle ' + item.count + ' archivieren</button><button class="btn ghost" data-wr="skip">Nein, lassen</button></div></div>';
+    } else {
+      var t = item.t, col = state.columns.find(function(c){ return c.id === t.columnId; });
+      var meta = [col ? col.name : '', (PRIORITIES[t.priority] || PRIORITIES.medium).label, t.dueDate ? 'Frist ' + shortDateLabel(t.dueDate) : 'keine Frist', totalSeconds(t) ? fmtHM(totalSeconds(t)) + ' erfasst' : ''].filter(Boolean).join(' · ');
+      body += '<div class="wr-card"><div class="wr-why ' + item.kind + '">' + ({overdue: '⏰', late: '⚠️', waiting: '⏳', stale: '💤'}[item.kind]) + ' ' + escapeHtml(item.why) + '</div>' +
+        '<div class="wr-title">' + escapeHtml(t.title) + '</div><div class="hint">' + escapeHtml(meta) + '</div>' +
+        (t.description ? '<div class="wr-desc">' + escapeHtml(t.description.slice(0, 260)) + '</div>' : '') +
+        '<div class="wr-actions">' +
+          '<button class="btn primary" data-wr="done">✓ Erledigt</button>' +
+          (item.kind === 'waiting' ? '<button class="btn" data-wr="followup" title="Notiert, dass du nachgefasst hast, und setzt die Wartezeit zurück">📨 Nachgefasst</button>' : '') +
+          '<button class="btn" data-wr="keep" title="Bleibt wie es ist und gilt wieder als aktuell">👍 Behalten</button>' +
+          '<button class="btn" data-wr="snooze" title="Bis nächsten Montag aus dem Board ausblenden">😴 Nächste Woche</button>' +
+          '<button class="btn" data-wr="archive">📦 Archivieren</button>' +
+        '</div>' +
+        '<div class="wr-due"><span>Frist:</span>' +
+          (item.finish && item.finish !== t.dueDate ? '<button class="btn ghost" data-wr="due" data-ds="' + item.finish + '">' + shortDateLabel(item.finish) + ' (machbar)</button>' : '') +
+          '<button class="btn ghost" data-wr="due" data-ds="' + shiftDate(toDateInputValue(new Date()), 1) + '">Morgen</button>' +
+          '<button class="btn ghost" data-wr="due" data-ds="' + shiftDate(wrNextMonday(), 4) + '">Ende nächster Woche</button>' +
+          '<input type="date" id="wrDueInput" aria-label="Frist wählen" value="' + escapeAttr(t.dueDate || '') + '">' +
+          (t.dueDate ? '<button class="btn ghost" data-wr="due" data-ds="">Keine</button>' : '') +
+        '</div></div>';
+    }
+    foot = '<button class="btn ghost" data-wr="back" style="margin-right:auto;">Zurück</button>' + (item ? '<button class="btn" data-wr="skip">Überspringen</button>' : '') +
+      '<button class="btn ' + (item ? '' : 'primary') + '" data-wr="next">Weiter: Wochenziele</button>';
+  } else {
+    var cands = wrGoalCandidates();
+    wr.goals = wr.goals.filter(function(id){ return getTask(id); });
+    cands.forEach(function(c){ var i = wr.goals.indexOf(c.t.id); if(i >= 0) c.on = true; });
+    wr.goals.forEach(function(id){ if(!cands.some(function(c){ return c.t.id === id; })){ var t = getTask(id); if(t) cands.unshift({t: t, why: 'schon gewählt', on: true}); } });
+    body = '<p class="hint" style="margin-top:0;">Was soll ' + w.goalLabel + ' (ab ' + shortDateLabel(w.goalWeek) + ') sicher fertig werden? Wähle bis zu 3 Tasks. Sie stehen dann oben in Mein Tag und tragen ein 🎯 auf der Karte.</p>' +
+      (cands.length ? '<div class="wr-goals">' + cands.map(function(c){
+        return '<label class="wr-goal' + (c.on ? ' on' : '') + '"><input type="checkbox" data-wr-goal="' + c.t.id + '"' + (c.on ? ' checked' : '') + (!c.on && wr.goals.length >= 3 ? ' disabled' : '') + '>' +
+          '<span class="wr-goal-main"><span class="md-title">' + escapeHtml(c.t.title) + '</span><span class="md-meta">' + escapeHtml(c.why) + '</span></span></label>';
+      }).join('') + '</div>' : '<div class="hint">Keine offenen Tasks.</div>') +
+      '<label class="wt-check" style="margin-top:12px;"><input type="checkbox" id="wrNudge"' + (state.settings.weekReviewNudge !== false ? ' checked' : '') + '> Freitags ab 14 Uhr an den Wochenrückblick erinnern</label>';
+    foot = '<button class="btn ghost" data-wr="back" style="margin-right:auto;">Zurück</button><button class="btn primary" data-wr="finish">Fertig' + (wr.goals.length ? ' · ' + wr.goals.length + ' Ziel' + (wr.goals.length > 1 ? 'e' : '') : '') + '</button>';
+  }
+  openModal(head + '<div class="modal-body wr-body">' + body + '</div><div class="modal-footer">' + foot + '</div>', {wide: true});
+  modalCloseCleanup = function(){ wr = null; };
+  var root = document.getElementById('modalRoot');
+  root.querySelector('.modal-body').addEventListener('click', wrClick);
+  root.querySelector('.modal-footer').addEventListener('click', wrClick);
+  root.querySelector('.modal-body').addEventListener('change', function(e){
+    if(e.target.id === 'wrDueInput' && e.target.value){ wrAct('due', e.target.value); }
+    else if(e.target.dataset && e.target.dataset.wrGoal){
+      var id = e.target.dataset.wrGoal;
+      if(e.target.checked){ if(wr.goals.indexOf(id) < 0 && wr.goals.length < 3) wr.goals.push(id); }
+      else wr.goals = wr.goals.filter(function(x){ return x !== id; });
+      wrRender();
+    } else if(e.target.id === 'wrNudge'){ state.settings.weekReviewNudge = e.target.checked; save(); }
+  });
+}
+function wrClick(e){
+  var el = e.target.closest('[data-wr]');
+  if(!el) return;
+  wrAct(el.dataset.wr, el.dataset.ds);
+}
+function wrAct(act, ds){
+  if(!wr) return;
+  var item = wr.queue[wr.qi];
+  var t = item && item.t;
+  if(act === 'next'){ wr.step = Math.min(2, wr.step + 1); wrRender(); return; }
+  if(act === 'back'){ wr.step = Math.max(0, wr.step - 1); wrRender(); return; }
+  if(act === 'skip'){ wr.qi++; wrRender(); return; }
+  if(act === 'finish'){
+    state.settings.weekGoals = {week: wr.weeks.goalWeek, ids: wr.goals.slice(0, 3)};
+    state.settings.lastWeekReview = nowIso();
+    save();
+    var handled = wr.handled, goals = wr.goals.length;
+    wr = null;
+    closeModal();
+    renderAll();
+    fireConfetti();
+    toast('🗓️ Wochenrückblick fertig' + (handled ? ': ' + handled + ' Task(s) aufgeräumt' : '') + (goals ? ', ' + goals + ' Wochenziel' + (goals > 1 ? 'e' : '') + ' gesetzt.' : '.'), 6000);
+    return;
+  }
+  if(act === 'archivedone'){
+    pushUndoSnapshot();
+    var done = apDoneColumnIds();
+    state.tasks.forEach(function(x){ if(!x.archived && done.indexOf(x.columnId) >= 0) updateTask(x.id, {archived: true}); });
+    wr.handled += item.count; wr.qi++; renderAll(); wrRender(); return;
+  }
+  if(!t) return;
+  if(act === 'done'){ setTaskDone(t.id, true); }
+  else if(act === 'keep'){ updateTask(t.id, {}); }
+  else if(act === 'followup'){ logActivity(t, 'Nachgefasst (Wochenrückblick)'); updateTask(t.id, {}); }
+  else if(act === 'snooze'){ var d = new Date(wrNextMonday() + 'T08:00:00'); updateTask(t.id, {snoozeUntil: d.toISOString()}); }
+  else if(act === 'archive'){ pushUndoSnapshot(); updateTask(t.id, {archived: true}); }
+  else if(act === 'due'){ updateTask(t.id, {dueDate: ds || ''}); }
+  else return;
+  wr.handled++; wr.qi++;
+  fcCacheKey = '';
+  renderAll();
+  wrRender();
+}
+function wrMaybeNudge(){
+  if(state.settings.weekReviewNudge === false || wr) return;
+  var now = new Date(), dow = now.getDay(), h = now.getHours();
+  var windowStart;
+  if(dow === 5 && h >= 14) windowStart = startOfDay(now);
+  else if(dow === 1 && h >= 7 && h < 12){ windowStart = startOfDay(now); windowStart.setDate(windowStart.getDate() - 3); }
+  else return;
+  var last = state.settings.lastWeekReview ? new Date(state.settings.lastWeekReview).getTime() : 0;
+  if(last >= windowStart.getTime()) return;
+  var today = toDateInputValue(now);
+  try{ if(localStorage.getItem('wb-wr-nudged') === today) return; localStorage.setItem('wb-wr-nudged', today); }catch(e){ return; }
+  toast('🗓️ Zeit für den Wochenrückblick? 5 Minuten aufräumen und Ziele setzen.', 15000, 'Starten', openWeekReview);
 }
 
 /* =========================================================
@@ -11030,6 +11987,10 @@ function cmdActionsList(){
       cloudPushNow().then(function(){ return cloudPullNow(true); });
     }},
     {icon:'📝', label:'Tages-Recap erstellen', run: openDailyRecap},
+    {icon:'🗓️', label:'Wochenrückblick (aufräumen und Wochenziele)', run: openWeekReview},
+    {icon:'⏱️', label:'Arbeitszeit: Gleitzeit-Saldo und Ferien', run: function(){ switchToView('worktime'); }},
+    {icon:'🏖️', label:'Ferien / Abwesenheit eintragen', run: function(){ openAbsenceDialog(toDateInputValue(new Date()), ''); }},
+    {icon:'🔮', label:'Fristen-Prognose: Schaffe ich meine Fristen?', run: function(){ switchToView('forecast'); }},
     {icon:'📄', label:'Wochenbericht erstellen', run: openWeeklyReport},
     {icon:'🖨️', label:'Wochenbericht als PDF (Druckdialog)', run: printWeeklyReportPdf},
     {icon:'🤝', label:'Schichtübergabe-Report', run: openHandoffReport},
@@ -11610,6 +12571,7 @@ document.getElementById('bulkClearBtn').addEventListener('click', function(){
   renderBoard();
 });
 document.getElementById('btnArchive').addEventListener('click', toggleArchiveView);
+document.getElementById('btnWeekReview').addEventListener('click', openWeekReview);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
 document.getElementById('btnMailImport').addEventListener('click', openMailFilePicker);
 document.getElementById('btnQuickSave').addEventListener('click', exportBackup);
@@ -11894,7 +12856,7 @@ function handleUrlShortcutAction(){
    Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
    Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
    ========================================================= */
-var SYNC_LISTS = ['projects', 'automationRules', 'freeTime'];
+var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences'];
 var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
 var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
 var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
@@ -11950,6 +12912,7 @@ function normalizeSyncSettings(settings){
   settings.projects = (Array.isArray(settings.projects) ? settings.projects : []).map(normalizeProject).filter(Boolean);
   settings.automationRules = (Array.isArray(settings.automationRules) ? settings.automationRules : []).map(normalizeRule).filter(Boolean);
   settings.freeTime = (Array.isArray(settings.freeTime) ? settings.freeTime : []).map(normalizeFreeTime).filter(Boolean);
+  settings.absences = (Array.isArray(settings.absences) ? settings.absences : []).map(normalizeAbsence).filter(Boolean);
   if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
 }
 function normalizeFreeTime(e){
@@ -12026,7 +12989,7 @@ function mergeSyncLists(base, remoteSettings){
   SYNC_LISTS.forEach(function(k){
     var L = Array.isArray(state.settings[k]) ? state.settings[k] : [];
     var Rraw = remoteSettings && Array.isArray(remoteSettings[k]) ? remoteSettings[k] : [];
-    var tmp = {projects: [], automationRules: [], freeTime: []};
+    var tmp = {projects: [], automationRules: [], freeTime: [], absences: []};
     tmp[k] = Rraw;
     normalizeSyncSettings(tmp);
     var R = tmp[k];
@@ -16869,6 +17832,8 @@ function init(){
   setInterval(checkBudgetAlerts, 60000);
   setInterval(checkTimeRules, 60000);
   setTimeout(checkTimeRules, 6000);
+  setInterval(wrMaybeNudge, 10 * 60000);
+  setTimeout(wrMaybeNudge, 9000);
   setTimeout(checkBudgetAlerts, 4000);
   runAutoArchive();
   setTimeout(checkOvernightTimers, 1200);
