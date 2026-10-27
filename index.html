@@ -1085,6 +1085,21 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .proj-nums div{display:flex; flex-direction:column;}
 .proj-nums b{font-size:18px; font-weight:600; font-variant-numeric:tabular-nums;}
 .proj-nums span{font-size:11.5px; color:var(--text-faint);}
+.stats-more-h{font-size:16px; font-weight:600; margin:26px 0 12px;}
+.stats-more-h .hint{font-weight:400; font-size:12.5px;}
+.st-bar{margin-bottom:11px; border-radius:6px;}
+.st-bar[data-stat-open]{cursor:pointer;}
+.st-bar[data-stat-open]:hover .st-bar-lbl{color:var(--accent);}
+.st-bar-top{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; margin-bottom:4px;}
+.st-bar-lbl{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.st-bar-val{font-weight:700; flex-shrink:0; font-variant-numeric:tabular-nums;}
+.st-bar-track{background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; border:1px solid var(--border);}
+.st-bar-track > div{height:100%; background:var(--accent);}
+.st-bar-track.big{height:14px; margin:4px 0 6px;}
+.st-vbars{display:flex; gap:4px; align-items:flex-end; margin:6px 0 4px;}
+.st-vbar{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%;}
+.st-vbar > div{width:100%; background:var(--accent); border-radius:3px 3px 0 0;}
+.st-vbar span{font-size:10px; color:var(--text-faint); height:12px; white-space:nowrap;}
 .proj-actions{margin-top:10px; display:flex; gap:8px;}
 .pbar{height:8px; border-radius:99px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden; margin:4px 0;}
 .pbar i{display:block; height:100%; border-radius:99px; background:var(--ok);}
@@ -1097,6 +1112,27 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 #board.archive-mode{display:block; overflow-x:hidden; overflow-y:auto; scroll-snap-type:none;}
 .archive-head{display:flex; align-items:center; gap:8px; padding:2px 4px 12px; font-weight:600; font-size:13.5px; color:var(--text);}
 .archive-head .count{color:var(--text-faint); font-size:12px; font-weight:500; font-variant-numeric:tabular-nums;}
+/* Filter über alle Boards */
+#board.global-mode{flex-direction:column; align-items:stretch; overflow:hidden; scroll-snap-type:none;}
+.global-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:0 4px 4px; font-size:13.5px;}
+.global-lanes{flex:1; min-height:0; display:flex; gap:16px; overflow-x:auto; align-items:flex-start; scroll-snap-type:x proximity;}
+.global-col{max-height:100%; scroll-snap-align:start;}
+.global-col.current .column-header{color:var(--accent);}
+.global-colname{margin-left:auto; font-size:11px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;}
+.card.global-card .card-top .prio{margin-left:0;}
+.card.global-card.done{opacity:.6;}
+.chip-check{cursor:pointer;}
+.chip-check input{margin:0; accent-color:var(--accent);}
+.tagpick-list{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:6px;}
+.tagpick-h{font-size:13px; margin:14px 0 8px;}
+.tagpick-all{display:flex; gap:9px; align-items:flex-start; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); cursor:pointer; font-size:13px;}
+.tagpick-all input{margin-top:3px; accent-color:var(--accent);}
+@media (max-width:680px){
+  #board.global-mode{padding:10px 0 0;}
+  .global-head{padding:0 12px 6px;}
+  .global-lanes{scroll-snap-type:x mandatory; padding:0 12px 12px;}
+  .global-col{width:86vw; min-width:86vw;}
+}
 .column-body.archive-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); align-items:start; gap:12px; overflow:visible; padding:2px 2px 24px;}
 .archive-grid > .empty-state{grid-column:1 / -1;}
 #board.compact .column-body.archive-grid{grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px;}
@@ -3558,6 +3594,8 @@ function openWhatNow(){
 var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast'];
 var quickFilters = {};
 var filterTag = '';
+var filterClient = '';
+var filterAllBoards = false;
 var filterProject = '';
 var inlineAddColId = null;
 var QUICK_FILTERS = [
@@ -3571,8 +3609,14 @@ var QUICK_FILTERS = [
   {id:'mine',    label:'Mir zugewiesen', shared:true, fn:function(t){ return !t.completedAt && !!t.assigneeId && t.assigneeId === myUserId(); }}
 ];
 function anyFilterActive(){
-  return !!(searchQuery || filterType || filterPriority || filterTag || filterProject || Object.keys(quickFilters).length);
+  return !!(searchQuery || filterType || filterPriority || filterTag || filterClient || filterProject || Object.keys(quickFilters).length);
 }
+/* Über alle Boards nur, wenn nach Tag, Kunde oder Projekt gefiltert wird. */
+function globalFilterKey(){ return filterTag || filterClient || filterProject; }
+function globalBoardActive(){
+  return filterAllBoards && !!globalFilterKey() && !showArchive && FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) < 0;
+}
+function clientOf(t){ var p = projectOf(t); return p && p.client ? p.client : ''; }
 function renderFilterBar(){
   var bar = document.getElementById('filterBar');
   if(!bar) return;
@@ -3595,7 +3639,11 @@ function renderFilterBar(){
     tags.forEach(function(tag){
       html += '<button class="chip'+(filterTag===tag?' on':'')+'" data-tag="'+escapeAttr(tag)+'">#'+escapeHtml(tag)+'<b>'+(tagCounts[tag]||0)+'</b></button>';
     });
-    if(Object.keys(quickFilters).length || filterTag) html += '<button class="chip reset" data-qf-reset="1">Zurücksetzen</button>';
+    if(filterClient) html += '<button class="chip on" data-client="'+escapeAttr(filterClient)+'" title="Kundenfilter aufheben">🤝 '+escapeHtml(filterClient)+'</button>';
+    var more = allFilterTags().length > tags.length || allClients().length;
+    if(more || filterTag || filterClient) html += '<button class="chip" data-tag-picker="1" title="Alle Tags und Kunden zum Filtern">🏷️ Alle Tags …</button>';
+    if(globalFilterKey()) html += '<label class="chip chip-check'+(filterAllBoards?' on':'')+'" title="Zeigt alle Tasks mit diesem Filter aus allen deinen Boards auf einem Board"><input type="checkbox" data-all-boards="1"'+(filterAllBoards?' checked':'')+'> Über alle Boards</label>';
+    if(Object.keys(quickFilters).length || filterTag || filterClient) html += '<button class="chip reset" data-qf-reset="1">Zurücksetzen</button>';
   }
   bar.innerHTML = html;
   bar.classList.toggle('hidden', !html);
@@ -3607,12 +3655,180 @@ document.getElementById('filterBar').addEventListener('click', function(e){
     if(quickFilters[btn.dataset.qf]) delete quickFilters[btn.dataset.qf]; else quickFilters[btn.dataset.qf] = true;
   } else if(btn.dataset.tag){
     filterTag = filterTag === btn.dataset.tag ? '' : btn.dataset.tag;
+  } else if(btn.dataset.client){
+    filterClient = '';
+  } else if(btn.dataset.tagPicker){
+    openTagFilterPicker();
+    return;
   } else if(btn.dataset.qfReset){
     quickFilters = {};
     filterTag = '';
+    filterClient = '';
+    filterAllBoards = false;
   }
   renderBoard();
 });
+document.getElementById('filterBar').addEventListener('change', function(e){
+  if(!e.target.matches('[data-all-boards]')) return;
+  filterAllBoards = e.target.checked;
+  renderBoard();
+});
+
+/* =========================================================
+   FILTER ÜBER ALLE BOARDS
+   Quellen: das offene Board, die übrigen persönlichen Boards (state.boards bzw. personalStash,
+   wenn ein geteiltes Board offen ist) und alle geteilten Boards aus sharedList. Tasks anderer
+   Boards werden nur angezeigt; ein Klick wechselt ins Board und öffnet den Task dort.
+   ========================================================= */
+function allBoardSources(){
+  var out = [];
+  if(activeShared){
+    out.push({kind: 'shared', id: activeShared.id, name: activeShared.name, columns: state.columns, tasks: state.tasks, active: true});
+    if(personalStash) out.push({kind: 'local', name: state.settings.activeBoardName, columns: personalStash.columns, tasks: personalStash.tasks, stash: true});
+  } else {
+    out.push({kind: 'local', name: state.settings.activeBoardName, columns: state.columns, tasks: state.tasks, active: true});
+  }
+  (state.boards || []).forEach(function(b){
+    if(b && Array.isArray(b.tasks) && (activeShared || b.name !== state.settings.activeBoardName)) out.push({kind: 'local', name: b.name, columns: b.columns || [], tasks: b.tasks});
+  });
+  sharedList.forEach(function(sb){
+    if(sb.content && (!activeShared || sb.id !== activeShared.id)) out.push({kind: 'shared', id: sb.id, name: sb.name, columns: sb.content.columns || [], tasks: sb.content.tasks || []});
+  });
+  return out;
+}
+function allFilterTags(){
+  var counts = {};
+  allBoardSources().forEach(function(src){
+    src.tasks.forEach(function(t){ if(!t.archived && Array.isArray(t.tags)) t.tags.forEach(function(tag){ counts[tag] = (counts[tag] || 0) + 1; }); });
+  });
+  return Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a] || a.localeCompare(b); }).map(function(k){ return {name: k, n: counts[k]}; });
+}
+function allClients(){
+  var counts = {};
+  projectList().forEach(function(p){ if(p.client) counts[p.client] = counts[p.client] || 0; });
+  allBoardSources().forEach(function(src){
+    src.tasks.forEach(function(t){ var c = !t.archived && clientOf(t); if(c) counts[c] = (counts[c] || 0) + 1; });
+  });
+  return Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a] || a.localeCompare(b); }).map(function(k){ return {name: k, n: counts[k]}; });
+}
+function openTagFilterPicker(){
+  var tags = allFilterTags(), clients = allClients();
+  function list(items, attr, cur, prefix){
+    if(!items.length) return '<div class="hint">Noch keine.</div>';
+    return '<div class="tagpick-list">' + items.map(function(x){
+      return '<button type="button" class="chip'+(cur === x.name ? ' on' : '')+'" '+attr+'="'+escapeAttr(x.name)+'" data-q="'+escapeAttr(x.name.toLowerCase())+'">'+prefix+escapeHtml(x.name)+'<b>'+x.n+'</b></button>';
+    }).join('') + '</div>';
+  }
+  var html =
+    '<div class="modal-header"><h2>🏷️ Nach Tag oder Kunde filtern</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><input type="search" id="tagPickSearch" placeholder="Suchen …" aria-label="Tags und Kunden durchsuchen"></div>' +
+      '<label class="tagpick-all"><input type="checkbox" id="tagPickAll"'+(filterAllBoards ? ' checked' : '')+'> <span><b>Über alle Boards filtern</b><br><span class="hint">Zeigt alle Tasks mit diesem Tag oder Kunden aus allen deinen Boards (auch geteilten) auf einem gemeinsamen Board.</span></span></label>' +
+      '<h3 class="tagpick-h">Tags</h3>' + list(tags, 'data-pick-tag', filterTag, '#') +
+      '<h3 class="tagpick-h">Kunden</h3>' + (clients.length ? list(clients, 'data-pick-client', filterClient, '🤝 ') : '<div class="hint">Kunden kommen aus den Projekten (Feld „Kunde“ unter Projekte).</div>') +
+    '</div>' +
+    '<div class="modal-footer">' + (filterTag || filterClient ? '<button class="btn" id="tagPickClear">Filter aufheben</button>' : '') + '<button class="btn primary" data-close-modal>Fertig</button></div>';
+  openModal(html, {wide: true});
+  var root = document.getElementById('modalRoot');
+  var search = document.getElementById('tagPickSearch');
+  search.addEventListener('input', function(){
+    var q = search.value.trim().toLowerCase().replace(/^#/, '');
+    root.querySelectorAll('[data-q]').forEach(function(b){ b.classList.toggle('hidden', !!q && b.dataset.q.indexOf(q) < 0); });
+  });
+  document.getElementById('tagPickAll').addEventListener('change', function(e){ filterAllBoards = e.target.checked; renderBoard(); });
+  root.querySelector('.modal-body').addEventListener('click', function(e){
+    var b = e.target.closest('[data-pick-tag],[data-pick-client]');
+    if(!b) return;
+    if(b.dataset.pickTag !== undefined) filterTag = filterTag === b.dataset.pickTag ? '' : b.dataset.pickTag;
+    else filterClient = filterClient === b.dataset.pickClient ? '' : b.dataset.pickClient;
+    if(FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) >= 0) switchToView('status');
+    closeModal();
+    renderBoard();
+  });
+  var clr = document.getElementById('tagPickClear');
+  if(clr) clr.addEventListener('click', function(){ filterTag = ''; filterClient = ''; filterAllBoards = false; closeModal(); renderBoard(); });
+  setTimeout(function(){ search.focus(); }, 0);
+}
+function globalFilterLabel(){
+  var parts = [];
+  if(filterTag) parts.push('#' + filterTag);
+  if(filterClient) parts.push('Kunde ' + filterClient);
+  if(filterProject){ var p = getProject(filterProject); parts.push(filterProject === '__none__' ? 'ohne Projekt' : 'Projekt ' + (p ? projectLabel(p) : '')); }
+  return parts.join(' · ');
+}
+function renderGlobalTagBoard(board){
+  board.innerHTML = '';
+  board.classList.add('global-mode');
+  var sources = allBoardSources();
+  var total = 0, boardsWith = 0;
+  var lanes = sources.map(function(src){
+    var colName = {};
+    src.columns.forEach(function(c){ colName[c.id] = c; });
+    var tasks = src.tasks.filter(function(t){ return t && Array.isArray(t.tags) && taskMatchesFilters(t); });
+    tasks.sort(function(a, b){ return (a.completedAt ? 1 : 0) - (b.completedAt ? 1 : 0) || compareRankPin(a, b); });
+    total += tasks.length;
+    if(tasks.length) boardsWith++;
+    return {src: src, tasks: tasks, cols: colName};
+  });
+  var head = document.createElement('div');
+  head.className = 'global-head';
+  head.innerHTML = '<div><b>🌐 ' + escapeHtml(globalFilterLabel()) + ' über alle Boards</b><span class="hint"> · ' + total + (total === 1 ? ' Task' : ' Tasks') + ' in ' + boardsWith + ' von ' + sources.length + (sources.length === 1 ? ' Board' : ' Boards') +
+    (cloudReadyForSharing() && !sharedListLoaded ? ' · geteilte Boards laden noch …' : '') + '</span></div>' +
+    '<button class="btn" id="globalOff">Nur dieses Board</button>';
+  board.appendChild(head);
+  head.querySelector('#globalOff').addEventListener('click', function(){ filterAllBoards = false; renderBoard(); });
+  var wrap = document.createElement('div');
+  wrap.className = 'global-lanes';
+  lanes.forEach(function(lane){
+    if(!lane.tasks.length && !lane.src.active) return;
+    var colEl = document.createElement('div');
+    colEl.className = 'column global-col' + (lane.src.active ? ' current' : '');
+    colEl.innerHTML = '<div class="column-header"><span>' + (lane.src.kind === 'shared' ? '👥' : '📋') + '</span><span style="flex:1;">' + escapeHtml(lane.src.name) + '</span>' +
+      (lane.src.active ? '<span class="menu-hint">aktuelles Board</span>' : '') + '<span class="count">' + lane.tasks.length + '</span></div>';
+    var body = document.createElement('div');
+    body.className = 'column-body';
+    if(!lane.tasks.length) body.innerHTML = '<div class="empty-state">Keine Treffer in diesem Board.</div>';
+    lane.tasks.forEach(function(t){
+      /* cloneNode entfernt die Klick-, Zieh- und Timer-Handler von renderCard. */
+      var card = renderCard(t).cloneNode(true);
+      card.draggable = false;
+      card.classList.add('global-card');
+      if(t.completedAt) card.classList.add('done');
+      var tb = card.querySelector('[data-action="toggle-timer"]');
+      if(tb && !lane.src.active) tb.remove();
+      var col = lane.cols[t.columnId];
+      var top = card.querySelector('.card-top');
+      if(top && col){
+        var cs = document.createElement('span');
+        cs.className = 'global-colname';
+        cs.textContent = (col.icon ? col.icon + ' ' : '') + col.name;
+        top.insertBefore(cs, top.querySelector('.prio'));
+      }
+      card.addEventListener('click', function(e){
+        if(e.target.closest('[data-jira-link]')) return;
+        var t2 = e.target.closest('[data-action="toggle-timer"]');
+        if(t2){ e.stopPropagation(); if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); return; }
+        openGlobalTask(lane.src, t.id);
+      });
+      body.appendChild(card);
+    });
+    colEl.appendChild(body);
+    wrap.appendChild(colEl);
+  });
+  board.appendChild(wrap);
+}
+function openGlobalTask(src, taskId){
+  if(src.active){ openTaskModal(taskId); return; }
+  var keep = {tag: filterTag, client: filterClient, project: filterProject};
+  if(src.kind === 'shared') enterSharedBoard(src.id);
+  else if(src.stash) leaveSharedBoard();
+  else switchBoard(src.name);
+  /* Wechsel setzt die Filter zurück: wieder herstellen, damit man nach dem Task zur Übersicht zurückkommt. */
+  filterTag = keep.tag; filterClient = keep.client; filterProject = keep.project; filterAllBoards = true;
+  renderBoard();
+  if(src.kind === 'shared') toast('📋 Board gewechselt: ' + currentBoardName());
+  if(getTask(taskId)) openTaskModal(taskId);
+}
 
 /* =========================================================
    SCHNELL-ANLEGEN IN DER SPALTE
@@ -3641,6 +3857,7 @@ function taskMatchesFilters(t){
   if(filterType && t.type !== filterType) return false;
   if(filterPriority && t.priority !== filterPriority) return false;
   if(filterTag && t.tags.indexOf(filterTag) < 0) return false;
+  if(filterClient && clientOf(t) !== filterClient) return false;
   if(filterProject){ var tp = projectOf(t); if(filterProject === '__none__' ? (tp || t.projectName) : !(tp && tp.id === filterProject)) return false; }
   for(var qi = 0; qi < QUICK_FILTERS.length; qi++){
     if(quickFilters[QUICK_FILTERS[qi].id] && !QUICK_FILTERS[qi].fn(t)) return false;
@@ -3823,7 +4040,7 @@ function renderDashboardWidgets(){
   board.querySelectorAll('[data-dash-filter]').forEach(function(el){
     function go(){
       quickFilters = {};
-      filterTag = '';
+      filterTag = ''; filterClient = ''; filterAllBoards = false;
       if(el.dataset.dashFilter !== 'open') quickFilters[el.dataset.dashFilter === 'today' ? 'today' : el.dataset.dashFilter] = true;
       document.getElementById('boardViewSelect').value = 'status';
       setBoardViewMode('status');
@@ -3888,6 +4105,7 @@ function renderBoard(){
   board.classList.toggle('planner-mode', boardViewMode === 'calendar');
   var archiveScrollTop = board.classList.contains('archive-mode') ? board.scrollTop : null;
   board.classList.remove('archive-mode');
+  board.classList.remove('global-mode');
   if(boardViewMode === 'myday'){ renderMyDayView(); return; }
   if(boardViewMode === 'dashboard'){ renderDashboardWidgets(); return; }
   if(boardViewMode === 'stats'){ renderStatsView(); return; }
@@ -3898,6 +4116,7 @@ function renderBoard(){
   if(boardViewMode === 'worktime'){ renderWorktimeView(); return; }
   if(boardViewMode === 'forecast'){ renderForecastView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
+  if(globalBoardActive()){ renderGlobalTagBoard(board); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
      scrollTop 0 zurücksetzen, sodass ein bearbeiteter Task weiter unten in
@@ -9448,13 +9667,179 @@ function renderStatsView(range){
         pcard('🔀 Unterbrechungen (' + label + ')', interruptionStatsHtml(startMs, endMs)) +
         pcard('📈 Schätzung und Wirklichkeit', estimateStatsHtml()) +
       '</div>' +
+      '<h2 class="stats-more-h">Mehr Auswertungen <span class="hint">· alle deine Boards · ' + escapeHtml(label) + '</span></h2>' +
+      '<div class="dash-grid">' + moreStatsCards(startMs, endMs, label).map(function(c){ return pcard(c[0], c[1]); }).join('') + '</div>' +
     '</div>';
   board.innerHTML = html;
+  board.querySelectorAll('[data-stat-open]').forEach(function(el){
+    el.addEventListener('click', function(){ if(getTask(el.dataset.statOpen)) openTaskModal(el.dataset.statOpen); });
+  });
   board.querySelectorAll('[data-range]').forEach(function(btn){
     btn.addEventListener('click', function(){ renderStatsView(btn.dataset.range); });
   });
   document.getElementById('btnStatsCsv').addEventListener('click', function(){ exportTimeCsv(range, startMs, endMs); });
   wireInterruptionCard(board, function(){ renderStatsView(range); });
+}
+
+/* ---- Mehr Auswertungen (10 Karten) ----
+   Grundlage sind alle persönlichen Boards plus das offene geteilte Board und Zeit ohne Task
+   (wtTaskPool), gezählt wird nur die eigene Zeit. */
+function statHBars(entries, fmt){
+  if(!entries.length) return '<div class="empty-state">Keine Daten in diesem Zeitraum.</div>';
+  var max = Math.max.apply(null, entries.map(function(e){ return e.val; })) || 1;
+  return entries.map(function(e){
+    return '<div class="st-bar"' + (e.id ? ' data-stat-open="' + escapeAttr(e.id) + '" role="button" tabindex="0"' : '') + '>' +
+      '<div class="st-bar-top"><span class="st-bar-lbl">' + escapeHtml(e.label) + '</span><span class="st-bar-val">' + escapeHtml(fmt(e.val, e)) + '</span></div>' +
+      '<div class="st-bar-track"><div style="width:' + Math.max(2, Math.round(e.val / max * 100)) + '%;' + (e.color ? ' background:' + e.color + ';' : '') + '"></div></div></div>';
+  }).join('');
+}
+function statVBars(items, height){
+  height = height || 60;
+  var max = Math.max.apply(null, items.map(function(x){ return x.val; })) || 1;
+  return '<div class="st-vbars" style="height:' + (height + 18) + 'px;">' + items.map(function(x){
+    return '<div class="st-vbar" title="' + escapeAttr(x.title || '') + '"><div style="height:' + Math.max(x.val ? 3 : 1, Math.round(x.val / max * height)) + 'px;' + (x.color ? ' background:' + x.color + ';' : '') + '"></div><span>' + escapeHtml(x.label) + '</span></div>';
+  }).join('') + '</div>';
+}
+function statDays(ms){
+  var d = ms / 86400000;
+  if(d < 1) return Math.max(1, Math.round(d * 24)) + ' Std.';
+  var v = d < 10 ? Math.round(d * 10) / 10 : Math.round(d);
+  return v.toLocaleString('de-CH') + (v === 1 ? ' Tag' : ' Tage');
+}
+function statMedian(arr){
+  if(!arr.length) return 0;
+  var a = arr.slice().sort(function(x, y){ return x - y; }), n = a.length;
+  return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2;
+}
+function topEntries(map, n, idMap){
+  return Object.keys(map).filter(function(k){ return map[k] > 0; }).map(function(k){ return {label: k, val: map[k], id: idMap ? idMap[k] : ''}; })
+    .sort(function(a, b){ return b.val - a.val; }).slice(0, n);
+}
+function moreStatsCards(startMs, endMs, label){
+  var pool = wtTaskPool();
+  var tasks = pool.filter(function(t){ return t && !t._free && Array.isArray(t.timeSessions); });
+  var secs = pool.map(function(t){ return secondsInRange(t, startMs, endMs); });
+  var cards = [];
+  var hm = function(v){ return fmtHM(v); };
+
+  /* 1 Zeit nach Tag */
+  var byTag = {};
+  pool.forEach(function(t, i){
+    if(!secs[i]) return;
+    var tags = Array.isArray(t.tags) && t.tags.length ? t.tags : ['– ohne Tag –'];
+    tags.forEach(function(tag){ var k = tag.charAt(0) === '–' ? tag : '#' + tag; byTag[k] = (byTag[k] || 0) + secs[i]; });
+  });
+  cards.push(['🏷️ Zeit nach Tag', statHBars(topEntries(byTag, 8), hm) + '<div class="hint">Ein Task mit mehreren Tags zählt bei jedem Tag.</div>']);
+
+  /* 2 Zeit pro Kunde */
+  var byClient = {};
+  pool.forEach(function(t, i){ if(secs[i]){ var c = t._free ? '– ohne Kunde –' : (clientOf(t) || '– ohne Kunde –'); byClient[c] = (byClient[c] || 0) + secs[i]; } });
+  var clientTotal = Object.keys(byClient).reduce(function(a, k){ return a + byClient[k]; }, 0);
+  cards.push(['🤝 Zeit pro Kunde', statHBars(topEntries(byClient, 8), function(v){ return fmtHM(v) + ' · ' + Math.round(v / (clientTotal || 1) * 100) + ' %'; }) +
+    (Object.keys(byClient).length <= 1 && byClient['– ohne Kunde –'] ? '<div class="hint">Kunden kommen aus den Projekten: Projekt mit Feld „Kunde“ anlegen und Tasks zuordnen.</div>' : '')]);
+
+  /* 3 Tagesprofil (wann arbeite ich?) */
+  var hours = [];
+  for(var h = 0; h < 24; h++) hours.push(0);
+  pool.forEach(function(t){
+    t.timeSessions.forEach(function(se){
+      if(!isMySession(se)) return;
+      var cur = Math.max(new Date(se.start).getTime(), startMs), last = Math.min(se.end ? new Date(se.end).getTime() : Date.now(), endMs), guard = 0;
+      while(cur < last && guard++ < 2000){
+        var nx = new Date(cur); nx.setMinutes(60, 0, 0);
+        var seg = Math.min(nx.getTime(), last);
+        hours[new Date(cur).getHours()] += (seg - cur) / 1000;
+        cur = seg;
+      }
+    });
+  });
+  var hFrom = 7, hTo = 18;
+  hours.forEach(function(v, i){ if(v > 60){ hFrom = Math.min(hFrom, i); hTo = Math.max(hTo, i); } });
+  var peak = hours.indexOf(Math.max.apply(null, hours));
+  var hourItems = [];
+  for(var hh = hFrom; hh <= hTo; hh++) hourItems.push({label: hh % 2 ? '' : String(hh), val: hours[hh], title: hh + '–' + (hh + 1) + ' Uhr: ' + fmtHM(hours[hh]), color: hh === peak ? 'var(--ok)' : ''});
+  var hoursTotal = hours.reduce(function(a, b){ return a + b; }, 0);
+  var early = hours.slice(0, 8).reduce(function(a, b){ return a + b; }, 0), late = hours.slice(18).reduce(function(a, b){ return a + b; }, 0);
+  cards.push(['🕘 Tagesprofil', hoursTotal ? statVBars(hourItems, 56) +
+    '<div class="hint">Am meisten gearbeitet: <b>' + peak + '–' + (peak + 1) + ' Uhr</b>' + (early + late > 600 ? ' · vor 8 / nach 18 Uhr: ' + fmtHM(early + late) + ' (' + Math.round((early + late) / hoursTotal * 100) + ' %)' : '') + '</div>'
+    : '<div class="empty-state">Keine erfasste Zeit in diesem Zeitraum.</div>']);
+
+  /* 4 Wochentage (Schnitt der letzten 8 Wochen) */
+  var wdEnd = startOfDay(new Date()).getTime() + 86400000, wdStart = wdEnd - 56 * 86400000;
+  var ist = wtIstMap(wdStart, wdEnd), wdSum = [0,0,0,0,0,0,0], wdCnt = [0,0,0,0,0,0,0];
+  for(var d = wdStart; d < wdEnd; d += 86400000){ var dd = new Date(d + 3600000); var ds = toDateInputValue(dd); wdSum[dd.getDay()] += ist[ds] || 0; wdCnt[dd.getDay()]++; }
+  var wdItems = [1,2,3,4,5,6,0].map(function(i){ var avg = wdCnt[i] ? wdSum[i] / wdCnt[i] : 0; return {label: WT_DAYS[i], val: avg, title: WT_DAYS[i] + ': Ø ' + fmtHM(avg)}; });
+  var wdBest = wdItems.slice().sort(function(a, b){ return b.val - a.val; })[0];
+  cards.push(['📆 Wochentage (Ø 8 Wochen)', wdBest.val ? statVBars(wdItems, 56) + '<div class="hint">Stärkster Tag: <b>' + wdBest.label + '</b> mit Ø ' + fmtHM(wdBest.val) + '.</div>'
+    : '<div class="empty-state">Noch keine erfasste Zeit in den letzten 8 Wochen.</div>']);
+
+  /* 5 Durchsatz (erledigt pro Woche) */
+  var wk0 = startOfWeek(new Date()).getTime(), weeks = [];
+  for(var w = 7; w >= 0; w--){
+    var a = new Date(wk0); a.setDate(a.getDate() - w * 7);
+    var b = new Date(a); b.setDate(b.getDate() + 7);
+    var n = tasks.filter(function(t){ var c = t.completedAt ? new Date(t.completedAt).getTime() : 0; return c >= a.getTime() && c < b.getTime(); }).length;
+    weeks.push({label: w ? 'KW' + isoWeekNumber(a) : 'jetzt', val: n, title: 'Woche ab ' + shortDateLabel(toDateInputValue(a)) + ': ' + n + ' erledigt'});
+  }
+  var wkAvg = weeks.slice(0, 7).reduce(function(x, y){ return x + y.val; }, 0) / 7;
+  cards.push(['🚀 Erledigt pro Woche', statVBars(weeks, 56) + '<div class="hint">Schnitt der letzten 7 Wochen: <b>' + (Math.round(wkAvg * 10) / 10).toLocaleString('de-CH') + '</b> Tasks · diese Woche bisher <b>' + weeks[7].val + '</b>.</div>']);
+
+  /* 6 Durchlaufzeit (angelegt bis erledigt) */
+  var doneIn = tasks.filter(function(t){ var c = t.completedAt ? new Date(t.completedAt).getTime() : 0; return c >= startMs && c <= endMs && t.createdAt; });
+  var leadAll = [], leadType = {};
+  doneIn.forEach(function(t){
+    var ms = new Date(t.completedAt) - new Date(t.createdAt);
+    if(!(ms >= 0)) return;
+    leadAll.push(ms);
+    (leadType[t.type] = leadType[t.type] || []).push(ms);
+  });
+  cards.push(['⏳ Durchlaufzeit', leadAll.length ?
+    '<div class="proj-nums"><div><b>' + statDays(statMedian(leadAll)) + '</b><span>typisch (Median)</span></div><div><b>' + statDays(Math.max.apply(null, leadAll)) + '</b><span>längste</span></div><div><b>' + leadAll.length + '</b><span>erledigt</span></div></div>' +
+    statHBars(Object.keys(leadType).map(function(k){ var info = TYPES[k] || TYPES.adhoc; return {label: info.icon + ' ' + info.label, val: statMedian(leadType[k]), n: leadType[k].length}; }).sort(function(x, y){ return y.val - x.val; }),
+      function(v, e){ return statDays(v) + ' · ' + e.n + '×'; }) + '<div class="hint">Zeit vom Anlegen bis zum Erledigen.</div>'
+    : '<div class="empty-state">Noch nichts erledigt in diesem Zeitraum.</div>']);
+
+  /* 7 Termintreue */
+  var withDue = doneIn.filter(function(t){ return t.dueDate; });
+  var onTime = withDue.filter(function(t){ return toDateInputValue(new Date(t.completedAt)) <= t.dueDate; }).length;
+  var todayStr = toDateInputValue(new Date());
+  var overdueOpen = tasks.filter(function(t){ return !t.archived && !t.completedAt && t.dueDate && t.dueDate < todayStr; }).length;
+  var pctOn = withDue.length ? Math.round(onTime / withDue.length * 100) : 0;
+  cards.push(['🎯 Termintreue', withDue.length ?
+    '<div class="proj-nums"><div><b style="color:' + (pctOn >= 80 ? 'var(--ok)' : pctOn >= 50 ? 'var(--warn)' : 'var(--danger)') + ';">' + pctOn + ' %</b><span>pünktlich erledigt</span></div><div><b>' + onTime + ' / ' + withDue.length + '</b><span>mit Frist</span></div><div><b' + (overdueOpen ? ' style="color:var(--danger);"' : '') + '>' + overdueOpen + '</b><span>jetzt überfällig</span></div></div>' +
+    '<div class="st-bar-track big"><div style="width:' + pctOn + '%; background:var(--ok);"></div></div>'
+    : '<div class="hint">In diesem Zeitraum wurde kein Task mit Frist erledigt.' + (overdueOpen ? ' Aktuell überfällig: <b>' + overdueOpen + '</b>.' : '') + '</div>']);
+
+  /* 8 Zeitfresser */
+  var eat = pool.map(function(t, i){ return {t: t, val: secs[i]}; }).filter(function(x){ return x.val > 0; }).sort(function(x, y){ return y.val - x.val; }).slice(0, 5);
+  var eatTotal = secs.reduce(function(x, y){ return x + y; }, 0) || 1;
+  cards.push(['🔥 Zeitfresser', statHBars(eat.map(function(x){
+    return {label: (x.t._free ? FREE_TIME_TYPE.icon : (TYPES[x.t.type] || TYPES.adhoc).icon) + ' ' + (x.t.jiraKey ? x.t.jiraKey + ' · ' : '') + x.t.title, val: x.val, id: x.t._free ? '' : x.t.id};
+  }), function(v){ return fmtHM(v) + ' · ' + Math.round(v / eatTotal * 100) + ' %'; })]);
+
+  /* 9 Prioritäten-Mix */
+  var prioSec = {}, prioOpen = {};
+  pool.forEach(function(t, i){ if(t._free) return; prioSec[t.priority] = (prioSec[t.priority] || 0) + secs[i]; if(!t.archived && !t.completedAt) prioOpen[t.priority] = (prioOpen[t.priority] || 0) + 1; });
+  var prioColors = {critical: 'var(--danger)', high: 'var(--p-high)', medium: 'var(--accent)', low: 'var(--text-faint)'};
+  cards.push(['⚖️ Zeit nach Priorität', statHBars(Object.keys(PRIORITIES).map(function(k){ return {label: PRIORITIES[k].label, val: prioSec[k] || 0, open: prioOpen[k] || 0, color: prioColors[k]}; }).filter(function(e){ return e.val || e.open; }),
+    function(v, e){ return fmtHM(v) + ' · ' + e.open + ' offen'; }) + '<div class="hint">Gebuchte Zeit in diesem Zeitraum und wie viele Tasks pro Stufe noch offen sind.</div>']);
+
+  /* 10 Backlog-Alter */
+  var open = tasks.filter(function(t){ return !t.archived && !t.completedAt && t.createdAt; });
+  var buckets = [{label: 'unter 1 Woche', max: 7, n: 0}, {label: '1–4 Wochen', max: 28, n: 0}, {label: '1–3 Monate', max: 90, n: 0}, {label: 'älter als 3 Monate', max: Infinity, n: 0}];
+  open.forEach(function(t){
+    var age = (Date.now() - new Date(t.createdAt).getTime()) / 86400000;
+    for(var bi = 0; bi < buckets.length; bi++){ if(age < buckets[bi].max){ buckets[bi].n++; break; } }
+  });
+  var oldest = open.slice().sort(function(x, y){ return String(x.createdAt).localeCompare(String(y.createdAt)); }).slice(0, 3);
+  cards.push(['🧱 Alter offener Tasks', open.length ?
+    statHBars(buckets.map(function(b, i){ return {label: b.label, val: b.n, color: i >= 2 ? 'var(--p-high)' : ''}; }), function(v){ return v + (v === 1 ? ' Task' : ' Tasks'); }) +
+    '<div class="hint" style="margin-top:6px;">Am längsten offen:</div>' + oldest.map(function(t){
+      return '<div class="dash-row" data-stat-open="' + escapeAttr(t.id) + '"><span class="dash-row-title">' + escapeHtml(t.title) + '</span><span class="dash-row-extra">' + Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000) + ' Tage offen</span></div>';
+    }).join('')
+    : '<div class="empty-state">Keine offenen Tasks. 🎉</div>']);
+
+  return cards;
 }
 
 /* Erfasste Zeiten (eigene Sitzungen) eines Zeitraums als CSV für Excel:
@@ -10471,7 +10856,7 @@ function enterSharedBoard(id){
   checkoutShared();
   undoStack = [];
   showArchive = false;
-  filterTag = ''; quickFilters = {};
+  filterTag = ''; filterClient = ''; filterAllBoards = false; quickFilters = {};
   renderAll();
   save();
   loadBoardMembers(sb).then(function(){ renderAll(); });
