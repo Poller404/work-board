@@ -10719,10 +10719,13 @@ function renderStatsView(range){
   else if(range === 'month'){ startMs = startOfMonth(now).getTime(); label = 'Dieser Monat'; }
   else { range = 'week'; startMs = startOfWeek(now).getTime(); label = 'Diese Woche'; }
   var endMs = Date.now();
+  var allScope = statsScopeAll();
+  var sPool = statsPool();
+  var sTasks = sPool.filter(function(t){ return !t._free; });
 
   var totals = {};
   Object.keys(TYPES).forEach(function(k){ totals[k] = 0; });
-  state.tasks.forEach(function(t){
+  sTasks.forEach(function(t){
     totals[t.type] = (totals[t.type] || 0) + secondsInRange(t, startMs, endMs);
   });
   totals[FREE_TIME_KEY] = 0; totals[ACC_KEY] = 0;
@@ -10761,13 +10764,13 @@ function renderStatsView(range){
     '</div>';
   }).join('');
 
-  var completedCount = state.tasks.filter(function(t){
+  var completedCount = sTasks.filter(function(t){
     return t.completedAt && new Date(t.completedAt).getTime() >= startMs && new Date(t.completedAt).getTime() <= endMs;
   }).length;
 
   // Zeit pro Jira-Projekt/Kunde (Projekt-Präfix vor dem "-" im Jira-Key, z.B. "PROJ-123" -> "PROJ")
   var projectTotals = {};
-  timeTasks().forEach(function(t){
+  sPool.forEach(function(t){
     var sec = secondsInRange(t, startMs, endMs);
     if(!sec) return;
     var proj = projectNameOf(t) || (t.jiraKey ? t.jiraKey.split('-')[0] : '– ohne Projekt –');
@@ -10789,7 +10792,7 @@ function renderStatsView(range){
   for(var i=6;i>=0;i--){
     var d = new Date(); d.setDate(d.getDate()-i);
     var dateStr = toDateInputValue(d);
-    var sec = timeTasks().reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
+    var sec = sPool.reduce(function(s,t){ return s + secondsOnDate(t, dateStr); }, 0);
     sparkDays.push({label: dayLabels[d.getDay()], sec: sec});
   }
   var sparkMax = Math.max.apply(null, sparkDays.map(function(x){return x.sec;})) || 1;
@@ -10809,7 +10812,7 @@ function renderStatsView(range){
       var hd = startOfWeek(new Date()); hd.setDate(hd.getDate() - w*7 + dow);
       if(hd > new Date()) { heatCells.push(null); continue; }
       var hdStr = toDateInputValue(hd);
-      var hSec = timeTasks().reduce(function(s,t){ return s + secondsOnDate(t, hdStr); }, 0);
+      var hSec = sPool.reduce(function(s,t){ return s + secondsOnDate(t, hdStr); }, 0);
       heatCells.push({date:hdStr, sec:hSec});
     }
   }
@@ -10827,11 +10830,11 @@ function renderStatsView(range){
 
   // Badges
   var weekStart = startOfWeek(new Date()).getTime();
-  var hotlineCount = state.tasks.filter(function(t){ return t.type==='hotline' && new Date(t.createdAt).getTime() >= weekStart; }).length;
-  var meetingCount = state.tasks.filter(function(t){ return t.type==='meeting' && new Date(t.createdAt).getTime() >= weekStart; }).length;
-  var doneThisWeek = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= weekStart; }).length;
+  var hotlineCount = sTasks.filter(function(t){ return t.type==='hotline' && new Date(t.createdAt).getTime() >= weekStart; }).length;
+  var meetingCount = sTasks.filter(function(t){ return t.type==='meeting' && new Date(t.createdAt).getTime() >= weekStart; }).length;
+  var doneThisWeek = sTasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= weekStart; }).length;
   var longestSession = 0;
-  state.tasks.forEach(function(t){
+  sTasks.forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!s.end) return;
       var dur = (new Date(s.end)-new Date(s.start))/1000;
@@ -10845,7 +10848,7 @@ function renderStatsView(range){
     (longestSession ? '<span class="pill low">⏱ Längste Sitzung: '+fmtHM(longestSession)+'</span>' : '') +
   '</div>';
 
-  var openCount = state.tasks.filter(function(t){ return !t.archived && !t.completedAt; }).length;
+  var openCount = sTasks.filter(function(t){ return !t.archived && !t.completedAt; }).length;
   var burndownMax = Math.max(openCount, completedCount, 1);
   var burndownHtml = '<div style="display:flex; gap:16px; align-items:flex-end; height:60px; margin-bottom:6px;">' +
     '<div style="flex:1; text-align:center;"><div style="height:'+Math.round(openCount/burndownMax*50)+'px; background:var(--p-high); border-radius:3px 3px 0 0;"></div><div style="font-size:11px; margin-top:4px;">⏳ '+openCount+' offen</div></div>' +
@@ -10860,7 +10863,10 @@ function renderStatsView(range){
       '<div class="dash-head"><div><h1>Statistik</h1>' +
         '<p>'+label+' · Total <strong style="color:var(--text);">'+fmtHM(grand)+'</strong> · '+completedCount+' erledigt' +
           (state.settings.hourlyRate ? ' · <strong style="color:var(--text);">'+Math.round(grand/3600*state.settings.hourlyRate)+' CHF</strong> erarbeitet' : '') + '</p></div>' +
-        '<div class="dash-actions"><div class="seg" role="group" aria-label="Zeitraum">' +
+        '<div class="dash-actions"><div class="seg" role="group" aria-label="Boards">' +
+          '<button class="seg-btn'+(!allScope?' on':'')+'" data-scope="current" title="Nur das gerade offene Board auswerten">Aktuelles Board</button>' +
+          '<button class="seg-btn'+(allScope?' on':'')+'" data-scope="all" title="Alle deine Boards zusammen auswerten">Alle Boards</button>' +
+        '</div><div class="seg" role="group" aria-label="Zeitraum">' +
           '<button class="seg-btn'+(range==='today'?' on':'')+'" data-range="today">Heute</button>' +
           '<button class="seg-btn'+(range==='week'?' on':'')+'" data-range="week">Diese Woche</button>' +
           '<button class="seg-btn'+(range==='month'?' on':'')+'" data-range="month">Dieser Monat</button>' +
@@ -10878,7 +10884,7 @@ function renderStatsView(range){
         pcard('🔀 Unterbrechungen (' + label + ')', interruptionStatsHtml(startMs, endMs)) +
         pcard('📈 Schätzung und Wirklichkeit', estimateStatsHtml()) +
       '</div>' +
-      '<h2 class="stats-more-h">Mehr Auswertungen <span class="hint">· alle deine Boards · ' + escapeHtml(label) + '</span></h2>' +
+      '<h2 class="stats-more-h">Mehr Auswertungen <span class="hint">· ' + (allScope ? 'alle deine Boards' : escapeHtml(currentBoardName())) + ' · ' + escapeHtml(label) + '</span></h2>' +
       '<div class="dash-grid">' + moreStatsCards(startMs, endMs, label).map(function(c){ return pcard(c[0], c[1]); }).join('') + '</div>' +
     '</div>';
   board.innerHTML = html;
@@ -10888,13 +10894,19 @@ function renderStatsView(range){
   board.querySelectorAll('[data-range]').forEach(function(btn){
     btn.addEventListener('click', function(){ renderStatsView(btn.dataset.range); });
   });
+  board.querySelectorAll('[data-scope]').forEach(function(btn){
+    btn.addEventListener('click', function(){ state.settings.statsScope = btn.dataset.scope; save(); renderStatsView(range); });
+  });
   document.getElementById('btnStatsCsv').addEventListener('click', function(){ exportTimeCsv(range, startMs, endMs); });
   wireInterruptionCard(board, function(){ renderStatsView(range); });
 }
 
-/* ---- Mehr Auswertungen (10 Karten) ----
-   Grundlage sind alle persönlichen Boards plus das offene geteilte Board und Zeit ohne Task
-   (wtTaskPool), gezählt wird nur die eigene Zeit. */
+/* ---- Umfang der Statistik ----
+   state.settings.statsScope: 'current' = nur das offene Board, 'all' = alle persönlichen Boards plus das
+   offene geteilte Board (wtTaskPool). Zeit ohne Task zählt immer mit, gezählt wird nur die eigene Zeit. */
+function statsScopeAll(){ return state.settings.statsScope === 'all'; }
+function statsPool(){ return statsScopeAll() ? wtTaskPool() : timeTasks(); }
+/* ---- Mehr Auswertungen (10 Karten) ---- */
 function statHBars(entries, fmt){
   if(!entries.length) return '<div class="empty-state">Keine Daten in diesem Zeitraum.</div>';
   var max = Math.max.apply(null, entries.map(function(e){ return e.val; })) || 1;
@@ -10927,7 +10939,7 @@ function topEntries(map, n, idMap){
     .sort(function(a, b){ return b.val - a.val; }).slice(0, n);
 }
 function moreStatsCards(startMs, endMs, label){
-  var pool = wtTaskPool();
+  var pool = statsPool();
   var tasks = pool.filter(function(t){ return t && !t._free && Array.isArray(t.timeSessions); });
   var secs = pool.map(function(t){ return secondsInRange(t, startMs, endMs); });
   var cards = [];
@@ -11064,7 +11076,7 @@ function exportTimeCsv(range, startMs, endMs){
   function two(n){ return (n < 10 ? '0' : '') + n; }
   function hm(d){ return two(d.getHours()) + ':' + two(d.getMinutes()); }
   var rows = [];
-  timeTasks().forEach(function(t){
+  statsPool().forEach(function(t){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
       var a = Math.max(new Date(s.start).getTime(), startMs);
