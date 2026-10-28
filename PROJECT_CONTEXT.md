@@ -42,6 +42,19 @@ Timo wollte "5 weitere grosse Features, die das Tool weiterbringen"; Auswahl dur
 Getestet: Playwright mit Supabase-Mock, PC 1440px, iPhone 402px, Dunkelmodus, Schadcode-Test in allen neuen Feldern.
 Nicht getestet: echtes Supabase, Abgleich der Gesprächsthemen zwischen zwei Geräten.
 
+## ✅ Stand 2026-10-27: Buchungsgefässe und Onboarding (Branch `claude/project-thread-b4fjab`)
+
+Timo wollte die Tasks unter "Zeitbuchung" als Buchungsgefässe, direkt bebuchbar; bestehende Tasks übernehmen und löschen; neue Benutzer ohne vordefinierte Gefässe; Onboarding nach Registrierung.
+Block "BUCHUNGSGEFÄSSE" + "ONBOARDING" vor "Bestehende Buchung bearbeiten" in index.html:
+- `settings.bookingAccounts` ({id 'ba-', name, color, projectId?, archived?, note?, updatedAt}) in `SYNC_LISTS` + `normalizeAccount`. Gebuchte Zeit = `settings.freeTime`-Einträge mit `acc` (Text dann optional),
+  daher zählen Tagesabschluss, Statistik (eigene Zeile "📂 Buchungsgefäss", `ACC_KEY`), CSV, Planer, Arbeitszeitkonto automatisch mit. `freeTimeTask` setzt `_acc`, `_note`, `projectId`.
+- Timer: `settings.accTimer` {acc, start} (nur lokal, nicht abgeglichen), `startAccTimer`/`stopAccTimer` (bucht ab 1 Min.); `startTimer` stoppt ihn, er stoppt den Task-Timer. Kopfzeilen-Banner, `tick`, Control-Center (`accstop`) zeigen ihn.
+- Ansicht `accounts` (`renderAccountsView`), Dialog `openAccountDialog`, Gefäss-Auswahl im Zeitblock-Dialog (`#tbkAcc`), Chips in "Zeit erfassen" (`accountChipsHtml`), Befehlspalette.
+- Übernahme `openAccountMigration`/`runAccountMigration`: Quelle = Spalte des aktiven persönlichen Boards oder anderes persönliches Board (Vorschlag per Name /zeitbuchung/…), jede eigene Sitzung wird ein Eintrag,
+  Buchungskommentar beim ersten Abschnitt; bricht ab, wenn die Summe nicht stimmt. Gelöschte Tasks liegen 14 Tage in localStorage `wb-acc-migration` (pro Gerät) für `undoAccountMigration`.
+- Onboarding: `markOnboardingPending` in `renderBoardPassphraseCreate` (neues Konto), `maybeStartOnboarding` am Ende von `init`, `settings.onboardingDone`; 5 Schritte, Schritt 4 legt eigene Gefässe an. Wieder aufrufbar über die Befehlspalette.
+Getestet: Playwright mit Supabase-Mock, PC 1440px und iPhone 402px (Übernahme, Summen, Timer, Rückgängig, Onboarding). Nicht getestet: echtes Supabase, Abgleich der Gefässe zwischen zwei Geräten.
+
 ## ✅ Stand 2026-10-27: Auslastung mit Pensum und lernendem "Was jetzt?" (Branch `claude/project-thread-9ojl3n`)
 
 Timo wollte eine Auslastungsanzeige mit einstellbarem Pensum, bestimmt durch einen lernenden Algorithmus; auch "Was jetzt?" soll dazulernen.

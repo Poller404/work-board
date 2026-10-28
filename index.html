@@ -703,6 +703,62 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .wt-kpis, .fc-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
 .wt-setup{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--warn-bg); color:var(--text); border-radius:var(--radius); padding:11px 14px; margin-bottom:14px; font-size:13px;}
 .wt-setup .btn{margin-left:auto;}
+/* Buchungsgefässe */
+.acc-wrap .acc-banner{background:var(--accent-soft);}
+.acc-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; margin-bottom:16px;}
+.acc-card{--acc:var(--accent); background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--acc); border-radius:var(--radius); padding:12px 14px; display:flex; flex-direction:column; gap:8px; min-width:0;}
+.acc-card.running{box-shadow:0 0 0 2px var(--accent-glow); border-color:var(--accent); border-left-color:var(--acc);}
+.acc-card.archived{opacity:.65;}
+.acc-name{all:unset; cursor:pointer; font-weight:600; font-size:14.5px; display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.acc-name:hover{text-decoration:underline;}
+.acc-name:focus-visible{outline:2px solid var(--accent); border-radius:4px;}
+.acc-dot{width:9px; height:9px; border-radius:50%; background:var(--acc, var(--accent)); flex-shrink:0; display:inline-block; margin-right:6px; vertical-align:middle;}
+.acc-name .acc-dot, .acc-chip .acc-dot{margin-right:0;}
+.acc-sub{font-size:12px; color:var(--text-dim); margin-top:-4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.acc-nums{display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;}
+.acc-nums span{display:flex; flex-direction:column; font-size:11px; color:var(--text-faint);}
+.acc-nums b{font-size:14px; color:var(--text); font-weight:600; font-variant-numeric:tabular-nums;}
+.acc-actions{display:flex; gap:6px;}
+.acc-actions .btn{flex:1; justify-content:center;}
+.acc-live{font-variant-numeric:tabular-nums; margin-left:4px;}
+.acc-empty{background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--radius); padding:28px 20px; text-align:center; margin-bottom:16px;}
+.acc-empty p{color:var(--text-dim); max-width:460px; margin:6px auto 14px; font-size:13px;}
+.acc-empty-icon{font-size:30px; margin-bottom:6px;}
+.acc-recent .dash-row-title{display:flex; align-items:center; gap:6px;}
+.acc-recent .dash-row-title .hint{font-weight:400; overflow:hidden; text-overflow:ellipsis;}
+.acc-arch{margin-top:14px;}
+.acc-arch > .btn{margin-bottom:10px;}
+.acc-colors{display:flex; gap:6px; flex-wrap:wrap;}
+.acc-color{width:28px; height:28px; border-radius:50%; border:2px solid var(--border); background:var(--surface-2); cursor:pointer; font-size:11px; color:var(--text-dim); padding:0;}
+.acc-color.on{border-color:var(--text); box-shadow:0 0 0 2px var(--surface) inset;}
+.acc-chips{display:flex; flex-wrap:wrap; gap:6px;}
+.acc-chip{--acc:var(--accent); display:inline-flex; align-items:stretch; border:1px solid var(--border); border-radius:99px; background:var(--surface); overflow:hidden; font-size:13px;}
+.acc-chip.static{padding:5px 11px; align-items:center; gap:6px;}
+.acc-chip button{border:0; background:transparent; color:var(--text); font:inherit; cursor:pointer; padding:6px 10px; display:inline-flex; align-items:center; gap:6px;}
+.acc-chip button + button{border-left:1px solid var(--border); padding:6px 10px; color:var(--text-dim); font-weight:600;}
+.acc-chip button:hover{background:var(--hover);}
+.acc-chip.on{border-color:var(--accent); background:var(--accent-soft);}
+#timerBanner.acc .tb-dot{background:var(--ok);}
+.am-list{max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 8px; margin-bottom:10px;}
+.am-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid var(--border);}
+.am-row:first-child{border-top:0;}
+.am-title{flex:1; min-width:0;}
+.am-time{font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:12.5px;}
+/* Onboarding */
+.modal.ob{max-width:520px;}
+.ob-body p{margin:0 0 10px; line-height:1.55;}
+.ob-list{margin:0 0 12px; padding-left:20px; line-height:1.6;}
+.ob-list li{margin-bottom:3px;}
+.ob-body kbd{border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px; padding:0 5px; font-size:12px; background:var(--surface-2);}
+.ob-acc{background:var(--surface-2); border-radius:var(--radius); padding:12px; margin-top:6px;}
+.ob-acc .acc-chips{margin-bottom:10px;}
+.ob-acc-form{display:flex; gap:6px;}
+.ob-acc-form input{flex:1; min-width:0;}
+.ob-acc .hint{margin:8px 0 0;}
+.ob-dots{display:flex; gap:6px; margin-right:auto; align-items:center;}
+.ob-dots i{width:7px; height:7px; border-radius:50%; background:var(--border-strong);}
+.ob-dots i.on{background:var(--accent); width:18px; border-radius:99px;}
+@media (max-width:680px){ .acc-grid{grid-template-columns:1fr;} .acc-chip button{padding:9px 12px;} .ob-acc-form input{font-size:16px;} }
 .wt-nav{display:flex; align-items:center; gap:4px;}
 .wt-nav h3{min-width:130px; text-align:center;}
 .wt-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-top:6px;}
@@ -1679,6 +1735,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
+    <button class="sb-item" data-view="accounts"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navAccounts">Buchungsgefässe</span></button>
     <button class="sb-item" data-view="worktime"><svg class="i"><use href="#i-clock"/></svg><span class="lbl" data-i18n="navWorktime">Arbeitszeit</span></button>
     <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
     <button class="sb-item" data-view="load"><svg class="i"><use href="#i-gauge"/></svg><span class="lbl" data-i18n="navLoad">Auslastung</span></button>
@@ -1692,7 +1749,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="myday">Mein Tag</option><option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option><option value="load">Auslastung</option><option value="people">Personen</option><option value="inbox">Mitteilungen</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option><option value="accounts">Buchungsgefässe</option><option value="load">Auslastung</option><option value="people">Personen</option><option value="inbox">Mitteilungen</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -2432,6 +2489,7 @@ function parseDurationInput(str){
 }
 
 function startTimer(taskId){
+  if(accTimerState()) stopAccTimer(true);
   nxLearnFromStart(taskId);
   var prevId = state.settings.activeTaskId;
   if(prevId && prevId !== taskId){
@@ -2656,7 +2714,7 @@ var I18N = {
     btnClipboardImport:'Aus Zwischenablage', btnWhatNow:'Was jetzt?', btnFocus:'Fokus',
     btnSelectMode:'Auswahl', btnDyce:'Tagesabschluss', btnStats:'Statistik',
     btnArchive:'Archiv', btnQuickSave:'Sichern', btnCloudSyncTopbar:'Sync', btnNewTask:'Neuer Task', btnCompact:'Kompaktansicht',
-    navMyDay:'Mein Tag', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navLoad:'Auslastung', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
+    navMyDay:'Mein Tag', navAccounts:'Buchungsgefässe', navWorktime:'Arbeitszeit', navForecast:'Fristen-Prognose', navLoad:'Auslastung', navWeekReview:'Wochenrückblick', navBoard:'Board', navCalendar:'Planer', navProjects:'Projekte', navKb:'Wissen', navTeamDash:'Team', navViews:'Ansichten', navSettings:'Einstellungen',
     viewDashboard:'Dashboard', viewPriority:'Nach Priorität', viewEisenhower:'Eisenhower-Matrix', viewTeam:'Nach Person', viewGroup:'Nach Gruppe',
     searchPlaceholder:'Suche (Titel, Ticket, Tag)…', optAllTypes:'Alle Typen', optAllPrio:'Alle Prioritäten', archiveBack:'Zurück zum Board'
   },
@@ -2665,7 +2723,7 @@ var I18N = {
     btnClipboardImport:'From Clipboard', btnWhatNow:'What now?', btnFocus:'Focus',
     btnSelectMode:'Select', btnDyce:'Day Summary', btnStats:'Stats',
     btnArchive:'Archive', btnQuickSave:'Save', btnCloudSyncTopbar:'Sync', btnNewTask:'New task', btnCompact:'Compact view',
-    navMyDay:'My Day', navWorktime:'Working time', navForecast:'Deadline forecast', navLoad:'Workload', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
+    navMyDay:'My Day', navAccounts:'Time accounts', navWorktime:'Working time', navForecast:'Deadline forecast', navLoad:'Workload', navWeekReview:'Weekly review', navBoard:'Board', navCalendar:'Planner', navProjects:'Projects', navKb:'Knowledge', navTeamDash:'Team', navViews:'Views', navSettings:'Settings',
     viewDashboard:'Dashboard', viewPriority:'By priority', viewEisenhower:'Eisenhower matrix', viewTeam:'By person', viewGroup:'By group',
     searchPlaceholder:'Search (title, ticket, tag)…', optAllTypes:'All types', optAllPrio:'All priorities', archiveBack:'Back to board'
   }
@@ -3936,7 +3994,7 @@ function openWhatNow(keepSkip){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast', 'load', 'people', 'inbox'];
+var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast', 'load', 'accounts', 'people', 'inbox'];
 var quickFilters = {};
 var filterTag = '';
 var filterClient = '';
@@ -4460,6 +4518,7 @@ function renderBoard(){
   if(boardViewMode === 'kb'){ renderKbView(); return; }
   if(boardViewMode === 'teamdash'){ renderTeamView(); return; }
   if(boardViewMode === 'worktime'){ renderWorktimeView(); return; }
+  if(boardViewMode === 'accounts'){ renderAccountsView(); return; }
   if(boardViewMode === 'forecast'){ renderForecastView(); return; }
   if(boardViewMode === 'load'){ renderLoadView(); return; }
   if(boardViewMode === 'people'){ renderPeopleView(); return; }
@@ -4988,6 +5047,16 @@ function renderTimerBanner(){
   var banner = document.getElementById('timerBanner');
   var id = state.settings.activeTaskId;
   var t = id ? getTask(id) : null;
+  var run = !t && accTimerState();
+  banner.classList.toggle('acc', !!run);
+  if(run){
+    banner.classList.add('active');
+    document.getElementById('tbTitle').textContent = '📂 ' + accountLabel(run.acc);
+    document.getElementById('tbTime').textContent = fmtHMS((Date.now() - new Date(run.start).getTime()) / 1000);
+    document.getElementById('tbTime').title = 'Läuft auf dem Buchungsgefäss';
+    ccRefresh(true);
+    return;
+  }
   if(!t){ banner.classList.remove('active'); ccRefresh(true); return; }
   banner.classList.add('active');
   document.getElementById('tbTitle').textContent = (t.jiraKey ? t.jiraKey + ' · ' : '') + t.title;
@@ -5295,6 +5364,7 @@ function ccBuild(root, withClose){
     else if(el.dataset.cc === 'main'){ window.focus(); }
     else if(el.dataset.cc === 'close'){ closeCcPanel(); }
     else if(el.dataset.cc === 'pause'){ var id = state.settings.activeTaskId; if(id) stopTimer(id); }
+    else if(el.dataset.cc === 'accstop'){ stopAccTimer(); }
     else if(el.dataset.cc === 'finish'){
       var fid = state.settings.activeTaskId;
       if(fid){
@@ -5436,6 +5506,13 @@ function ccRefresh(full){
             ? '<div class="cc-now-row"><div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' + actions + '</div>'
             : '<div class="cc-meta">' + (since ? 'Buchung seit ' + since + ' · ' : '') + 'Gesamt <span data-cc-total>' + fmtHM(totalSeconds(t)) + '</span></div>' +
               '<div class="cc-time" data-cc-time title="Aktuelle Buchung">'+fmtHMS(currentBookingSeconds(t))+'</div>' + actions);
+      } else if(accTimerState()){
+        var ar = accTimerState();
+        now.className = 'cc-now run';
+        now.innerHTML = '<div class="cc-run-title">📂 ' + escapeHtml(accountLabel(ar.acc)) + '</div>' +
+          (compact ? '' : '<div class="cc-meta">Buchungsgefäss · seit ' + fmtClock(new Date(ar.start).getTime()) + '</div>') +
+          '<div class="cc-now-row"><div class="cc-time" data-cc-time>' + fmtHMS((Date.now() - new Date(ar.start).getTime()) / 1000) + '</div>' +
+          '<div class="cc-actions"><button class="cc-btn" data-cc="accstop" title="Stoppen und buchen">■ Stopp</button></div></div>';
       } else {
         var rt = ccResumeTask();
         now.innerHTML = '<div class="cc-idle">Kein Timer aktiv.</div>' +
@@ -5498,6 +5575,7 @@ function ccRefresh(full){
   }
   var tm = q('[data-cc-time]');
   if(tm && t) tm.textContent = fmtHMS(currentBookingSeconds(t));
+  else if(tm && accTimerState()) tm.textContent = fmtHMS((Date.now() - new Date(accTimerState().start).getTime()) / 1000);
   var tot = q('[data-cc-total]');
   if(tot && t) tot.textContent = fmtHM(totalSeconds(t));
 }
@@ -5505,7 +5583,19 @@ function ccRefresh(full){
 function tick(){
   updateClockAndTitle();
   var id = state.settings.activeTaskId;
-  if(!id) return;
+  if(!id){
+    var run = accTimerState();
+    if(run){
+      var sec = (Date.now() - new Date(run.start).getTime()) / 1000;
+      var tEl = document.getElementById('tbTime');
+      if(tEl) tEl.textContent = fmtHMS(sec);
+      var live = document.getElementById('accLive');
+      if(live) live.textContent = fmtHMS(sec);
+      renderSidebarToday();
+      ccRefresh(false);
+    }
+    return;
+  }
   var t = getTask(id);
   if(!t) return;
   var timeEl = document.getElementById('tbTime');
@@ -7043,7 +7133,7 @@ function minutesText(t){
    Fristen, Regeln. Nur auf diesem Gerät (localStorage wb-inbox-<userId>), weil
    die meisten Quellen ohnehin pro Gerät auslösen. Höchstens 200, 30 Tage.
    ========================================================= */
-var INBOX_VIEWS = ['myday', 'status', 'calendar', 'projects', 'kb', 'teamdash', 'stats', 'dyce', 'worktime', 'forecast', 'load', 'people', 'inbox'];
+var INBOX_VIEWS = ['myday', 'status', 'calendar', 'projects', 'kb', 'teamdash', 'stats', 'dyce', 'worktime', 'forecast', 'load', 'accounts', 'people', 'inbox'];
 var inboxFilter = 'all';
 function inboxKey(){ return 'wb-inbox-' + (myUserId() || 'local'); }
 function inboxLoad(){
@@ -9710,12 +9800,18 @@ function openQuickTimeEntry(){
   var html =
     '<div class="modal-header"><h2>⏱️ Zeiterfassung starten</h2><button class="btn ghost icon-btn" data-close-modal>✕</button></div>' +
     '<div class="modal-body">' +
-      '<div class="form-row"><label>Wofür?</label><input id="qteTitle" placeholder="z.B. Rechnungen kontrollieren"></div>' +
-      '<div class="hint">„Starten“ legt einen Task an und startet den Timer. „Ohne Task buchen“ bucht einen Zeitblock nur mit diesem Text.</div>' +
+      (activeAccounts().length ? '<div class="form-row"><label>Auf ein Buchungsgefäss</label>' + accountChipsHtml() + '<div class="hint">Klick auf den Namen startet den Timer, „+“ bucht einen Zeitblock.</div></div>' : '') +
+      '<div class="form-row"><label>' + (activeAccounts().length ? 'Oder wofür sonst?' : 'Wofür?') + '</label><input id="qteTitle" placeholder="z.B. Rechnungen kontrollieren"></div>' +
+      '<div class="hint">„Starten“ legt einen Task an und startet den Timer. „Ohne Task buchen“ bucht einen Zeitblock nur mit diesem Text.' +
+        (activeAccounts().length ? '' : ' Für wiederkehrende Tätigkeiten kannst du <a href="#" id="qteAccLink">Buchungsgefässe anlegen</a>.') + '</div>' +
     '</div>' +
     '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn" id="qteFreeBtn">📝 Ohne Task buchen…</button><button class="btn primary" id="qteStartBtn">▶ Starten</button></div>';
   openModal(html);
   var input = document.getElementById('qteTitle');
+  document.querySelectorAll('[data-qacc-start]').forEach(function(b){ b.addEventListener('click', function(){ closeModal(); startAccTimer(b.dataset.qaccStart); }); });
+  document.querySelectorAll('[data-qacc-block]').forEach(function(b){ b.addEventListener('click', function(){ closeModal(); openTimeBlockDialog(null, null, {acc: b.dataset.qaccBlock}); }); });
+  var accLink = document.getElementById('qteAccLink');
+  if(accLink) accLink.addEventListener('click', function(e){ e.preventDefault(); closeModal(); switchToView('accounts'); });
   document.getElementById('qteFreeBtn').addEventListener('click', function(){ var txt = input.value.trim(); closeModal(); openTimeBlockDialog(null, null, {text: txt}); });
   input.focus();
   function start(){
@@ -10495,23 +10591,34 @@ function bookTimeBlock(taskId, startMs, endMs, comment, deductFromIds){
 var FREE_TIME_KEY = '_free';
 var FREE_TIME_TYPE = {label: 'Ohne Task', icon: '📝'};
 function freeTimeList(){ return Array.isArray(state.settings.freeTime) ? state.settings.freeTime : []; }
+function freeTimeTask(e){
+  var acc = e.acc ? getAccount(e.acc) : null;
+  var t = {id: e.id, _free: true, title: e.acc ? accountLabel(e.acc) + (e.text ? ' – ' + e.text : '') : e.text, type: 'adhoc', priority: 'medium', jiraKey: '', reporter: '', description: '',
+    tags: [], notes: [], links: [], activityLog: [], checklist: [], archived: false, completedAt: null,
+    createdAt: e.start, updatedAt: e.updatedAt, timeSessions: [{start: e.start, end: e.end, manual: true}]};
+  if(e.acc){ t._acc = e.acc; t._note = e.text || ''; }
+  if(acc && acc.projectId && getProject(acc.projectId)) t.projectId = acc.projectId;
+  return t;
+}
+/* Enthält auch den laufenden Gefäss-Timer (offene Sitzung), damit "Heute" und Auswertungen live mitzählen. */
 function freeTimeTasks(){
-  return freeTimeList().map(function(e){
-    return {id: e.id, _free: true, title: e.text, type: 'adhoc', priority: 'medium', jiraKey: '', reporter: '', description: '',
-      tags: [], notes: [], links: [], activityLog: [], checklist: [], archived: false, completedAt: null,
-      createdAt: e.start, updatedAt: e.updatedAt, timeSessions: [{start: e.start, end: e.end, manual: true}]};
-  });
+  var out = freeTimeList().map(freeTimeTask);
+  var run = accTimerState();
+  if(run) out.push(freeTimeTask({id: 'ba-running', start: run.start, end: null, text: '', acc: run.acc, updatedAt: run.start}));
+  return out;
 }
 /* Alle Tasks plus die freien Buchungen, nur zum Zusammenzählen und Anzeigen von Zeit. */
 function timeTasks(){ return state.tasks.concat(freeTimeTasks()); }
-function statTypeInfo(k){ return k === FREE_TIME_KEY ? FREE_TIME_TYPE : (TYPES[k] || TYPES.adhoc); }
-function bookFreeTime(startMs, endMs, text, deductFromIds, editId){
+function statTypeInfo(k){ return k === FREE_TIME_KEY ? FREE_TIME_TYPE : (k === ACC_KEY ? ACC_TYPE : (TYPES[k] || TYPES.adhoc)); }
+/* acc = ID eines Buchungsgefässes; dann ist der Text nur eine optionale Bemerkung. */
+function bookFreeTime(startMs, endMs, text, deductFromIds, editId, acc){
   text = String(text || '').trim().slice(0, 500);
-  if(!text || !(endMs > startMs)) return false;
+  acc = acc && getAccount(acc) ? acc : '';
+  if((!text && !acc) || !(endMs > startMs)) return false;
   var clash = freeTimeList().some(function(e){
     return e.id !== editId && new Date(e.start).getTime() < endMs && new Date(e.end).getTime() > startMs;
   });
-  if(clash){ toast('In diesem Zeitraum ist bereits Zeit ohne Task gebucht.'); return false; }
+  if(clash){ toast('In diesem Zeitraum ist bereits Zeit ohne Task oder auf ein Gefäss gebucht.'); return false; }
   pushUndoSnapshot();
   var moved = [];
   (deductFromIds || []).forEach(function(id){
@@ -10521,11 +10628,12 @@ function bookFreeTime(startMs, endMs, text, deductFromIds, editId){
   });
   var list = state.settings.freeTime = freeTimeList().slice();
   var entry = {id: editId || 'ft-' + uid(), start: new Date(startMs).toISOString(), end: new Date(endMs).toISOString(), text: text, updatedAt: nowIso()};
+  if(acc) entry.acc = acc;
   var idx = editId ? list.findIndex(function(e){ return e.id === editId; }) : -1;
   if(idx >= 0) list[idx] = entry; else list.push(entry);
   list.sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
   save();
-  toast('📝 ' + fmtHM((endMs - startMs) / 1000) + ' ohne Task ' + (idx >= 0 ? 'gespeichert' : 'gebucht') + (moved.length ? ' und bei „' + moved.join('“, „') + '“ abgezogen' : '') + '.');
+  toast((acc ? '📂 ' : '📝 ') + fmtHM((endMs - startMs) / 1000) + (acc ? ' auf „' + accountLabel(acc) + '“ ' : ' ohne Task ') + (idx >= 0 ? 'gespeichert' : 'gebucht') + (moved.length ? ' und bei „' + moved.join('“, „') + '“ abgezogen' : '') + '.');
   return true;
 }
 function deleteFreeTime(id){
@@ -10544,15 +10652,21 @@ function openTimeBlockDialog(taskId, onDone, opts){
   var t = free ? null : getTask(taskId);
   if(!free && !t) return;
   var entry = free && opts.entryId ? freeTimeList().find(function(e){ return e.id === opts.entryId; }) : null;
+  var accSel = entry ? (entry.acc || '') : (opts.acc || '');
+  var accOpts = free ? activeAccounts() : [];
+  if(accSel && getAccount(accSel) && !accOpts.some(function(a){ return a.id === accSel; })) accOpts = accOpts.concat([getAccount(accSel)]);
+  var accMode = free && accOpts.length > 0;
   function two(n){ return (n < 10 ? '0' : '') + n; }
   var end, start;
   if(entry){ start = new Date(entry.start); end = new Date(entry.end); }
   else if(opts.start && opts.end){ start = new Date(opts.start); end = new Date(opts.end); }
   else { end = new Date(); end.setSeconds(0, 0); start = new Date(end.getTime() - 45 * 60000); }
   var html =
-    '<div class="modal-header"><h2>' + (free ? (entry ? '📝 Zeit ohne Task bearbeiten' : '📝 Zeit ohne Task buchen') : '⏱ Zeitblock buchen') + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-header"><h2>' + (free ? (accSel ? (entry ? '📂 Buchung bearbeiten' : '📂 Zeit auf Gefäss buchen') : (entry ? '📝 Zeit ohne Task bearbeiten' : '📝 Zeit ohne Task buchen')) : '⏱ Zeitblock buchen') + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
-      (free ? '<div class="form-row"><label for="tbkText">Was hast du gemacht?</label><input id="tbkText" maxlength="500" placeholder="z.B. Teamsitzung, Weiterbildung, Admin" value="' + escapeAttr(entry ? entry.text : (opts.text || '')) + '"></div>'
+      (accMode ? '<div class="form-row"><label for="tbkAcc">Buchungsgefäss</label><select id="tbkAcc"><option value="">– Kein Gefäss, nur Text –</option>' +
+        accOpts.map(function(a){ return '<option value="' + escapeAttr(a.id) + '"' + (a.id === accSel ? ' selected' : '') + '>' + escapeHtml(a.name) + '</option>'; }).join('') + '</select></div>' : '') +
+      (free ? '<div class="form-row"><label for="tbkText" id="tbkTextLbl">Was hast du gemacht?</label><input id="tbkText" maxlength="500" placeholder="z.B. Teamsitzung, Weiterbildung, Admin" value="' + escapeAttr(entry ? entry.text : (opts.text || '')) + '"></div>'
         : '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + '</p>') +
       '<div class="form-row"><label>Dauer</label><div class="tbk-chips">' +
         [15, 30, 45, 60, 90, 120].map(function(m){ return '<button type="button" class="btn tbk-chip' + (m === 45 ? ' on' : '') + '" data-min="' + m + '">' + (m < 60 ? m + ' Min.' : (m / 60) + ' Std.').replace('.5 Std.', ',5 Std.') + '</button>'; }).join('') +
@@ -10572,6 +10686,13 @@ function openTimeBlockDialog(taskId, onDone, opts){
       '<button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="tbkSave">' + (entry ? 'Speichern' : 'Buchen') + '</button></div>';
   openModal(html);
   var unchecked = {};
+  function curAcc(){ var el = document.getElementById('tbkAcc'); return el ? el.value : ''; }
+  function accChanged(){
+    var lbl = document.getElementById('tbkTextLbl'), txtEl = document.getElementById('tbkText');
+    if(!lbl) return;
+    lbl.textContent = curAcc() ? 'Bemerkung (optional)' : 'Was hast du gemacht?';
+    txtEl.placeholder = curAcc() ? 'z.B. Ticket-Review, Kurs Teil 2' : 'z.B. Teamsitzung, Weiterbildung, Admin';
+  }
   function range(){
     var d = document.getElementById('tbkDate').value, f = document.getElementById('tbkFrom').value, to = document.getElementById('tbkTo').value;
     if(!d || !f || !to) return null;
@@ -10585,7 +10706,8 @@ function openTimeBlockDialog(taskId, onDone, opts){
     var dur = document.getElementById('tbkDur');
     if(document.activeElement !== dur){ dur.value = r ? fmtHM((r.b - r.a) / 1000) : ''; dur.classList.remove('invalid'); }
     if(!r){ sum.textContent = ''; box.innerHTML = ''; return; }
-    sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + (free ? ' ohne Task.' : ' auf diesen Task.');
+    var accNow = curAcc();
+    sum.textContent = 'Bucht ' + fmtHM((r.b - r.a) / 1000) + (free ? (accNow ? ' auf „' + accountLabel(accNow) + '“.' : ' ohne Task.') : ' auf diesen Task.');
     var ov = entry ? [] : sessionOverlapsWith(r.a, Math.min(r.b, Date.now()), t ? t.id : null);
     box.innerHTML = ov.length ? '<div class="tbk-deduct"><div class="section-title">In dieser Zeit lief schon Zeit bei:</div>' + ov.map(function(o){
       return '<label class="tbk-row"><input type="checkbox" data-deduct="' + escapeAttr(o.task.id) + '"' + (unchecked[o.task.id] ? '' : ' checked') + '> ' +
@@ -10622,19 +10744,20 @@ function openTimeBlockDialog(taskId, onDone, opts){
   document.getElementById('tbkSave').addEventListener('click', function(){
     var r = range(), err = document.getElementById('tbkErr');
     var text = free ? document.getElementById('tbkText').value.trim() : '';
-    if(free && !text){ err.textContent = 'Bitte kurz beschreiben, was du gemacht hast.'; document.getElementById('tbkText').focus(); return; }
+    var accId = curAcc();
+    if(free && !text && !accId){ err.textContent = accMode ? 'Bitte ein Gefäss wählen oder kurz beschreiben, was du gemacht hast.' : 'Bitte kurz beschreiben, was du gemacht hast.'; document.getElementById('tbkText').focus(); return; }
     if(!r){ err.textContent = 'Bitte Datum, Von und Bis ausfüllen.'; return; }
     if(r.b > Date.now() + 60000){ err.textContent = 'Der Block darf nicht in der Zukunft enden.'; return; }
     if(r.b - r.a > 12 * 3600000){ err.textContent = 'Ein Block darf höchstens 12 Stunden lang sein.'; return; }
     var ids = Array.prototype.map.call(document.querySelectorAll('[data-deduct]:checked'), function(cb){ return cb.dataset.deduct; });
-    if(free){ if(!bookFreeTime(r.a, r.b, text, ids, entry ? entry.id : '')) return; }
+    if(free){ if(!bookFreeTime(r.a, r.b, text, ids, entry ? entry.id : '', accId)) return; }
     else if(!bookTimeBlock(t.id, r.a, r.b, document.getElementById('tbkComment').value, ids)) return;
     done();
   });
   if(entry) document.getElementById('tbkDelete').addEventListener('click', function(){
-    confirmDialog('„' + entry.text + '“ (' + fmtHM((new Date(entry.end) - new Date(entry.start)) / 1000) + ') löschen?', 'Löschen', function(){
+    confirmDialog('„' + (entry.acc ? accountLabel(entry.acc) + (entry.text ? ' – ' + entry.text : '') : entry.text) + '“ (' + fmtHM((new Date(entry.end) - new Date(entry.start)) / 1000) + ') löschen?', 'Löschen', function(){
       deleteFreeTime(entry.id);
-      toast('Buchung ohne Task gelöscht.');
+      toast(entry.acc ? 'Buchung gelöscht.' : 'Buchung ohne Task gelöscht.');
       done();
     });
   });
@@ -10642,8 +10765,513 @@ function openTimeBlockDialog(taskId, onDone, opts){
     var txt = document.getElementById('tbkText');
     txt.addEventListener('keydown', function(e){ if(e.key === 'Enter') document.getElementById('tbkSave').click(); });
     if(!entry) txt.focus();
+    if(accMode){ document.getElementById('tbkAcc').addEventListener('change', function(){ accChanged(); refresh(); }); accChanged(); }
   }
   refresh();
+}
+/* =========================================================
+   BUCHUNGSGEFÄSSE
+   Feste Gefässe wie "Admin", "Weiterbildung" oder "Support allgemein", auf die direkt Zeit
+   gebucht wird, ohne dafür einen Task anzulegen. Definition in state.settings.bookingAccounts
+   ({id:'ba-…', name, color, projectId?, archived?, note?, updatedAt}), über SYNC_LISTS Eintrag für
+   Eintrag zwischen Geräten abgeglichen. Gebuchte Zeit liegt wie "Zeit ohne Task" in
+   state.settings.freeTime, mit acc = Gefäss-ID und optionaler Bemerkung (text). Dadurch zählen
+   Tagesabschluss, Statistik, CSV, Planer und Arbeitszeitkonto sie ohne weitere Anpassung mit.
+   Laufender Timer: state.settings.accTimer {acc, start}; es läuft immer nur ein Timer (Task-Timer
+   und Gefäss-Timer stoppen sich gegenseitig). Neue Konten starten ohne Gefässe.
+   Übernahme bestehender "Zeitbuchungs-Tasks": openAccountMigration (Sitzungen werden zu
+   Gefäss-Buchungen, danach werden die Tasks gelöscht; Rückgängig 14 Tage pro Gerät).
+   ========================================================= */
+var ACC_KEY = '_acc';
+var ACC_TYPE = {label: 'Buchungsgefäss', icon: '📂'};
+var ACC_MIGRATION_KEY = 'wb-acc-migration';
+var ACC_SOURCE_RE = /zeit\s*buchung|zeitbuchung|buchungsgef|gefäss|gefaess|zeiterfassung/i;
+function accountList(){ return Array.isArray(state.settings.bookingAccounts) ? state.settings.bookingAccounts : []; }
+function activeAccounts(){
+  return accountList().filter(function(a){ return !a.archived; }).slice().sort(function(a, b){ return a.name.localeCompare(b.name, 'de'); });
+}
+function getAccount(id){
+  if(!id) return null;
+  return accountList().find(function(a){ return a.id === id; }) || null;
+}
+function accountLabel(id){ var a = getAccount(id); return a ? a.name : 'Gelöschtes Gefäss'; }
+function accountColor(a){ return (a && a.color) || (a && a.projectId && getProject(a.projectId) ? getProject(a.projectId).color : '') || 'var(--accent)'; }
+function nextAccountColor(){ return ACCENT_PRESETS[accountList().length % ACCENT_PRESETS.length]; }
+function accountEntries(id){ return freeTimeList().filter(function(e){ return e.acc === id; }); }
+function upsertAccount(acc){
+  var list = state.settings.bookingAccounts = accountList().slice();
+  acc.updatedAt = nowIso();
+  var n = normalizeAccount(acc);
+  var i = list.findIndex(function(a){ return a.id === n.id; });
+  if(i >= 0) list[i] = n; else list.push(n);
+  return n;
+}
+
+/* ---- Timer auf einem Gefäss ---- */
+function accTimerState(){
+  var r = state.settings.accTimer;
+  if(!r || typeof r !== 'object' || !getAccount(r.acc)) return null;
+  var a = new Date(r.start).getTime();
+  if(!isFinite(a) || a > Date.now() + 60000) return null;
+  return r;
+}
+function startAccTimer(accId){
+  if(!getAccount(accId)) return;
+  var run = accTimerState();
+  if(run && run.acc === accId) return;
+  if(run) stopAccTimer(true);
+  var tid = state.settings.activeTaskId;
+  if(tid && getTask(tid)) stopTimer(tid, true);
+  state.settings.accTimer = {acc: accId, start: nowIso()};
+  playSound('start');
+  save();
+  renderAll();
+  toast('▶ Zeit läuft auf „' + accountLabel(accId) + '“.');
+}
+/* Beendet den Gefäss-Timer und bucht die Zeit (ab 1 Minute). quiet = ohne Rückfrage (z.B. weil ein Task-Timer startet). */
+function stopAccTimer(quiet){
+  var run = accTimerState();
+  delete state.settings.accTimer;
+  if(!run){ save(); renderAll(); return null; }
+  var a = new Date(run.start).getTime(), b = Date.now();
+  var entry = null;
+  if(b - a >= 60000){
+    entry = {id: 'ft-' + uid(), start: new Date(a).toISOString(), end: new Date(b).toISOString(), text: '', acc: run.acc, updatedAt: nowIso()};
+    var list = state.settings.freeTime = freeTimeList().slice();
+    list.push(entry);
+    list.sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  }
+  save();
+  renderAll();
+  if(!entry) toast('Weniger als 1 Minute, nichts gebucht.');
+  else {
+    var id = entry.id;
+    toast('📂 ' + fmtHM((b - a) / 1000) + ' auf „' + accountLabel(run.acc) + '“ gebucht.', quiet ? 6000 : 9000, 'Bemerkung', function(){ openFreeTimeDialog(id); });
+  }
+  return entry;
+}
+
+/* ---- Verwalten ---- */
+function openAccountDialog(id, onDone){
+  var a = id ? getAccount(id) : null;
+  var projects = projectList().filter(function(p){ return p.active || (a && a.projectId === p.id); });
+  var used = a ? accountEntries(a.id).length : 0;
+  var color = a ? a.color : nextAccountColor();
+  var html =
+    '<div class="modal-header"><h2>' + (a ? '📂 Gefäss bearbeiten' : '📂 Neues Buchungsgefäss') + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><label for="accName">Name</label><input id="accName" maxlength="80" placeholder="z.B. Admin, Weiterbildung, Support allgemein" value="' + escapeAttr(a ? a.name : '') + '"></div>' +
+      '<div class="form-row"><label>Farbe</label><div class="acc-colors" id="accColors">' +
+        [''].concat(ACCENT_PRESETS).map(function(c){ return '<button type="button" class="acc-color' + (c === color ? ' on' : '') + '" data-c="' + c + '" style="' + (c ? 'background:' + c : '') + '" title="' + (c ? c : 'Standard') + '" aria-label="Farbe ' + (c || 'Standard') + '">' + (c ? '' : 'A') + '</button>'; }).join('') +
+      '</div></div>' +
+      (projects.length ? '<div class="form-row"><label for="accProject">Projekt (optional)</label><select id="accProject"><option value="">– kein Projekt –</option>' +
+        projects.map(function(p){ return '<option value="' + escapeAttr(p.id) + '"' + (a && a.projectId === p.id ? ' selected' : '') + '>' + escapeHtml(projectLabel(p)) + '</option>'; }).join('') + '</select></div>' : '') +
+      '<div class="form-row"><label for="accNote">Notiz (optional)</label><input id="accNote" maxlength="300" placeholder="z.B. Kostenstelle 4711" value="' + escapeAttr(a && a.note ? a.note : '') + '"></div>' +
+      (a ? '<label class="tbk-row"><input type="checkbox" id="accArchived"' + (a.archived ? ' checked' : '') + '> Archiviert (wird beim Buchen nicht mehr angeboten)</label>' : '') +
+      '<div id="accErr" class="hint" style="color:var(--danger);"></div>' +
+    '</div>' +
+    '<div class="modal-footer">' + (a ? '<button class="btn danger" id="accDelete" style="margin-right:auto;"' + (used ? ' title="Hat ' + used + ' Buchungen – nur archivieren möglich" disabled' : '') + '>Löschen</button>' : '') +
+      '<button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="accSave">' + (a ? 'Speichern' : 'Anlegen') + '</button></div>';
+  openModal(html);
+  var nameEl = document.getElementById('accName');
+  nameEl.focus();
+  document.querySelectorAll('#accColors .acc-color').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      color = btn.dataset.c;
+      document.querySelectorAll('#accColors .acc-color').forEach(function(b){ b.classList.toggle('on', b === btn); });
+    });
+  });
+  function submit(){
+    var name = stripMarkup(nameEl.value, 80).trim();
+    var err = document.getElementById('accErr');
+    if(!name){ err.textContent = 'Bitte einen Namen eingeben.'; nameEl.focus(); return; }
+    var dup = accountList().find(function(x){ return x.name.toLowerCase() === name.toLowerCase() && (!a || x.id !== a.id); });
+    if(dup){ err.textContent = 'Es gibt schon ein Gefäss „' + dup.name + '“' + (dup.archived ? ' (archiviert)' : '') + '.'; return; }
+    var projEl = document.getElementById('accProject');
+    var next = Object.assign({}, a || {id: 'ba-' + uid()}, {name: name, color: color, note: document.getElementById('accNote').value});
+    if(projEl){ if(projEl.value) next.projectId = projEl.value; else delete next.projectId; }
+    var archEl = document.getElementById('accArchived');
+    if(archEl){ if(archEl.checked) next.archived = true; else delete next.archived; }
+    var saved = upsertAccount(next);
+    if(saved.archived){ var run = accTimerState(); if(run && run.acc === saved.id) stopAccTimer(true); }
+    save();
+    closeModal();
+    renderAll();
+    toast(a ? 'Gefäss gespeichert.' : '📂 Gefäss „' + saved.name + '“ angelegt.');
+    if(onDone) onDone(saved);
+  }
+  document.getElementById('accSave').addEventListener('click', submit);
+  nameEl.addEventListener('keydown', function(e){ if(e.key === 'Enter') submit(); });
+  if(a && !used) document.getElementById('accDelete').addEventListener('click', function(){
+    confirmDialog('Gefäss „' + a.name + '“ löschen?', 'Löschen', function(){
+      closeModal();
+      var run = accTimerState(); if(run && run.acc === a.id) stopAccTimer(true);
+      state.settings.bookingAccounts = accountList().filter(function(x){ return x.id !== a.id; });
+      save();
+      renderAll();
+      toast('Gefäss gelöscht.');
+    });
+  });
+}
+/* Mehrere Gefässe auf einmal anlegen (Onboarding). Gibt die Anzahl neuer Gefässe zurück. */
+function addAccountsByName(names){
+  var n = 0;
+  names.forEach(function(raw){
+    var name = stripMarkup(raw, 80).trim();
+    if(!name || accountList().some(function(x){ return x.name.toLowerCase() === name.toLowerCase(); })) return;
+    upsertAccount({id: 'ba-' + uid(), name: name, color: nextAccountColor()});
+    n++;
+  });
+  if(n) save();
+  return n;
+}
+
+/* ---- Übernahme bestehender Tasks ("Zeitbuchung") ----
+   Quellen: jede Spalte des aktiven persönlichen Boards und jedes andere persönliche Board. */
+function accMigrationSources(){
+  var out = [];
+  if(activeShared) return out;
+  var boardName = state.settings.activeBoardName || 'Board';
+  state.columns.forEach(function(c){
+    var tasks = state.tasks.filter(function(t){ return t.columnId === c.id; });
+    if(tasks.length) out.push({key: 'col:' + c.id, label: 'Spalte „' + c.name + '“ (Board „' + boardName + '“)', name: c.name, tasks: tasks, board: null});
+  });
+  (state.boards || []).forEach(function(b, i){
+    var tasks = Array.isArray(b.tasks) ? b.tasks : [];
+    if(tasks.length) out.push({key: 'board:' + i, label: 'Board „' + b.name + '“ (alle Tasks)', name: b.name, tasks: tasks, board: b.name});
+  });
+  return out;
+}
+function accSuggestedSource(){
+  return accMigrationSources().find(function(s){ return ACC_SOURCE_RE.test(s.name); }) || null;
+}
+function accMigrationRecord(){
+  try{
+    var r = safeJsonParse(localStorage.getItem(ACC_MIGRATION_KEY));
+    if(r && r.user === myUserId() && Array.isArray(r.tasks) && Date.now() - new Date(r.at).getTime() < 14 * 86400000) return r;
+  }catch(e){}
+  return null;
+}
+function taskOwnSeconds(t){
+  return t.timeSessions.reduce(function(sum, s){
+    if(!isMySession(s)) return sum;
+    var a = new Date(s.start).getTime(), b = s.end ? new Date(s.end).getTime() : Date.now();
+    return sum + Math.max(0, b - a) / 1000;
+  }, 0);
+}
+function openAccountMigration(){
+  if(activeShared){ toast('Bitte zuerst zu deinem persönlichen Board wechseln.'); return; }
+  var sources = accMigrationSources();
+  if(!sources.length){ toast('Es gibt keine Tasks, die übernommen werden könnten.'); return; }
+  var sel = (accSuggestedSource() || sources[0]).key;
+  var unchecked = {};
+  var html =
+    '<div class="modal-header"><h2>📂 Tasks als Buchungsgefässe übernehmen</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">Jeder gewählte Task wird zu einem Buchungsgefäss mit seinem Titel als Namen. Die bisher gebuchte Zeit (inkl. Kommentare) wandert mit und bleibt in Tagesabschluss, Statistik und Arbeitszeit erhalten.</p>' +
+      '<div class="form-row"><label for="amSource">Woher?</label><select id="amSource">' +
+        sources.map(function(s){ return '<option value="' + escapeAttr(s.key) + '"' + (s.key === sel ? ' selected' : '') + '>' + escapeHtml(s.label) + ' · ' + s.tasks.length + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div id="amList" class="am-list"></div>' +
+      '<label class="tbk-row"><input type="checkbox" id="amDelete" checked> Tasks danach löschen</label>' +
+      '<div id="amSummary" class="hint"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="amRun">Übernehmen</button></div>';
+  openModal(html);
+  function source(){ return sources.find(function(s){ return s.key === sel; }); }
+  function chosen(){ return source().tasks.filter(function(t){ return !unchecked[t.id]; }); }
+  function render(){
+    var src = source();
+    document.getElementById('amList').innerHTML = src.tasks.map(function(t){
+      var exists = accountList().find(function(x){ return x.name.toLowerCase() === String(t.title).trim().slice(0, 80).toLowerCase(); });
+      return '<label class="tbk-row am-row"><input type="checkbox" data-am="' + escapeAttr(t.id) + '"' + (unchecked[t.id] ? '' : ' checked') + '>' +
+        '<span class="am-title">' + escapeHtml(t.title) + (t.archived ? ' <span class="hint">(archiviert)</span>' : '') + (exists ? ' <span class="hint">→ zu bestehendem Gefäss</span>' : '') + '</span>' +
+        '<span class="am-time">' + fmtHM(taskOwnSeconds(t)) + '</span></label>';
+    }).join('');
+    document.querySelectorAll('[data-am]').forEach(function(cb){
+      cb.addEventListener('change', function(){ unchecked[cb.dataset.am] = !cb.checked; summary(); });
+    });
+    summary();
+  }
+  function summary(){
+    var list = chosen();
+    var sec = list.reduce(function(s, t){ return s + taskOwnSeconds(t); }, 0);
+    var n = list.reduce(function(s, t){ return s + t.timeSessions.filter(function(x){ return isMySession(x) && (x.end ? new Date(x.end) - new Date(x.start) >= 1000 : true); }).length; }, 0);
+    document.getElementById('amSummary').textContent = list.length ? list.length + ' Gefässe, ' + n + ' Zeiteinträge, zusammen ' + fmtHM(sec) + '.' : 'Bitte mindestens einen Task wählen.';
+    document.getElementById('amRun').disabled = !list.length;
+  }
+  document.getElementById('amSource').addEventListener('change', function(e){ sel = e.target.value; render(); });
+  document.getElementById('amRun').addEventListener('click', function(){
+    var list = chosen(), src = source();
+    if(!list.length) return;
+    var del = document.getElementById('amDelete').checked;
+    var ids = list.map(function(t){ return t.id; });
+    function run(){
+      var res = runAccountMigration(src, ids, del);
+      if(!res) return;
+      closeModal();
+      switchToView('accounts');
+      toast('📂 ' + res.accounts + ' Gefässe mit ' + fmtHM(res.seconds) + ' übernommen' + (del ? ', ' + ids.length + ' Tasks gelöscht' : '') + '.', 12000, del ? 'Rückgängig' : '', del ? undoAccountMigration : null);
+    }
+    if(del) confirmDialog(ids.length + ' Tasks werden zu Buchungsgefässen und danach gelöscht. Die gebuchte Zeit bleibt in den Gefässen erhalten. Rückgängig ist 14 Tage lang in „Buchungsgefässe“ möglich (auf diesem Gerät).', 'Übernehmen und löschen', run);
+    else run();
+  });
+  render();
+}
+/* src: Eintrag aus accMigrationSources. Prüft vor dem Löschen, dass die Summe der Zeit übereinstimmt. */
+function runAccountMigration(src, taskIds, del){
+  var container = src.board === null ? state : (state.boards || []).find(function(b){ return b.name === src.board; });
+  if(!container) return null;
+  var tasks = container.tasks.filter(function(t){ return taskIds.indexOf(t.id) >= 0; });
+  if(!tasks.length) return null;
+  if(src.board === null){
+    var tid = state.settings.activeTaskId;
+    if(tid && taskIds.indexOf(tid) >= 0) stopTimer(tid, true);
+  }
+  var accs = accountList().slice(), entries = [], newAccIds = [], expected = 0, booked = 0;
+  tasks.forEach(function(t){
+    var name = String(t.title || '').trim().slice(0, 80) || 'Gefäss';
+    var acc = accs.find(function(x){ return x.name.toLowerCase() === stripMarkup(name, 80).trim().toLowerCase(); });
+    if(!acc){
+      acc = normalizeAccount({id: 'ba-' + uid(), name: name, color: ACCENT_PRESETS[accs.length % ACCENT_PRESETS.length], projectId: t.projectId && getProject(t.projectId) ? t.projectId : undefined, updatedAt: nowIso()});
+      accs.push(acc);
+      newAccIds.push(acc.id);
+    } else if(acc.archived){
+      acc = Object.assign({}, acc, {updatedAt: nowIso()});
+      delete acc.archived;
+      accs = accs.map(function(x){ return x.id === acc.id ? acc : x; });
+    }
+    var commented = {};
+    t.timeSessions.slice().sort(function(x, y){ return new Date(x.start) - new Date(y.start); }).forEach(function(s){
+      if(!isMySession(s)) return;
+      var a = new Date(s.start).getTime(), b = s.end ? new Date(s.end).getTime() : Date.now();
+      if(!(b - a >= 1000)) return;
+      expected += (b - a) / 1000;
+      var bk = s.bk && t.bookings ? t.bookings.find(function(x){ return x.id === s.bk; }) : null;
+      var text = '';
+      if(bk && bk.comment && !commented[bk.id]){ text = bk.comment; commented[bk.id] = 1; }
+      var e = normalizeFreeTime({id: 'ft-' + uid(), start: new Date(a).toISOString(), end: new Date(b).toISOString(), text: text, acc: acc.id, updatedAt: nowIso()});
+      if(e){ entries.push(e); booked += (new Date(e.end) - new Date(e.start)) / 1000; }
+    });
+  });
+  if(Math.abs(expected - booked) > 2){
+    toast('Übernahme abgebrochen: die Zeit stimmt nicht überein (' + fmtHM(expected) + ' / ' + fmtHM(booked) + '). Es wurde nichts geändert.', 9000);
+    return null;
+  }
+  state.settings.bookingAccounts = accs;
+  state.settings.freeTime = freeTimeList().concat(entries).sort(function(x, y){ return new Date(x.start) - new Date(y.start); });
+  if(del){
+    var record = {user: myUserId(), at: nowIso(), board: src.board, tasks: JSON.parse(JSON.stringify(tasks)), accIds: newAccIds, entryIds: entries.map(function(e){ return e.id; })};
+    try{ localStorage.setItem(ACC_MIGRATION_KEY, JSON.stringify(record)); }catch(e){}
+    container.tasks = container.tasks.filter(function(t){ return taskIds.indexOf(t.id) < 0; });
+    container.tasks.forEach(function(t){ if(Array.isArray(t.blockedBy)) t.blockedBy = t.blockedBy.filter(function(b){ return taskIds.indexOf(b) < 0; }); });
+    if(src.board !== null) container.updatedAt = nowIso();
+    if(taskIds.indexOf(state.settings.activeTaskId) >= 0) state.settings.activeTaskId = null;
+    undoStack = [];
+  }
+  save();
+  renderAll();
+  return {accounts: tasks.length, seconds: booked, entries: entries.length};
+}
+function undoAccountMigration(){
+  var r = accMigrationRecord();
+  if(!r){ toast('Es gibt keine Übernahme zum Rückgängigmachen.'); return; }
+  var container = r.board === null ? (activeShared ? null : state) : (state.boards || []).find(function(b){ return b.name === r.board; });
+  if(!container){ toast(r.board === null ? 'Bitte zuerst zum persönlichen Board wechseln, auf dem die Tasks waren.' : 'Das Board „' + r.board + '“ gibt es nicht mehr.'); return; }
+  var have = {};
+  container.tasks.forEach(function(t){ have[t.id] = 1; });
+  if(r.board === null && container.columns){
+    var colIds = container.columns.map(function(c){ return c.id; });
+  }
+  r.tasks.forEach(function(t){
+    if(have[t.id]) return;
+    var n = normalizeTask(t);
+    if(colIds && colIds.indexOf(n.columnId) < 0) n.columnId = colIds[0];
+    n.timeSessions.forEach(function(s){ if(!s.end) s.end = nowIso(); });
+    container.tasks.push(n);
+  });
+  if(r.board !== null) container.updatedAt = nowIso();
+  var drop = {};
+  r.entryIds.forEach(function(id){ drop[id] = 1; });
+  state.settings.freeTime = freeTimeList().filter(function(e){ return !drop[e.id]; });
+  var stillUsed = {};
+  freeTimeList().forEach(function(e){ if(e.acc) stillUsed[e.acc] = 1; });
+  var run = accTimerState();
+  if(run) stillUsed[run.acc] = 1;
+  state.settings.bookingAccounts = accountList().filter(function(a){ return r.accIds.indexOf(a.id) < 0 || stillUsed[a.id]; });
+  try{ localStorage.removeItem(ACC_MIGRATION_KEY); }catch(e){}
+  save();
+  renderAll();
+  toast('↩️ Übernahme rückgängig gemacht, ' + r.tasks.length + ' Tasks sind wieder da.');
+}
+
+/* ---- Ansicht ---- */
+var accShowArchived = false;
+function renderAccountsView(){
+  var board = document.getElementById('board');
+  board.classList.remove('compact');
+  var now = new Date(), nowMs = Date.now();
+  var dayA = startOfDay(now).getTime(), weekA = startOfWeek(now).getTime(), monthA = startOfMonth(now).getTime();
+  var sums = {};
+  freeTimeTasks().forEach(function(t){
+    if(!t._acc) return;
+    var x = sums[t._acc] || (sums[t._acc] = {d: 0, w: 0, m: 0});
+    x.d += secondsInRange(t, dayA, nowMs); x.w += secondsInRange(t, weekA, nowMs); x.m += secondsInRange(t, monthA, nowMs);
+  });
+  var run = accTimerState();
+  var list = activeAccounts(), archived = accountList().filter(function(a){ return a.archived; });
+  var weekTotal = Object.keys(sums).reduce(function(s, k){ return s + sums[k].w; }, 0);
+  var suggest = accSuggestedSource();
+  var rec = accMigrationRecord();
+  function card(a){
+    var x = sums[a.id] || {d: 0, w: 0, m: 0};
+    var on = run && run.acc === a.id;
+    var p = a.projectId ? getProject(a.projectId) : null;
+    return '<div class="acc-card' + (on ? ' running' : '') + (a.archived ? ' archived' : '') + '" style="--acc:' + escapeAttr(accountColor(a)) + '">' +
+      '<button class="acc-name" data-acc-edit="' + escapeAttr(a.id) + '" title="Bearbeiten"><span class="acc-dot"></span>' + escapeHtml(a.name) + '</button>' +
+      (p || a.note ? '<div class="acc-sub">' + escapeHtml([p ? projectLabel(p) : '', a.note || ''].filter(Boolean).join(' · ')) + '</div>' : '') +
+      '<div class="acc-nums"><span><b' + (on ? ' data-acc-live="d"' : '') + '>' + fmtHM(x.d) + '</b>Heute</span><span><b>' + fmtHM(x.w) + '</b>Woche</span><span><b>' + fmtHM(x.m) + '</b>Monat</span></div>' +
+      (a.archived ? '' : '<div class="acc-actions">' +
+        (on ? '<button class="btn primary" data-acc-stop="1">■ Stopp <span class="acc-live" id="accLive">' + fmtHMS((nowMs - new Date(run.start).getTime()) / 1000) + '</span></button>'
+            : '<button class="btn primary" data-acc-start="' + escapeAttr(a.id) + '">▶ Start</button>') +
+        '<button class="btn" data-acc-block="' + escapeAttr(a.id) + '">+ Block</button></div>') +
+    '</div>';
+  }
+  var recent = freeTimeList().filter(function(e){ return e.acc; }).slice(-25).reverse().map(function(e){
+    var a = new Date(e.start), b = new Date(e.end);
+    return '<div class="dash-row" data-open-free="' + escapeAttr(e.id) + '"><span class="dash-row-title"><span class="acc-dot" style="--acc:' + escapeAttr(accountColor(getAccount(e.acc))) + '"></span>' + escapeHtml(accountLabel(e.acc)) +
+      (e.text ? ' <span class="hint">' + escapeHtml(e.text) + '</span>' : '') + '</span>' +
+      '<span class="dash-row-extra">' + escapeHtml(shortDateLabel(toDateInputValue(a))) + ' ' + fmtClock(a.getTime()) + '–' + fmtClock(b.getTime()) + ' · <b>' + fmtHM((b - a) / 1000) + '</b></span></div>';
+  }).join('');
+  board.innerHTML = '<div class="dash acc-wrap">' +
+    '<div class="dash-head"><div><h1>📂 Buchungsgefässe</h1><p>Feste Gefässe wie Admin oder Weiterbildung: Zeit direkt buchen, ohne Task.' + (weekTotal ? ' Diese Woche ' + fmtHM(weekTotal) + '.' : '') + '</p></div>' +
+      '<div class="dash-actions"><button class="btn primary" id="accNew">' + svgIcon('plus') + '<span>Neues Gefäss</span></button>' +
+      (accMigrationSources().length ? '<button class="btn" id="accMigrate">⇢ <span>Tasks übernehmen…</span></button>' : '') + '</div></div>' +
+    (suggest && !rec ? '<div class="wt-setup acc-banner"><b>Aus Tasks übernehmen?</b> Unter „' + escapeHtml(suggest.name) + '“ liegen ' + suggest.tasks.length + ' Tasks. Ich kann sie als Buchungsgefässe übernehmen, die gebuchte Zeit bleibt erhalten. <button class="btn" id="accMigrateBanner">Ansehen…</button></div>' : '') +
+    (rec ? '<div class="wt-setup acc-banner">Am ' + escapeHtml(new Date(rec.at).toLocaleDateString('de-CH')) + ' wurden ' + rec.tasks.length + ' Tasks als Gefässe übernommen und gelöscht. <button class="btn" id="accUndo">Rückgängig machen</button></div>' : '') +
+    (list.length ? '<div class="acc-grid">' + list.map(card).join('') + '</div>'
+      : '<div class="acc-empty"><div class="acc-empty-icon">📂</div><b>Noch keine Buchungsgefässe</b><p>Lege die Gefässe an, auf die du regelmässig Zeit buchst, z.B. deine Kostenstellen oder wiederkehrende Tätigkeiten wie Admin, Meetings oder Weiterbildung.</p><button class="btn primary" id="accNew2">' + svgIcon('plus') + '<span>Erstes Gefäss anlegen</span></button></div>') +
+    (recent ? '<div class="dcard acc-recent"><div class="dcard-head"><h3>Letzte Buchungen</h3></div>' + recent + '</div>' : '') +
+    (archived.length ? '<div class="acc-arch"><button class="btn ghost" id="accArchToggle">' + (accShowArchived ? '▾' : '▸') + ' Archiviert (' + archived.length + ')</button>' +
+      (accShowArchived ? '<div class="acc-grid">' + archived.map(card).join('') + '</div>' : '') + '</div>' : '') +
+  '</div>';
+  function on(id, fn){ var el = document.getElementById(id); if(el) el.addEventListener('click', fn); }
+  on('accNew', function(){ openAccountDialog(null); });
+  on('accNew2', function(){ openAccountDialog(null); });
+  on('accMigrate', openAccountMigration);
+  on('accMigrateBanner', openAccountMigration);
+  on('accUndo', function(){ confirmDialog('Übernahme rückgängig machen? Die Tasks kommen mit ihrer Zeit zurück, die übernommenen Gefäss-Buchungen werden entfernt.', 'Rückgängig machen', function(){ closeModal(); undoAccountMigration(); }); });
+  on('accArchToggle', function(){ accShowArchived = !accShowArchived; renderAccountsView(); });
+  board.querySelectorAll('[data-acc-edit]').forEach(function(el){ el.addEventListener('click', function(){ openAccountDialog(el.dataset.accEdit); }); });
+  board.querySelectorAll('[data-acc-start]').forEach(function(el){ el.addEventListener('click', function(){ startAccTimer(el.dataset.accStart); }); });
+  board.querySelectorAll('[data-acc-stop]').forEach(function(el){ el.addEventListener('click', function(){ stopAccTimer(); }); });
+  board.querySelectorAll('[data-acc-block]').forEach(function(el){ el.addEventListener('click', function(){ openTimeBlockDialog(null, null, {acc: el.dataset.accBlock}); }); });
+  board.querySelectorAll('[data-open-free]').forEach(function(el){ el.addEventListener('click', function(){ openFreeTimeDialog(el.dataset.openFree); }); });
+}
+/* Kleine Auswahl der Gefässe für "Zeit erfassen" und das Onboarding. */
+function accountChipsHtml(){
+  var list = activeAccounts();
+  if(!list.length) return '';
+  var run = accTimerState();
+  return '<div class="acc-chips">' + list.map(function(a){
+    var on = run && run.acc === a.id;
+    return '<span class="acc-chip' + (on ? ' on' : '') + '" style="--acc:' + escapeAttr(accountColor(a)) + '"><button type="button" data-qacc-start="' + escapeAttr(a.id) + '" title="' + (on ? 'Läuft' : 'Timer starten') + '"><span class="acc-dot"></span>' + escapeHtml(a.name) + (on ? ' ⏱' : '') + '</button>' +
+      '<button type="button" data-qacc-block="' + escapeAttr(a.id) + '" title="Zeitblock buchen" aria-label="Zeitblock auf ' + escapeAttr(a.name) + ' buchen">+</button></span>';
+  }).join('') + '</div>';
+}
+
+/* =========================================================
+   ONBOARDING (kurzes Tutorial nach der Registrierung)
+   Startet einmal nach dem Einrichten eines neuen Kontos (Merker in localStorage pro Person,
+   gesetzt in renderBoardPassphraseCreate) und ist danach über die Befehlspalette erneut aufrufbar.
+   state.settings.onboardingDone verhindert, dass es auf einem weiteren Gerät nochmals erscheint.
+   ========================================================= */
+var ONBOARD_KEY = 'wb-onboarding-pending';
+var onboardStep = 0, onboardActive = false;
+function markOnboardingPending(){ try{ if(currentUser) localStorage.setItem(ONBOARD_KEY, currentUser.id); }catch(e){} }
+function maybeStartOnboarding(){
+  var pending = '';
+  try{ pending = localStorage.getItem(ONBOARD_KEY) || ''; }catch(e){}
+  if(!pending || pending !== myUserId()) return;
+  if(state.settings.onboardingDone){ try{ localStorage.removeItem(ONBOARD_KEY); }catch(e){} return; }
+  if(!document.getElementById('modalOverlay').classList.contains('hidden')){ setTimeout(maybeStartOnboarding, 3000); return; }
+  openOnboarding();
+}
+var ONBOARD_STEPS = [
+  {icon: '👋', title: function(){ return 'Willkommen' + (currentUser && currentUser.displayName ? ', ' + currentUser.displayName.split(' ')[0] : '') + '!'; },
+    body: '<p>Work Board ist dein Kanban-Board mit eingebauter Zeiterfassung. In zwei Minuten kennst du das Wichtigste.</p>' +
+      '<ul class="ob-list"><li><b>Board</b>: Tasks in Spalten wie To Do, In Bearbeitung, Erledigt.</li><li><b>Timer</b>: Zeit direkt auf Tasks oder Buchungsgefässe buchen.</li><li><b>Mein Tag</b>: die Tasks, die du heute erledigen willst.</li></ul>' +
+      '<p class="hint">Deine Daten werden verschlüsselt gespeichert, nur du kannst sie lesen.</p>'},
+  {icon: '🗂️', title: 'Tasks anlegen',
+    body: '<p>Mit <b>Neuer Task</b> oben rechts (oder Taste <kbd>N</kbd>) legst du einen Task an. Unter jeder Spalte gibt es zusätzlich „Task hinzufügen“.</p>' +
+      '<p>Tasks ziehst du per Drag &amp; Drop in die nächste Spalte. Ein Klick öffnet alle Details: Beschreibung, Checkliste, Notizen und Buchungen.</p>'},
+  {icon: '⏱️', title: 'Zeit erfassen',
+    body: '<p>Der <b>▶-Knopf</b> auf einer Karte startet den Timer. Oben in der Kopfzeile siehst du, was gerade läuft:</p>' +
+      '<ul class="ob-list"><li><b>Pause</b> unterbricht, die Buchung bleibt offen.</li><li><b>Abschliessen</b> beendet die Buchung, auf Wunsch mit Kommentar.</li><li>Vergessen zu starten? „Zeitblock buchen“ trägt Zeit nachträglich ein.</li></ul>'},
+  {icon: '📂', title: 'Deine Buchungsgefässe', accounts: true,
+    body: '<p>Für Zeit, die zu keinem Task gehört, z.B. Admin, Meetings oder Weiterbildung, legst du eigene <b>Buchungsgefässe</b> an. Darauf buchst du mit einem Klick.</p>'},
+  {icon: '🚀', title: 'Bereit!',
+    body: '<p>Noch ein paar Tipps:</p>' +
+      '<ul class="ob-list"><li><kbd>Strg</kbd> + <kbd>K</kbd> öffnet die Befehlspalette, dort findest du jede Funktion.</li><li><b>Tagesabschluss</b> zeigt am Abend Lücken in deiner Zeiterfassung.</li><li>Unter <b>Einstellungen</b> stellst du Sollzeit, Design und KI-Assistent ein.</li></ul>' +
+      '<p class="hint">Diese Einführung findest du jederzeit wieder in der Befehlspalette unter „Einführung“.</p>'}
+];
+function openOnboarding(){
+  onboardStep = 0;
+  openModal('<div></div>');
+  document.getElementById('modalRoot').classList.add('ob');
+  var finished = false;
+  onboardActive = true;
+  modalCloseCleanup = function(){ onboardActive = false; if(!finished){ finished = true; finishOnboarding(); } };
+  renderOnboardingStep();
+}
+function finishOnboarding(){
+  state.settings.onboardingDone = true;
+  try{ localStorage.removeItem(ONBOARD_KEY); }catch(e){}
+  save();
+}
+function renderOnboardingStep(){
+  var root = document.getElementById('modalRoot');
+  if(!onboardActive || !root) return;
+  var st = ONBOARD_STEPS[onboardStep], last = onboardStep === ONBOARD_STEPS.length - 1;
+  var accHtml = '';
+  if(st.accounts){
+    var list = activeAccounts();
+    accHtml = '<div class="ob-acc"><div class="acc-chips" id="obAccList">' + (list.length ? list.map(function(a){ return '<span class="acc-chip static" style="--acc:' + escapeAttr(accountColor(a)) + '"><span class="acc-dot"></span>' + escapeHtml(a.name) + '</span>'; }).join('') : '<span class="hint">Noch keine Gefässe.</span>') + '</div>' +
+      '<div class="ob-acc-form"><input id="obAccInput" maxlength="300" placeholder="Namen eingeben, mehrere mit Komma trennen" aria-label="Neue Buchungsgefässe"><button class="btn" id="obAccAdd">Hinzufügen</button></div>' +
+      '<p class="hint">Du kannst das auch überspringen und später unter <b>Buchungsgefässe</b> in der Seitenleiste erledigen.</p></div>';
+  }
+  root.innerHTML =
+    '<div class="modal-header"><h2>' + st.icon + ' ' + escapeHtml(typeof st.title === 'function' ? st.title() : st.title) + '</h2><button class="icon-btn" data-close-modal aria-label="Einführung schliessen">✕</button></div>' +
+    '<div class="modal-body ob-body">' + st.body + accHtml + '</div>' +
+    '<div class="modal-footer"><div class="ob-dots" aria-label="Schritt ' + (onboardStep + 1) + ' von ' + ONBOARD_STEPS.length + '">' + ONBOARD_STEPS.map(function(x, i){ return '<i class="' + (i === onboardStep ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+      (onboardStep ? '<button class="btn" id="obBack">Zurück</button>' : '<button class="btn ghost" id="obSkip">Überspringen</button>') +
+      '<button class="btn primary" id="obNext">' + (last ? 'Los geht’s' : 'Weiter') + '</button></div>';
+  root.querySelector('[data-close-modal]').addEventListener('click', function(){ closeModal(); });
+  function on(id, fn){ var el = document.getElementById(id); if(el) el.addEventListener('click', fn); }
+  on('obSkip', function(){ closeModal(); });
+  on('obBack', function(){ onboardStep--; renderOnboardingStep(); });
+  on('obNext', function(){
+    var inp = document.getElementById('obAccInput');
+    if(inp && inp.value.trim()) addOnboardingAccounts(inp.value);
+    if(last){ closeModal(); return; }
+    onboardStep++;
+    renderOnboardingStep();
+  });
+  function addOnboardingAccounts(v){
+    var n = addAccountsByName(String(v).split(/[,;\n]/));
+    if(n){ toast('📂 ' + n + (n === 1 ? ' Gefäss' : ' Gefässe') + ' angelegt.'); renderAll(); }
+  }
+  on('obAccAdd', function(){
+    var inp = document.getElementById('obAccInput');
+    if(!inp.value.trim()){ inp.focus(); return; }
+    addOnboardingAccounts(inp.value);
+    renderOnboardingStep();
+    var again = document.getElementById('obAccInput'); if(again) again.focus();
+  });
+  var inp = document.getElementById('obAccInput');
+  if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('obAccAdd').click(); } });
+  var nextBtn = document.getElementById('obNext');
+  if(!inp && nextBtn) nextBtn.focus();
 }
 /* ---- Bestehende Buchung bearbeiten ----
    Ändert Datum, Von und Bis jedes Abschnitts einer abgeschlossenen eigenen Buchung und ihren Kommentar.
@@ -10868,8 +11496,8 @@ function renderDyceView(){
   var gapTotal = gaps.reduce(function(s, g){ return s + (g.e - g.s); }, 0) / 1000;
 
   var bodyRows = rows.map(function(r){
-    if(r.t._free) return '<tr data-open-free="' + r.t.id + '" style="cursor:pointer;" title="Zeit ohne Task bearbeiten"><td>📝 Ohne Task</td>' +
-      '<td>' + escapeHtml(r.t.title) + '</td>' + (hasProjects ? '<td>–</td>' : '') +
+    if(r.t._free) return '<tr data-open-free="' + r.t.id + '" style="cursor:pointer;" title="' + (r.t._acc ? 'Buchung bearbeiten' : 'Zeit ohne Task bearbeiten') + '"><td>' + (r.t._acc ? '📂 ' + escapeHtml(accountLabel(r.t._acc)) : '📝 Ohne Task') + '</td>' +
+      '<td>' + escapeHtml(r.t._acc ? (r.t._note || '–') : r.t.title) + '</td>' + (hasProjects ? '<td>' + escapeHtml(projectNameOf(r.t) || '–') + '</td>' : '') +
       '<td>' + fmtHM(r.sec) + '</td><td><b>' + fmtHM(r.rsec) + '</b></td></tr>';
     return '<tr data-open-task="' + r.t.id + '" style="cursor:pointer;"><td>' + (TYPES[r.t.type] || TYPES.adhoc).icon + ' ' + escapeHtml(r.t.jiraKey || r.t.title) + '</td>' +
       '<td>' + escapeHtml(r.t.title) + '</td>' + (hasProjects ? '<td>' + escapeHtml(projectNameOf(r.t) || '–') + '</td>' : '') +
@@ -11184,7 +11812,8 @@ function renderStatsView(range){
   state.tasks.forEach(function(t){
     totals[t.type] = (totals[t.type] || 0) + secondsInRange(t, startMs, endMs);
   });
-  totals[FREE_TIME_KEY] = freeTimeTasks().reduce(function(s, t){ return s + secondsInRange(t, startMs, endMs); }, 0);
+  totals[FREE_TIME_KEY] = 0; totals[ACC_KEY] = 0;
+  freeTimeTasks().forEach(function(t){ totals[t._acc ? ACC_KEY : FREE_TIME_KEY] += secondsInRange(t, startMs, endMs); });
   var grand = Object.keys(totals).reduce(function(s,k){ return s + totals[k]; }, 0);
   var maxVal = Math.max.apply(null, Object.keys(totals).map(function(k){ return totals[k]; })) || 1;
   var donutHtml = buildDonutChart(totals, grand);
@@ -11209,7 +11838,8 @@ function renderStatsView(range){
     '</div>';
   }
 
-  var rows = Object.keys(TYPES).concat(totals[FREE_TIME_KEY] ? [FREE_TIME_KEY] : []).map(function(k){
+  if(!totals[ACC_KEY]) delete totals[ACC_KEY];
+  var rows = Object.keys(TYPES).concat(totals[FREE_TIME_KEY] ? [FREE_TIME_KEY] : [], totals[ACC_KEY] ? [ACC_KEY] : []).map(function(k){
     var sec = totals[k];
     var pct = Math.round(sec / maxVal * 100);
     return '<div style="margin-bottom:12px;">' +
@@ -11531,8 +12161,8 @@ function exportTimeCsv(range, startMs, endMs){
       var sec = Math.round((b - a) / 1000);
       rows.push({a:a, cells:[
         toDateInputValue(new Date(a)), hm(new Date(a)), s.end ? hm(new Date(b)) : 'läuft', fmtHM(sec),
-        (sec / 3600).toFixed(2).replace('.', ','), t.title, t.jiraKey || '', t._free ? FREE_TIME_TYPE.label : (TYPES[t.type] || TYPES.adhoc).label,
-        projectNameOf(t) || '', t.reporter || '', booking && booking.comment ? booking.comment : ''
+        (sec / 3600).toFixed(2).replace('.', ','), t._acc ? accountLabel(t._acc) : t.title, t.jiraKey || '', t._free ? (t._acc ? ACC_TYPE.label : FREE_TIME_TYPE.label) : (TYPES[t.type] || TYPES.adhoc).label,
+        projectNameOf(t) || '', t.reporter || '', booking && booking.comment ? booking.comment : (t._note || '')
       ]});
     });
   });
@@ -14006,6 +14636,10 @@ function cmdActionsList(){
     {icon:'✨', label:'Ticket aus Text erstellen (KI)', run:function(){ openQuickCapture(''); }},
     {icon:'📅', label:'Meeting starten', run:startMeeting},
     {icon:'⏱️', label:'Zeit erfassen (freie Tätigkeit)', run: openQuickTimeEntry},
+    {icon:'📂', label:'Buchungsgefässe: Zeit direkt buchen', run: function(){ switchToView('accounts'); }},
+    {icon:'📂', label:'Neues Buchungsgefäss anlegen', run: function(){ openAccountDialog(null); }},
+    {icon:'⇢', label:'Tasks als Buchungsgefässe übernehmen…', run: openAccountMigration},
+    {icon:'👋', label:'Einführung (Tutorial) anzeigen', run: openOnboarding},
     {icon:'📝', label:'Zeit ohne Task buchen (nur Text)', run: function(){ openTimeBlockDialog(null); }},
     {icon:'🤖', label:'Schnellerfassung', run:function(){ openQuickCapture(''); }},
     {icon:'🧭', label:'Was jetzt?', run: openWhatNow},
@@ -14739,10 +15373,12 @@ document.getElementById('btnCloudSyncTopbar').addEventListener('click', function
 document.getElementById('tbPause').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) stopTimer(id);
+  else if(accTimerState()) stopAccTimer();
 });
 document.getElementById('tbFinish').addEventListener('click', function(){
   var id = state.settings.activeTaskId;
   if(id) finishBooking(id);
+  else if(accTimerState()) stopAccTimer();
 });
 document.getElementById('tbPip').addEventListener('click', toggleControlCenter);
 document.getElementById('btnControlCenter').addEventListener('click', toggleControlCenter);
@@ -14914,7 +15550,7 @@ function handleUrlShortcutAction(){
    Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
    Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
    ========================================================= */
-var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'agenda'];
+var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'bookingAccounts', 'agenda'];
 var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
 var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
 var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
@@ -14971,6 +15607,7 @@ function normalizeSyncSettings(settings){
   settings.automationRules = (Array.isArray(settings.automationRules) ? settings.automationRules : []).map(normalizeRule).filter(Boolean);
   settings.freeTime = (Array.isArray(settings.freeTime) ? settings.freeTime : []).map(normalizeFreeTime).filter(Boolean);
   settings.absences = (Array.isArray(settings.absences) ? settings.absences : []).map(normalizeAbsence).filter(Boolean);
+  settings.bookingAccounts = (Array.isArray(settings.bookingAccounts) ? settings.bookingAccounts : []).map(normalizeAccount).filter(Boolean);
   settings.agenda = (Array.isArray(settings.agenda) ? settings.agenda : []).map(normalizeAgenda).filter(Boolean);
   if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
 }
@@ -14979,12 +15616,29 @@ function normalizeFreeTime(e){
   var a = new Date(e.start).getTime(), b = new Date(e.end).getTime();
   if(!(isFinite(a) && isFinite(b) && b > a)) return null;
   var text = cleanStr(e.text, 500).trim();
-  if(!text) return null;
-  return {
+  var acc = (typeof e.acc === 'string' && SAFE_ID_RE.test(e.acc)) ? e.acc : '';
+  if(!text && !acc) return null;
+  var out = {
     id: (typeof e.id === 'string' && SAFE_ID_RE.test(e.id)) ? e.id : 'ft-' + uid(),
     start: new Date(a).toISOString(), end: new Date(b).toISOString(), text: text,
     updatedAt: typeof e.updatedAt === 'string' && !isNaN(new Date(e.updatedAt).getTime()) ? e.updatedAt : nowIso()
   };
+  if(acc) out.acc = acc;
+  return out;
+}
+function normalizeAccount(a){
+  if(!a || typeof a !== 'object') return null;
+  var out = {
+    id: (typeof a.id === 'string' && SAFE_ID_RE.test(a.id)) ? a.id : 'ba-' + uid(),
+    name: stripMarkup(a.name, 80).trim() || 'Gefäss',
+    color: sanitizeColor(a.color) || '',
+    updatedAt: typeof a.updatedAt === 'string' && !isNaN(new Date(a.updatedAt).getTime()) ? a.updatedAt : nowIso()
+  };
+  if(typeof a.projectId === 'string' && SAFE_ID_RE.test(a.projectId)) out.projectId = a.projectId;
+  if(a.archived === true) out.archived = true;
+  var note = cleanStr(a.note, 300).trim();
+  if(note) out.note = note;
+  return out;
 }
 function normalizeComments(list){
   return (Array.isArray(list) ? list : []).filter(function(c){ return c && typeof c === 'object'; }).slice(-200).map(function(c){
@@ -15048,7 +15702,7 @@ function mergeSyncLists(base, remoteSettings){
   SYNC_LISTS.forEach(function(k){
     var L = Array.isArray(state.settings[k]) ? state.settings[k] : [];
     var Rraw = remoteSettings && Array.isArray(remoteSettings[k]) ? remoteSettings[k] : [];
-    var tmp = {projects: [], automationRules: [], freeTime: [], absences: []};
+    var tmp = {projects: [], automationRules: [], freeTime: [], absences: [], bookingAccounts: []};
     tmp[k] = Rraw;
     normalizeSyncSettings(tmp);
     var R = tmp[k];
@@ -19562,11 +20216,12 @@ function renderBoardPassphraseCreate(done){
     var err = document.getElementById('authErrorMsg');
     if(p1.length < 12){ err.textContent = 'Bitte mindestens 12 Zeichen (ein Satz aus mehreren Wörtern ist ideal).'; return; }
     if(p1 !== p2){ err.textContent = 'Die beiden Eingaben sind nicht identisch.'; return; }
+    markOnboardingPending();
     finishBoardSetup(p1, done);
   }
   document.getElementById('bpSave').addEventListener('click', submit);
   document.getElementById('bpPass2').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
-  document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); done(); });
+  document.getElementById('bpSkip').addEventListener('click', function(e){ e.preventDefault(); markOnboardingPending(); done(); });
 }
 function renderBoardPassphraseEnter(payloadText, done){
   document.getElementById('authContent').innerHTML =
@@ -19907,6 +20562,7 @@ function init(){
   }
   setTimeout(pageUploadPending, 12000);
   window.addEventListener('online', function(){ pageUploadPending(); });
+  setTimeout(maybeStartOnboarding, 1200);
 }
 
 startAuthGate();
