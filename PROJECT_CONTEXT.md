@@ -24,6 +24,24 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-27: Personen, Meeting-Protokoll, Mitteilungen, Feierabend (Branch `claude/project-thread-s2o7ho`)
+
+Timo wollte "5 weitere grosse Features, die das Tool weiterbringen"; Auswahl durch Claude. Block "PERSONEN: WARTEN AUF …" vor "MEHRFACHAUSWAHL":
+- **Warten auf**: optionales Task-Feld `waiting` {who, since, next, count, lastAt} (`normalizeWaiting`). `openWaitingDialog`, `waitAct` (followup/mail/answer),
+  `waitAskWho` (Hinweis beim Ziehen in eine Wartet-Spalte, Hook in `updateTask`; Herausziehen oder Erledigen beendet das Warten), `waitCheckDue`
+  (alle 10 Min., einmal pro Tag und Task, localStorage `wb-wait-notified`). Karte `waitBadgeHtml`, Schnellfilter `followup`, Prop `waitPropHtml`.
+- **Gesprächsthemen**: `settings.agenda` in `SYNC_LISTS` (`normalizeAgenda`). Ansicht `people` (`renderPeopleView`, `peopleData`), Gespräch `openTalk`/`talkFinish`.
+  Personen = Namen (`pKey` klein geschrieben), Quellen in `peopleNames`.
+- **Meeting-Protokoll**: optionales Task-Feld `minutes` {attendees, items:[{id, kind note|decision|action, text, who, due, taskId}]} (`normalizeMinutes`),
+  `openMinutes`/`mmRender`, `mmMakeTask` (für andere: Task mit `waiting` in der Wartet-Spalte), `minutesText`.
+- **Mitteilungen**: localStorage `wb-inbox-<userId>` (nur pro Gerät, max. 200, 30 Tage), `inboxAdd(icon, text, {taskId, view, key})`, Ansicht `inbox`,
+  Zähler `#inboxBadge` und Punkt am Menü-Knopf. Quellen: Erinnerungen, Kurzzeit-Timer, Wiedervorlage, Nachfassen, Erwähnungen, Budget, Regeln, Fristen (`inboxCheckForecast`).
+- **Feierabend**: `openShutdown` (3 Schritte, Zustand `sd`), `settings.tomorrowPlan` {date, ids} wird in `myDayRollover` per `sdApplyPlan` übernommen,
+  `settings.dayNote` {date, from, text} als Banner in Mein Tag (`sdNoteBannerHtml`), `settings.lastShutdown`, Erinnerung `sdMaybeNudge` (localStorage `wb-sd-nudged`,
+  `settings.shutdownNudge`, `settings.shutdownHour` Standard 17).
+Getestet: Playwright mit Supabase-Mock, PC 1440px, iPhone 402px, Dunkelmodus, Schadcode-Test in allen neuen Feldern.
+Nicht getestet: echtes Supabase, Abgleich der Gesprächsthemen zwischen zwei Geräten.
+
 ## ✅ Stand 2026-10-27: Buchungsgefässe und Onboarding (Branch `claude/project-thread-b4fjab`)
 
 Timo wollte die Tasks unter "Zeitbuchung" als Buchungsgefässe, direkt bebuchbar; bestehende Tasks übernehmen und löschen; neue Benutzer ohne vordefinierte Gefässe; Onboarding nach Registrierung.

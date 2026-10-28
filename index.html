@@ -818,6 +818,112 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .fc-chip.late, .fc-chip.overdue{background:var(--danger-bg); color:var(--danger);}
 .fc-explain{font-size:13px; color:var(--text-dim);}
 .fc-explain p{margin:0 0 8px;}
+/* ---- Personen: Warten auf und Gesprächsthemen ---- */
+.card .wait-badge{display:inline-flex; align-self:flex-start; align-items:center; gap:4px; font-size:11.5px; font-weight:500; color:var(--warn); background:var(--warn-bg); border-radius:5px; padding:0 6px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.card .wait-badge.due{color:var(--danger); background:var(--danger-bg); font-weight:600;}
+.btn.ghost.wait-prop{justify-content:flex-start; flex-wrap:wrap; gap:2px 6px; text-align:left; width:100%; border:1px dashed var(--border-strong); color:var(--text-dim); min-width:0; white-space:normal; height:auto; line-height:1.35; padding:7px 10px;}
+.btn.wait-prop b{color:var(--text); font-weight:600;}
+.btn.wait-prop span{font-size:12px; color:var(--text-faint);}
+.btn.wait-prop b + span{flex-basis:100%;}
+.btn.ghost.wait-prop.due{border-style:solid; border-color:var(--danger); background:var(--danger-bg);}
+.btn.wait-prop.due span{color:var(--danger);}
+.wa-presets{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+.wa-presets .btn.ghost{padding:5px 10px; font-size:12.5px; border:1px solid var(--border);}
+.wa-presets .btn.ghost.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+.wa-presets input{padding:5px 8px;}
+.ppl-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+.ppl-search{width:220px;}
+.ppl-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px; align-items:start;}
+.ppl-due{margin-bottom:14px;}
+.ppl-card.due{border-color:var(--danger);}
+.ppl-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+.ppl-head .sb-avatar{width:34px; height:34px; font-size:12.5px;}
+.ppl-name{flex:1; min-width:0; display:flex; flex-direction:column;}
+.ppl-name b{font-weight:600; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.ppl-name span{font-size:12px; color:var(--text-faint);}
+.ppl-head .btn{padding:4px 10px; font-size:12.5px;}
+.ppl-sec{margin:12px 0 4px; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-weight:600;}
+.ppl-topic{display:flex; align-items:flex-start; gap:9px; padding:6px 2px; border-top:1px solid var(--border); font-size:13.5px;}
+.ppl-sec + .ppl-topic{border-top:none;}
+.ppl-topic input[type=checkbox]{width:17px; height:17px; margin:1px 0 0; flex-shrink:0; cursor:pointer;}
+.ppl-ttext{flex:1; min-width:0; overflow-wrap:anywhere;}
+.ppl-topic .icon-btn{padding:0 4px; min-height:0; color:var(--text-faint); opacity:.6;}
+.ppl-topic:hover .icon-btn{opacity:1;}
+.ppl-topic.done .ppl-ttext{color:var(--text-dim);}
+.ppl-note{display:block; font-size:12px; color:var(--text-faint);}
+.ppl-link{border:none; background:var(--surface-2); color:var(--accent); font:inherit; font-size:12px; border-radius:5px; padding:0 6px; cursor:pointer;}
+.ppl-add{display:flex; gap:6px; margin:8px 0 2px;}
+.ppl-add input{flex:1; min-width:0; padding:6px 9px; font-size:13px;}
+.ppl-add .btn{padding:5px 9px;}
+.ppl-wait{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 2px; border-top:1px solid var(--border);}
+.ppl-sec + .ppl-wait, .dcard-head + .ppl-wait{border-top:none;}
+.ppl-wait .fc-main{min-width:180px;}
+.ppl-wait .md-meta{white-space:normal;}
+.ppl-wait.due .md-meta{color:var(--danger);}
+.ppl-done{margin-top:8px; font-size:12.5px;}
+.ppl-done summary{cursor:pointer; color:var(--text-faint);}
+.talk-item{border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 11px; margin-bottom:8px; background:var(--surface);}
+.talk-item.on{border-color:var(--ok); background:var(--ok-bg);}
+.talk-check{display:flex; align-items:flex-start; gap:9px; font-weight:500; cursor:pointer; overflow-wrap:anywhere;}
+.talk-check input{width:18px; height:18px; margin:1px 0 0; flex-shrink:0;}
+.talk-row{display:flex; gap:6px; margin:7px 0 0 27px;}
+.talk-row input{flex:1; min-width:0; padding:6px 9px; font-size:13px;}
+.talk-row .btn{padding:4px 9px; font-size:12.5px; flex-shrink:0;}
+.talk-add{margin:4px 0 6px;}
+/* ---- Meeting-Protokoll ---- */
+.mm-import{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--accent-soft); border-radius:var(--radius-sm); padding:8px 12px; margin-bottom:12px; font-size:13px;}
+.mm-import .btn{margin-left:auto; padding:4px 10px; font-size:12.5px;}
+.mm-kinds{display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;}
+.mm-kinds .btn{padding:5px 11px; font-size:13px; border:1px solid var(--border);}
+.mm-kinds .btn.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft); font-weight:600;}
+.mm-form{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;}
+.mm-form #mmText{flex:3 1 260px; min-width:0;}
+.mm-form #mmWho{flex:1 1 140px; min-width:0;}
+.mm-form #mmDue{flex:0 1 150px;}
+.mm-item{display:flex; align-items:flex-start; gap:9px; padding:7px 2px; border-top:1px solid var(--border); font-size:13.5px;}
+.ppl-sec + .mm-item{border-top:none;}
+.mm-ico{flex-shrink:0; width:20px; text-align:center;}
+.mm-text{flex:1; min-width:0; overflow-wrap:anywhere; white-space:pre-wrap;}
+.mm-meta{display:block; font-size:12px; color:var(--text-faint);}
+.mm-item.k-decision .mm-text{font-weight:600;}
+.mm-item .btn{padding:3px 9px; font-size:12.5px; flex-shrink:0;}
+.mm-item .icon-btn{padding:0 4px; min-height:0; color:var(--text-faint);}
+/* ---- Mitteilungen ---- */
+.sb-badge{margin-left:auto; min-width:18px; height:18px; padding:0 5px; border-radius:99px; background:var(--danger); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; font-variant-numeric:tabular-nums;}
+.sb-badge[hidden]{display:none;}
+@media (min-width:681px){ body.sb-collapsed .sb-item{position:relative;} body.sb-collapsed .sb-badge{position:absolute; top:2px; right:2px; min-width:15px; height:15px; line-height:15px; font-size:9.5px; padding:0 3px;} }
+#btnMoreToggle.has-dot{position:relative;}
+#btnMoreToggle.has-dot::after{content:""; position:absolute; top:7px; right:7px; width:8px; height:8px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 2px var(--bg);}
+.nb-filter{display:flex; gap:6px; margin-bottom:14px;}
+.nb-row{display:flex; align-items:flex-start; gap:11px; padding:10px 12px; border-top:1px solid var(--border);}
+.nb-row:first-child{border-top:none;}
+.nb-row.link{cursor:pointer;}
+.nb-row.link:hover{background:var(--hover);}
+.nb-row.unread{background:var(--accent-soft);}
+.nb-ico{font-size:17px; line-height:1.3; flex-shrink:0; width:22px; text-align:center;}
+.nb-main{flex:1; min-width:0;}
+.nb-text{font-size:13.5px; overflow-wrap:anywhere;}
+.nb-row.unread .nb-text{font-weight:600;}
+.nb-time{font-size:12px; color:var(--text-faint); margin-top:1px;}
+.nb-dot{width:8px; height:8px; border-radius:50%; background:var(--accent); margin-top:7px; flex-shrink:0;}
+.nb-row .icon-btn{padding:0 4px; min-height:0; color:var(--text-faint);}
+/* ---- Feierabend ---- */
+.sd-alert{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 12px; border-radius:var(--radius-sm); background:var(--accent-soft); margin-top:10px; font-size:13px;}
+.sd-alert span{flex:1 1 220px;}
+.sd-alert.warn{background:var(--warn-bg);}
+.sd-alert .btn{padding:4px 10px; font-size:12.5px;}
+.sd-note{background:var(--warn-bg); border-radius:var(--radius); padding:11px 14px; margin-bottom:16px;}
+.sd-note-head{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--text-dim);}
+.sd-note-head .btn{margin-left:auto; padding:3px 9px; font-size:12.5px;}
+.sd-note-text{white-space:pre-wrap; overflow-wrap:anywhere; margin-top:4px; font-size:14px;}
+@media (max-width:900px){ .ppl-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:680px){
+  .ppl-grid{grid-template-columns:minmax(0,1fr);}
+  .ppl-search{width:100%;}
+  .ppl-wrap .dash-actions{width:100%;}
+  .ppl-wait .fc-actions{width:100%;}
+  .talk-row{margin-left:0;}
+}
 /* ---- Auslastung ---- */
 .ld-badge{display:inline-flex; align-items:center; gap:6px; margin-top:8px; border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:99px; padding:3px 10px; font:inherit; font-size:12.5px; font-weight:500; cursor:pointer;}
 .ld-badge::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--text-faint);}
@@ -1611,17 +1717,21 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v13H6.5A1.5 1.5 0 0 0 5 18.5z"/><path d="M5 18.5A1.5 1.5 0 0 0 6.5 20H19M9 8h6"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3.5 12h4l2.5-6 4 12 2.5-6h4"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5v8a1.5 1.5 0 0 1-1.5 1.5H11l-4 3.5V16H6.5A1.5 1.5 0 0 1 5 14.5z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-contact" viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="2.5"/><circle cx="12" cy="10.5" r="2.6"/><path d="M7.8 16.5c.6-1.8 2.2-2.8 4.2-2.8s3.6 1 4.2 2.8"/></symbol>
   </defs>
 </svg>
 <div id="app">
   <aside id="sidebar" aria-label="Navigation">
     <div class="menu-wrap sb-brand-wrap"><button class="sb-brand" id="boardSwitchBtn" aria-haspopup="true" title="Board wechseln"><span class="sb-logo">W</span><span class="sb-brand-text"><span class="sb-name">Work Board</span><span class="sb-board" id="boardNameLabel"></span></span><svg class="i sb-caret"><use href="#i-chevron"/></svg></button><div class="menu" id="boardMenu"></div></div>
     <button class="sb-item" data-view="myday" title="Mein Tag"><svg class="i"><use href="#i-sun"/></svg><span class="lbl" data-i18n="navMyDay">Mein Tag</span></button>
+    <button class="sb-item" data-view="inbox" title="Mitteilungen"><svg class="i"><use href="#i-bell"/></svg><span class="lbl">Mitteilungen</span><span class="sb-badge" id="inboxBadge" hidden></span></button>
     <button class="sb-item" data-view="status"><svg class="i"><use href="#i-board"/></svg><span class="lbl" data-i18n="navBoard">Board</span></button>
     <button class="sb-item" data-view="calendar"><svg class="i"><use href="#i-cal"/></svg><span class="lbl" data-i18n="navCalendar">Planer</span></button>
     <button class="sb-item" data-view="projects"><svg class="i"><use href="#i-folder"/></svg><span class="lbl" data-i18n="navProjects">Projekte</span></button>
     <button class="sb-item" data-view="kb"><svg class="i"><use href="#i-book"/></svg><span class="lbl" data-i18n="navKb">Wissen</span></button>
     <button class="sb-item" data-view="teamdash"><svg class="i"><use href="#i-pulse"/></svg><span class="lbl" data-i18n="navTeamDash">Team</span></button>
+    <button class="sb-item" data-view="people"><svg class="i"><use href="#i-contact"/></svg><span class="lbl">Personen</span></button>
     <button class="sb-item" id="btnStats" data-view="stats"><svg class="i"><use href="#i-chart"/></svg><span class="lbl" data-i18n="btnStats">Statistik</span></button>
     <button class="sb-item" id="btnArchive"><svg class="i"><use href="#i-box"/></svg><span class="lbl" data-i18n="btnArchive">Archiv</span></button>
     <button class="sb-item" id="btnDyce" data-view="dyce"><svg class="i"><use href="#i-receipt"/></svg><span class="lbl" data-i18n="btnDyce">Tagesabschluss</span></button>
@@ -1630,6 +1740,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="forecast"><svg class="i"><use href="#i-target"/></svg><span class="lbl" data-i18n="navForecast">Fristen-Prognose</span></button>
     <button class="sb-item" data-view="load"><svg class="i"><use href="#i-gauge"/></svg><span class="lbl" data-i18n="navLoad">Auslastung</span></button>
     <button class="sb-item" id="btnWeekReview"><svg class="i"><use href="#i-check"/></svg><span class="lbl" data-i18n="navWeekReview">Wochenrückblick</span></button>
+    <button class="sb-item" id="btnShutdown" title="Tag abschliessen und morgen vorbereiten"><svg class="i"><use href="#i-moon"/></svg><span class="lbl">Feierabend</span></button>
     <div class="sb-label" data-i18n="navViews">Ansichten</div>
     <button class="sb-item" data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg><span class="lbl" data-i18n="viewDashboard">Dashboard</span></button>
     <button class="sb-item" data-view="priority"><svg class="i"><use href="#i-flag"/></svg><span class="lbl" data-i18n="viewPriority">Nach Priorität</span></button>
@@ -1638,7 +1749,7 @@ mark{background:rgba(255,200,0,.35); color:inherit; border-radius:2px; padding:0
     <button class="sb-item" data-view="group"><svg class="i"><use href="#i-layers"/></svg><span class="lbl" data-i18n="viewGroup">Nach Gruppe</span></button>
     <select id="boardViewSelect" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="myday">Mein Tag</option><option value="status">Status</option><option value="dashboard">Dashboard</option><option value="priority">Nach Priorität</option>
-      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option><option value="accounts">Buchungsgefässe</option><option value="load">Auslastung</option>
+      <option value="eisenhower">Eisenhower-Matrix</option><option value="team">Nach Person</option><option value="group">Nach Gruppe</option><option value="calendar">Planer</option><option value="projects">Projekte</option><option value="kb">Wissen</option><option value="teamdash">Team</option><option value="stats">Statistik</option><option value="dyce">Tagesabschluss</option><option value="worktime">Arbeitszeit</option><option value="forecast">Fristen-Prognose</option><option value="accounts">Buchungsgefässe</option><option value="load">Auslastung</option><option value="people">Personen</option><option value="inbox">Mitteilungen</option>
     </select>
     <div class="sb-foot">
       <div class="sb-today" id="sbToday" title="Heute erfasste Zeit">
@@ -2069,6 +2180,8 @@ function normalizeTask(t){
   if(t.rank !== undefined && !(typeof t.rank === 'number' && t.rank % 1 === 0 && t.rank >= 1 && t.rank <= 999)) delete t.rank;
   if(t.solutionAuto !== undefined && t.solutionAuto !== true) delete t.solutionAuto;
   if(t.page !== undefined){ var np = normalizePage(t.page); if(np && np.items.length) t.page = np; else delete t.page; }
+  if(t.waiting !== undefined){ var nw = normalizeWaiting(t.waiting); if(nw) t.waiting = nw; else delete t.waiting; }
+  if(t.minutes !== undefined){ var nmin = normalizeMinutes(t.minutes); if(nmin) t.minutes = nmin; else delete t.minutes; }
   return t;
 }
 
@@ -2215,8 +2328,16 @@ function updateTask(id, patch){
      die übrigen Tasks der alten Spalte rücken nach (aus 2, 3 wird 1, 2). */
   var rankFromCol = t.rank && ((patch.columnId && patch.columnId !== t.columnId) || (patch.archived && !t.archived)) ? t.columnId : null;
   if(rankFromCol && patch.rank === undefined) patch.rank = null;
+  /* Warten auf: beim Ziehen in „Wartet“ nachfragen, auf wen; beim Herausziehen oder Erledigen endet das Warten. */
+  var waitCols = evMoved ? apWaitingColumnIds() : [];
+  var waitPrompt = evMoved && !ruleDepth && !t.waiting && patch.waiting === undefined && waitCols.indexOf(patch.columnId) >= 0;
+  if(evMoved && t.waiting && patch.waiting === undefined && waitCols.indexOf(t.columnId) >= 0 && waitCols.indexOf(patch.columnId) < 0) patch.waiting = null;
   Object.assign(t, patch, {updatedAt: nowIso()});
   if(t.rank == null) delete t.rank;
+  if(t.waiting && t.completedAt) t.waiting = null;
+  if(t.waiting == null) delete t.waiting;
+  if(t.minutes == null) delete t.minutes;
+  if(waitPrompt) waitAskWho(t.id);
   if(rankFromCol) compactRanks(rankFromCol);
   save();
   if(!ruleDepth){
@@ -3575,6 +3696,7 @@ function openCardContextMenu(t, x, y){
     (myOpenBooking(t) ? item('data-ctx="finish"', 'check', 'Buchung abschliessen') : '') +
     item('data-ctx="timeblock"', 'clock', 'Zeitblock buchen…') +
     item('data-ctx="myday"', 'sun', isInMyDay(t.id) ? 'Aus Mein Tag entfernen' : 'Zu Mein Tag hinzufügen') +
+    (!t.completedAt ? item('data-ctx="waiting"', 'hourglass', t.waiting ? 'Warten auf ' + escapeHtml(t.waiting.who) + '…' : 'Warten auf…') : '') +
     item('data-ctx="pin"', 'pin', t.pinned ? 'Anheften lösen' : 'Anheften') +
     item('data-ctx="duplicate"', 'layers', 'Duplizieren') +
     item('data-ctx="board"', 'board', 'Auf anderes Board…');
@@ -3619,9 +3741,10 @@ function openCardContextMenu(t, x, y){
     else if(item.dataset.ctx === 'finish'){ finishBooking(t.id); }
     else if(item.dataset.ctx === 'timeblock'){ openTimeBlockDialog(t.id); }
     else if(item.dataset.ctx === 'myday'){ toggleMyDay(t.id); renderAll(); }
+    else if(item.dataset.ctx === 'waiting'){ openWaitingDialog(t.id); }
     else if(item.dataset.ctx === 'pin'){ updateTask(t.id, {pinned: !t.pinned}); renderBoard(); }
     else if(item.dataset.ctx === 'duplicate'){
-      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null, page:undefined});
+      var copy = Object.assign({}, t, {id:undefined, title: t.title + ' (Kopie)', timeSessions:[], bookings:undefined, notes:[], activityLog:[], completedAt:null, page:undefined, waiting:undefined, minutes:undefined});
       delete copy.id; delete copy.rank;
       createTask(copy);
       renderAll();
@@ -3871,7 +3994,7 @@ function openWhatNow(keepSkip){
 /* =========================================================
    SCHNELLFILTER (Chips unter der Kopfzeile)
    ========================================================= */
-var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast', 'load', 'accounts'];
+var FULL_VIEWS = ['myday', 'dashboard', 'stats', 'dyce', 'projects', 'kb', 'teamdash', 'worktime', 'forecast', 'load', 'accounts', 'people', 'inbox'];
 var quickFilters = {};
 var filterTag = '';
 var filterClient = '';
@@ -3884,6 +4007,7 @@ var QUICK_FILTERS = [
   {id:'high',    label:'Hohe Priorität', fn:function(t){ return !t.completedAt && (t.priority === 'critical' || t.priority === 'high'); }},
   {id:'sla',     label:'SLA-Risiko',     fn:function(t){ return !!slaLevel(t); }},
   {id:'risk',    label:'Frist gefährdet', fn:function(t){ var f = forecastFor(t); return !!f && f.status === 'late'; }},
+  {id:'followup', label:'Nachfassen',   fn:function(t){ return waitDue(t); }},
   {id:'pinned',  label:'Angeheftet',     fn:function(t){ return !!t.pinned; }},
   {id:'running', label:'Läuft',          fn:function(t){ return isRunning(t); }},
   {id:'mine',    label:'Mir zugewiesen', shared:true, fn:function(t){ return !t.completedAt && !!t.assigneeId && t.assigneeId === myUserId(); }}
@@ -4397,6 +4521,8 @@ function renderBoard(){
   if(boardViewMode === 'accounts'){ renderAccountsView(); return; }
   if(boardViewMode === 'forecast'){ renderForecastView(); return; }
   if(boardViewMode === 'load'){ renderLoadView(); return; }
+  if(boardViewMode === 'people'){ renderPeopleView(); return; }
+  if(boardViewMode === 'inbox'){ renderInboxView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
   if(globalBoardActive()){ renderGlobalTagBoard(board); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
@@ -4785,6 +4911,7 @@ function renderCard(t){
     '</div>' +
     '<div class="card-title">'+escapeHtml(t.title)+'</div>' +
     (t.reporter ? '<span class="reporter-badge" title="Reporter">'+svgIcon('users')+escapeHtml(t.reporter)+'</span>' : '') +
+    waitBadgeHtml(t) +
     projectChipHtml(t) +
     (t.taskGroup ? '<span class="group-badge" title="Gruppe">'+escapeHtml(t.taskGroup)+'</span>' : '') +
     (t.blockedBy && t.blockedBy.length ? '<div class="blocked-badge">🔗 blockiert durch '+t.blockedBy.length+' Task(s)</div>' : '') +
@@ -5657,6 +5784,7 @@ function checkDueReminders(){
   due.forEach(function(r){
     r.fired = true;
     toast('⏰ ' + r.text, 12000);
+    inboxAdd('⏰', r.text, {key: 'rem-' + r.id});
     if('Notification' in window && Notification.permission === 'granted'){
       try{ new Notification('⏰ Erinnerung', {body: r.text}); }catch(e){}
     }
@@ -5794,6 +5922,7 @@ function cdFire(c){
   cdChime();
   var msg = c.label ? '⏳ Zeit um: ' + c.label : '⏳ ' + fmtCdMinutes(Math.round(c.durationSec / 60)) + ' sind um.';
   toast(msg, 30000, '+5 Min.', function(){ cdAction(c.id, 'plus5'); });
+  inboxAdd('⏳', msg.replace(/^⏳ /, ''), {key: 'cd-' + c.id});
   if('Notification' in window && Notification.permission === 'granted'){
     try{ new Notification(c.label ? 'Zeit um: ' + c.label : 'Timer abgelaufen', {body: fmtCdMinutes(Math.round(c.durationSec / 60)) + ' sind vorbei.', tag: 'wb-cd-' + c.id}); }catch(e){}
   }
@@ -6054,6 +6183,7 @@ function myDayRollover(){
   }
   s.todayFocusIds = [];
   s.todayFocusDate = today;
+  sdApplyPlan(s, today);
 }
 function myDayIds(){ myDayRollover(); return state.settings.todayFocusIds; }
 function myDayTasks(){ return myDayIds().map(getTask).filter(function(t){ return t && !t.archived; }); }
@@ -6169,6 +6299,7 @@ function renderMyDayView(){
       '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button>' +
       (goals.length ? '' : '<button class="btn" id="mdReview" title="Woche durchgehen, aufräumen und bis zu 3 Wochenziele setzen">🗓️ Wochenrückblick</button>') + '</div></div>' +
     (list.length ? '<div class="md-progress" title="' + pct + ' % erledigt"><i style="width:' + pct + '%"></i></div>' : '') +
+    sdNoteBannerHtml() +
     goalsHtml +
     '<form class="md-add" id="mdAddForm"><input id="mdAddInput" placeholder="Task für heute hinzufügen… (PROJ-123, #tag, !hoch)" autocomplete="off" aria-label="Neuer Task für Mein Tag">' +
       '<button class="btn primary" type="submit">' + svgIcon('plus') + '<span>Hinzufügen</span></button></form>' +
@@ -6350,11 +6481,961 @@ function checkWakeSnoozed(){
       var t = getTask(id);
       if(t && t.snoozeUntil && !isSnoozed(t)){
         toast('😴→▶ "'+t.title+'" ist wieder fällig.', 7000);
+        inboxAdd('😴', 'Wiedervorlage: «' + t.title + '» ist wieder da.', {taskId: t.id, key: 'snz-' + t.id + '-' + t.snoozeUntil});
       }
     });
     if(woken.length) renderAll();
   }
   knownSnoozedIds = currentlySnoozed;
+}
+
+/* =========================================================
+   PERSONEN: WARTEN AUF (Nachfassen) UND GESPRÄCHSTHEMEN
+   Warten auf: optionales Task-Feld waiting = {who, since, next, count, lastAt}
+   (Teil des verschlüsselten Board-Zustands, Abgleich wie andere Task-Felder).
+   Gesprächsthemen: state.settings.agenda ({id 'ag-', person, text, done, doneAt,
+   note, taskId, createdAt, updatedAt}), über SYNC_LISTS Eintrag für Eintrag
+   abgeglichen. Personen werden über den Namen erkannt (Gross/Klein egal).
+   ========================================================= */
+var ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function validIso(s){ return typeof s === 'string' && s && !isNaN(new Date(s).getTime()) ? s : ''; }
+function pKey(n){ return String(n || '').trim().toLowerCase(); }
+function myName(){ return currentUser ? currentUser.displayName : ''; }
+function isMe(n){ var k = pKey(n); return !k || k === 'ich' || k === 'mich' || k === '– ich –' || (!!myName() && k === pKey(myName())); }
+function peopleNames(){
+  var seen = {}, out = [];
+  function add(n){
+    n = stripMarkup(n, 80).trim();
+    var k = pKey(n);
+    if(!k || seen[k] || isMe(n)) return;
+    seen[k] = 1; out.push(n);
+  }
+  agendaList().forEach(function(a){ add(a.person); });
+  state.tasks.forEach(function(t){ if(t.waiting) add(t.waiting.who); });
+  (state.settings.teamMembers || []).forEach(add);
+  (registeredProfiles || []).forEach(add);
+  state.tasks.forEach(function(t){ if(!t.archived && t.assignee) add(t.assignee); });
+  uniqueReporters().slice(0, 60).forEach(add);
+  return out;
+}
+function peopleDatalist(id){
+  return '<datalist id="' + id + '">' + peopleNames().map(function(n){ return '<option value="' + escapeAttr(n) + '">'; }).join('') + '</datalist>';
+}
+/* Nächster Werktag (Mo–Fr) n Tage nach heute. */
+function workdaysFromToday(n){
+  var d = new Date();
+  var left = Math.max(1, n);
+  while(left > 0){ d.setDate(d.getDate() + 1); if(d.getDay() !== 0 && d.getDay() !== 6) left--; }
+  return toDateInputValue(d);
+}
+
+/* ---- Warten auf ---- */
+function normalizeWaiting(w){
+  if(!w || typeof w !== 'object') return null;
+  var who = stripMarkup(w.who, 80).trim();
+  if(!who) return null;
+  return {
+    who: who,
+    since: validIso(w.since) || nowIso(),
+    next: ISO_DATE_RE.test(w.next || '') ? w.next : '',
+    count: (typeof w.count === 'number' && isFinite(w.count) && w.count >= 0) ? Math.min(999, Math.floor(w.count)) : 0,
+    lastAt: validIso(w.lastAt)
+  };
+}
+function waitingTasks(){ return state.tasks.filter(function(t){ return t.waiting && !t.archived && !t.completedAt; }); }
+function waitDue(t){ return !!(t && t.waiting && t.waiting.next && !t.archived && !t.completedAt && t.waiting.next <= toDateInputValue(new Date())); }
+function waitDays(t){ return Math.max(0, Math.floor((Date.now() - new Date(t.waiting.since).getTime()) / 86400000)); }
+function waitMetaText(t){
+  var w = t.waiting, d = waitDays(t);
+  var parts = ['seit ' + (d === 0 ? 'heute' : (d === 1 ? 'gestern' : d + ' Tagen'))];
+  if(w.next) parts.push((waitDue(t) ? 'nachfassen ' : 'nachfassen am ') + friendlyDueLabel(w.next).replace(/^(Heute|Morgen|Gestern)$/, function(x){ return x.toLowerCase(); }));
+  if(w.count) parts.push(w.count + '× nachgefasst');
+  return parts.join(' · ');
+}
+function waitBadgeHtml(t){
+  if(!t.waiting || t.archived || t.completedAt) return '';
+  var due = waitDue(t);
+  return '<span class="wait-badge' + (due ? ' due' : '') + '" title="Wartet auf ' + escapeAttr(t.waiting.who) + ' · ' + escapeAttr(waitMetaText(t)) + '">⏳ ' + escapeHtml(t.waiting.who) + (due ? ' · nachfassen' : '') + '</span>';
+}
+function waitPropHtml(t){
+  if(t.archived) return '';
+  var w = t.waiting;
+  return '<div class="prop"><label>Warten auf</label><button type="button" class="btn ghost wait-prop' + (waitDue(t) ? ' due' : '') + '" id="waitPropBtn" title="Auf wen wartest du? Mit Datum zum Nachfassen">' +
+    (w ? '⏳ <b>' + escapeHtml(w.who) + '</b><span>' + escapeHtml(waitMetaText(t)) + '</span>' : '⏳ <span>Auf jemanden warten…</span>') + '</button></div>';
+}
+function openWaitingDialog(taskId, fromTask){
+  var t = getTask(taskId);
+  if(!t) return;
+  var w = t.waiting || null;
+  var wcols = apWaitingColumnIds();
+  var canMove = wcols.length && wcols.indexOf(t.columnId) < 0 && !t.completedAt;
+  var next = w ? w.next : workdaysFromToday(3);
+  var presets = [['Morgen', 1], ['In 3 Tagen', 3], ['In 1 Woche', 5], ['In 2 Wochen', 10]];
+  var html = '<div class="modal-header"><h2>⏳ Warten auf …</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + '</p>' +
+      '<div class="form-row"><label for="waWho">Auf wen oder was wartest du?</label><input id="waWho" list="waPeople" autocomplete="off" maxlength="80" value="' + escapeAttr(w ? w.who : '') + '" placeholder="z.B. Peter Muster, Lieferant, Kunde XY">' + peopleDatalist('waPeople') + '</div>' +
+      '<div class="form-row"><label for="waNext">Nachfassen am</label><div class="wa-presets">' +
+        presets.map(function(p){ var ds = workdaysFromToday(p[1]); return '<button type="button" class="btn ghost' + (ds === next ? ' on' : '') + '" data-wa-ds="' + ds + '">' + p[0] + '</button>'; }).join('') +
+        '<input type="date" id="waNext" value="' + escapeAttr(next || '') + '"></div>' +
+        '<div class="hint">An diesem Tag erinnert dich das Board (Hinweis und Mitteilung).</div></div>' +
+      (canMove ? '<label class="wt-check"><input type="checkbox" id="waMove" checked> In die Spalte „' + escapeHtml((state.columns.find(function(c){ return c.id === wcols[0]; }) || {}).name || 'Wartet') + '“ verschieben</label>' : '') +
+      (w ? '<div class="hint">Wartet ' + escapeHtml(waitMetaText(t)) + (w.lastAt ? ' · zuletzt nachgefasst ' + new Date(w.lastAt).toLocaleDateString('de-CH') : '') + '</div>' : '') +
+    '</div>' +
+    '<div class="modal-footer">' + (w ? '<button class="btn" id="waClear" style="margin-right:auto;">✓ Nicht mehr warten</button>' : '') +
+      '<button class="btn" id="waCancel">Abbrechen</button><button class="btn primary" id="waSave">Speichern</button></div>';
+  openModal(html);
+  var root = document.getElementById('modalRoot');
+  function back(){ if(fromTask && getTask(taskId)) openTaskModal(taskId); else closeModal(); renderAll(); }
+  root.querySelectorAll('[data-wa-ds]').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.getElementById('waNext').value = b.dataset.waDs;
+      root.querySelectorAll('[data-wa-ds]').forEach(function(x){ x.classList.toggle('on', x === b); });
+    });
+  });
+  document.getElementById('waCancel').addEventListener('click', back);
+  if(w) document.getElementById('waClear').addEventListener('click', function(){ waitAct(taskId, 'answer', true); back(); });
+  function doSave(){
+    var who = stripMarkup(document.getElementById('waWho').value, 80).trim();
+    if(!who){ document.getElementById('waWho').focus(); toast('Bitte eintragen, auf wen du wartest.'); return; }
+    var nx = document.getElementById('waNext').value;
+    var patch = {waiting: {who: who, since: w ? w.since : nowIso(), next: ISO_DATE_RE.test(nx) ? nx : '', count: w ? w.count : 0, lastAt: w ? w.lastAt : ''}};
+    var mv = document.getElementById('waMove');
+    if(mv && mv.checked) patch.columnId = wcols[0];
+    var tt = getTask(taskId);
+    if(!w || pKey(w.who) !== pKey(who)) logActivity(tt, 'Wartet auf ' + who);
+    updateTask(taskId, patch);
+    toast('⏳ Wartet auf ' + who + (patch.waiting.next ? ', nachfassen ' + friendlyDueLabel(patch.waiting.next).replace(/\.$/, '') : '') + '.');
+    back();
+  }
+  document.getElementById('waSave').addEventListener('click', doSave);
+  document.getElementById('waWho').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doSave(); } });
+  setTimeout(function(){ var el = document.getElementById('waWho'); if(el && !el.value) el.focus(); }, 30);
+}
+function waitMailUrl(t){
+  var w = t.waiting;
+  var first = String(w.who).split(/[ ,]/)[0];
+  var to = '';
+  if(t.mail && t.mail.fromEmail && (pKey(t.mail.from) === pKey(w.who) || pKey(t.reporter) === pKey(w.who))) to = t.mail.fromEmail;
+  var subj = 'Nachfrage: ' + (t.jiraKey ? '[' + t.jiraKey + '] ' : '') + t.title;
+  var body = 'Hallo ' + first + '\n\nich wollte kurz nachfragen, wie es bei «' + t.title + '» aussieht' +
+    (waitDays(t) >= 2 ? ' (offen seit ' + new Date(w.since).toLocaleDateString('de-CH') + ')' : '') + '. Gibt es schon etwas Neues?\n\nVielen Dank und freundliche Grüsse\n' + myName();
+  return 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subj.slice(0, 200)) + '&body=' + encodeURIComponent(body.slice(0, 1500));
+}
+/* act: followup (nachgefasst, nächster Termin in 3 Werktagen), mail (Erinnerungs-Mail + nachgefasst), answer (Antwort da). */
+function waitAct(taskId, act, silent){
+  var t = getTask(taskId);
+  if(!t || !t.waiting) return;
+  var w = t.waiting;
+  if(act === 'mail'){ location.href = waitMailUrl(t); act = 'followup'; }
+  if(act === 'followup'){
+    var nw = Object.assign({}, w, {count: w.count + 1, lastAt: nowIso(), next: workdaysFromToday(3)});
+    logActivity(t, 'Nachgefasst bei ' + w.who + (nw.count > 1 ? ' (' + nw.count + '. Mal)' : ''));
+    updateTask(taskId, {waiting: nw});
+    if(!silent) toast('📨 Nachgefasst. Nächste Erinnerung ' + friendlyDueLabel(nw.next).replace(/\.$/, '') + '.');
+  } else if(act === 'answer'){
+    pushUndoSnapshot();
+    var patch = {waiting: null};
+    if(apWaitingColumnIds().indexOf(t.columnId) >= 0) patch.columnId = inProgressColumn().id;
+    logActivity(t, 'Antwort von ' + w.who + ' erhalten');
+    updateTask(taskId, patch);
+    if(!silent) toast('✓ Antwort von ' + w.who + ' erhalten' + (patch.columnId ? ', Task ist wieder in Bearbeitung.' : '.'), 7000, 'Rückgängig', undoLastAction);
+  }
+}
+function waitAskWho(taskId){
+  setTimeout(function(){
+    var t = getTask(taskId);
+    if(!t || t.waiting || t.completedAt) return;
+    toast('⏳ Auf wen wartest du bei «' + t.title.slice(0, 40) + '»?', 9000, 'Eintragen', function(){ openWaitingDialog(taskId); });
+  }, 250);
+}
+function waitCheckDue(){
+  var today = toDateInputValue(new Date());
+  var due = waitingTasks().filter(waitDue);
+  var seen = {};
+  try{ seen = JSON.parse(localStorage.getItem('wb-wait-notified') || '{}') || {}; }catch(e){ seen = {}; }
+  var fresh = due.filter(function(t){ return seen[t.id] !== today; });
+  if(!fresh.length) return;
+  var keep = {};
+  due.forEach(function(t){ keep[t.id] = today; });
+  try{ localStorage.setItem('wb-wait-notified', JSON.stringify(keep)); }catch(e){ return; }
+  fresh.forEach(function(t){ inboxAdd('⏳', 'Nachfassen bei ' + t.waiting.who + ': «' + t.title + '»', {taskId: t.id, key: 'wait-' + t.id + '-' + today}); });
+  toast(fresh.length === 1 ? '⏳ Heute nachfassen bei ' + fresh[0].waiting.who + ': «' + fresh[0].title.slice(0, 40) + '»' : '⏳ ' + fresh.length + ' Nachfass-Termine sind fällig.', 12000, 'Ansehen', function(){ switchToView('people'); });
+}
+
+/* ---- Gesprächsthemen ---- */
+function normalizeAgenda(a){
+  if(!a || typeof a !== 'object') return null;
+  var person = stripMarkup(a.person, 80).trim(), text = cleanStr(a.text, 500).trim();
+  if(!person || !text) return null;
+  var out = {
+    id: (typeof a.id === 'string' && SAFE_ID_RE.test(a.id)) ? a.id : 'ag-' + uid(),
+    person: person, text: text, done: a.done === true,
+    createdAt: validIso(a.createdAt) || nowIso(),
+    updatedAt: validIso(a.updatedAt) || nowIso()
+  };
+  if(out.done) out.doneAt = validIso(a.doneAt) || out.updatedAt;
+  if(typeof a.note === 'string' && a.note.trim()) out.note = cleanStr(a.note, 1000).trim();
+  if(typeof a.taskId === 'string' && SAFE_ID_RE.test(a.taskId)) out.taskId = a.taskId;
+  return out;
+}
+function agendaList(){ return Array.isArray(state.settings.agenda) ? state.settings.agenda : []; }
+function agendaOpenFor(name){ var k = pKey(name); return agendaList().filter(function(a){ return !a.done && pKey(a.person) === k; }); }
+function agendaAdd(person, text, taskId){
+  var a = normalizeAgenda({person: person, text: text, taskId: taskId || undefined});
+  if(!a) return null;
+  if(!Array.isArray(state.settings.agenda)) state.settings.agenda = [];
+  state.settings.agenda.push(a);
+  save();
+  return a;
+}
+function agendaUpdate(id, patch){
+  var a = agendaList().find(function(x){ return x.id === id; });
+  if(!a) return;
+  Object.assign(a, patch, {updatedAt: nowIso()});
+  if(a.done && !a.doneAt) a.doneAt = nowIso();
+  if(!a.done) delete a.doneAt;
+  if(!a.note) delete a.note;
+  save();
+}
+function agendaRemove(id){
+  state.settings.agenda = agendaList().filter(function(x){ return x.id !== id; });
+  save();
+}
+function openAgendaDialog(person, taskId, fromTask){
+  var t = taskId ? getTask(taskId) : null;
+  var html = '<div class="modal-header"><h2>🗣️ Gesprächsthema notieren</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="form-row"><label for="agPerson">Mit wem?</label><input id="agPerson" list="agPeople" autocomplete="off" maxlength="80" value="' + escapeAttr(person || (t && t.reporter) || '') + '" placeholder="z.B. Chefin, Peter Muster">' + peopleDatalist('agPeople') + '</div>' +
+      '<div class="form-row"><label for="agText">Was willst du besprechen?</label><textarea id="agText" rows="3" maxlength="500" placeholder="z.B. Ferienplanung Dezember, Budget für Schulung …">' + escapeHtml(t ? t.title : '') + '</textarea></div>' +
+      (t ? '<div class="hint">Mit dem Task verknüpft: ' + escapeHtml(t.title) + '</div>' : '') +
+      '<div class="hint">Das Thema erscheint unter Personen und beim nächsten Gespräch oder Meeting mit dieser Person.</div>' +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" id="agCancel">Abbrechen</button><button class="btn primary" id="agSave">Notieren</button></div>';
+  openModal(html);
+  function back(){ if(fromTask && taskId && getTask(taskId)) openTaskModal(taskId); else closeModal(); renderAll(); }
+  document.getElementById('agCancel').addEventListener('click', back);
+  function doSave(){
+    var p = document.getElementById('agPerson').value, x = document.getElementById('agText').value;
+    if(!stripMarkup(p, 80).trim()){ document.getElementById('agPerson').focus(); return; }
+    if(!x.trim()){ document.getElementById('agText').focus(); return; }
+    var a = agendaAdd(p, x, taskId);
+    if(a) toast('🗣️ Für das nächste Gespräch mit ' + a.person + ' notiert.', 6000, 'Personen', function(){ switchToView('people'); });
+    back();
+  }
+  document.getElementById('agSave').addEventListener('click', doSave);
+  document.getElementById('agText').addEventListener('keydown', function(e){ if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); doSave(); } });
+  setTimeout(function(){ var el = document.getElementById(person ? 'agText' : 'agPerson'); if(el) el.focus(); }, 30);
+}
+
+/* ---- Ansicht „Personen“ ---- */
+var pplQuery = '';
+function peopleData(){
+  var map = {}, order = [];
+  function P(name){
+    var k = pKey(name);
+    if(!map[k]){ map[k] = {name: String(name).trim(), key: k, topics: [], waits: [], tasks: [], done: []}; order.push(k); }
+    return map[k];
+  }
+  agendaList().forEach(function(a){ var p = P(a.person); if(a.done) p.done.push(a); else p.topics.push(a); });
+  waitingTasks().forEach(function(t){ P(t.waiting.who).waits.push(t); });
+  state.tasks.forEach(function(t){
+    if(t.archived || t.completedAt) return;
+    var a = assigneeLabel(t);
+    if(a && !isMe(a) && !(t.assigneeId && t.assigneeId === myUserId())) P(a).tasks.push(t);
+  });
+  var weekAgo = Date.now() - 7 * 86400000;
+  return order.map(function(k){ return map[k]; }).filter(function(p){
+    return p.topics.length || p.waits.length || p.tasks.length || p.done.some(function(a){ return new Date(a.doneAt).getTime() > weekAgo; });
+  }).map(function(p){
+    p.due = p.waits.filter(waitDue).length;
+    p.done.sort(function(a, b){ return a.doneAt < b.doneAt ? 1 : -1; });
+    return p;
+  }).sort(function(a, b){
+    return b.due - a.due || (b.topics.length + b.waits.length) - (a.topics.length + a.waits.length) || b.tasks.length - a.tasks.length || a.name.localeCompare(b.name);
+  });
+}
+function waitRowHtml(t, showWho){
+  var due = waitDue(t);
+  return '<div class="ppl-wait' + (due ? ' due' : '') + '">' +
+    '<div class="fc-main" data-ppl-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div>' +
+      '<div class="md-meta">' + (showWho ? 'Wartet auf <b>' + escapeHtml(t.waiting.who) + '</b> ' : '') + escapeHtml(waitMetaText(t)) + '</div></div>' +
+    '<div class="fc-actions">' +
+      '<button class="btn" data-wa="answer" data-wa-id="' + t.id + '" title="Antwort ist da: nicht mehr warten' + (apWaitingColumnIds().indexOf(t.columnId) >= 0 ? ', zurück in Bearbeitung' : '') + '">✓ Antwort da</button>' +
+      '<button class="btn" data-wa="followup" data-wa-id="' + t.id + '" title="Du hast nachgefragt: nächste Erinnerung in 3 Werktagen">📨 Nachgefasst</button>' +
+      '<button class="btn ghost" data-wa="mail" data-wa-id="' + t.id + '" title="Erinnerungs-Mail schreiben (zählt als nachgefasst)" aria-label="Erinnerungs-Mail">✉️</button>' +
+      '<button class="btn ghost" data-wa="edit" data-wa-id="' + t.id + '" title="Person oder Datum ändern" aria-label="Bearbeiten">✎</button>' +
+    '</div></div>';
+}
+function renderPeopleView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var people = peopleData();
+  var waits = waitingTasks();
+  var due = waits.filter(waitDue).sort(function(a, b){ return a.waiting.next < b.waiting.next ? -1 : 1; });
+  var topics = agendaList().filter(function(a){ return !a.done; });
+  var q = pKey(pplQuery);
+  var shown = q ? people.filter(function(p){ return p.key.indexOf(q) >= 0 || p.topics.some(function(a){ return pKey(a.text).indexOf(q) >= 0; }) || p.waits.some(function(t){ return pKey(t.title).indexOf(q) >= 0; }); }) : people;
+  function tile(label, value, sub, tone){ return '<div class="kpi' + (tone ? ' ' + tone : '') + '"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + value + '</div><div class="kpi-sub">' + sub + '</div></div>'; }
+  var cards = shown.map(function(p){
+    var sub = [p.topics.length ? p.topics.length + (p.topics.length > 1 ? ' Themen' : ' Thema') : '', p.waits.length ? 'du wartest auf ' + p.waits.length : '', p.tasks.length ? p.tasks.length + ' zugewiesen' : ''].filter(Boolean).join(' · ') || 'alles besprochen';
+    return '<section class="dcard ppl-card' + (p.due ? ' due' : '') + '">' +
+      '<div class="ppl-head"><span class="sb-avatar">' + escapeHtml(personInitials(p.name.replace(/[^\p{L}\s]/gu, ' ')) || '?') + '</span><div class="ppl-name"><b>' + escapeHtml(p.name) + '</b><span>' + escapeHtml(sub) + '</span></div>' +
+        (p.topics.length || p.waits.length ? '<button class="btn" data-ppl-talk="' + escapeAttr(p.name) + '" title="Themen durchgehen, abhaken und Ergebnisse notieren">🗣️ Gespräch</button>' : '') + '</div>' +
+      (p.topics.length ? '<div class="ppl-sec">Besprechen</div>' + p.topics.map(function(a){
+        var lt = a.taskId ? getTask(a.taskId) : null;
+        return '<div class="ppl-topic"><input type="checkbox" data-ag-done="' + a.id + '" aria-label="Besprochen"><span class="ppl-ttext">' + escapeHtml(a.text) +
+          (lt ? ' <button class="ppl-link" data-ppl-open="' + lt.id + '" title="Task öffnen">↗ ' + escapeHtml(lt.title.slice(0, 40)) + '</button>' : '') + '</span>' +
+          '<button class="icon-btn" data-ag-del="' + a.id + '" title="Thema löschen" aria-label="Thema löschen">✕</button></div>';
+      }).join('') : '') +
+      '<form class="ppl-add" data-ppl-add="' + escapeAttr(p.name) + '"><input placeholder="Thema für ' + escapeAttr(p.name.split(' ')[0]) + ' notieren…" maxlength="500" aria-label="Neues Gesprächsthema"><button class="btn" type="submit" aria-label="Hinzufügen">' + svgIcon('plus') + '</button></form>' +
+      (p.waits.length ? '<div class="ppl-sec">Du wartest auf</div>' + p.waits.map(function(t){ return waitRowHtml(t, false); }).join('') : '') +
+      (p.tasks.length ? '<div class="ppl-sec">Zugewiesen</div>' + p.tasks.slice(0, 5).map(function(t){
+        return '<div class="dash-row" data-ppl-open="' + t.id + '"><span class="dash-row-title">' + escapeHtml(t.title) + '</span><span class="dash-row-extra">' + (t.dueDate ? escapeHtml(friendlyDueLabel(t.dueDate)) : '') + '</span></div>';
+      }).join('') + (p.tasks.length > 5 ? '<div class="hint">+ ' + (p.tasks.length - 5) + ' weitere</div>' : '') : '') +
+      (p.done.length ? '<details class="ppl-done"><summary>Besprochen · ' + p.done.length + '</summary>' + p.done.slice(0, 8).map(function(a){
+        return '<div class="ppl-topic done"><button class="icon-btn" data-ag-undo="' + a.id + '" title="Wieder offen" aria-label="Wieder offen">↺</button><span class="ppl-ttext">' + escapeHtml(a.text) + (a.note ? '<span class="ppl-note">→ ' + escapeHtml(a.note) + '</span>' : '') + '</span><span class="hint">' + new Date(a.doneAt).toLocaleDateString('de-CH', {day: 'numeric', month: 'numeric'}) + '</span></div>';
+      }).join('') + '</details>' : '') +
+    '</section>';
+  }).join('');
+  board.innerHTML = '<div class="dash ppl-wrap">' +
+    '<div class="dash-head"><div><h1>👥 Personen</h1><p>Auf wen du wartest und was du mit wem besprechen willst</p></div>' +
+      '<div class="dash-actions"><label class="tb-search ppl-search"><svg class="i"><use href="#i-search"/></svg><input type="search" id="pplSearch" placeholder="Person oder Thema…" value="' + escapeAttr(pplQuery) + '" aria-label="Personen durchsuchen"></label>' +
+      '<button class="btn primary" id="pplAddTopic">' + svgIcon('plus') + '<span>Gesprächsthema</span></button></div></div>' +
+    '<div class="kpis ppl-kpis">' +
+      tile('Heute nachfassen', due.length, due.length ? 'fällige Erinnerungen' : 'nichts fällig', due.length ? 'bad' : '') +
+      tile('Du wartest auf', waits.length, waits.length ? 'offene Antworten' : 'auf niemanden', '') +
+      tile('Gesprächsthemen', topics.length, 'noch zu besprechen', '') +
+      tile('Personen', people.length, 'mit offenen Punkten', '') +
+    '</div>' +
+    (due.length ? '<section class="dcard wide ppl-due"><div class="dcard-head"><h3>⏳ Heute nachfassen</h3></div>' + due.map(function(t){ return waitRowHtml(t, true); }).join('') + '</section>' : '') +
+    (shown.length ? '<div class="ppl-grid">' + cards + '</div>' :
+      '<div class="md-empty"><b>' + (q ? 'Nichts gefunden' : 'Noch niemand hier') + '</b>' +
+      (q ? 'Keine Person oder kein Thema passt zu „' + escapeHtml(pplQuery) + '“.' :
+        'Notiere Gesprächsthemen mit „Gesprächsthema“ oben. Wartest du bei einem Task auf jemanden, setze im Task-Fenster „Warten auf“ oder zieh ihn in die Spalte „Wartet“. Das Board erinnert dich dann ans Nachfassen.') + '</div>') +
+  '</div>';
+  var wrap = board.querySelector('.ppl-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-wa], [data-ppl-open], [data-ppl-talk], [data-ag-del], [data-ag-undo], #pplAddTopic');
+    if(!el) return;
+    if(el.dataset.wa){
+      if(el.dataset.wa === 'edit') openWaitingDialog(el.dataset.waId);
+      else { waitAct(el.dataset.waId, el.dataset.wa); renderAll(); }
+    }
+    else if(el.dataset.pplOpen) openTaskModal(el.dataset.pplOpen);
+    else if(el.dataset.pplTalk) openTalk(el.dataset.pplTalk);
+    else if(el.dataset.agDel){
+      var del = agendaList().find(function(a){ return a.id === el.dataset.agDel; });
+      agendaRemove(el.dataset.agDel); renderPeopleView();
+      if(del) toast('Thema gelöscht.', 6000, 'Rückgängig', function(){ state.settings.agenda.push(del); save(); renderAll(); });
+    }
+    else if(el.dataset.agUndo){ agendaUpdate(el.dataset.agUndo, {done: false}); renderPeopleView(); }
+    else if(el.id === 'pplAddTopic') openAgendaDialog('');
+  });
+  wrap.addEventListener('change', function(e){
+    if(e.target.dataset && e.target.dataset.agDone){ agendaUpdate(e.target.dataset.agDone, {done: true}); toast('✓ Als besprochen markiert.'); renderPeopleView(); }
+  });
+  wrap.addEventListener('submit', function(e){
+    var f = e.target.closest('[data-ppl-add]');
+    if(!f) return;
+    e.preventDefault();
+    var inp = f.querySelector('input');
+    if(!inp.value.trim()) return;
+    agendaAdd(f.dataset.pplAdd, inp.value);
+    var name = f.dataset.pplAdd;
+    renderPeopleView();
+    var again = document.querySelector('.ppl-add[data-ppl-add="' + CSS.escape(name) + '"] input');
+    if(again) again.focus();
+  });
+  var s = document.getElementById('pplSearch');
+  s.addEventListener('input', function(){
+    pplQuery = s.value;
+    var pos = s.selectionStart;
+    renderPeopleView();
+    var s2 = document.getElementById('pplSearch');
+    if(s2){ s2.focus(); try{ s2.setSelectionRange(pos, pos); }catch(err){} }
+  });
+}
+
+/* ---- Gespräch führen: Themen abhaken, Ergebnis notieren ---- */
+var talk = null;
+function openTalk(name){
+  talk = {name: name, done: {}, notes: {}};
+  talkRender();
+}
+function talkRender(){
+  if(!talk) return;
+  var topics = agendaOpenFor(talk.name);
+  var waits = waitingTasks().filter(function(t){ return pKey(t.waiting.who) === pKey(talk.name); });
+  var html = '<div class="modal-header"><h2>🗣️ Gespräch mit ' + escapeHtml(talk.name) + '</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body talk-body">' +
+      '<p class="hint" style="margin-top:0;">Hake ab, was besprochen ist, und notiere kurz das Ergebnis. Was offen bleibt, wartet auf das nächste Gespräch.</p>' +
+      (topics.length ? topics.map(function(a){
+        var on = !!talk.done[a.id];
+        return '<div class="talk-item' + (on ? ' on' : '') + '"><label class="talk-check"><input type="checkbox" data-talk-done="' + a.id + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(a.text) + '</span></label>' +
+          '<div class="talk-row"><input data-talk-note="' + a.id + '" maxlength="1000" placeholder="Ergebnis oder Notiz (optional)" value="' + escapeAttr(talk.notes[a.id] != null ? talk.notes[a.id] : (a.note || '')) + '">' +
+          (a.taskId && getTask(a.taskId) ? '<button class="btn ghost" data-talk-open="' + a.taskId + '" title="Verknüpften Task öffnen">↗ Task</button>' : '<button class="btn ghost" data-talk-task="' + a.id + '" title="Aus diesem Thema einen Task machen">➕ Task</button>') + '</div></div>';
+      }).join('') : '<div class="hint">Keine offenen Themen. Neue kannst du unten direkt notieren.</div>') +
+      '<form class="ppl-add talk-add" id="talkAdd"><input placeholder="Neues Thema, das gerade aufkommt…" maxlength="500" aria-label="Neues Thema"><button class="btn" type="submit">' + svgIcon('plus') + '<span>Thema</span></button></form>' +
+      (waits.length ? '<div class="ppl-sec">Gleich nachfragen</div>' + waits.map(function(t){ return waitRowHtml(t, false); }).join('') : '') +
+    '</div>' +
+    '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="talkFinish">Gespräch beenden</button></div>';
+  openModal(html, {wide: true});
+  modalCloseCleanup = function(){ talk = null; };
+  var root = document.getElementById('modalRoot');
+  var tbody = root.querySelector('.modal-body');
+  tbody.addEventListener('change', function(e){
+    if(!talk) return;
+    if(e.target.dataset.talkDone){ talk.done[e.target.dataset.talkDone] = e.target.checked; e.target.closest('.talk-item').classList.toggle('on', e.target.checked); }
+  });
+  tbody.addEventListener('input', function(e){
+    if(talk && e.target.dataset.talkNote){
+      talk.notes[e.target.dataset.talkNote] = e.target.value;
+      if(e.target.value.trim() && !talk.done[e.target.dataset.talkNote]){
+        talk.done[e.target.dataset.talkNote] = true;
+        var item = e.target.closest('.talk-item');
+        item.classList.add('on'); item.querySelector('input[type=checkbox]').checked = true;
+      }
+    }
+  });
+  root.querySelector('#talkFinish').addEventListener('click', talkFinish);
+  tbody.addEventListener('click', function(e){
+    var el = e.target.closest('[data-talk-task], [data-talk-open], [data-wa]');
+    if(!el || !talk) return;
+    if(el.dataset.talkTask){
+      var a = agendaList().find(function(x){ return x.id === el.dataset.talkTask; });
+      if(!a) return;
+      var nt = createTask({title: a.text.slice(0, 200), columnId: state.columns[0].id, description: 'Aus dem Gespräch mit ' + a.person + ' vom ' + new Date().toLocaleDateString('de-CH') + '.'});
+      agendaUpdate(a.id, {taskId: nt.id});
+      toast('➕ Task angelegt: ' + nt.title.slice(0, 50));
+      talkRender();
+    } else if(el.dataset.talkOpen){ var id = el.dataset.talkOpen; talk = null; openTaskModal(id); }
+    else if(el.dataset.wa){
+      if(el.dataset.wa === 'edit'){ var wid = el.dataset.waId; talk = null; openWaitingDialog(wid); return; }
+      waitAct(el.dataset.waId, el.dataset.wa); talkRender();
+    }
+  });
+  root.querySelector('#talkAdd').addEventListener('submit', function(e){
+    e.preventDefault();
+    var inp = e.target.querySelector('input');
+    if(!inp.value.trim()) return;
+    agendaAdd(talk.name, inp.value);
+    talkRender();
+    var again = document.querySelector('#talkAdd input');
+    if(again) again.focus();
+  });
+}
+function talkFinish(){
+  if(!talk) return;
+  var name = talk.name, lines = [], n = 0;
+  agendaOpenFor(name).forEach(function(a){
+    var note = talk.notes[a.id] != null ? cleanStr(talk.notes[a.id], 1000).trim() : (a.note || '');
+    if(talk.done[a.id]){ agendaUpdate(a.id, {done: true, doneAt: nowIso(), note: note}); lines.push('- ' + a.text + (note ? ': ' + note : '')); n++; }
+    else if(note !== (a.note || '')) agendaUpdate(a.id, {note: note});
+  });
+  var open = agendaOpenFor(name).length;
+  talk = null;
+  closeModal();
+  renderAll();
+  var summary = 'Gespräch mit ' + name + ' am ' + new Date().toLocaleDateString('de-CH') + '\n' + (lines.join('\n') || '- (keine Themen abgehakt)') + (open ? '\n\nOffen für das nächste Mal: ' + open + (open === 1 ? ' Thema' : ' Themen') : '');
+  toast('🗣️ ' + n + (n === 1 ? ' Thema' : ' Themen') + ' besprochen' + (open ? ', ' + open + (open === 1 ? ' bleibt offen.' : ' bleiben offen.') : '.'), 9000, 'Zusammenfassung kopieren', function(){ copyToClipboard(summary); toast('📋 Kopiert.'); });
+}
+
+/* =========================================================
+   MEETING-PROTOKOLL MIT AUFGABEN
+   Optionales Task-Feld minutes = {attendees:[Namen], items:[{id, kind:'note'|'decision'|'action',
+   text, who, due, taskId}], updatedAt}. Aufgaben für mich werden zu Tasks, Aufgaben für
+   andere zu Tasks mit „Warten auf“. Offene Gesprächsthemen der Teilnehmer lassen sich
+   übernehmen (sie gelten dann als besprochen).
+   ========================================================= */
+var MM_KINDS = {
+  note:     {icon: '📝', label: 'Notiz', many: 'Notizen', ph: 'Was wurde gesagt? Enter fügt hinzu'},
+  decision: {icon: '✅', label: 'Beschluss', many: 'Beschlüsse', ph: 'Was wurde entschieden?'},
+  action:   {icon: '➡️', label: 'Aufgabe', many: 'Aufgaben', ph: 'Was ist zu tun?'}
+};
+function normalizeMinutes(m){
+  if(!m || typeof m !== 'object') return null;
+  var out = {
+    attendees: (Array.isArray(m.attendees) ? m.attendees : []).map(function(a){ return stripMarkup(a, 80).trim(); }).filter(Boolean).slice(0, 40),
+    items: (Array.isArray(m.items) ? m.items : []).filter(function(x){ return x && typeof x === 'object'; }).slice(0, 300).map(function(x){
+      var it = {id: (typeof x.id === 'string' && SAFE_ID_RE.test(x.id)) ? x.id : 'mi-' + uid(), kind: MM_KINDS[x.kind] ? x.kind : 'note', text: cleanStr(x.text, 2000).trim()};
+      if(it.kind === 'action'){
+        it.who = stripMarkup(x.who, 80).trim();
+        it.due = ISO_DATE_RE.test(x.due || '') ? x.due : '';
+        if(typeof x.taskId === 'string' && SAFE_ID_RE.test(x.taskId)) it.taskId = x.taskId;
+      }
+      return it;
+    }).filter(function(x){ return x.text; }),
+    updatedAt: validIso(m.updatedAt) || nowIso()
+  };
+  return (out.items.length || out.attendees.length) ? out : null;
+}
+function minutesCounts(t){
+  var c = {note: 0, decision: 0, action: 0, open: 0};
+  ((t.minutes && t.minutes.items) || []).forEach(function(it){ c[it.kind]++; if(it.kind === 'action' && !it.taskId) c.open++; });
+  return c;
+}
+function minutesBlockHtml(t){
+  if(t.type !== 'meeting' && !t.minutes) return '';
+  var c = minutesCounts(t), has = !!t.minutes;
+  var sum = has ? [c.note ? c.note + ' Notiz' + (c.note > 1 ? 'en' : '') : '', c.decision ? c.decision + ' Beschluss' + (c.decision > 1 ? 'e' : '') : '', c.action ? c.action + ' Aufgabe' + (c.action > 1 ? 'n' : '') + (c.open ? ' (' + c.open + ' noch ohne Task)' : '') : ''].filter(Boolean).join(' · ') : '';
+  return '<div class="task-block"><div class="task-block-title">Protokoll<span class="task-block-sub">Notizen, Beschlüsse und Aufgaben mit Verantwortlichen</span></div>' +
+    '<div class="task-page-row"><button type="button" class="btn" id="openMinutesBtn">📝 <span>' + (has ? 'Protokoll öffnen' : 'Protokoll schreiben') + '</span></button>' +
+    '<span class="hint" style="margin:0;">' + escapeHtml(sum || 'Aufgaben daraus werden mit einem Klick zu Tasks oder „Warten auf“.') + '</span></div></div>';
+}
+var mm = null;
+function openMinutes(taskId, fromTask){
+  if(!getTask(taskId)) return;
+  mm = {taskId: taskId, kind: 'note', fromTask: !!fromTask};
+  mmRender();
+}
+function mmChange(fn){
+  var t = getTask(mm.taskId);
+  if(!t) return;
+  var m = JSON.parse(JSON.stringify(t.minutes || {attendees: [], items: []}));
+  fn(m);
+  m.updatedAt = nowIso();
+  var nm = normalizeMinutes(m);
+  updateTask(t.id, {minutes: nm});
+}
+function mmAgendaCandidates(t){
+  var att = ((t.minutes && t.minutes.attendees) || []).map(pKey);
+  return agendaList().filter(function(a){ return !a.done && att.indexOf(pKey(a.person)) >= 0; });
+}
+function mmRender(focusText){
+  if(!mm) return;
+  var t = getTask(mm.taskId);
+  if(!t){ mm = null; closeModal(); return; }
+  var m = t.minutes || {attendees: [], items: []};
+  var cand = mmAgendaCandidates(t);
+  var k = MM_KINDS[mm.kind];
+  function itemHtml(it){
+    var lt = it.taskId ? getTask(it.taskId) : null;
+    var meta = it.kind === 'action' ? [isMe(it.who) ? 'ich' : it.who, it.due ? 'bis ' + shortDateLabel(it.due) : ''].filter(Boolean).join(' · ') : '';
+    return '<div class="mm-item k-' + it.kind + '"><span class="mm-ico">' + MM_KINDS[it.kind].icon + '</span>' +
+      '<div class="mm-text">' + escapeHtml(it.text) + (meta ? '<span class="mm-meta">' + escapeHtml(meta) + '</span>' : '') + '</div>' +
+      (it.kind === 'action' ? (lt ? '<button class="btn ghost" data-mm-open="' + lt.id + '" title="Task öffnen">' + (lt.completedAt ? '✓ erledigt' : '↗ Task') + '</button>' :
+        '<button class="btn" data-mm-task="' + it.id + '" title="' + (isMe(it.who) ? 'Als Task auf dein Board' : 'Als Task mit „Warten auf ' + escapeAttr(it.who) + '“ anlegen') + '">' + (isMe(it.who) ? '➕ Als Task' : '⏳ Nachverfolgen') + '</button>') : '') +
+      '<button class="icon-btn" data-mm-del="' + it.id + '" title="Entfernen" aria-label="Entfernen">✕</button></div>';
+  }
+  var lists = ['decision', 'action', 'note'].map(function(kind){
+    var its = m.items.filter(function(x){ return x.kind === kind; });
+    return its.length ? '<div class="ppl-sec">' + MM_KINDS[kind].icon + ' ' + MM_KINDS[kind].many + ' · ' + its.length + '</div>' + its.map(itemHtml).join('') : '';
+  }).join('');
+  var openActions = m.items.filter(function(x){ return x.kind === 'action' && !x.taskId; }).length;
+  var html = '<div class="modal-header"><h2>📝 Protokoll</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="modal-body mm-body">' +
+      '<p class="hint" style="margin-top:0;">' + escapeHtml(t.title) + ' · ' + new Date(t.createdAt).toLocaleDateString('de-CH', {weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric'}) + '</p>' +
+      '<div class="form-row"><label for="mmAtt">Teilnehmende (mit Komma getrennt)</label><input id="mmAtt" list="mmPeople" autocomplete="off" value="' + escapeAttr(m.attendees.join(', ')) + '" placeholder="z.B. Peter Muster, Anna Keller">' + peopleDatalist('mmPeople') + '</div>' +
+      (cand.length ? '<div class="mm-import">🗣️ ' + cand.length + ' offene' + (cand.length === 1 ? 's Gesprächsthema' : ' Gesprächsthemen') + ' von Teilnehmenden<button class="btn" id="mmImport">Ins Protokoll übernehmen</button></div>' : '') +
+      '<div class="mm-kinds" role="tablist">' + Object.keys(MM_KINDS).map(function(key){
+        return '<button type="button" class="btn' + (mm.kind === key ? ' on' : '') + '" data-mm-kind="' + key + '" role="tab" aria-selected="' + (mm.kind === key) + '">' + MM_KINDS[key].icon + ' ' + MM_KINDS[key].label + '</button>';
+      }).join('') + '</div>' +
+      '<form class="mm-form" id="mmForm"><input id="mmText" maxlength="2000" autocomplete="off" placeholder="' + escapeAttr(k.ph) + '" aria-label="' + escapeAttr(k.label) + '">' +
+        (mm.kind === 'action' ? '<input id="mmWho" list="mmPeople" autocomplete="off" maxlength="80" placeholder="Wer? (leer = ich)" aria-label="Verantwortlich"><input type="date" id="mmDue" aria-label="Bis wann">' : '') +
+        '<button class="btn primary" type="submit">' + svgIcon('plus') + '<span>Hinzufügen</span></button></form>' +
+      (lists || '<div class="hint">Noch leer. Tipp: Wähle oben die Art (Notiz, Beschluss, Aufgabe) und tippe los. Enter fügt hinzu.</div>') +
+    '</div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn" id="mmCopy" style="margin-right:auto;">' + svgIcon('clipboard') + '<span>Kopieren</span></button>' +
+      '<button class="btn" id="mmMail">' + svgIcon('mail') + '<span>Als Mail</span></button>' +
+      (openActions > 1 ? '<button class="btn" id="mmAllTasks" title="Alle Aufgaben ohne Task auf einmal anlegen">Alle ' + openActions + ' Aufgaben anlegen</button>' : '') +
+      '<button class="btn primary" id="mmDone">Fertig</button></div>';
+  openModal(html, {wide: true});
+  modalCloseCleanup = function(){ mm = null; };
+  var root = document.getElementById('modalRoot');
+  document.getElementById('mmAtt').addEventListener('change', function(e){
+    var list = e.target.value.split(/[,;\n]/).map(function(x){ return stripMarkup(x, 80).trim(); }).filter(Boolean);
+    mmChange(function(mx){ mx.attendees = list; });
+    mmRender();
+  });
+  document.getElementById('mmForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var text = document.getElementById('mmText').value.trim();
+    if(!text) return;
+    var it = {id: 'mi-' + uid(), kind: mm.kind, text: text};
+    if(mm.kind === 'action'){ it.who = document.getElementById('mmWho').value; it.due = document.getElementById('mmDue').value; }
+    mmChange(function(mx){ mx.items.push(it); });
+    mmRender(true);
+  });
+  root.querySelector('.modal-body').addEventListener('click', function(e){
+    var el = e.target.closest('[data-mm-kind], [data-mm-task], [data-mm-open], [data-mm-del], #mmImport');
+    if(!el) return;
+    if(el.dataset.mmKind){ mm.kind = el.dataset.mmKind; mmRender(true); }
+    else if(el.dataset.mmTask){ mmMakeTask(el.dataset.mmTask); mmRender(); }
+    else if(el.dataset.mmOpen){ var id = el.dataset.mmOpen; mm = null; openTaskModal(id); }
+    else if(el.dataset.mmDel){ var del = el.dataset.mmDel; mmChange(function(mx){ mx.items = mx.items.filter(function(x){ return x.id !== del; }); }); mmRender(); }
+    else if(el.id === 'mmImport'){
+      var c = mmAgendaCandidates(getTask(mm.taskId));
+      mmChange(function(mx){ c.forEach(function(a){ mx.items.push({id: 'mi-' + uid(), kind: 'note', text: a.text + ' (' + a.person + ')'}); }); });
+      c.forEach(function(a){ agendaUpdate(a.id, {done: true, note: 'im Meeting «' + t.title.slice(0, 60) + '»'}); });
+      toast('🗣️ ' + (c.length === 1 ? '1 Thema' : c.length + ' Themen') + ' übernommen und als besprochen markiert.');
+      mmRender();
+    }
+  });
+  document.getElementById('mmCopy').addEventListener('click', function(){ copyToClipboard(minutesText(getTask(mm.taskId))); toast('📋 Protokoll kopiert.'); });
+  document.getElementById('mmMail').addEventListener('click', function(){
+    var tt = getTask(mm.taskId);
+    location.href = 'mailto:?subject=' + encodeURIComponent('Protokoll: ' + tt.title) + '&body=' + encodeURIComponent(minutesText(tt).slice(0, 1800));
+  });
+  var allBtn = document.getElementById('mmAllTasks');
+  if(allBtn) allBtn.addEventListener('click', function(){
+    var ids = (getTask(mm.taskId).minutes.items || []).filter(function(x){ return x.kind === 'action' && !x.taskId; }).map(function(x){ return x.id; });
+    ids.forEach(function(id){ mmMakeTask(id, true); });
+    toast('➕ ' + ids.length + ' Aufgaben angelegt.');
+    mmRender();
+  });
+  document.getElementById('mmDone').addEventListener('click', function(){
+    var back = mm.fromTask ? mm.taskId : '';
+    mm = null;
+    if(back) openTaskModal(back); else { closeModal(); }
+    renderAll();
+  });
+  if(focusText !== false){ var ti = document.getElementById('mmText'); if(ti && (focusText || window.matchMedia('(hover:hover)').matches)) ti.focus(); }
+}
+function mmMakeTask(itemId, silent){
+  var t = getTask(mm.taskId);
+  var it = t && t.minutes && t.minutes.items.find(function(x){ return x.id === itemId; });
+  if(!it || it.taskId) return;
+  var mine = isMe(it.who);
+  var partial = {
+    title: it.text.slice(0, 200),
+    description: 'Aus dem Meeting «' + t.title + '» vom ' + new Date(t.createdAt).toLocaleDateString('de-CH') + '.' + (mine ? '' : '\nVerantwortlich: ' + it.who),
+    dueDate: it.due || '',
+    columnId: mine ? state.columns[0].id : (apWaitingColumnIds()[0] || state.columns[0].id)
+  };
+  if(t.projectId) partial.projectId = t.projectId;
+  if(!mine) partial.waiting = {who: it.who, since: nowIso(), next: it.due || workdaysFromToday(3), count: 0, lastAt: ''};
+  var nt = createTask(partial);
+  mmChange(function(mx){ var x = mx.items.find(function(y){ return y.id === itemId; }); if(x) x.taskId = nt.id; });
+  if(!silent) toast(mine ? '➕ Task angelegt.' : '⏳ Angelegt als «Warten auf ' + it.who + '».');
+}
+function minutesText(t){
+  var m = t.minutes || {attendees: [], items: []};
+  var out = ['Protokoll: ' + t.title, 'Datum: ' + new Date(t.createdAt).toLocaleDateString('de-CH')];
+  if(m.attendees.length) out.push('Teilnehmende: ' + m.attendees.join(', '));
+  ['decision', 'action', 'note'].forEach(function(kind){
+    var its = m.items.filter(function(x){ return x.kind === kind; });
+    if(!its.length) return;
+    out.push('', MM_KINDS[kind].many + ':');
+    its.forEach(function(x){
+      out.push('- ' + x.text + (kind === 'action' ? ' (' + (isMe(x.who) ? (myName() || 'ich') : x.who) + (x.due ? ', bis ' + new Date(x.due + 'T00:00:00').toLocaleDateString('de-CH') : '') + ')' : ''));
+    });
+  });
+  return out.join('\n');
+}
+
+/* =========================================================
+   MITTEILUNGEN (Glocke in der Seitenleiste)
+   Sammelt Hinweise, die sonst nach ein paar Sekunden verschwinden: Erinnerungen,
+   Kurzzeit-Timer, Wiedervorlage, Nachfassen, Erwähnungen, Budget, gefährdete
+   Fristen, Regeln. Nur auf diesem Gerät (localStorage wb-inbox-<userId>), weil
+   die meisten Quellen ohnehin pro Gerät auslösen. Höchstens 200, 30 Tage.
+   ========================================================= */
+var INBOX_VIEWS = ['myday', 'status', 'calendar', 'projects', 'kb', 'teamdash', 'stats', 'dyce', 'worktime', 'forecast', 'load', 'accounts', 'people', 'inbox'];
+var inboxFilter = 'all';
+function inboxKey(){ return 'wb-inbox-' + (myUserId() || 'local'); }
+function inboxLoad(){
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem(inboxKey()) || '[]'); }catch(e){ list = []; }
+  if(!Array.isArray(list)) return [];
+  var cutoff = Date.now() - 30 * 86400000;
+  return list.filter(function(x){
+    return x && typeof x === 'object' && typeof x.id === 'string' && typeof x.text === 'string' && validIso(x.ts) && new Date(x.ts).getTime() > cutoff;
+  }).slice(0, 200);
+}
+function inboxSave(list){
+  try{ localStorage.setItem(inboxKey(), JSON.stringify(list.slice(0, 200))); }catch(e){}
+  renderInboxBadge();
+  if(boardViewMode === 'inbox' && !showArchive) renderInboxView();
+}
+function inboxAdd(icon, text, opts){
+  opts = opts || {};
+  var list = inboxLoad();
+  if(opts.key && list.some(function(x){ return x.key === opts.key; })) return;
+  list.unshift({id: 'nb-' + uid(), ts: nowIso(), icon: String(icon || '🔔').slice(0, 4), text: String(text || '').slice(0, 300),
+    taskId: typeof opts.taskId === 'string' && SAFE_ID_RE.test(opts.taskId) ? opts.taskId : '', view: INBOX_VIEWS.indexOf(opts.view) >= 0 ? opts.view : '', key: opts.key || '', read: false});
+  inboxSave(list);
+}
+function renderInboxBadge(){
+  var n = inboxLoad().filter(function(x){ return !x.read; }).length;
+  var b = document.getElementById('inboxBadge');
+  if(b){ b.textContent = n > 99 ? '99+' : String(n); b.hidden = !n; }
+  var tog = document.getElementById('btnMoreToggle');
+  if(tog) tog.classList.toggle('has-dot', n > 0);
+}
+function inboxOpen(x){
+  var list = inboxLoad();
+  var it = list.find(function(y){ return y.id === x; });
+  if(!it) return;
+  it.read = true;
+  inboxSave(list);
+  if(it.taskId && getTask(it.taskId)) openTaskModal(it.taskId);
+  else if(it.view) switchToView(it.view);
+  else if(it.taskId) toast('Dieser Task ist auf einem anderen Board oder wurde gelöscht.');
+}
+function renderInboxView(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  board.classList.remove('compact');
+  var list = inboxLoad();
+  var unread = list.filter(function(x){ return !x.read; }).length;
+  var shown = inboxFilter === 'unread' ? list.filter(function(x){ return !x.read; }) : list;
+  var today = startOfDay(new Date()).getTime(), yesterday = today - 86400000, week = today - 6 * 86400000;
+  var groups = [['Heute', []], ['Gestern', []], ['Diese Woche', []], ['Älter', []]];
+  shown.forEach(function(x){
+    var ts = new Date(x.ts).getTime();
+    groups[ts >= today ? 0 : (ts >= yesterday ? 1 : (ts >= week ? 2 : 3))][1].push(x);
+  });
+  var body = groups.filter(function(g){ return g[1].length; }).map(function(g){
+    return '<div class="md-sec">' + g[0] + '</div><div class="md-list">' + g[1].map(function(x){
+      var ts = new Date(x.ts);
+      var when = ts.getTime() >= today ? fmtClock(ts.getTime()) : ts.toLocaleDateString('de-CH', {weekday: 'short', day: 'numeric', month: 'numeric'}) + ', ' + fmtClock(ts.getTime());
+      var target = (x.taskId && getTask(x.taskId)) || x.view;
+      return '<div class="nb-row' + (x.read ? '' : ' unread') + (target ? ' link' : '') + '" data-nb="' + escapeAttr(x.id) + '"><span class="nb-ico">' + escapeHtml(x.icon) + '</span>' +
+        '<div class="nb-main"><div class="nb-text">' + escapeHtml(x.text) + '</div><div class="nb-time">' + escapeHtml(when) + '</div></div>' +
+        (x.read ? '' : '<span class="nb-dot" title="Ungelesen"></span>') +
+        '<button class="icon-btn" data-nb-del="' + escapeAttr(x.id) + '" title="Entfernen" aria-label="Entfernen">✕</button></div>';
+    }).join('') + '</div>';
+  }).join('');
+  board.innerHTML = '<div class="dash md-wrap nb-wrap">' +
+    '<div class="dash-head"><div><h1>🔔 Mitteilungen</h1><p>' + (unread ? unread + ' ungelesen' : 'Alles gelesen') + ' · Hinweise der letzten 30 Tage auf diesem Gerät</p></div>' +
+      '<div class="dash-actions">' + (unread ? '<button class="btn" id="nbReadAll">✓ Alle gelesen</button>' : '') + (list.length ? '<button class="btn ghost" id="nbClear">Leeren</button>' : '') + '</div></div>' +
+    '<div class="nb-filter"><button class="chip' + (inboxFilter === 'all' ? ' on' : '') + '" data-nb-filter="all">Alle<b>' + list.length + '</b></button>' +
+      '<button class="chip' + (inboxFilter === 'unread' ? ' on' : '') + '" data-nb-filter="unread">Ungelesen<b>' + unread + '</b></button></div>' +
+    (body || '<div class="md-list"><div class="md-empty"><b>' + (inboxFilter === 'unread' && list.length ? 'Alles gelesen 🎉' : 'Keine Mitteilungen') + '</b>Hier landen Erinnerungen, abgelaufene Timer, Nachfass-Termine, Erwähnungen, Budget-Warnungen und gefährdete Fristen, damit du nichts verpasst.</div></div>') +
+  '</div>';
+  var wrap = board.querySelector('.nb-wrap');
+  wrap.addEventListener('click', function(e){
+    var el = e.target.closest('[data-nb-del], [data-nb-filter], [data-nb], #nbReadAll, #nbClear');
+    if(!el) return;
+    if(el.dataset.nbDel){ inboxSave(inboxLoad().filter(function(x){ return x.id !== el.dataset.nbDel; })); }
+    else if(el.dataset.nbFilter){ inboxFilter = el.dataset.nbFilter; renderInboxView(); }
+    else if(el.dataset.nb){ inboxOpen(el.dataset.nb); }
+    else if(el.id === 'nbReadAll'){ inboxSave(inboxLoad().map(function(x){ x.read = true; return x; })); }
+    else if(el.id === 'nbClear'){ confirmDialog('Alle Mitteilungen auf diesem Gerät entfernen?', 'Leeren', function(){ closeModal(); inboxSave([]); }); }
+  });
+}
+/* Gefährdete Fristen: höchstens einmal pro Tag als Mitteilung. */
+function inboxCheckForecast(){
+  if(typeof computeForecast !== 'function') return;
+  var today = toDateInputValue(new Date());
+  var fc = computeForecast(), late = 0;
+  state.tasks.forEach(function(t){ var f = fc.byId[t.id]; if(f && f.status === 'late' && !t.archived && !t.completedAt) late++; });
+  if(late) inboxAdd('🔮', late === 1 ? 'Eine Frist ist gefährdet. Die Fristen-Prognose zeigt, was hilft.' : late + ' Fristen sind gefährdet. Die Fristen-Prognose zeigt, was hilft.', {view: 'forecast', key: 'fc-' + today});
+}
+
+/* =========================================================
+   FEIERABEND-RITUAL (ca. 2 Minuten)
+   1. Heute: Zeit, Lücken, laufender Timer. 2. Morgen: was kommt auf Mein Tag.
+   3. Notiz an mich selbst. Plan in state.settings.tomorrowPlan {date, ids} (wird
+   beim Tageswechsel in myDayRollover übernommen), Notiz in state.settings.dayNote
+   {date, from, text} (oben in Mein Tag), state.settings.lastShutdown = Datum.
+   ========================================================= */
+var sd = null;
+var sdPlanApplied = 0;
+function sdNextWorkday(){
+  var cfg = wtConfig(), ds = toDateInputValue(new Date());
+  for(var i = 1; i <= 14; i++){ var x = shiftDate(ds, i); if(wtDayInfo(x, cfg).soll > 0) return x; }
+  return shiftDate(ds, 1);
+}
+function sdDayLabel(ds){
+  var tmr = shiftDate(toDateInputValue(new Date()), 1);
+  return ds === tmr ? 'morgen' : new Date(ds + 'T00:00:00').toLocaleDateString('de-CH', {weekday: 'long'});
+}
+function sdApplyPlan(s, today){
+  var p = s.tomorrowPlan;
+  if(!p || typeof p !== 'object' || !Array.isArray(p.ids) || typeof p.date !== 'string' || p.date > today) return;
+  s.todayFocusIds = p.ids.filter(function(id, i, arr){ var t = getTask(id); return typeof id === 'string' && arr.indexOf(id) === i && t && !t.archived && !t.completedAt; }).slice(0, 30);
+  delete s.tomorrowPlan;
+  sdPlanApplied = s.todayFocusIds.length;
+  save();
+}
+function sdSuggestions(next, taken){
+  var today = toDateInputValue(new Date());
+  var out = [], seen = {};
+  function add(t, why){ if(t && !seen[t.id] && !taken[t.id] && !t.archived && !t.completedAt && !isSnoozed(t) && apDoneColumnIds().indexOf(t.columnId) < 0){ seen[t.id] = 1; out.push({t: t, why: why}); } }
+  weekGoalIds().forEach(function(id){ add(getTask(id), '🎯 Wochenziel'); });
+  state.tasks.filter(function(t){ return t.dueDate && t.dueDate < today; }).forEach(function(t){ add(t, 'Überfällig'); });
+  state.tasks.filter(function(t){ return t.dueDate && t.dueDate <= next; }).forEach(function(t){ add(t, 'Fällig ' + friendlyDueLabel(t.dueDate)); });
+  state.tasks.filter(function(t){ return t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === next; }).forEach(function(t){ add(t, 'Eingeplant'); });
+  waitingTasks().filter(function(t){ return t.waiting.next && t.waiting.next <= next; }).forEach(function(t){ add(t, '⏳ Nachfassen bei ' + t.waiting.who); });
+  state.tasks.filter(function(t){ return t.pinned || t.priority === 'critical'; }).forEach(function(t){ add(t, t.pinned ? 'Angeheftet' : 'Kritisch'); });
+  return out.slice(0, 10);
+}
+function openShutdown(){
+  var today = toDateInputValue(new Date());
+  var next = sdNextWorkday();
+  var keep = {};
+  myDayTasks().forEach(function(t){ if(!t.completedAt) keep[t.id] = true; });
+  var dn = state.settings.dayNote;
+  sd = {step: 0, today: today, next: next, keep: keep, add: {}, note: dn && dn.from === today ? dn.text : '', pause: true};
+  var plan = state.settings.tomorrowPlan;
+  if(plan && plan.date === next && Array.isArray(plan.ids)){ sd.keep = {}; plan.ids.forEach(function(id){ sd.add[id] = true; }); }
+  sdRender();
+}
+function sdRender(){
+  if(!sd) return;
+  var steps = ['Heute', 'Für ' + sdDayLabel(sd.next), 'Notiz'];
+  var head = '<div class="modal-header"><h2>🌙 Feierabend</h2><button class="icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
+    '<div class="wr-steps">' + steps.map(function(s, i){ return '<span class="wr-step' + (i === sd.step ? ' on' : '') + (i < sd.step ? ' done' : '') + '">' + (i < sd.step ? '✓' : (i + 1)) + ' ' + escapeHtml(s) + '</span>'; }).join('') + '</div>';
+  var body = '', foot = '';
+  var run = runningTask();
+  if(sd.step === 0){
+    var ws = wtSummary();
+    var dayStart = startOfDay(new Date()).getTime();
+    var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+    var doneToday = state.tasks.filter(function(t){ return t.completedAt && new Date(t.completedAt).getTime() >= dayStart; });
+    var gapMin = Math.round(dyceGaps(sd.today).reduce(function(s, g){ return s + (Math.min(g.e, Date.now()) - g.s) / 60000; }, 0));
+    var diff = ws.todayIst - ws.todaySoll;
+    body = '<div class="kpis wr-kpis">' +
+        '<div class="kpi"><div class="kpi-label">Heute erfasst</div><div class="kpi-value">' + fmtHM(todaySec) + '</div><div class="kpi-sub">' + (ws.todaySoll ? 'Soll ' + fmtHMin(ws.todaySoll) + ' h' : 'heute kein Soll') + '</div></div>' +
+        '<div class="kpi ' + (ws.todaySoll && diff < -0.5 ? 'bad' : 'good') + '"><div class="kpi-label">Gleitzeit heute</div><div class="kpi-value">' + (ws.todaySoll || ws.todayIst ? fmtSignedMin(diff) : '–') + '</div><div class="kpi-sub">Saldo ' + fmtSignedMin(ws.saldo + diff) + ' h</div></div>' +
+        '<div class="kpi good"><div class="kpi-label">Erledigt</div><div class="kpi-value">' + doneToday.length + '</div><div class="kpi-sub">Tasks heute</div></div>' +
+      '</div>' +
+      (run ? '<div class="sd-alert"><span>⏱ <b>' + escapeHtml(run.title) + '</b> läuft noch (' + fmtHMS(currentBookingSeconds(run)) + ').</span>' +
+        '<button class="btn" data-sd="pause">Pause</button><button class="btn primary" data-sd="finish">Abschliessen</button></div>' : '') +
+      (gapMin >= 10 ? '<div class="sd-alert warn"><span>⚠️ Heute fehlen <b>' + fmtHMin(gapMin) + ' h</b> ohne Buchung zwischen deinen Einträgen.</span><button class="btn" data-sd="dyce">Im Tagesabschluss füllen</button></div>' : '') +
+      (doneToday.length ? '<div class="wr-sec">Geschafft</div><div class="wr-done">' + doneToday.slice(0, 12).map(function(t){ return '<span>✓ ' + escapeHtml(t.title.slice(0, 60)) + '</span>'; }).join('') +
+        (doneToday.length > 12 ? '<span class="hint">+ ' + (doneToday.length - 12) + ' weitere</span>' : '') + '</div>' : '<div class="hint" style="margin-top:12px;">Heute noch nichts abgehakt. Auch gut: morgen ist ein neuer Tag.</div>');
+    foot = '<button class="btn" data-close-modal>Später</button><button class="btn primary" data-sd="next">Weiter: ' + escapeHtml(steps[1]) + '</button>';
+  } else if(sd.step === 1){
+    var openToday = myDayTasks().filter(function(t){ return !t.completedAt; });
+    var taken = {};
+    openToday.forEach(function(t){ taken[t.id] = 1; });
+    Object.keys(sd.add).forEach(function(id){ if(!taken[id] && getTask(id)) taken['x' + id] = 1; });
+    var planned = Object.keys(sd.add).map(getTask).filter(function(t){ return t && !t.completedAt && !openToday.some(function(o){ return o.id === t.id; }); });
+    var sugg = sdSuggestions(sd.next, taken).filter(function(s){ return !sd.add[s.t.id]; });
+    var count = openToday.filter(function(t){ return sd.keep[t.id]; }).length + Object.keys(sd.add).filter(function(id){ return sd.add[id] && getTask(id); }).length;
+    function row(t, why, key, on){
+      return '<label class="wr-goal' + (on ? ' on' : '') + '"><input type="checkbox" data-sd-' + key + '="' + t.id + '"' + (on ? ' checked' : '') + '>' +
+        '<span class="wr-goal-main"><span class="md-title">' + escapeHtml(t.title) + '</span><span class="md-meta">' + escapeHtml(why) + '</span></span></label>';
+    }
+    body = '<p class="hint" style="margin-top:0;">Was soll ' + escapeHtml(sdDayLabel(sd.next)) + ' (' + shortDateLabel(sd.next) + ') auf Mein Tag stehen? Die Liste ist dann schon bereit, wenn du anfängst.</p>' +
+      (openToday.length ? '<div class="wr-sec">Heute offen geblieben</div><div class="wr-goals">' + openToday.map(function(t){ return row(t, 'Von Mein Tag', 'keep', !!sd.keep[t.id]); }).join('') + '</div>' : '') +
+      (planned.length ? '<div class="wr-sec">Schon vorgemerkt</div><div class="wr-goals">' + planned.map(function(t){ return row(t, 'Vorgemerkt', 'add', true); }).join('') + '</div>' : '') +
+      (sugg.length ? '<div class="wr-sec">Vorschläge</div><div class="wr-goals">' + sugg.map(function(s){ return row(s.t, s.why, 'add', false); }).join('') + '</div>' : '') +
+      (!openToday.length && !sugg.length && !planned.length ? '<div class="md-empty"><b>Nichts offen 🎉</b>Morgen startest du mit einer leeren Liste und den üblichen Vorschlägen.</div>' : '');
+    foot = '<button class="btn ghost" data-sd="back" style="margin-right:auto;">Zurück</button><button class="btn primary" data-sd="next">Weiter' + (count ? ' · ' + count + ' Task' + (count > 1 ? 's' : '') + ' vorgemerkt' : '') + '</button>';
+  } else {
+    body = '<div class="form-row"><label for="sdNote">Notiz an dich für ' + escapeHtml(sdDayLabel(sd.next)) + '</label>' +
+        '<textarea id="sdNote" rows="5" maxlength="2000" placeholder="Wo stehst du gerade? Was ist als Erstes dran? Woran darfst du nicht vergessen?">' + escapeHtml(sd.note) + '</textarea>' +
+        '<div class="hint">Steht ' + escapeHtml(sdDayLabel(sd.next)) + ' ganz oben in Mein Tag. So findest du schnell wieder rein.</div></div>' +
+      (run ? '<label class="wt-check"><input type="checkbox" id="sdPause"' + (sd.pause ? ' checked' : '') + '> Laufenden Timer pausieren (' + escapeHtml(run.title.slice(0, 40)) + ')</label>' : '') +
+      '<label class="wt-check"><input type="checkbox" id="sdNudge"' + (state.settings.shutdownNudge !== false ? ' checked' : '') + '> An Arbeitstagen ab ' + (state.settings.shutdownHour || 17) + ' Uhr oder wenn die Sollzeit erreicht ist an den Feierabend erinnern</label>';
+    foot = '<button class="btn ghost" data-sd="back" style="margin-right:auto;">Zurück</button><button class="btn primary" data-sd="finish-day">Feierabend 🌙</button>';
+  }
+  openModal(head + '<div class="modal-body wr-body">' + body + '</div><div class="modal-footer">' + foot + '</div>', {wide: true});
+  modalCloseCleanup = function(){ sd = null; };
+  var root = document.getElementById('modalRoot');
+  root.querySelector('.modal-body').addEventListener('click', sdClick);
+  root.querySelector('.modal-footer').addEventListener('click', sdClick);
+  root.querySelector('.modal-body').addEventListener('change', function(e){
+    if(!sd) return;
+    var d = e.target.dataset || {};
+    if(d.sdKeep){ sd.keep[d.sdKeep] = e.target.checked; sdRender(); }
+    else if(d.sdAdd){ if(e.target.checked) sd.add[d.sdAdd] = true; else delete sd.add[d.sdAdd]; sdRender(); }
+    else if(e.target.id === 'sdPause') sd.pause = e.target.checked;
+    else if(e.target.id === 'sdNudge'){ state.settings.shutdownNudge = e.target.checked; save(); }
+  });
+  var note = document.getElementById('sdNote');
+  if(note){ note.addEventListener('input', function(){ sd.note = note.value; }); if(window.matchMedia('(hover:hover)').matches) note.focus(); }
+}
+function sdClick(e){
+  var el = e.target.closest('[data-sd]');
+  if(!el || !sd) return;
+  var act = el.dataset.sd, run = runningTask();
+  if(act === 'next'){ sd.step = Math.min(2, sd.step + 1); sdRender(); }
+  else if(act === 'back'){ sd.step = Math.max(0, sd.step - 1); sdRender(); }
+  else if(act === 'pause'){ if(run) stopTimer(run.id); sdRender(); }
+  else if(act === 'finish'){
+    if(!run) return;
+    var keepSd = sd;
+    modalCloseCleanup = null;
+    finishBooking(run.id, false, function(){ sd = keepSd; sdRender(); });
+  }
+  else if(act === 'dyce'){ sd = null; closeModal(); dyceDateStr = ''; switchToView('dyce'); }
+  else if(act === 'finish-day') sdFinish();
+}
+function sdFinish(){
+  var s = state.settings;
+  var ids = myDayTasks().filter(function(t){ return !t.completedAt && sd.keep[t.id]; }).map(function(t){ return t.id; });
+  Object.keys(sd.add).forEach(function(id){ var t = getTask(id); if(sd.add[id] && t && !t.completedAt && ids.indexOf(id) < 0) ids.push(id); });
+  if(ids.length) s.tomorrowPlan = {date: sd.next, ids: ids.slice(0, 30)}; else delete s.tomorrowPlan;
+  var text = cleanStr(sd.note, 2000).trim();
+  if(text) s.dayNote = {date: sd.next, from: sd.today, text: text};
+  else if(s.dayNote && s.dayNote.from === sd.today) delete s.dayNote;
+  s.lastShutdown = sd.today;
+  var run = runningTask();
+  if(run && sd.pause) stopTimer(run.id, true);
+  var label = sdDayLabel(sd.next);
+  sd = null;
+  save();
+  closeModal();
+  renderAll();
+  toast('🌙 Schönen Feierabend!' + (ids.length ? ' Für ' + label + ' ' + (ids.length === 1 ? 'ist 1 Task' : 'sind ' + ids.length + ' Tasks') + ' auf Mein Tag vorgemerkt.' : ''), 7000);
+}
+function sdNoteBannerHtml(){
+  var n = state.settings.dayNote;
+  if(!n || typeof n !== 'object' || typeof n.text !== 'string' || !n.text || typeof n.date !== 'string' || n.date > toDateInputValue(new Date())) return '';
+  return '<div class="sd-note"><div class="sd-note-head">📝 Deine Notiz vom ' + escapeHtml(n.from ? shortDateLabel(n.from) : '') + '<button class="btn ghost" data-sdn="ok" title="Notiz ausblenden">✓ Gelesen</button></div>' +
+    '<div class="sd-note-text">' + escapeHtml(n.text) + '</div></div>';
+}
+function sdMaybeNudge(){
+  var s = state.settings;
+  if(s.shutdownNudge === false || sd) return;
+  var now = new Date(), today = toDateInputValue(now);
+  if(s.lastShutdown === today) return;
+  var ws = wtSummary();
+  if(!ws.todaySoll) return;
+  var hour = now.getHours();
+  var late = hour >= (s.shutdownHour || 17);
+  var sollReached = ws.todayIst >= ws.todaySoll && hour >= 14;
+  if(!(late || sollReached) || ws.todayIst < 60 || hour >= 23) return;
+  try{ if(localStorage.getItem('wb-sd-nudged') === today) return; localStorage.setItem('wb-sd-nudged', today); }catch(e){ return; }
+  toast(sollReached ? '🌙 Sollzeit für heute erreicht. Tag abschliessen und morgen vorbereiten?' : '🌙 Feierabend? In 2 Minuten den Tag abschliessen und morgen vorbereiten.', 15000, 'Starten', openShutdown);
+}
+function sdMorningCheck(){
+  myDayIds();
+  if(!sdPlanApplied) return;
+  var n = sdPlanApplied;
+  sdPlanApplied = 0;
+  toast('☀️ Mein Tag ist vorbereitet: ' + n + ' Task' + (n > 1 ? 's' : '') + ' vom Feierabend-Ritual.', 8000, 'Mein Tag', function(){ switchToView('myday'); });
+  if(boardViewMode === 'myday') renderBoard();
+}
+
+/* ---- Einstieg: Intervalle und globale Klicks ---- */
+function initPeopleAndRituals(){
+  renderInboxBadge();
+  setTimeout(waitCheckDue, 8000);
+  setInterval(waitCheckDue, 10 * 60000);
+  setTimeout(inboxCheckForecast, 15000);
+  setInterval(inboxCheckForecast, 60 * 60000);
+  setTimeout(sdMorningCheck, 2500);
+  setInterval(sdMorningCheck, 5 * 60000);
+  setInterval(sdMaybeNudge, 10 * 60000);
+  setTimeout(sdMaybeNudge, 20000);
+  document.getElementById('btnShutdown').addEventListener('click', openShutdown);
+  document.getElementById('board').addEventListener('click', function(e){
+    var el = e.target.closest('[data-sdn]');
+    if(!el) return;
+    delete state.settings.dayNote;
+    save();
+    renderBoard();
+  });
+}
+/* Task-Fenster: Warten auf, Gesprächsthema, Protokoll. */
+function wireTaskModalExtras(t){
+  var id = t.id;
+  var wb = document.getElementById('waitPropBtn');
+  if(wb) wb.addEventListener('click', function(){ openWaitingDialog(id, true); });
+  var mb = document.getElementById('openMinutesBtn');
+  if(mb) mb.addEventListener('click', function(){ openMinutes(id, true); });
+  var mm2 = document.getElementById('minutesMenuBtn');
+  if(mm2) mm2.addEventListener('click', function(){ openMinutes(id, true); });
+  var ab = document.getElementById('agendaMenuBtn');
+  if(ab) ab.addEventListener('click', function(){ openAgendaDialog(t.reporter || '', id, true); });
 }
 
 /* =========================================================
@@ -7778,6 +8859,7 @@ function openTaskModal(taskId){
             '<div class="task-page-row"><button type="button" class="btn" id="openPageBtn">'+svgIcon('grid')+'<span>'+(pageItemCount(t) ? 'Seite öffnen' : 'Seite anlegen')+'</span></button>' +
             '<span class="hint" style="margin:0;">'+(pageItemCount(t) ? pageSummary(t) : 'Texte und Bilder frei platzieren, z.B. fürs Troubleshooting.')+'</span></div>' +
           '</div>' +
+          minutesBlockHtml(t) +
 
           '<div class="task-block"><div class="task-block-title">Notizen'+(t.type==='hotline'?'<span class="task-block-sub">z.B. während des Anrufs</span>':'')+'</div>' +
             '<div class="form-row-inline input-btn-row">' +
@@ -7872,6 +8954,7 @@ function openTaskModal(taskId){
             '<button type="button" class="btn ghost bk-add" id="modalTimeBlockBtn" title="Zeit nachträglich buchen, z.B. 45 Minuten ohne Timer">'+svgIcon('plus')+'<span>Zeitblock buchen</span></button></div>' +
           '<div class="prop-panel">' +
             '<div class="prop"><label for="fColumn">Status</label><select id="fColumn">'+colOptions+'</select></div>' +
+            waitPropHtml(t) +
             '<div class="prop"><label for="fRank">Reihenfolge in der Spalte</label><div class="rank-field"><input id="fRank" type="number" min="1" max="999" step="1" inputmode="numeric" value="'+(t.rank||'')+'" placeholder="Keine Nummer">' +
               '<button type="button" class="btn ghost" id="fRankNext" title="Hinten an die nummerierten Tasks anhängen">Nächste freie</button></div></div>' +
             '<div class="prop-row2">' +
@@ -7913,6 +8996,8 @@ function openTaskModal(taskId){
             '<button class="btn" id="saveAsTemplateBtn">'+svgIcon('save')+'<span>Als Vorlage speichern</span></button>' +
             '<button class="btn" id="mailReplyBtn">'+svgIcon('mail')+'<span>E-Mail-Antwort</span></button>' +
             (t.type==='meeting' ? '<button class="btn" id="icsExportBtn">'+svgIcon('cal')+'<span>Zum Kalender (.ics)</span></button>' : '') +
+            '<button class="btn" id="agendaMenuBtn">'+svgIcon('contact')+'<span>Mit Person besprechen…</span></button>' +
+            (t.type !== 'meeting' && !t.minutes ? '<button class="btn" id="minutesMenuBtn">'+svgIcon('clipboard')+'<span>Protokoll anlegen</span></button>' : '') +
             '<button class="btn" id="askAiBtn">'+svgIcon('chat')+'<span>Assistent fragen…</span></button>' +
             '<button class="btn" id="qrShareBtn">'+svgIcon('grid')+'<span>QR-Code</span></button>' +
             '<div class="sep"></div>' +
@@ -7944,6 +9029,7 @@ function openTaskModal(taskId){
     var mv = document.getElementById('modalVoiceBtn');
     if(mv) mv.addEventListener('click', startVoiceCommand);
     renderEstimateHint(t.id);
+    wireTaskModalExtras(t);
   })();
 
   function persist(){
@@ -8670,7 +9756,7 @@ function openMeetingSubjectDialog(taskId){
       '<div class="form-row"><label for="mtSubject">Betreff</label><input id="mtSubject" autocomplete="off" placeholder="Worum geht es im Meeting?"></div>' +
       (recents.length ? '<div class="meeting-chip-row">' + recents.map(function(mt){ return '<span class="meeting-chip" data-mt-recent="'+escapeAttr(mt)+'">'+escapeHtml(mt)+'</span>'; }).join('') + '</div>' : '') +
     '</div>' +
-    '<div class="modal-footer"><button class="btn" data-close-modal>Später</button><button class="btn primary" id="mtSave">Betreff speichern</button></div>';
+    '<div class="modal-footer"><button class="btn" data-close-modal>Später</button><button class="btn" id="mtMinutes" title="Betreff speichern und gleich mitschreiben">📝 Protokoll</button><button class="btn primary" id="mtSave">Betreff speichern</button></div>';
   openModal(html);
   var input = document.getElementById('mtSubject');
   input.focus();
@@ -8684,6 +9770,7 @@ function openMeetingSubjectDialog(taskId){
     renderAll();
   }
   document.getElementById('mtSave').addEventListener('click', save);
+  document.getElementById('mtMinutes').addEventListener('click', function(){ save(); openMinutes(taskId); });
   input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); save(); } });
   document.querySelectorAll('[data-mt-recent]').forEach(function(chip){
     chip.addEventListener('click', function(){ input.value = chip.dataset.mtRecent; input.focus(); });
@@ -13592,6 +14679,10 @@ function cmdActionsList(){
     {icon:'🏖️', label:'Ferien / Abwesenheit eintragen', run: function(){ openAbsenceDialog(toDateInputValue(new Date()), ''); }},
     {icon:'🔮', label:'Fristen-Prognose: Schaffe ich meine Fristen?', run: function(){ switchToView('forecast'); }},
     {icon:'🌡️', label:'Auslastung: Wie voll bin ich? (Pensum)', run: function(){ switchToView('load'); }},
+    {icon:'👥', label:'Personen: Warten auf und Gesprächsthemen', run: function(){ switchToView('people'); }},
+    {icon:'🗣️', label:'Gesprächsthema notieren (für das nächste Gespräch)', run: function(){ openAgendaDialog(''); }},
+    {icon:'🔔', label:'Mitteilungen anzeigen', run: function(){ switchToView('inbox'); }},
+    {icon:'🌙', label:'Feierabend: Tag abschliessen und morgen vorbereiten', run: openShutdown},
     {icon:'📄', label:'Wochenbericht erstellen', run: openWeeklyReport},
     {icon:'🖨️', label:'Wochenbericht als PDF (Druckdialog)', run: printWeeklyReportPdf},
     {icon:'🤝', label:'Schichtübergabe-Report', run: openHandoffReport},
@@ -14459,7 +15550,7 @@ function handleUrlShortcutAction(){
    Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
    Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
    ========================================================= */
-var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'bookingAccounts'];
+var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'bookingAccounts', 'agenda'];
 var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
 var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
 var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
@@ -14517,6 +15608,7 @@ function normalizeSyncSettings(settings){
   settings.freeTime = (Array.isArray(settings.freeTime) ? settings.freeTime : []).map(normalizeFreeTime).filter(Boolean);
   settings.absences = (Array.isArray(settings.absences) ? settings.absences : []).map(normalizeAbsence).filter(Boolean);
   settings.bookingAccounts = (Array.isArray(settings.bookingAccounts) ? settings.bookingAccounts : []).map(normalizeAccount).filter(Boolean);
+  settings.agenda = (Array.isArray(settings.agenda) ? settings.agenda : []).map(normalizeAgenda).filter(Boolean);
   if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
 }
 function normalizeFreeTime(e){
@@ -14744,6 +15836,7 @@ function checkBudgetAlerts(){
     var level = pct >= 100 ? 100 : (pct >= 80 ? 80 : 0);
     if(level > done){
       toast((level === 100 ? '🚨 Budget aufgebraucht: ' : '⚠️ Budget zu 80 % verbraucht: ') + projectLabel(p), 9000, 'Projekte', function(){ projDetailId = p.id; switchToView('projects'); });
+      inboxAdd(level === 100 ? '🚨' : '⚠️', (level === 100 ? 'Budget aufgebraucht: ' : 'Budget zu 80 % verbraucht: ') + projectLabel(p), {view: 'projects'});
       sendNtfyPush('📊 Projektbudget', level === 100 ? 'Ein Projekt hat sein Budget erreicht – in der Projektansicht prüfen.' : 'Ein Projekt hat 80 % des Budgets erreicht – in der Projektansicht prüfen.');
     }
     if(level !== done){ alerts[p.id] = level; changed = true; }
@@ -17501,7 +18594,7 @@ function applyRuleActions(r, t){
         }
         else if(a.type === 'set_project'){ var pr = getProject(v); if(pr){ updateTask(t.id, {projectId: pr.id, projectName: pr.name}); done.push('Projekt ' + pr.name); } }
         else if(a.type === 'notify'){ sendNtfyPush('🤖 ' + r.name, ruleText(v, {title: '', reporter: '', jiraKey: '', columnId: ''}) || 'Eine Automatisierungs-Regel wurde ausgelöst.'); done.push('Push gesendet'); }
-        else if(a.type === 'toast'){ var tid = t.id; toast('🤖 ' + (ruleText(v, t) || r.name), 8000, 'Öffnen', function(){ openTaskModal(tid); }); done.push('Hinweis'); }
+        else if(a.type === 'toast'){ var tid = t.id; toast('🤖 ' + (ruleText(v, t) || r.name), 8000, 'Öffnen', function(){ openTaskModal(tid); }); inboxAdd('🤖', ruleText(v, t) || r.name, {taskId: tid}); done.push('Hinweis'); }
         else if(a.type === 'create_task'){
           var nt = createTask({title: ruleText(v, t) || 'Folge-Task', type: 'adhoc', columnId: state.columns[0].id, reporter: t.reporter || '', projectId: t.projectId || undefined, projectName: t.projectName || undefined});
           var dd = parseInt(a.extra, 10);
@@ -17850,6 +18943,7 @@ function notifyMentions(base, remoteTasks){
       var mentioned = (c.mentions || []).indexOf(me) >= 0;
       if(!mentioned && r.assigneeId !== me) return;
       toast('💬 ' + (c.byName || 'Jemand') + (mentioned ? ' hat dich erwähnt' : ' hat kommentiert') + ': «' + r.title.slice(0, 40) + '»', 10000, 'Öffnen', function(){ openTaskModal(r.id); });
+      inboxAdd('💬', (c.byName || 'Jemand') + (mentioned ? ' hat dich erwähnt' : ' hat kommentiert') + ': «' + r.title.slice(0, 80) + '»', {taskId: r.id, key: 'cm-' + c.id});
     });
   });
 }
@@ -19456,6 +20550,7 @@ function init(){
   setTimeout(checkTimeRules, 6000);
   setInterval(wrMaybeNudge, 10 * 60000);
   setTimeout(wrMaybeNudge, 9000);
+  initPeopleAndRituals();
   setTimeout(checkBudgetAlerts, 4000);
   runAutoArchive();
   setTimeout(checkOvernightTimers, 1200);
