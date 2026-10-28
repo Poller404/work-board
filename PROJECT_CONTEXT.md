@@ -24,6 +24,19 @@
   Mock bzw. simulierten Antworten getestet, nicht gegen das echte Supabase bzw. einen echten
   Gemini-Key.
 
+## ✅ Stand 2026-10-28: Ein Planer für alle Boards, Planung pro Person (Branch `claude/project-thread-tnb77x`)
+
+Timo: "Es gibt ja nicht mehrere Planner. Alle Tasks für einen Planer, auch die geteilten. Dort sieht jeder seine Tasks."
+- Planer (`renderPlannerView`) liest alle Quellen aus `allBoardSources()` (`plSrcs`); Elemente tragen `data-src`. Liste "Nicht geplant" mit Board-Filter (`#plBoard`),
+  aus geteilten Boards nur nicht oder mir zugewiesene Tasks (`plMine`). Klick auf Task eines anderen Boards → `openGlobalTask` (wechselt das Board).
+- **Planung pro Person:** persönliche Boards wie bisher im Task (`scheduledAt/scheduledMinutes/autoPlan`). Geteilte Boards: `settings.sharedPlans`
+  ({id: `sharedPlanId(board, task)`, board, task, at, min?, auto?, updatedAt}, in `SYNC_LISTS`), nie im geteilten Task. Lesen immer über `planInfo/planAt/planMin(t, board?)`,
+  schreiben über `planSet` (beliebiges Board) bzw. `updateTask`/`createTask`, die Planfelder in geteilten Boards umleiten (`setSharedPlan`).
+  Alte geteilte `scheduledAt` gelten als eigene Planung, wenn nicht jemand anderem zugewiesen und kein eigener Eintrag existiert.
+- Autopilot (`apPool`) plant über alle Boards; Rückgängig deckt `sharedPlans` und Planungen in anderen persönlichen Boards ab (`otherBoardPlans`).
+  Beim Verschieben auf ein anderes Board zieht die eigene Planung mit.
+- Getestet mit Mock-Supabase und zwei Personen (Timo/Anna, geteiltes Board): Anna sieht Timos Blöcke nicht und umgekehrt, iPhone-Dialog "Planen" mit allen Boards.
+
 ## ✅ Stand 2026-10-27: Buchungsgefässe und Onboarding (Branch `claude/project-thread-b4fjab`)
 
 Timo wollte die Tasks unter "Zeitbuchung" als Buchungsgefässe, direkt bebuchbar; bestehende Tasks übernehmen und löschen; neue Benutzer ohne vordefinierte Gefässe; Onboarding nach Registrierung.

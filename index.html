@@ -1285,6 +1285,9 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .pl-item-main{flex:1; min-width:0; display:flex; flex-direction:column;}
 .pl-item-title{font-size:12.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .pl-item-meta{font-size:11px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-item-board{font-size:10.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-item-board.cur{color:var(--accent);}
+#plBoard{width:100%;}
 .pl-main{flex:1; min-width:0; display:flex; flex-direction:column;}
 .pl-toolbar{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; background:var(--surface);}
 .pl-toolbar .spacer{flex:1;}
@@ -1326,6 +1329,8 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .pl-block.dragging{opacity:.9; z-index:10; box-shadow:var(--shadow-lg); cursor:grabbing;}
 .pl-block-time{font-size:10.5px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
 .pl-block-title{font-weight:600; line-height:1.25; overflow:hidden;}
+.pl-block-board{font-size:10px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pl-block.other{border-left-style:dashed;}
 .pl-block-tools{position:absolute; top:2px; right:3px; display:none; gap:2px;}
 .pl-block:hover .pl-block-tools{display:flex;}
 .pl-block-tools button{border:0; background:var(--surface); border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; color:var(--text);}
@@ -2163,6 +2168,11 @@ function createTask(partial){
   t.links = cleanLinks(t.links);
   t.activityLog.push({ts: nowIso(), text: 'Task erstellt'});
   state.tasks.unshift(t);
+  if(activeShared && (t.scheduledAt || t.scheduledMinutes)){
+    var planPatch = {scheduledAt: t.scheduledAt, scheduledMinutes: t.scheduledMinutes || null};
+    t.scheduledAt = ''; delete t.scheduledMinutes; delete t.autoPlan;
+    setSharedPlan(activeShared.id, t, planPatch);
+  }
   save();
   if(t.type === 'hotline') sendNtfyPush('📞 Neues Hotline-Ticket', 'Ein neues Hotline-Ticket wurde erstellt' + (currentUser ? ' (von ' + currentUser.displayName + ')' : '') + ' – im Board ansehen.');
   runRules('created', t);
@@ -2179,6 +2189,14 @@ function logActivity(t, text){
 function updateTask(id, patch){
   var t = getTask(id);
   if(!t) return;
+  /* In geteilten Boards gehört die Planung der Person, nicht dem Task (siehe planInfo). */
+  var planBoard = planBoardId(t);
+  if(planBoard && (patch.scheduledAt !== undefined || patch.scheduledMinutes !== undefined || patch.autoPlan !== undefined)){
+    setSharedPlan(planBoard, t, patch);
+    patch = Object.assign({}, patch);
+    delete patch.scheduledAt; delete patch.scheduledMinutes; delete patch.autoPlan;
+    if(!Object.keys(patch).length){ save(); return; }
+  }
   var evMoved = !!(patch.columnId && patch.columnId !== t.columnId);
   var evAssigned = !!((patch.assigneeId && patch.assigneeId !== (t.assigneeId || '')) || (patch.assignee && patch.assignee !== t.assignee));
   var wasDone = !!t.completedAt;
@@ -2217,6 +2235,7 @@ function updateTask(id, patch){
   if(rankFromCol && patch.rank === undefined) patch.rank = null;
   Object.assign(t, patch, {updatedAt: nowIso()});
   if(t.rank == null) delete t.rank;
+  if(t.autoPlan !== undefined && t.autoPlan !== true) delete t.autoPlan;
   if(rankFromCol) compactRanks(rankFromCol);
   save();
   if(!ruleDepth){
@@ -2283,7 +2302,7 @@ function spawnRecurrenceIfDue(t){
    ========================================================= */
 var undoStack = [];
 function pushUndoSnapshot(){
-  undoStack.push(JSON.stringify({tasks: state.tasks, columns: state.columns, freeTime: freeTimeList()}));
+  undoStack.push(JSON.stringify({tasks: state.tasks, columns: state.columns, freeTime: freeTimeList(), sharedPlans: sharedPlanList(), otherPlans: otherBoardPlans()}));
   if(undoStack.length > 20) undoStack.shift();
 }
 function undoLastAction(){
@@ -2292,6 +2311,8 @@ function undoLastAction(){
   state.tasks = snap.tasks.map(normalizeTask);
   state.columns = snap.columns;
   if(Array.isArray(snap.freeTime)) state.settings.freeTime = snap.freeTime;
+  if(Array.isArray(snap.sharedPlans)) state.settings.sharedPlans = snap.sharedPlans;
+  if(snap.otherPlans) restoreOtherBoardPlans(snap.otherPlans);
   save();
   renderAll();
   toast('↩️ Rückgängig gemacht.');
@@ -3736,8 +3757,8 @@ function nxContext(){
   var endMin = parseHM(state.settings.dyceWorkEnd, 17 * 60), nowMin = plDayMinutes(now);
   var free = Math.max(0, endMin - nowMin), todayStr = toDateInputValue(now);
   state.tasks.forEach(function(t){
-    if(t.archived || t.type !== 'meeting' || !t.scheduledAt) return;
-    var st = new Date(t.scheduledAt);
+    if(t.archived || t.type !== 'meeting' || !planAt(t)) return;
+    var st = new Date(planAt(t));
     if(isNaN(st.getTime()) || toDateInputValue(st) !== todayStr || st.getTime() <= Date.now()) return;
     free = Math.min(free, Math.round((st.getTime() - Date.now()) / 60000));
   });
@@ -6098,7 +6119,7 @@ function myDaySuggestions(){
   (state.settings.prevFocusIds || []).forEach(function(id){ add(getTask(id), prevLabel); });
   open.filter(function(t){ return t.dueDate && t.dueDate < today; }).forEach(function(t){ add(t, 'Überfällig'); });
   open.filter(function(t){ return t.dueDate === today; }).forEach(function(t){ add(t, 'Heute fällig'); });
-  open.filter(function(t){ return t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).forEach(function(t){ add(t, 'Heute eingeplant'); });
+  open.filter(function(t){ return planAt(t) && toDateInputValue(new Date(planAt(t))) === today; }).forEach(function(t){ add(t, 'Heute eingeplant'); });
   var inProg = inProgressColumn();
   open.filter(function(t){ return isRunning(t) || (inProg !== state.columns[0] && t.columnId === inProg.id); }).forEach(function(t){ add(t, 'In Bearbeitung'); });
   open.filter(function(t){ return t.pinned; }).forEach(function(t){ add(t, 'Angeheftet'); });
@@ -6868,8 +6889,8 @@ function fcDayCapacity(ds, cfg, todayStr, istTodayMin){
   var info = wtDayInfo(ds, cfg);
   var cap = info.soll, meet = 0;
   state.tasks.forEach(function(t){
-    if(t.archived || t.type !== 'meeting' || !t.scheduledAt) return;
-    var st = new Date(t.scheduledAt);
+    if(t.archived || t.type !== 'meeting' || !planAt(t)) return;
+    var st = new Date(planAt(t));
     if(isNaN(st.getTime()) || toDateInputValue(st) !== ds) return;
     var endMs = st.getTime() + plannedMinutes(t) * 60000;
     if(endMs <= Date.now()) return;
@@ -7090,7 +7111,7 @@ function ldLearn(cfg){
   /* Ist und ungeplanter Anteil: Sitzungen nach Woche aufteilen. */
   ldAllTasks().concat(freeTimeTasks()).forEach(function(t){
     var created = new Date(t.createdAt).getTime();
-    var plannedMeeting = t.type === 'meeting' && !!t.scheduledAt;
+    var plannedMeeting = t.type === 'meeting' && !!planAt(t);
     (t.timeSessions || []).forEach(function(s){
       if(!isMySession(s)) return;
       var st = Math.max(new Date(s.start).getTime(), fromMs), en = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), toMs);
@@ -7163,8 +7184,8 @@ function computeLoad(horizonDays){
   var items = [], assumed = 0, corrected = 0;
   var endMs = dayStartMs(shiftDate(endDs, 1));
   ldOpenTasks().forEach(function(t){
-    if(t.type === 'meeting' && t.scheduledAt){
-      var st = new Date(t.scheduledAt).getTime(), en = st + plannedMinutes(t) * 60000;
+    if(t.type === 'meeting' && planAt(t)){
+      var st = new Date(planAt(t)).getTime(), en = st + plannedMinutes(t) * 60000;
       if(isFinite(st) && en > Date.now() && st < endMs){ var m = (Math.min(en, endMs) - Math.max(st, Date.now())) / 60000; parts.meetings += m; items.push({t: t, min: m, kind: 'meetings'}); }
       return;
     }
@@ -7893,9 +7914,9 @@ function openTaskModal(taskId){
               '<input id="fGroup" list="groupNamesList" value="'+escapeAttr(t.taskGroup||'')+'" placeholder="z.B. VPN-Rollout">' +
               '<datalist id="groupNamesList">'+groupDatalistHtml+'</datalist>' +
             '</div>' +
-            '<div class="prop"><label for="fScheduledAt">Geplant für (Kalender)</label><input type="datetime-local" id="fScheduledAt" value="'+(t.scheduledAt ? toDateTimeInputValue(new Date(t.scheduledAt)) : '')+'">' +
-              '<button type="button" class="btn ghost" id="btnExportScheduledIcs" style="margin-top:6px; align-self:flex-start;" '+(t.scheduledAt?'':'disabled')+'>Outlook-Termin (.ics)</button></div>' +
-            '<div class="prop"><label for="fSchedMin">Dauer im Planer (Min.)</label><input type="number" id="fSchedMin" min="5" step="5" value="'+(t.scheduledMinutes||'')+'" placeholder="'+plannedMinutes(t)+'"></div>' +
+            '<div class="prop"><label for="fScheduledAt">Geplant für (Kalender)</label><input type="datetime-local" id="fScheduledAt" value="'+(planAt(t) ? toDateTimeInputValue(new Date(planAt(t))) : '')+'">' +
+              '<button type="button" class="btn ghost" id="btnExportScheduledIcs" style="margin-top:6px; align-self:flex-start;" '+(planAt(t)?'':'disabled')+'>Outlook-Termin (.ics)</button></div>' +
+            '<div class="prop"><label for="fSchedMin">Dauer im Planer (Min.)</label><input type="number" id="fSchedMin" min="5" step="5" value="'+(planMin(t)||'')+'" placeholder="'+plannedMinutes(t)+'"></div>' +
           '</div>' +
           '<details class="s-more"><summary>Zeitsitzungen</summary><div class="notes-log">'+sessionsHtml+'</div></details>' +
         '</aside>' +
@@ -7963,8 +7984,8 @@ function openTaskModal(taskId){
     var smEl = document.getElementById('fSchedMin');
     if(smEl){
       var smv = parseInt(smEl.value, 10);
-      if(!isNaN(smv) && smv >= 5){ if(smv !== (t.scheduledMinutes || 0)) projPatch.scheduledMinutes = smv; }
-      else if(smEl.value === '' && t.scheduledMinutes) projPatch.scheduledMinutes = null;
+      if(!isNaN(smv) && smv >= 5){ if(smv !== (planMin(t) || 0)) projPatch.scheduledMinutes = smv; }
+      else if(smEl.value === '' && planMin(t)) projPatch.scheduledMinutes = null;
     }
     updateTask(t.id, Object.assign(projPatch, {
       title: document.getElementById('fTitle').value.trim() || 'Unbenannt',
@@ -9398,8 +9419,8 @@ function gapSuggestions(ds, g){
   }
   var gMin = Math.max(1, (g.e - g.s) / 60000);
   state.tasks.forEach(function(t){
-    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds){
-      var ps = new Date(t.scheduledAt).getTime(), pe = ps + plannedMinutes(t) * 60000;
+    if(planAt(t) && toDateInputValue(new Date(planAt(t))) === ds){
+      var ps = new Date(planAt(t)).getTime(), pe = ps + plannedMinutes(t) * 60000;
       var ov = (Math.min(pe, g.e) - Math.max(ps, g.s)) / 60000;
       if(ov > 0) add(t, 3 * Math.min(1, ov / gMin) + 1, 'Geplant ' + fmtClock(ps) + '–' + fmtClock(pe));
     }
@@ -10624,7 +10645,7 @@ function dyceAiSuggest(ds, gaps, btn){
   var cand = {};
   function addCand(t){ if(t && !t.archived) cand[t.id] = t; }
   state.tasks.forEach(function(t){
-    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds) addCand(t);
+    if(planAt(t) && toDateInputValue(new Date(planAt(t))) === ds) addCand(t);
     if(secondsOnDate(t, ds) > 0) addCand(t);
     var a = dayStartMs(ds), b = a + 86400000;
     (t.notes || []).concat(t.activityLog || []).forEach(function(x){ var ts = new Date(x.ts).getTime(); if(ts >= a && ts < b) addCand(t); });
@@ -10637,7 +10658,7 @@ function dyceAiSuggest(ds, gaps, btn){
   ctx.push('', 'Mögliche Tasks (id | Titel | Typ | Hinweise):');
   tasks.forEach(function(t){
     var hints = [];
-    if(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds) hints.push('geplant ' + fmtClock(new Date(t.scheduledAt).getTime()) + ' für ' + plannedMinutes(t) + ' Min.');
+    if(planAt(t) && toDateInputValue(new Date(planAt(t))) === ds) hints.push('geplant ' + fmtClock(new Date(planAt(t)).getTime()) + ' für ' + plannedMinutes(t) + ' Min.');
     (t.notes || []).forEach(function(n){ var ts = new Date(n.ts).getTime(); if(ts >= dayStartMs(ds) && ts < dayStartMs(ds) + 86400000) hints.push('Notiz ' + fmtClock(ts) + ': ' + String(n.text).slice(0, 60)); });
     (t.activityLog || []).forEach(function(a){ var ts = new Date(a.ts).getTime(); if(ts >= dayStartMs(ds) && ts < dayStartMs(ds) + 86400000 && !/^Task erstellt/.test(a.text)) hints.push(fmtClock(ts) + ' ' + String(a.text).slice(0, 50)); });
     ctx.push(t.id + ' | ' + t.title + ' | ' + (TYPES[t.type] || TYPES.adhoc).label + (hints.length ? ' | ' + hints.slice(0, 4).join('; ') : ''));
@@ -13513,8 +13534,8 @@ function exportMeetingIcs(t){
    Zeitsitzung eines Meeting-Tasks nimmt, nutzt dies die geplante Zeit und
    funktioniert für jeden Task-Typ. */
 function exportTaskIcs(t){
-  if(!t.scheduledAt){ toast('Bitte zuerst eine geplante Zeit setzen.'); return; }
-  var start = new Date(t.scheduledAt);
+  if(!planAt(t)){ toast('Bitte zuerst eine geplante Zeit setzen.'); return; }
+  var start = new Date(planAt(t));
   var durationMin = plannedMinutes(t);
   var end = new Date(start.getTime() + durationMin*60000);
   var lines = [
@@ -13736,6 +13757,11 @@ function movedTaskCopy(t, target){
     c.timeSessions.forEach(function(s){ if(!s.by) s.by = me; });
     (c.bookings || []).forEach(function(b){ if(!b.by) b.by = me; });
   }
+  /* Die eigene Planung zieht mit; in geteilten Boards liegt sie nicht im Task (siehe planInfo). */
+  var mine = planInfo(t);
+  c.scheduledAt = target.kind === 'shared' ? '' : mine.at;
+  if(target.kind !== 'shared' && mine.min) c.scheduledMinutes = mine.min; else delete c.scheduledMinutes;
+  if(target.kind !== 'shared' && mine.auto) c.autoPlan = true; else delete c.autoPlan;
   logActivity(c, 'Board gewechselt: ' + currentBoardName() + ' → ' + target.name);
   c.updatedAt = nowIso();
   return c;
@@ -13818,6 +13844,7 @@ function moveTaskToBoard(taskId, target, colId){
   var srcCol = state.columns.find(function(c){ return c.id === t.columnId; });
   var srcColName = srcCol ? srcCol.name : '';
   var sourceShared = activeShared, sourceName = state.settings.activeBoardName;
+  var myPlan = planInfo(t);
   var copy = movedTaskCopy(t, target);
   var files = {added: [], old: []};
   return moveCopyPageImages(copy, target.kind === 'shared' ? target.id : '').then(function(r){
@@ -13825,6 +13852,7 @@ function moveTaskToBoard(taskId, target, colId){
     if(target.kind === 'shared') return addTaskToSharedBoard(target.id, copy, colId, srcColName);
     addTaskToLocalBoard(target, copy, colId, srcColName);
   }).then(function(){
+    if(target.kind === 'shared' && (myPlan.at || myPlan.min)) setSharedPlan(target.id, copy, {scheduledAt: myPlan.at, scheduledMinutes: myPlan.min, autoPlan: myPlan.auto});
     if(activeShared !== sourceShared || (!activeShared && state.settings.activeBoardName !== sourceName) || !getTask(taskId)){
       /* Während des Hochladens wurde das Board gewechselt: lieber doppelt als verloren. */
       toast('Der Task ist jetzt auch in "' + target.name + '". Bitte im ursprünglichen Board von Hand löschen.', 10000);
@@ -13839,6 +13867,7 @@ function moveTaskToBoard(taskId, target, colId){
     if(state.settings.activeTaskId === taskId) state.settings.activeTaskId = null;
     if(isInMyDay(taskId)) setMyDay(taskId, false);
     if(rankCol) compactRanks(rankCol);
+    if(sourceShared){ var spId = sharedPlanId(sourceShared.id, taskId); state.settings.sharedPlans = sharedPlanList().filter(function(x){ return x.id !== spId; }); }
     undoStack = [];
     save();
     moveFinishPageImages(files);
@@ -14459,7 +14488,7 @@ function handleUrlShortcutAction(){
    Neue, optionale Task-Felder (projectId, comments, solution, mail …) fehlen bei
    Tasks, die sie nicht brauchen, damit bestehende Tasks beim Abgleich unverändert bleiben.
    ========================================================= */
-var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'bookingAccounts'];
+var SYNC_LISTS = ['projects', 'automationRules', 'freeTime', 'absences', 'bookingAccounts', 'sharedPlans'];
 var RULE_TRIGGERS = ['created', 'moved', 'completed', 'assigned', 'age', 'overdue'];
 var RULE_COND_FIELDS = ['type', 'priority', 'column', 'reporter', 'title', 'tag', 'project', 'assignee'];
 var RULE_ACTIONS = ['set_priority', 'move', 'assign', 'add_tag', 'set_type', 'set_due', 'set_project', 'notify', 'toast', 'create_task', 'add_note', 'snooze', 'pin'];
@@ -14517,6 +14546,7 @@ function normalizeSyncSettings(settings){
   settings.freeTime = (Array.isArray(settings.freeTime) ? settings.freeTime : []).map(normalizeFreeTime).filter(Boolean);
   settings.absences = (Array.isArray(settings.absences) ? settings.absences : []).map(normalizeAbsence).filter(Boolean);
   settings.bookingAccounts = (Array.isArray(settings.bookingAccounts) ? settings.bookingAccounts : []).map(normalizeAccount).filter(Boolean);
+  settings.sharedPlans = (Array.isArray(settings.sharedPlans) ? settings.sharedPlans : []).map(normalizeSharedPlan).filter(Boolean);
   if(typeof settings.budgetAlerts !== 'object' || !settings.budgetAlerts || Array.isArray(settings.budgetAlerts)) settings.budgetAlerts = {};
 }
 function normalizeFreeTime(e){
@@ -14610,7 +14640,7 @@ function mergeSyncLists(base, remoteSettings){
   SYNC_LISTS.forEach(function(k){
     var L = Array.isArray(state.settings[k]) ? state.settings[k] : [];
     var Rraw = remoteSettings && Array.isArray(remoteSettings[k]) ? remoteSettings[k] : [];
-    var tmp = {projects: [], automationRules: [], freeTime: [], absences: [], bookingAccounts: []};
+    var tmp = {projects: [], automationRules: [], freeTime: [], absences: [], bookingAccounts: [], sharedPlans: []};
     tmp[k] = Rraw;
     normalizeSyncSettings(tmp);
     var R = tmp[k];
@@ -15182,17 +15212,35 @@ function wireInterruptionCard(root, rerender){
 
 /* =========================================================
    TAG-AUTOPILOT
-   Füllt die freien Lücken eines Tages im Planer mit offenen Tasks: zuerst Überfälliges und
+   Füllt die freien Lücken eines Tages im Planer mit offenen Tasks aus allen Boards (wie der
+   Planer: in geteilten Boards nur eigene oder nicht zugewiesene): zuerst Überfälliges und
    Fälliges, dann nach Priorität. Feste Termine (alle Blöcke, die nicht vom Autopilot stammen)
    bleiben, wo sie sind. Vom Autopilot gesetzte Blöcke tragen autoPlan:true und werden beim
    Neuplanen wieder frei, solange noch nicht daran gearbeitet wurde.
    ========================================================= */
 function apDoneColumnIds(){ return state.columns.filter(function(c){ return DONE_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }); }
 function apWaitingColumnIds(){ return state.columns.filter(function(c){ return WAITING_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }); }
-function apIsBlocked(t){
-  return (t.blockedBy || []).some(function(id){ var b = getTask(id); return b && !b.completedAt && !b.archived; });
+function apIsBlocked(t, byId){
+  return (t.blockedBy || []).some(function(id){ var b = byId ? byId[id] : getTask(id); return b && !b.completedAt && !b.archived; });
 }
-function apScore(t, ds){
+/* Alle Tasks aller Boards mit dem, was der Autopilot pro Board braucht. */
+function apPool(){
+  var out = [];
+  allBoardSources().forEach(function(src){
+    var cols = src.columns || [];
+    var ctx = {src: src, board: src.kind === 'shared' ? src.id : '', byId: {},
+      done: cols.filter(function(c){ return DONE_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }),
+      waiting: cols.filter(function(c){ return WAITING_COLUMN_RE.test(c.name); }).map(function(c){ return c.id; }),
+      inProg: (cols.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); }) || cols[0] || {}).id};
+    src.tasks.forEach(function(t){
+      if(!t || !t.id || !Array.isArray(t.timeSessions)) return;
+      ctx.byId[t.id] = t;
+      out.push({t: t, c: ctx});
+    });
+  });
+  return out;
+}
+function apScore(t, ds, inProgId){
   var reasons = [], score = 0;
   var dayMs = new Date(ds + 'T00:00:00').getTime();
   if(t.dueDate){
@@ -15208,18 +15256,19 @@ function apScore(t, ds){
   var focus = state.settings.todayFocusDate === ds && (state.settings.todayFocusIds || []).indexOf(t.id) >= 0;
   if(focus){ score += 50; reasons.push('Tagesfokus'); }
   if(t.pinned){ score += 25; reasons.push('angeheftet'); }
-  if(t.columnId === inProgressColumn().id){ score += 15; reasons.push('in Bearbeitung'); }
+  if(t.columnId === (inProgId === undefined ? inProgressColumn().id : inProgId)){ score += 15; reasons.push('in Bearbeitung'); }
   score += Math.min(10, (Date.now() - new Date(t.createdAt || Date.now()).getTime()) / 86400000);
   return {score: score, reasons: reasons};
 }
 /* Blöcke des Tages, die der Autopilot neu verteilen darf. */
-function apReplannable(ds){
+function apReplannable(ds, pool){
   var now = Date.now();
-  return state.tasks.filter(function(t){
-    if(!t.autoPlan || !t.scheduledAt || t.archived || t.completedAt || isRunning(t)) return false;
-    var st = new Date(t.scheduledAt);
+  return (pool || apPool()).filter(function(e){
+    var t = e.t, pi = planInfo(t, e.c.board);
+    if(!pi.auto || !pi.at || t.archived || t.completedAt || isRunning(t)) return false;
+    var st = new Date(pi.at);
     if(toDateInputValue(st) !== ds) return false;
-    var end = st.getTime() + plannedMinutes(t) * 60000;
+    var end = st.getTime() + plannedMinutes(t, e.c.board) * 60000;
     if(st.getTime() >= now) return true;
     return secondsInRange(t, st.getTime(), Math.min(end, now)) < 60;
   });
@@ -15231,31 +15280,33 @@ function autopilotPlan(ds, opts){
   var dayStart = axis.s * 60, dayEnd = axis.e * 60;
   var todayStr = toDateInputValue(new Date());
   if(ds === todayStr) dayStart = Math.max(dayStart, Math.ceil((plDayMinutes(new Date()) + 5) / 15) * 15);
-  var freed = apReplannable(ds);
-  var freedIds = {};
-  freed.forEach(function(t){ freedIds[t.id] = 1; });
+  var pool = apPool();
+  var freed = apReplannable(ds, pool);
   var busy = [];
-  state.tasks.forEach(function(t){
-    if(t.archived || !t.scheduledAt || freedIds[t.id]) return;
-    var st = new Date(t.scheduledAt);
+  pool.forEach(function(e){
+    var at = planAt(e.t, e.c.board);
+    if(e.t.archived || !at || freed.indexOf(e) >= 0) return;
+    var st = new Date(at);
     if(toDateInputValue(st) !== ds) return;
     var s = plDayMinutes(st);
-    busy.push({a: s, b: s + plannedMinutes(t)});
+    busy.push({a: s, b: s + plannedMinutes(e.t, e.c.board)});
   });
   if(opts.lunch) busy.push({a: 12 * 60, b: 13 * 60});
-  var done = apDoneColumnIds(), waiting = apWaitingColumnIds();
-  var cands = state.tasks.filter(function(t){
+  var cands = pool.filter(function(e){
+    var t = e.t;
     if(t.archived || t.completedAt || isSnoozed(t) || t.type === 'meeting') return false;
-    if(done.indexOf(t.columnId) >= 0 || waiting.indexOf(t.columnId) >= 0 || apIsBlocked(t)) return false;
-    if(t.assigneeId && activeShared && t.assigneeId !== myUserId()) return false;
-    return !t.scheduledAt || freedIds[t.id];
-  }).map(function(t){
-    var sc = apScore(t, ds);
-    var planned = plannedMinutes(t);
+    if(e.c.done.indexOf(t.columnId) >= 0 || e.c.waiting.indexOf(t.columnId) >= 0 || apIsBlocked(t, e.c.byId)) return false;
+    if(e.c.board && t.assigneeId && t.assigneeId !== myUserId()) return false;
+    return !planAt(t, e.c.board) || freed.indexOf(e) >= 0;
+  }).map(function(e){
+    var t = e.t;
+    var sc = apScore(t, ds, e.c.inProg);
+    var planned = plannedMinutes(t, e.c.board);
     var logged = secondsInRange(t, 0, Date.now()) / 60;
-    var known = t.scheduledMinutes || t.estimatedMinutes || learnedMinutes(t);
-    var rem = known ? Math.max(15, Math.ceil((planned - (t.scheduledMinutes ? 0 : logged)) / 15) * 15) : planned;
-    return {task: t, score: sc.score, reasons: sc.reasons, minutes: Math.min(rem, 240)};
+    var pm = planMin(t, e.c.board);
+    var known = pm || t.estimatedMinutes || learnedMinutes(t);
+    var rem = known ? Math.max(15, Math.ceil((planned - (pm ? 0 : logged)) / 15) * 15) : planned;
+    return {task: t, ctx: e.c, score: sc.score, reasons: sc.reasons, minutes: Math.min(rem, 240)};
   }).sort(function(a, b){ return b.score - a.score; });
 
   function gaps(){
@@ -15281,7 +15332,7 @@ function autopilotPlan(ds, opts){
   function place(c, at, minutes, partial){
     minutes = Math.min(minutes, Math.floor(capacity / 15) * 15);
     if(minutes < 15) return false;
-    blocks.push({task: c.task, start: at, minutes: minutes, reasons: c.reasons, partial: !!partial || minutes < c.minutes});
+    blocks.push({task: c.task, ctx: c.ctx, start: at, minutes: minutes, reasons: c.reasons, partial: !!partial || minutes < c.minutes});
     busy.push({a: at, b: at + minutes});
     capacity -= minutes;
     return true;
@@ -15351,7 +15402,7 @@ function openAutopilot(ds){
       '<div class="ap-list">' + plan.blocks.map(function(b, i){
         return '<label class="ap-row"><input type="checkbox" class="ap-use" data-i="' + i + '" checked>' +
           '<span class="ap-time">' + hm(b.start) + '–' + hm(b.start + b.minutes) + '</span>' +
-          '<span class="ap-title">' + typeIconHtml(b.task.type) + ' ' + escapeHtml(b.task.title) + (b.partial ? ' <span class="hint">(Teil)</span>' : '') + '</span>' +
+          '<span class="ap-title">' + typeIconHtml(b.task.type) + ' ' + escapeHtml(b.task.title) + (b.partial ? ' <span class="hint">(Teil)</span>' : '') + (b.ctx.src.active ? '' : ' <span class="hint">· ' + escapeHtml(plBoardLabel(b.ctx.src)) + '</span>') + '</span>' +
           '<span class="ap-why">' + escapeHtml(b.reasons.join(' · ')) + '</span></label>';
       }).join('') + '</div>' +
       (plan.skipped.length ? '<div class="hint" style="margin-top:8px;">' + (plan.full ? 'Tagesziel von ' + fmtHM(plan.target * 60) + ' erreicht, kein' : 'Kein') + ' Platz mehr für ' + plan.skipped.length + ' weitere Task' + (plan.skipped.length === 1 ? '' : 's') + ' (' + plan.skipped.slice(0, 3).map(function(t){ return escapeHtml(t.title); }).join(', ') + (plan.skipped.length > 3 ? ', …' : '') + ').</div>' : '');
@@ -15362,14 +15413,14 @@ function openAutopilot(ds){
   document.getElementById('apApply').addEventListener('click', function(){
     if(!plan) return;
     pushUndoSnapshot();
-    plan.freed.forEach(function(t){ delete t.autoPlan; updateTask(t.id, {scheduledAt: ''}); });
+    plan.freed.forEach(function(e){ planSet(e.t, {scheduledAt: '', autoPlan: false}, e.c.board); });
     var n = 0;
     document.querySelectorAll('.ap-use').forEach(function(cb){
       if(!cb.checked) return;
       var b = plan.blocks[parseInt(cb.dataset.i, 10)];
       var d = new Date(ds + 'T00:00:00');
       d.setMinutes(b.start);
-      updateTask(b.task.id, {scheduledAt: d.toISOString(), scheduledMinutes: b.minutes, autoPlan: true});
+      planSet(b.task, {scheduledAt: d.toISOString(), scheduledMinutes: b.minutes, autoPlan: true}, b.ctx.board);
       n++;
     });
     closeModal();
@@ -16248,7 +16299,7 @@ function runVoiceCommand(raw){
     if(!t) return 'Welcher Task soll verschoben werden?';
     if(!when) return 'Datum nicht verstanden: „' + m[2] + '“';
     var patch = {dueDate: toDateInputValue(when)};
-    if(t.scheduledAt){ var sa = new Date(t.scheduledAt); var nd = new Date(when); nd.setHours(sa.getHours(), sa.getMinutes(), 0, 0); patch.scheduledAt = nd.toISOString(); }
+    if(planAt(t)){ var sa = new Date(planAt(t)); var nd = new Date(when); nd.setHours(sa.getHours(), sa.getMinutes(), 0, 0); patch.scheduledAt = nd.toISOString(); }
     updateTask(t.id, patch); renderAll();
     if(openTaskModalId === t.id) openTaskModal(t.id);
     return '📆 ' + t.title + ' → ' + when.toLocaleDateString('de-CH', {weekday: 'short', day: '2-digit', month: '2-digit'});
@@ -16728,21 +16779,163 @@ function printQrInvoice(p, b, meta, inv, cr){
 }
 
 /* =========================================================
+   EIGENE PLANUNG PRO PERSON
+   Es gibt einen Planer für alle Boards. Persönliche Boards gehören nur einer Person:
+   dort steht die Planung direkt im Task (scheduledAt, scheduledMinutes, autoPlan).
+   In geteilten Boards plant jedes Mitglied für sich: die Planung liegt in den eigenen
+   Einstellungen (settings.sharedPlans: {id, board, task, at, min?, auto?, updatedAt}, über
+   SYNC_LISTS zwischen den eigenen Geräten abgeglichen) und nie im geteilten Task. So sieht
+   jedes Mitglied im Planer nur seine eigenen Blöcke.
+   Geteilte Tasks mit scheduledAt von früher gelten als eigene Planung, solange sie niemand
+   anderem zugewiesen sind und man sie nicht selbst geändert hat.
+   ========================================================= */
+function sharedPlanList(){ return Array.isArray(state.settings.sharedPlans) ? state.settings.sharedPlans : []; }
+/* Feste ID pro Board und Task, damit zwei Geräte denselben Eintrag erzeugen. */
+function sharedPlanId(board, task){
+  var s = board + '|' + task, h1 = 0x811c9dc5, h2 = 0x01000193;
+  for(var i = 0; i < s.length; i++){ var c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 ^ c, 2246822519) >>> 0; }
+  return 'sp-' + h1.toString(36) + '-' + h2.toString(36);
+}
+function normalizeSharedPlan(p){
+  if(!p || typeof p !== 'object') return null;
+  if(typeof p.board !== 'string' || !SAFE_ID_RE.test(p.board) || typeof p.task !== 'string' || !SAFE_ID_RE.test(p.task)) return null;
+  var at = typeof p.at === 'string' && p.at && !isNaN(new Date(p.at).getTime()) ? new Date(p.at).toISOString() : '';
+  var out = {id: sharedPlanId(p.board, p.task), board: p.board, task: p.task, at: at,
+    updatedAt: typeof p.updatedAt === 'string' && !isNaN(new Date(p.updatedAt).getTime()) ? p.updatedAt : nowIso()};
+  if(typeof p.min === 'number' && p.min >= 5 && p.min <= 1440) out.min = Math.round(p.min);
+  if(p.auto === true && at) out.auto = true;
+  return out;
+}
+/* Geteiltes Board, zu dem ein Task gehört ('' = persönliches Board). */
+function planBoardId(t){
+  if(!t || t._free) return '';
+  if(activeShared && state.tasks.indexOf(t) >= 0) return activeShared.id;
+  for(var i = 0; i < sharedList.length; i++){
+    var c = sharedList[i].content;
+    if(c && Array.isArray(c.tasks) && c.tasks.indexOf(t) >= 0) return sharedList[i].id;
+  }
+  return '';
+}
+/* Eigene Planung eines Tasks: {at, min, auto}. board weglassen = selbst bestimmen. */
+function planInfo(t, board){
+  var none = {at: '', min: null, auto: false};
+  if(!t || t._free) return none;
+  if(board === undefined) board = planBoardId(t);
+  if(!board) return {at: t.scheduledAt || '', min: t.scheduledMinutes || null, auto: !!t.autoPlan};
+  var id = sharedPlanId(board, t.id);
+  var e = sharedPlanList().find(function(x){ return x.id === id; });
+  if(e) return {at: e.at, min: e.min || null, auto: !!e.auto};
+  if(t.assigneeId && t.assigneeId !== myUserId()) return none;
+  return {at: t.scheduledAt || '', min: t.scheduledMinutes || null, auto: false};
+}
+function planAt(t, board){ return planInfo(t, board).at; }
+function planMin(t, board){ return planInfo(t, board).min; }
+/* Ändert die eigene Planung eines geteilten Tasks (Felder wie bei updateTask); true, wenn sich etwas geändert hat. */
+function setSharedPlan(board, t, patch){
+  var cur = planInfo(t, board);
+  var at = patch.scheduledAt !== undefined ? (patch.scheduledAt || '') : cur.at;
+  if(at) at = isNaN(new Date(at).getTime()) ? '' : new Date(at).toISOString();
+  var min = patch.scheduledMinutes !== undefined ? (patch.scheduledMinutes || null) : cur.min;
+  var auto = patch.autoPlan !== undefined ? !!patch.autoPlan : (at === cur.at && cur.auto);
+  if(!at) auto = false;
+  if(at === cur.at && min === cur.min && auto === cur.auto) return false;
+  var id = sharedPlanId(board, t.id);
+  var list = sharedPlanList().filter(function(x){ return x.id !== id; });
+  /* Ohne Planung braucht es den Eintrag nur, solange der Task noch eine alte gemeinsame Planung trägt. */
+  if(at || min || t.scheduledAt || t.scheduledMinutes){
+    var e = {id: id, board: board, task: t.id, at: at, updatedAt: nowIso()};
+    if(min) e.min = min;
+    if(auto) e.auto = true;
+    list.push(e);
+  }
+  state.settings.sharedPlans = list;
+  return true;
+}
+/* Plant einen Task aus irgendeinem Board ein (scheduledAt:'' hebt die Planung auf). */
+function planSet(t, patch, board){
+  if(board === undefined) board = planBoardId(t);
+  if(board){ if(setSharedPlan(board, t, patch)) save(); return; }
+  if(state.tasks.indexOf(t) >= 0){ updateTask(t.id, patch); return; }
+  /* Task in einem anderen persönlichen Board: direkt ändern; das Board gilt dann als neuer (mergeInactiveBoards). */
+  if(patch.scheduledAt !== undefined && patch.scheduledAt !== t.scheduledAt && !patch.autoPlan) delete t.autoPlan;
+  Object.assign(t, patch, {updatedAt: nowIso()});
+  if(!t.scheduledMinutes) delete t.scheduledMinutes;
+  if(!t.autoPlan) delete t.autoPlan;
+  (state.boards || []).forEach(function(b){ if(b && Array.isArray(b.tasks) && b.tasks.indexOf(t) >= 0) b.updatedAt = nowIso(); });
+  save();
+}
+/* Rückgängig für Planungen in den nicht offenen persönlichen Boards. */
+function otherPlanContainers(){
+  var out = (state.boards || []).filter(function(b){ return b && Array.isArray(b.tasks); });
+  if(activeShared && personalStash) out.push(personalStash);
+  return out;
+}
+function otherBoardPlans(){
+  var m = {};
+  otherPlanContainers().forEach(function(b){
+    b.tasks.forEach(function(t){ if(t && t.id) m[t.id] = [t.scheduledAt || '', t.scheduledMinutes || null, !!t.autoPlan]; });
+  });
+  return m;
+}
+function restoreOtherBoardPlans(m){
+  otherPlanContainers().forEach(function(b){
+    var changed = false;
+    b.tasks.forEach(function(t){
+      var p = t && m[t.id];
+      if(!p || ((t.scheduledAt || '') === p[0] && (t.scheduledMinutes || null) === p[1] && !!t.autoPlan === p[2])) return;
+      t.scheduledAt = p[0];
+      if(p[1]) t.scheduledMinutes = p[1]; else delete t.scheduledMinutes;
+      if(p[2]) t.autoPlan = true; else delete t.autoPlan;
+      t.updatedAt = nowIso();
+      changed = true;
+    });
+    if(changed && b !== personalStash) b.updatedAt = nowIso();
+  });
+}
+
+/* =========================================================
    PLANER (Wochenansicht mit Zeitblöcken)
-   Tasks werden per Drag & Drop aus der Liste "Nicht geplant" in den Kalender gezogen,
-   per Ziehen verschoben und am unteren Rand in der Länge verändert (15-Minuten-Raster).
-   Links vom Block: geplante Zeit (scheduledAt + scheduledMinutes). Am rechten Rand
-   erscheinen die tatsächlich gebuchten Zeiten als Streifen, so sieht man Plan und Ist.
+   Ein Planer für alle Boards: die Liste "Nicht geplant" enthält die offenen Tasks aus allen
+   eigenen und geteilten Boards (aus geteilten nur die, die niemand anderem zugewiesen sind).
+   Tasks werden per Drag & Drop in den Kalender gezogen, per Ziehen verschoben und am unteren
+   Rand in der Länge verändert (15-Minuten-Raster). Links vom Block: geplante Zeit (planInfo).
+   Am rechten Rand erscheinen die tatsächlich gebuchten eigenen Zeiten als Streifen, so sieht
+   man Plan und Ist. Elemente tragen data-src (Index in plSrcs), weil der Task in einem anderen
+   Board liegen kann.
    ========================================================= */
 var PL_HPX = 52;
 var plannerWeek = null;
 var plannerScroll = null;
 var plannerSearch = '';
+var plannerBoard = '';
 var plannerNowTimer = null;
+var plSrcs = [];
+var plDragSrc = null;
 
-function plannedMinutes(t){
-  var m = t.scheduledMinutes || learnedMinutes(t) || t.estimatedMinutes || 60;
+function plannedMinutes(t, board){
+  var m = planMin(t, board) || learnedMinutes(t) || t.estimatedMinutes || 60;
   return Math.max(15, Math.min(720, Math.round(m / 15) * 15));
+}
+function plSrcKey(src){ return src.kind === 'shared' ? 's:' + src.id : 'l:' + src.name; }
+function plBoardOf(src){ return src && src.kind === 'shared' ? src.id : ''; }
+/* In geteilten Boards gehören Tasks, die jemand anderem zugewiesen sind, nicht in den eigenen Planer. */
+function plMine(t, src){ return src.kind !== 'shared' || !t.assigneeId || t.assigneeId === myUserId(); }
+function plEach(fn){
+  plSrcs.forEach(function(src, si){
+    src.tasks.forEach(function(t){ if(t && t.id && Array.isArray(t.timeSessions)) fn(t, src, si); });
+  });
+}
+function plFind(si, id){
+  var src = plSrcs[parseInt(si, 10)];
+  var t = src && src.tasks.find(function(x){ return x && x.id === id; });
+  return t ? {t: t, src: src, si: parseInt(si, 10)} : null;
+}
+function plBoardLabel(src){ return (src.kind === 'shared' ? '👥 ' : '📋 ') + src.name; }
+function plOpen(si, id){
+  var f = plFind(si, id);
+  if(!f) return;
+  if(f.src.active) openTaskModal(id);
+  else openGlobalTask(f.src, id);
 }
 function plAxis(){
   var s = parseInt(state.settings.planStartHour, 10);
@@ -16783,33 +16976,53 @@ function plLoggedOnDay(ds){
   var out = [];
   var dayStart = new Date(ds + 'T00:00:00').getTime();
   var dayEnd = dayStart + 24 * 3600 * 1000;
-  timeTasks().forEach(function(t){
+  function add(t, si){
     t.timeSessions.forEach(function(s){
       if(!isMySession(s)) return;
       var a = Math.max(new Date(s.start).getTime(), dayStart);
       var b = Math.min(s.end ? new Date(s.end).getTime() : Date.now(), dayEnd);
       if(b <= a) return;
-      out.push({task: t, start: (a - dayStart) / 60000, end: (b - dayStart) / 60000, open: !s.end});
+      out.push({task: t, si: si, start: (a - dayStart) / 60000, end: (b - dayStart) / 60000, open: !s.end});
     });
-  });
+  }
+  plEach(function(t, src, si){ add(t, si); });
+  freeTimeTasks().forEach(function(t){ add(t, -1); });
   return out;
 }
-function plUnscheduled(){
+/* Offene, nicht eingeplante eigene Tasks aus allen Boards; allBoards ignoriert den Board-Filter der Liste. */
+function plUnscheduled(allBoards){
   var q = plannerSearch.trim().toLowerCase();
-  return state.tasks.filter(function(t){
-    if(t.archived || t.completedAt || t.scheduledAt || isSnoozed(t)) return false;
-    return !q || (t.title + ' ' + (t.jiraKey || '') + ' ' + (t.reporter || '')).toLowerCase().indexOf(q) >= 0;
-  }).sort(function(a, b){
-    return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || PRIORITIES[a.priority].order - PRIORITIES[b.priority].order || (a.dueDate || '9') .localeCompare(b.dueDate || '9');
+  var out = [];
+  plEach(function(t, src, si){
+    if(!allBoards && plannerBoard && plSrcKey(src) !== plannerBoard) return;
+    if(t.archived || t.completedAt || isSnoozed(t) || !plMine(t, src) || planAt(t, plBoardOf(src))) return;
+    if(!allBoards && q && (t.title + ' ' + (t.jiraKey || '') + ' ' + (t.reporter || '') + ' ' + src.name).toLowerCase().indexOf(q) < 0) return;
+    out.push({t: t, src: src, si: si});
+  });
+  return out.sort(function(x, y){
+    var a = x.t, b = y.t;
+    return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || PRIORITIES[a.priority].order - PRIORITIES[b.priority].order || (a.dueDate || '9').localeCompare(b.dueDate || '9');
   });
 }
-function plItemHtml(t){
-  var p = projectOf(t);
-  return '<div class="pl-item" draggable="true" data-task="' + t.id + '" title="Auf den Kalender ziehen">' +
+function plItemHtml(x){
+  var t = x.t, p = projectOf(t);
+  return '<div class="pl-item" draggable="true" data-task="' + escapeAttr(t.id) + '" data-src="' + x.si + '" title="Auf den Kalender ziehen">' +
     '<span class="pl-item-ty ty-' + (BASE_TYPES[t.type] ? t.type : 'adhoc') + '">' + typeIconHtml(t.type) + '</span>' +
     '<span class="pl-item-main"><span class="pl-item-title">' + escapeHtml(t.title) + '</span>' +
-    '<span class="pl-item-meta">' + plannedMinutes(t) + ' Min.' + (t.dueDate ? ' · fällig ' + escapeHtml(t.dueDate.slice(5).split('-').reverse().join('.')) : '') + (p ? ' · <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 3px 0 0;"></i>' + escapeHtml(p.name) : '') + '</span></span>' +
+    '<span class="pl-item-meta">' + plannedMinutes(t, plBoardOf(x.src)) + ' Min.' + (t.dueDate ? ' · fällig ' + escapeHtml(t.dueDate.slice(5).split('-').reverse().join('.')) : '') + (p ? ' · <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 3px 0 0;"></i>' + escapeHtml(p.name) : '') + '</span>' +
+    (plSrcs.length > 1 ? '<span class="pl-item-board' + (x.src.active ? ' cur' : '') + '">' + escapeHtml(plBoardLabel(x.src)) + '</span>' : '') + '</span>' +
     '<span class="prio prio-' + escapeAttr(t.priority) + '"><i></i><i></i><i></i></span></div>';
+}
+function plBoardSelectHtml(){
+  if(plSrcs.length < 2) return '';
+  var seen = {};
+  return '<select id="plBoard" aria-label="Board">' + '<option value="">Alle Boards (' + plSrcs.length + ')</option>' +
+    plSrcs.map(function(src){
+      var k = plSrcKey(src);
+      if(seen[k]) return '';
+      seen[k] = 1;
+      return '<option value="' + escapeAttr(k) + '"' + (plannerBoard === k ? ' selected' : '') + '>' + escapeHtml(plBoardLabel(src)) + (src.active ? ' (offen)' : '') + '</option>';
+    }).join('') + '</select>';
 }
 function renderPlannerView(){
   var board = document.getElementById('board');
@@ -16817,6 +17030,8 @@ function renderPlannerView(){
   if(oldScroll) plannerScroll = oldScroll.scrollTop;
   board.innerHTML = '';
   board.classList.remove('compact');
+  plSrcs = allBoardSources();
+  if(plannerBoard && !plSrcs.some(function(s){ return plSrcKey(s) === plannerBoard; })) plannerBoard = '';
   var week = plannerWeek || (plannerWeek = startOfWeek(new Date()));
   var showWe = !!state.settings.planWeekend;
   var nDays = showWe ? 7 : 5;
@@ -16824,24 +17039,33 @@ function renderPlannerView(){
   var days = [];
   for(var i = 0; i < nDays; i++){ var d = new Date(week); d.setDate(d.getDate() + i); days.push(d); }
   var todayStr = toDateInputValue(new Date());
-  var weekEndMs = new Date(week.getFullYear(), week.getMonth(), week.getDate() + nDays).getTime();
 
+  /* Eigene Planung aller Boards einmal einsammeln */
+  var planned = [];
+  plEach(function(t, src, si){
+    if(t.archived) return;
+    var pi = planInfo(t, plBoardOf(src));
+    if(!pi.at) return;
+    var st = new Date(pi.at);
+    if(isNaN(st.getTime())) return;
+    planned.push({task: t, src: src, si: si, auto: pi.auto, ds: toDateInputValue(st), start: plDayMinutes(st), min: plannedMinutes(t, plBoardOf(src))});
+  });
   /* Datenaufbereitung pro Tag */
   var dayData = days.map(function(d){
     var ds = toDateInputValue(d);
-    var items = [];
-    state.tasks.forEach(function(t){
-      if(t.archived || !t.scheduledAt) return;
-      var st = new Date(t.scheduledAt);
-      if(toDateInputValue(st) !== ds) return;
-      var s = plDayMinutes(st);
-      items.push({task: t, start: s, end: Math.min(1440, s + plannedMinutes(t))});
+    var items = planned.filter(function(p){ return p.ds === ds; }).map(function(p){
+      return {task: p.task, src: p.src, si: p.si, auto: p.auto, start: p.start, end: Math.min(1440, p.start + p.min)};
     });
     var conflicts = plLanes(items);
     var logged = plLoggedOnDay(ds);
     var plannedMin = items.reduce(function(sum, it){ return sum + (it.end - it.start); }, 0);
     var loggedMin = logged.reduce(function(sum, l){ return sum + (l.end - l.start); }, 0);
-    var due = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && t.dueDate === ds && !(t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds); });
+    var due = [];
+    plEach(function(t, src, si){
+      if(t.archived || t.completedAt || t.dueDate !== ds || !plMine(t, src)) return;
+      if(items.some(function(it){ return it.task === t; })) return;
+      due.push({t: t, si: si});
+    });
     return {date: d, ds: ds, items: items, conflicts: conflicts, logged: logged, plannedMin: plannedMin, loggedMin: loggedMin, due: due};
   });
   /* Achse erweitern, falls Blöcke ausserhalb der Arbeitszeit liegen */
@@ -16870,7 +17094,7 @@ function renderPlannerView(){
     return '<div class="pl-dayhead' + (dd.ds === todayStr ? ' today' : '') + '"><div class="pl-dayname">' + dd.date.toLocaleDateString('de-CH', {weekday: 'short'}) + ' <b>' + dd.date.getDate() + '</b></div>' +
       '<div class="pl-daysum' + (over ? ' over' : '') + '" title="Geplant / Gebucht">' + (dd.plannedMin ? 'Plan ' + hm(dd.plannedMin) : 'Plan –') + ' · ' + (dd.loggedMin ? 'Ist ' + hm(dd.loggedMin) : 'Ist –') + '</div>' +
       (dd.conflicts ? '<div class="pl-warn">⚠ ' + dd.conflicts + ' Überschneidung' + (dd.conflicts === 1 ? '' : 'en') + '</div>' : (over ? '<div class="pl-warn">⚠ überplant</div>' : '')) +
-      (dd.due.length ? '<div class="pl-due">' + dd.due.slice(0, 2).map(function(t){ return '<span data-open-task="' + t.id + '" title="Fällig: ' + escapeAttr(t.title) + '">📆 ' + escapeHtml(t.title.slice(0, 22)) + '</span>'; }).join('') + (dd.due.length > 2 ? '<span>+' + (dd.due.length - 2) + '</span>' : '') + '</div>' : '') +
+      (dd.due.length ? '<div class="pl-due">' + dd.due.slice(0, 2).map(function(x){ return '<span data-open-task="' + escapeAttr(x.t.id) + '" data-src="' + x.si + '" title="Fällig: ' + escapeAttr(x.t.title) + '">📆 ' + escapeHtml(x.t.title.slice(0, 22)) + '</span>'; }).join('') + (dd.due.length > 2 ? '<span>+' + (dd.due.length - 2) + '</span>' : '') + '</div>' : '') +
     '</div>';
   }).join('');
 
@@ -16882,17 +17106,20 @@ function renderPlannerView(){
       var w = 100 / it.lanes;
       var tyc = BASE_TYPES[t.type] ? t.type : 'adhoc';
       var p = projectOf(t);
-      return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + (t.autoPlan ? ' auto' : '') + '" data-task="' + t.id + '" ' +
+      var own = !!it.src.active;
+      return '<div class="pl-block ty-' + tyc + (t.completedAt ? ' done' : '') + (isRunning(t) ? ' running' : '') + (it.lanes > 1 ? ' conflict' : '') + (it.auto ? ' auto' : '') + (own ? '' : ' other') + '" data-task="' + escapeAttr(t.id) + '" data-src="' + it.si + '" ' +
+        'title="' + escapeAttr(t.title + ' · ' + plBoardLabel(it.src)) + '" ' +
         'style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px; left:calc(' + (it.lane * w).toFixed(2) + '% + 2px); width:calc(' + w.toFixed(2) + '% - 12px);">' +
         '<div class="pl-block-time">' + plMinToTime(it.start) + '–' + plMinToTime(it.end) + (p ? ' <i class="proj-dot" style="background:' + escapeAttr(p.color) + ';margin:0 0 0 4px;"></i>' : '') + '</div>' +
         '<div class="pl-block-title">' + escapeHtml(t.title) + '</div>' +
-        '<div class="pl-block-tools"><button data-pl-play="' + t.id + '" title="Timer ' + (isRunning(t) ? 'stoppen' : 'starten') + '">' + (isRunning(t) ? '⏸' : '▶') + '</button><button data-pl-x="' + t.id + '" title="Planung aufheben">✕</button></div>' +
+        (own || plSrcs.length < 2 ? '' : '<div class="pl-block-board">' + escapeHtml(plBoardLabel(it.src)) + '</div>') +
+        '<div class="pl-block-tools">' + (own ? '<button data-pl-play="' + escapeAttr(t.id) + '" title="Timer ' + (isRunning(t) ? 'stoppen' : 'starten') + '">' + (isRunning(t) ? '⏸' : '▶') + '</button>' : '') + '<button data-pl-x="' + escapeAttr(t.id) + '" data-src="' + it.si + '" title="Planung aufheben">✕</button></div>' +
         '<div class="pl-rs" title="Länge ändern"></div></div>';
     }).join('');
     var logs = dd.logged.map(function(l){
       var top = (l.start - axS) / 60 * PL_HPX;
       var height = Math.max(3, (l.end - l.start) / 60 * PL_HPX);
-      return '<div class="pl-log' + (l.open ? ' open' : '') + (l.task._free ? ' free" data-open-free="' : '" data-open-task="') + l.task.id + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht' + (l.task._free ? ' (ohne Task)' : '') + ': ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
+      return '<div class="pl-log' + (l.open ? ' open' : '') + (l.task._free ? ' free" data-open-free="' + escapeAttr(l.task.id) : '" data-open-task="' + escapeAttr(l.task.id) + '" data-src="' + l.si) + '" style="top:' + top.toFixed(1) + 'px; height:' + height.toFixed(1) + 'px;" title="Gebucht' + (l.task._free ? ' (ohne Task)' : '') + ': ' + escapeAttr(l.task.title) + ' ' + plMinToTime(l.start) + '–' + (l.open ? 'läuft' : plMinToTime(l.end)) + '"></div>';
     }).join('');
     var nowLine = '';
     if(dd.ds === todayStr){
@@ -16906,9 +17133,10 @@ function renderPlannerView(){
   var html =
     '<div class="planner">' +
       '<aside class="pl-side"><div class="pl-side-head"><b>Nicht geplant</b><span class="count">' + unsched.length + '</span></div>' +
+        plBoardSelectHtml() +
         '<input id="plSearch" type="search" placeholder="Task suchen…" value="' + escapeAttr(plannerSearch) + '">' +
         '<div class="pl-list" id="plList">' + (unsched.map(plItemHtml).join('') || '<div class="empty-state">Alles geplant.</div>') + '</div>' +
-        '<div class="hint" style="margin:6px 4px 0;">Task auf den Kalender ziehen. Doppelklick auf eine freie Stelle legt einen neuen Block an.</div></aside>' +
+        '<div class="hint" style="margin:6px 4px 0;">Task auf den Kalender ziehen. Doppelklick auf eine freie Stelle legt einen neuen Block an.' + (plSrcs.length > 1 ? ' Der Planer zeigt alle deine Boards; in geteilten Boards siehst nur du deine Planung.' : '') + '</div></aside>' +
       '<section class="pl-main">' +
         '<div class="pl-toolbar">' +
           '<div class="pl-nav"><button class="btn icon-btn" id="plPrev" title="Vorherige Woche" aria-label="Vorherige Woche">‹</button>' +
@@ -16961,12 +17189,19 @@ function plAxisStartFromDom(){
   return first ? parseInt(first.textContent, 10) * 60 : plAxis().s * 60;
 }
 function plSnap(min){ return Math.round(min / 15) * 15; }
-function plSchedule(taskId, ds, startMin, duration){
+function plSchedule(f, ds, startMin, duration){
   var d = new Date(ds + 'T00:00:00');
   d.setMinutes(Math.max(0, Math.min(1440 - 15, startMin)));
   var patch = {scheduledAt: d.toISOString()};
   if(duration) patch.scheduledMinutes = duration;
-  updateTask(taskId, patch);
+  planSet(f.t, patch, plBoardOf(f.src));
+}
+function plRefreshList(){
+  var list = plUnscheduled();
+  document.getElementById('plList').innerHTML = list.map(plItemHtml).join('') || '<div class="empty-state">Keine Treffer.</div>';
+  var cnt = document.querySelector('.pl-side-head .count');
+  if(cnt) cnt.textContent = list.length;
+  wirePlannerItems();
 }
 function wirePlanner(board){
   document.getElementById('plPrev').addEventListener('click', function(){ plannerWeek = new Date(plannerWeek.getFullYear(), plannerWeek.getMonth(), plannerWeek.getDate() - 7); plannerScroll = null; renderPlannerView(); });
@@ -16984,13 +17219,13 @@ function wirePlanner(board){
   });
   document.getElementById('plSearch').addEventListener('input', function(e){
     plannerSearch = e.target.value;
-    var list = plUnscheduled();
-    document.getElementById('plList').innerHTML = list.map(plItemHtml).join('') || '<div class="empty-state">Keine Treffer.</div>';
-    wirePlannerItems();
+    plRefreshList();
   });
+  var bsel = document.getElementById('plBoard');
+  if(bsel) bsel.addEventListener('change', function(){ plannerBoard = bsel.value; plRefreshList(); });
   wirePlannerItems();
   board.querySelectorAll('[data-open-task]').forEach(function(el){
-    el.addEventListener('click', function(e){ e.stopPropagation(); openTaskModal(el.dataset.openTask); });
+    el.addEventListener('click', function(e){ e.stopPropagation(); plOpen(el.dataset.src, el.dataset.openTask); });
   });
   board.querySelectorAll('[data-open-free]').forEach(function(el){
     el.addEventListener('click', function(e){ e.stopPropagation(); openFreeTimeDialog(el.dataset.openFree); });
@@ -17001,7 +17236,7 @@ function wirePlanner(board){
   board.querySelectorAll('.pl-col').forEach(function(col){
     col.dataset.axs = axS;
     col.addEventListener('dragover', function(e){
-      if(!draggedTaskId) return;
+      if(!draggedTaskId || plDragSrc == null) return;
       e.preventDefault();
       var min = plSnap(plMinutesAt(col, e.clientY));
       var line = col.querySelector('.pl-drop') || col.appendChild(Object.assign(document.createElement('div'), {className: 'pl-drop'}));
@@ -17011,12 +17246,13 @@ function wirePlanner(board){
     col.addEventListener('dragleave', function(e){ if(e.target === col){ var l = col.querySelector('.pl-drop'); if(l) l.remove(); } });
     col.addEventListener('drop', function(e){
       var l = col.querySelector('.pl-drop'); if(l) l.remove();
-      var id = draggedTaskId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-      var t = id && getTask(id);
-      if(!t) return;
+      var key = plDragSrc != null && draggedTaskId ? plDragSrc + ':' + draggedTaskId : (e.dataTransfer && e.dataTransfer.getData('text/plain')) || '';
+      var cut = key.indexOf(':');
+      var f = cut > 0 ? plFind(key.slice(0, cut), key.slice(cut + 1)) : null;
+      if(!f) return;
       e.preventDefault();
       pushUndoSnapshot();
-      plSchedule(t.id, col.dataset.date, plSnap(plMinutesAt(col, e.clientY)), plannedMinutes(t));
+      plSchedule(f, col.dataset.date, plSnap(plMinutesAt(col, e.clientY)), plannedMinutes(f.t, plBoardOf(f.src)));
       renderAll();
     });
     col.addEventListener('dblclick', function(e){
@@ -17026,7 +17262,14 @@ function wirePlanner(board){
   });
   board.querySelectorAll('[data-pl-x]').forEach(function(b){
     b.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
-    b.addEventListener('click', function(e){ e.stopPropagation(); pushUndoSnapshot(); updateTask(b.dataset.plX, {scheduledAt: ''}); renderAll(); });
+    b.addEventListener('click', function(e){
+      e.stopPropagation();
+      var f = plFind(b.dataset.src, b.dataset.plX);
+      if(!f) return;
+      pushUndoSnapshot();
+      planSet(f.t, {scheduledAt: ''}, plBoardOf(f.src));
+      renderAll();
+    });
   });
   board.querySelectorAll('[data-pl-play]').forEach(function(b){
     b.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
@@ -17040,24 +17283,24 @@ function wirePlannerItems(){
   document.querySelectorAll('.pl-item').forEach(function(el){
     el.addEventListener('dragstart', function(e){
       draggedTaskId = el.dataset.task;
-      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', el.dataset.task); }catch(err){} }
+      plDragSrc = el.dataset.src;
+      if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', el.dataset.src + ':' + el.dataset.task); }catch(err){} }
     });
-    el.addEventListener('dragend', function(){ draggedTaskId = null; document.querySelectorAll('.pl-drop').forEach(function(l){ l.remove(); }); });
-    el.addEventListener('click', function(){ openTaskModal(el.dataset.task); });
+    el.addEventListener('dragend', function(){ draggedTaskId = null; plDragSrc = null; document.querySelectorAll('.pl-drop').forEach(function(l){ l.remove(); }); });
+    el.addEventListener('click', function(){ plOpen(el.dataset.src, el.dataset.task); });
   });
 }
 function plStartDrag(e, blk, axS){
   if(e.button !== 0 || e.target.closest('button')) return;
-  var t = getTask(blk.dataset.task);
-  if(!t) return;
+  var f = plFind(blk.dataset.src, blk.dataset.task);
+  if(!f) return;
+  var board = plBoardOf(f.src);
   var resizing = !!e.target.closest('.pl-rs');
   var startX = e.clientX, startY = e.clientY, moved = false;
-  var dur = plannedMinutes(t);
+  var dur = plannedMinutes(f.t, board);
   var blkRect = blk.getBoundingClientRect();
   var grab = (e.clientY - blkRect.top) / PL_HPX * 60;
-  var target = {ds: blk.closest('.pl-col').dataset.date, start: plDayMinutes(new Date(t.scheduledAt)), dur: dur};
-  var origCol = blk.closest('.pl-col');
-  var origLeft = blk.style.left, origWidth = blk.style.width;
+  var target = {ds: blk.closest('.pl-col').dataset.date, start: plDayMinutes(new Date(planAt(f.t, board))), dur: dur};
   function onMove(ev){
     if(!moved && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 5) return;
     if(!moved){ moved = true; blk.classList.add('dragging'); }
@@ -17074,15 +17317,15 @@ function plStartDrag(e, blk, axS){
       target.ds = col.dataset.date; target.start = min;
     }
     var tm = blk.querySelector('.pl-block-time');
-    if(tm){ var dot = tm.querySelector('i'); tm.firstChild.textContent = plMinToTime(target.start) + '–' + plMinToTime(target.start + target.dur) + ' '; }
+    if(tm) tm.firstChild.textContent = plMinToTime(target.start) + '–' + plMinToTime(target.start + target.dur) + ' ';
   }
   function onUp(){
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
     document.removeEventListener('pointercancel', onUp);
-    if(!moved){ if(!resizing) openTaskModal(t.id); return; }
+    if(!moved){ if(!resizing) plOpen(f.si, f.t.id); return; }
     pushUndoSnapshot();
-    plSchedule(t.id, target.ds, target.start, target.dur);
+    plSchedule(f, target.ds, target.start, target.dur);
     renderAll();
   }
   document.addEventListener('pointermove', onMove, {passive: false});
@@ -17091,16 +17334,28 @@ function plStartDrag(e, blk, axS){
   e.preventDefault();
 }
 function openPlannerAdd(ds, startMin){
-  var cands = plUnscheduled();
+  if(!plSrcs.length) plSrcs = allBoardSources();
+  var cands = plUnscheduled(true);
+  /* Auswahl nach Board gruppiert: zuerst das offene Board. */
+  var groups = [];
+  cands.forEach(function(x){
+    var g = groups.find(function(gr){ return gr.si === x.si; });
+    if(!g){ g = {si: x.si, src: x.src, items: []}; groups.push(g); }
+    if(g.items.length < 80) g.items.push(x);
+  });
+  groups.sort(function(a, b){ return (b.src.active ? 1 : 0) - (a.src.active ? 1 : 0) || a.si - b.si; });
+  function opt(x){ return '<option value="' + x.si + ':' + escapeAttr(x.t.id) + '">' + escapeHtml(x.t.title.slice(0, 80)) + '</option>'; }
+  var optsHtml = groups.length > 1
+    ? groups.map(function(g){ return '<optgroup label="' + escapeAttr(plBoardLabel(g.src)) + '">' + g.items.map(opt).join('') + '</optgroup>'; }).join('')
+    : (groups[0] ? groups[0].items.map(opt).join('') : '');
   var html =
     '<div class="modal-header"><h2>Block planen</h2><button class="btn ghost icon-btn" data-close-modal aria-label="Schliessen">✕</button></div>' +
     '<div class="modal-body">' +
       '<div class="form-row-inline"><div class="form-row"><label for="paDate">Tag</label><input type="date" id="paDate" value="' + ds + '"></div>' +
         '<div class="form-row"><label for="paTime">Beginn</label><input type="time" id="paTime" step="900" value="' + plMinToTime(startMin) + '"></div>' +
         '<div class="form-row"><label for="paDur">Dauer</label><select id="paDur">' + [15, 30, 45, 60, 90, 120, 180, 240].map(function(m){ return '<option value="' + m + '"' + (m === 60 ? ' selected' : '') + '>' + (m >= 60 ? (m / 60) + ' h' : m + ' Min.') + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="form-row"><label for="paTitle">Neuer Task</label><input id="paTitle" placeholder="Titel (PROJ-123, #tag, !hoch möglich)"></div>' +
-      (cands.length ? '<div class="form-row"><label for="paExisting">… oder bestehenden Task einplanen</label><select id="paExisting"><option value="">– wählen –</option>' +
-        cands.slice(0, 80).map(function(t){ return '<option value="' + t.id + '">' + escapeHtml(t.title.slice(0, 80)) + '</option>'; }).join('') + '</select></div>' : '') +
+      '<div class="form-row"><label for="paTitle">Neuer Task' + (plSrcs.length > 1 ? ' (im Board „' + escapeHtml(currentBoardName()) + '“)' : '') + '</label><input id="paTitle" placeholder="Titel (PROJ-123, #tag, !hoch möglich)"></div>' +
+      (cands.length ? '<div class="form-row"><label for="paExisting">… oder bestehenden Task einplanen' + (groups.length > 1 ? ' (aus allen Boards)' : '') + '</label><select id="paExisting"><option value="">– wählen –</option>' + optsHtml + '</select></div>' : '') +
     '</div>' +
     '<div class="modal-footer"><button class="btn" data-close-modal>Abbrechen</button><button class="btn primary" id="paSave">Einplanen</button></div>';
   openModal(html);
@@ -17113,28 +17368,38 @@ function openPlannerAdd(ds, startMin){
     var dur = parseInt(document.getElementById('paDur').value, 10) || 60;
     var day = document.getElementById('paDate').value || ds;
     if(!title && !existing){ toast('Bitte einen Titel eingeben oder einen Task wählen.'); return; }
-    var id = existing;
-    if(!id){ var nt = createQuickTask(state.columns[0].id, title); id = nt.id; }
-    plSchedule(id, day, min, dur);
+    var f = null;
+    if(existing){ var cut = existing.indexOf(':'); f = plFind(existing.slice(0, cut), existing.slice(cut + 1)); }
+    if(!f){
+      if(!title){ toast('Dieser Task ist nicht mehr da.'); return; }
+      var nt = createQuickTask(state.columns[0].id, title);
+      f = {t: nt, src: {kind: activeShared ? 'shared' : 'local', id: activeShared ? activeShared.id : '', active: true}};
+    }
+    pushUndoSnapshot();
+    plSchedule(f, day, min, dur);
     closeModal(); renderAll();
   }
   document.getElementById('paSave').addEventListener('click', go);
   document.getElementById('paTitle').addEventListener('keydown', function(e){ if(e.key === 'Enter') go(); });
 }
 function exportPlannerIcs(){
+  plSrcs = allBoardSources();
   var week = plannerWeek || startOfWeek(new Date());
   var nDays = state.settings.planWeekend ? 7 : 5;
   var from = week.getTime(), to = new Date(week.getFullYear(), week.getMonth(), week.getDate() + nDays).getTime();
-  var events = state.tasks.filter(function(t){
-    if(t.archived || !t.scheduledAt) return false;
-    var ts = new Date(t.scheduledAt).getTime();
-    return ts >= from && ts < to;
+  var events = [];
+  plEach(function(t, src){
+    var at = !t.archived && planAt(t, plBoardOf(src));
+    if(!at) return;
+    var ts = new Date(at).getTime();
+    if(ts >= from && ts < to) events.push({t: t, at: at, min: plannedMinutes(t, plBoardOf(src))});
   });
   if(!events.length){ toast('Keine geplanten Blöcke in dieser Woche.'); return; }
   var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Work Board//DE'];
-  events.forEach(function(t){
-    var start = new Date(t.scheduledAt);
-    var end = new Date(start.getTime() + plannedMinutes(t) * 60000);
+  events.forEach(function(ev){
+    var t = ev.t;
+    var start = new Date(ev.at);
+    var end = new Date(start.getTime() + ev.min * 60000);
     lines.push('BEGIN:VEVENT', 'UID:' + t.id + '-plan@work-board', 'DTSTAMP:' + icsDate(new Date()), 'DTSTART:' + icsDate(start), 'DTEND:' + icsDate(end),
       'SUMMARY:' + icsText(t.title || 'Task'), 'DESCRIPTION:' + icsText((t.jiraKey ? t.jiraKey + ' ' : '') + (t.description || '').slice(0, 300)), 'END:VEVENT');
   });
@@ -18441,7 +18706,7 @@ function chatParseDateTime(str){
 function chatBrief(t){
   return {id: t.id, title: t.title, type: (TYPES[t.type] || TYPES.adhoc).label, priority: PRIORITIES[t.priority].label, column: (state.columns.find(function(c){ return c.id === t.columnId; }) || {}).name || '',
     due: t.dueDate || null, reporter: t.reporter || null, project: projectNameOf(t) || null, assignee: assigneeLabel(t) || null, tags: t.tags.length ? t.tags : undefined,
-    logged_min: Math.round(totalSeconds(t) / 60), estimate_min: t.estimatedMinutes || null, planned: t.scheduledAt ? {at: chatLocal(t.scheduledAt), minutes: plannedMinutes(t)} : null,
+    logged_min: Math.round(totalSeconds(t) / 60), estimate_min: t.estimatedMinutes || null, planned: planAt(t) ? {at: chatLocal(planAt(t)), minutes: plannedMinutes(t)} : null,
     done: !!t.completedAt || undefined, archived: t.archived || undefined, running: isRunning(t) || undefined};
 }
 function chatDay(str, fallback){
@@ -18459,7 +18724,7 @@ function chatExecRead(u){
         open: open.length, overdue: open.filter(function(t){ return t.dueDate && t.dueDate < today; }).length, due_today: open.filter(function(t){ return t.dueDate === today; }).map(chatBrief).slice(0, 10),
         running_timer: run ? {title: run.title, since_min: Math.round((Date.now() - new Date((myOpenSession(run) || {start: nowIso()}).start).getTime()) / 60000)} : null,
         logged_today_min: Math.round(timeTasks().reduce(function(s, t){ return s + secondsOnDate(t, today); }, 0) / 60),
-        planned_today: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).map(function(t){ return {title: t.title, at: chatLocal(t.scheduledAt), minutes: plannedMinutes(t)}; }),
+        planned_today: state.tasks.filter(function(t){ return !t.archived && planAt(t) && toDateInputValue(new Date(planAt(t))) === today; }).map(function(t){ return {title: t.title, at: chatLocal(planAt(t)), minutes: plannedMinutes(t)}; }),
         sla_risk: state.tasks.filter(function(t){ return slaLevel(t); }).length
       };
       return {content: JSON.stringify(res), view: {k: 'step', text: '📋 Board-Überblick abgefragt'}};
@@ -18526,7 +18791,7 @@ function chatExecRead(u){
       for(var d = new Date(f2 + 'T00:00:00'); toDateInputValue(d) <= t2 && days.length < 14; d.setDate(d.getDate() + 1)){
         var ds = toDateInputValue(d);
         days.push({date: ds, weekday: d.toLocaleDateString('de-CH', {weekday: 'long'}),
-          planned: state.tasks.filter(function(t){ return !t.archived && t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === ds; }).map(function(t){ var st = new Date(t.scheduledAt); return {title: t.title, from: chatLocal(t.scheduledAt).slice(11), to: plMinToTime(plDayMinutes(st) + plannedMinutes(t))}; }).sort(function(x, y){ return x.from < y.from ? -1 : 1; }),
+          planned: state.tasks.filter(function(t){ return !t.archived && planAt(t) && toDateInputValue(new Date(planAt(t))) === ds; }).map(function(t){ var st = new Date(planAt(t)); return {title: t.title, from: chatLocal(planAt(t)).slice(11), to: plMinToTime(plDayMinutes(st) + plannedMinutes(t))}; }).sort(function(x, y){ return x.from < y.from ? -1 : 1; }),
           booked_min: Math.round(timeTasks().reduce(function(s, t){ return s + secondsOnDate(t, ds); }, 0) / 60)});
       }
       return {content: JSON.stringify({work_hours: (state.settings.dyceWorkStart || '08:00') + '–' + (state.settings.dyceWorkEnd || '17:00'), days: days}), view: {k: 'step', text: '🗓 Planung ' + f2 + ' bis ' + t2 + ' abgefragt'}};
