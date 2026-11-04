@@ -311,6 +311,37 @@ knappe orange markiert; Schnellfilter „Frist gefährdet“. Ein Klick setzt di
 Erledigt/Behalten/Nächste Woche/Archivieren/Frist, 3. bis zu 3 Wochenziele, die in Mein Tag oben stehen und auf der Karte 🎯 tragen.
 Freitags ab 14 Uhr und Montagmorgen erinnert ein Hinweis, wenn der Rückblick noch fehlt (abschaltbar im letzten Schritt).
 
+## 👥 Personen (Warten auf & Gesprächsthemen), 📝 Meeting-Protokoll, 🔔 Mitteilungen & 🌙 Feierabend
+
+**Warten auf** (Task-Fenster unter „Status“, Rechtsklick „Warten auf…“): Auf wen wartest du, und wann willst du nachfassen
+(Morgen, in 3 Tagen, 1 Woche, 2 Wochen oder Datum)? Optional wandert der Task gleich in die Spalte „Wartet“. Ziehst du einen
+Task selbst nach „Wartet“, fragt ein Hinweis nach der Person. Die Karte zeigt ⏳ Name, am Nachfass-Tag rot. Dann meldet sich das
+Board (Hinweis und Mitteilung). Knöpfe: **✓ Antwort da** (Warten endet, Task geht zurück in Bearbeitung), **📨 Nachgefasst**
+(nächste Erinnerung in 3 Werktagen), **✉️** (fertige Erinnerungs-Mail, zählt als nachgefasst). Schnellfilter „Nachfassen“.
+Das Warten endet auch, wenn der Task erledigt oder aus „Wartet“ herausgezogen wird.
+
+**Gesprächsthemen** („Personen“ in der Seitenleiste, Task-Fenster „Mehr“ → „Mit Person besprechen…“, Befehlspalette):
+Sammle Punkte für das nächste Gespräch mit Chefin, Kollegen oder Kunden. Die Ansicht **Personen** zeigt pro Person die offenen
+Themen, worauf du bei ihr wartest und was ihr zugewiesen ist, oben alles, was heute nachzufassen ist. **🗣️ Gespräch** geht die
+Themen durch: abhaken, Ergebnis notieren, neue Themen oder Tasks daraus anlegen. Danach lässt sich eine Zusammenfassung kopieren.
+Gesprächsthemen werden zwischen deinen Geräten abgeglichen.
+
+**Meeting-Protokoll** (Meeting-Tasks im Task-Fenster, andere Tasks über „Mehr“ → „Protokoll anlegen“, beim Meeting-Start
+„📝 Protokoll“): Teilnehmende, Notizen, Beschlüsse und Aufgaben mit Verantwortlichen und Frist. Aufgaben für dich werden mit
+einem Klick zu Tasks, Aufgaben für andere zu Tasks mit „Warten auf“ (in der Spalte „Wartet“). Offene Gesprächsthemen der
+Teilnehmenden lassen sich ins Protokoll übernehmen. Das Protokoll kann kopiert oder als Mail verschickt werden.
+
+**Mitteilungen** (🔔 in der Seitenleiste, mit Zähler; auf dem Handy ein roter Punkt am Menü): sammelt Hinweise, die sonst nach
+ein paar Sekunden verschwinden: Erinnerungen, abgelaufene Kurzzeit-Timer, Wiedervorlagen, Nachfass-Termine, Erwähnungen in
+Kommentaren, Budget-Warnungen, gefährdete Fristen (einmal pro Tag) und Hinweise aus Regeln. Antippen öffnet den Task oder die
+Ansicht. Gespeichert nur auf diesem Gerät, 30 Tage lang.
+
+**Feierabend** (Seitenleiste, Befehlspalette): in 3 Schritten den Tag abschliessen. 1. Heute: erfasste Zeit gegen Soll,
+Lücken ohne Buchung (direkt in den Tagesabschluss), laufender Timer, Erledigtes. 2. Was kommt morgen (bzw. am nächsten
+Arbeitstag) auf Mein Tag: Offenes von heute, Wochenziele, fällige und nachzufassende Tasks. 3. Eine Notiz an dich selbst, die
+am nächsten Tag oben in Mein Tag steht. An Arbeitstagen ab 17 Uhr oder wenn die Sollzeit erreicht ist, erinnert ein Hinweis
+(abschaltbar im letzten Schritt).
+
 ## 📝 Seite pro Task (Whiteboard fürs Troubleshooting)
 
 Jeder Task hat eine eigene **Seite**, ähnlich wie in OneNote: eine freie Fläche, auf der Texte und Bilder
