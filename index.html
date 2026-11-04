@@ -1359,6 +1359,26 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
 .global-colname{margin-left:auto; font-size:11px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;}
 .card.global-card .card-top .prio{margin-left:0;}
 .card.global-card.done{opacity:.6;}
+/* Alle Boards übereinander */
+.overlay-head{align-items:flex-start;}
+.ov-title{flex:1; min-width:200px; padding-top:6px;}
+.ov-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.ov-seg{display:inline-flex; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;}
+.ov-seg .btn{border:0; border-radius:0; background:transparent;}
+.ov-seg .btn.on{background:var(--accent); color:#fff;}
+.ov-boards{flex-basis:100%; display:flex; gap:6px; flex-wrap:wrap; padding-bottom:4px;}
+.chip.ov-board{opacity:.55;}
+.chip.ov-board.on{opacity:1;}
+.chip.ov-board.current{cursor:default;}
+.ov-dot{display:inline-block; width:9px; height:9px; border-radius:50%; flex:none;}
+.card.ov-card{border-left:4px solid var(--ov-color, var(--accent));}
+.ov-badge{margin-left:auto; font-size:11px; font-weight:600; color:var(--ov-color); background:color-mix(in srgb, var(--ov-color) 14%, transparent); padding:1px 7px; border-radius:999px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;}
+@media (max-width:680px){
+  .ov-boards{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;}
+  .ov-boards .chip{flex:none;}
+  .ov-actions{width:100%;}
+  .ov-actions #overlayOff{margin-left:auto;}
+}
 .chip-check{cursor:pointer;}
 .chip-check input{margin:0; accent-color:var(--accent);}
 .tagpick-list{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:6px;}
@@ -4026,6 +4046,7 @@ function renderFilterBar(){
   if(!bar) return;
   var show = !showArchive && FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) < 0;
   var html = '';
+  if(show && allBoardSources().length > 1) html += '<button class="chip ov-toggle'+(overlayAll?' on':'')+'" data-overlay="1" title="Alle Boards übereinanderlegen und alle Tasks auf einem Board zeigen">🗂️ Alle Boards</button>';
   if(show){
     var pool = state.tasks.filter(function(t){ return !t.archived && !isSnoozed(t); });
     QUICK_FILTERS.forEach(function(f){
@@ -4046,7 +4067,7 @@ function renderFilterBar(){
     if(filterClient) html += '<button class="chip on" data-client="'+escapeAttr(filterClient)+'" title="Kundenfilter aufheben">🤝 '+escapeHtml(filterClient)+'</button>';
     var more = allFilterTags().length > tags.length || allClients().length;
     if(more || filterTag || filterClient) html += '<button class="chip" data-tag-picker="1" title="Alle Tags und Kunden zum Filtern">🏷️ Alle Tags …</button>';
-    if(globalFilterKey()) html += '<label class="chip chip-check'+(filterAllBoards?' on':'')+'" title="Zeigt alle Tasks mit diesem Filter aus allen deinen Boards auf einem Board"><input type="checkbox" data-all-boards="1"'+(filterAllBoards?' checked':'')+'> Über alle Boards</label>';
+    if(globalFilterKey() && !overlayAll) html += '<label class="chip chip-check'+(filterAllBoards?' on':'')+'" title="Zeigt alle Tasks mit diesem Filter aus allen deinen Boards auf einem Board"><input type="checkbox" data-all-boards="1"'+(filterAllBoards?' checked':'')+'> Über alle Boards</label>';
     if(Object.keys(quickFilters).length || filterTag || filterClient) html += '<button class="chip reset" data-qf-reset="1">Zurücksetzen</button>';
   }
   bar.innerHTML = html;
@@ -4055,6 +4076,7 @@ function renderFilterBar(){
 document.getElementById('filterBar').addEventListener('click', function(e){
   var btn = e.target.closest('button.chip');
   if(!btn) return;
+  if(btn.dataset.overlay){ setOverlayAll(!overlayAll); return; }
   if(btn.dataset.qf){
     if(quickFilters[btn.dataset.qf]) delete quickFilters[btn.dataset.qf]; else quickFilters[btn.dataset.qf] = true;
   } else if(btn.dataset.tag){
@@ -4229,6 +4251,188 @@ function openGlobalTask(src, taskId){
   else switchBoard(src.name);
   /* Wechsel setzt die Filter zurück: wieder herstellen, damit man nach dem Task zur Übersicht zurückkommt. */
   filterTag = keep.tag; filterClient = keep.client; filterProject = keep.project; filterAllBoards = true;
+  renderBoard();
+  if(src.kind === 'shared') toast('📋 Board gewechselt: ' + currentBoardName());
+  if(getTask(taskId)) openTaskModal(taskId);
+}
+/* =========================================================
+   ALLE BOARDS ÜBERLAGERN
+   Temporäre Ansicht: legt alle Boards (persönliche und geteilte) übereinander, sodass
+   alle Tasks auf einem Board stehen. Spalten mit gleichem Namen werden zusammengelegt,
+   jede Karte zeigt farbig, aus welchem Board sie stammt. Die Daten bleiben in ihren
+   Boards; ein Klick wechselt ins Board des Tasks und öffnet ihn dort, die Ansicht bleibt an.
+   ========================================================= */
+var overlayAll = false;
+var overlayGroup = 'status';
+var overlayHidden = {};
+try { var _ovp = JSON.parse(localStorage.getItem('wb-overlay-prefs') || '{}'); if(_ovp.group === 'board') overlayGroup = 'board'; if(_ovp.hidden && typeof _ovp.hidden === 'object') overlayHidden = _ovp.hidden; } catch(e){}
+function overlaySavePrefs(){ try { localStorage.setItem('wb-overlay-prefs', JSON.stringify({group: overlayGroup, hidden: overlayHidden})); } catch(e){} }
+var OVERLAY_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b'];
+function overlaySrcKey(src){ return (src.kind === 'shared' ? 's:' + src.id : 'l:' + src.name); }
+/* Jedes Board bekommt eine eigene Farbe: Ausgangspunkt ist ein Hash des Namens, bei
+   Kollisionen die nächste freie Farbe. Sortiert nach Schlüssel, damit die Farben stabil bleiben. */
+var overlayColorMap = {};
+function overlayAssignColors(sources){
+  overlayColorMap = {};
+  var used = {};
+  sources.map(overlaySrcKey).sort().forEach(function(k){
+    var h = 0;
+    for(var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+    var idx = h % OVERLAY_COLORS.length;
+    for(var j = 0; j < OVERLAY_COLORS.length && used[idx]; j++) idx = (idx + 1) % OVERLAY_COLORS.length;
+    used[idx] = true;
+    overlayColorMap[k] = OVERLAY_COLORS[idx];
+  });
+}
+function overlayColor(src){ return overlayColorMap[overlaySrcKey(src)] || OVERLAY_COLORS[0]; }
+function overlayActive(){
+  return overlayAll && !showArchive && FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) < 0;
+}
+function setOverlayAll(on){
+  overlayAll = !!on;
+  if(overlayAll && boardViewMode !== 'status' && FULL_VIEWS.concat(['calendar']).indexOf(boardViewMode) >= 0){
+    var sel = document.getElementById('boardViewSelect');
+    if(sel) sel.value = 'status';
+    setBoardViewMode('status');
+  }
+  if(overlayAll) showArchive = false;
+  renderBoard();
+  renderBoardMenu();
+  if(overlayAll && cloudReadyForSharing()) loadSharedBoards().then(function(){ if(overlayActive()) renderBoard(); });
+}
+function overlayColKey(c){ return String(c.name || '').trim().toLowerCase(); }
+function renderOverlayBoard(board){
+  board.innerHTML = '';
+  board.classList.add('global-mode', 'overlay-mode');
+  var sources = allBoardSources();
+  overlayAssignColors(sources);
+  var visible = sources.filter(function(src){ return !overlayHidden[overlaySrcKey(src)] || src.active; });
+  var total = 0;
+  var counts = {};
+  var items = [];
+  sources.forEach(function(src){
+    var cols = {};
+    src.columns.forEach(function(c){ cols[c.id] = c; });
+    var n = 0;
+    src.tasks.forEach(function(t){
+      if(!t || !Array.isArray(t.tags) || !taskMatchesFilters(t)) return;
+      n++;
+      if(visible.indexOf(src) >= 0){ items.push({src: src, t: t, col: cols[t.columnId] || null}); total++; }
+    });
+    counts[overlaySrcKey(src)] = n;
+  });
+
+  /* Kopfzeile: Titel, Board-Schalter, Gruppierung, Zurück */
+  var head = document.createElement('div');
+  head.className = 'global-head overlay-head';
+  var chips = sources.map(function(src){
+    var k = overlaySrcKey(src);
+    var on = src.active || !overlayHidden[k];
+    return '<button class="chip ov-board'+(on?' on':'')+(src.active?' current':'')+'" data-ov-board="'+escapeAttr(k)+'"'+(src.active?' disabled title="Aktuelles Board, immer sichtbar"':' title="Board ein- oder ausblenden"')+'>' +
+      '<span class="ov-dot" style="background:'+overlayColor(src)+'"></span>' + (src.kind === 'shared' ? '👥 ' : '') + escapeHtml(src.name) + '<b>' + (counts[k] || 0) + '</b></button>';
+  }).join('');
+  head.innerHTML =
+    '<div class="ov-title"><b>🗂️ Alle Boards übereinander</b><span class="hint"> · ' + total + (total === 1 ? ' Task' : ' Tasks') + ' aus ' + visible.length + ' von ' + sources.length + (sources.length === 1 ? ' Board' : ' Boards') +
+      (cloudReadyForSharing() && !sharedListLoaded ? ' · geteilte Boards laden noch …' : '') + '</span></div>' +
+    '<div class="ov-actions"><div class="ov-seg" role="group" aria-label="Spalten">' +
+      '<button class="btn'+(overlayGroup==='status'?' on':'')+'" data-ov-group="status">Nach Status</button>' +
+      '<button class="btn'+(overlayGroup==='board'?' on':'')+'" data-ov-group="board">Nach Board</button></div>' +
+      '<button class="btn primary" id="overlayOff">Nur ' + escapeHtml(currentBoardName()) + '</button></div>' +
+    '<div class="ov-boards">' + chips + '</div>';
+  board.appendChild(head);
+  head.querySelector('#overlayOff').addEventListener('click', function(){ setOverlayAll(false); });
+  head.querySelectorAll('[data-ov-group]').forEach(function(b){
+    b.addEventListener('click', function(){ overlayGroup = b.dataset.ovGroup; overlaySavePrefs(); renderBoard(); });
+  });
+  head.querySelectorAll('[data-ov-board]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var k = b.dataset.ovBoard;
+      if(overlayHidden[k]) delete overlayHidden[k]; else overlayHidden[k] = true;
+      overlaySavePrefs(); renderBoard();
+    });
+  });
+
+  /* Spalten bilden */
+  var lanes = [];
+  if(overlayGroup === 'board'){
+    visible.forEach(function(src){
+      lanes.push({key: overlaySrcKey(src), name: src.name, icon: src.kind === 'shared' ? '👥' : '📋', color: overlayColor(src), current: !!src.active,
+        items: items.filter(function(it){ return it.src === src; })});
+    });
+  } else {
+    var byKey = {};
+    var order = [];
+    var activeSrc = sources.filter(function(s){ return s.active; })[0];
+    var ordered = activeSrc ? [activeSrc].concat(visible.filter(function(s){ return s !== activeSrc; })) : visible;
+    ordered.forEach(function(src){
+      src.columns.forEach(function(c){
+        var k = overlayColKey(c);
+        if(!byKey[k]){ byKey[k] = {key: k, name: c.name, icon: c.icon, items: []}; order.push(k); }
+      });
+    });
+    items.forEach(function(it){
+      var k = it.col ? overlayColKey(it.col) : '';
+      if(!byKey[k]){ byKey[k] = {key: k, name: it.col ? it.col.name : 'Ohne Spalte', items: []}; order.push(k); }
+      byKey[k].items.push(it);
+    });
+    lanes = order.map(function(k){ return byKey[k]; }).filter(function(l){ return l.items.length || (activeSrc && activeSrc.columns.some(function(c){ return overlayColKey(c) === l.key; })); });
+  }
+
+  var wrap = document.createElement('div');
+  wrap.className = 'global-lanes';
+  lanes.forEach(function(lane){
+    lane.items.sort(function(a, b){ return (a.t.completedAt ? 1 : 0) - (b.t.completedAt ? 1 : 0) || compareRankPin(a.t, b.t); });
+    var colEl = document.createElement('div');
+    colEl.className = 'column global-col' + (lane.current ? ' current' : '');
+    colEl.innerHTML = '<div class="column-header">' + (lane.color ? '<span class="ov-dot" style="background:'+lane.color+'"></span>' : '') +
+      (lane.icon ? '<span>' + escapeHtml(lane.icon) + '</span>' : '') + '<span style="flex:1;">' + escapeHtml(lane.name) + '</span>' +
+      (lane.current ? '<span class="menu-hint">aktuelles Board</span>' : '') + '<span class="count">' + lane.items.length + '</span></div>';
+    var body = document.createElement('div');
+    body.className = 'column-body';
+    if(!lane.items.length) body.innerHTML = '<div class="empty-state">Keine Tasks.</div>';
+    lane.items.forEach(function(it){
+      var t = it.t, src = it.src;
+      /* cloneNode entfernt die Klick-, Zieh- und Timer-Handler von renderCard. */
+      var card = renderCard(t).cloneNode(true);
+      card.draggable = false;
+      card.classList.add('global-card', 'ov-card');
+      card.style.setProperty('--ov-color', overlayColor(src));
+      if(t.completedAt) card.classList.add('done');
+      var tb = card.querySelector('[data-action="toggle-timer"]');
+      if(tb && !src.active) tb.remove();
+      var top = card.querySelector('.card-top');
+      if(top){
+        var label = document.createElement('span');
+        if(overlayGroup === 'board'){
+          if(it.col){ label.className = 'global-colname'; label.textContent = (it.col.icon ? it.col.icon + ' ' : '') + it.col.name; }
+        } else {
+          label.className = 'ov-badge';
+          label.title = 'Aus Board: ' + src.name;
+          label.textContent = (src.kind === 'shared' ? '👥 ' : '') + src.name;
+        }
+        if(label.className) top.insertBefore(label, top.querySelector('.prio'));
+      }
+      card.addEventListener('click', function(e){
+        if(e.target.closest('[data-jira-link]')) return;
+        var t2 = e.target.closest('[data-action="toggle-timer"]');
+        if(t2){ e.stopPropagation(); if(isRunning(t)) stopTimer(t.id); else startTimer(t.id); return; }
+        openOverlayTask(src, t.id);
+      });
+      body.appendChild(card);
+    });
+    colEl.appendChild(body);
+    wrap.appendChild(colEl);
+  });
+  board.appendChild(wrap);
+}
+function openOverlayTask(src, taskId){
+  if(src.active){ openTaskModal(taskId); return; }
+  var keep = {tag: filterTag, client: filterClient, project: filterProject, qf: quickFilters};
+  if(src.kind === 'shared') enterSharedBoard(src.id);
+  else if(src.stash) leaveSharedBoard();
+  else switchBoard(src.name);
+  /* Wechsel setzt die Filter zurück: wieder herstellen, damit die Übersicht gleich bleibt. */
+  filterTag = keep.tag; filterClient = keep.client; filterProject = keep.project; quickFilters = keep.qf;
   renderBoard();
   if(src.kind === 'shared') toast('📋 Board gewechselt: ' + currentBoardName());
   if(getTask(taskId)) openTaskModal(taskId);
@@ -4524,6 +4728,8 @@ function renderBoard(){
   if(boardViewMode === 'people'){ renderPeopleView(); return; }
   if(boardViewMode === 'inbox'){ renderInboxView(); return; }
   if(boardViewMode === 'calendar'){ renderPlannerView(); return; }
+  board.classList.remove('overlay-mode');
+  if(overlayActive()){ renderOverlayBoard(board); return; }
   if(globalBoardActive()){ renderGlobalTagBoard(board); return; }
   /* board.innerHTML wird komplett neu aufgebaut (z.B. nach dem Schliessen
      eines Task-Fensters) - das würde ohne diese Rettung jede Spalte auf
@@ -13204,7 +13410,8 @@ function renderBoardMenu(){
   var menu = document.getElementById('boardMenu');
   if(!menu) return;
   var localNames = [state.settings.activeBoardName].concat(state.boards.map(function(b){ return b.name; }));
-  var html = '<div class="menu-label">Meine Boards</div>';
+  var html = '<button class="btn'+(overlayAll?' on':'')+'" data-bm-act="overlay">'+svgIcon('board')+'<span>Alle Boards übereinander</span>'+(overlayAll?'<span class="menu-hint">an</span>':'')+'</button><div class="sep"></div>' +
+    '<div class="menu-label">Meine Boards</div>';
   localNames.forEach(function(n){
     var on = !activeShared && n === state.settings.activeBoardName;
     html += '<button class="btn'+(on?' on':'')+'" data-bm-local="'+escapeAttr(n)+'">'+svgIcon('board')+'<span>'+escapeHtml(n)+'</span>'+(on?'<span class="menu-hint">aktiv</span>':'')+'</button>';
@@ -13247,6 +13454,7 @@ document.getElementById('boardMenu').addEventListener('click', function(e){
   if(!b) return;
   if(b.dataset.bmLocal) activateLocalBoard(b.dataset.bmLocal);
   else if(b.dataset.bmShared) enterSharedBoard(b.dataset.bmShared);
+  else if(b.dataset.bmAct === 'overlay'){ closeAllMenus(); setOverlayAll(!overlayAll); }
   else if(b.dataset.bmAct === 'new') openNewBoardDialog();
   else if(b.dataset.bmAct === 'members') openBoardMembers();
   else if(b.dataset.bmAct === 'settings'){ settingsActiveTab = 'board'; openSettings(); }
