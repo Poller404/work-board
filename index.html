@@ -684,6 +684,9 @@ table.dyce-table tfoot td{font-weight:800; border-top:2px solid var(--border); b
 .md-row.done .md-title{text-decoration:line-through; color:var(--text-dim);}
 .md-meta{font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .md-meta .overdue{color:var(--danger); font-weight:500;}
+.md-meta .md-board{color:var(--accent);}
+.md-meta .md-board.cur{color:var(--text-dim);}
+.md-scope{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px;}
 .md-time{font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; flex-shrink:0;}
 .md-btn{width:30px; height:30px; flex-shrink:0; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text-dim); display:grid; place-items:center; padding:0; cursor:pointer;}
 .md-btn:hover{border-color:var(--accent); color:var(--accent);}
@@ -6154,7 +6157,9 @@ function openMorningRitual(){
   openModal(html, {wide:true});
   document.getElementById('morningConfirmBtn').addEventListener('click', function(){
     var picked = Array.from(document.querySelectorAll('.morning-check:checked')).map(function(cb){ return cb.value; });
-    state.settings.todayFocusIds = picked;
+    /* Einträge aus anderen Boards (Mein Tag über alle Boards) bleiben stehen. */
+    var others = (state.settings.todayFocusIds || []).filter(function(id){ return !getTask(id) && picked.indexOf(id) < 0; });
+    state.settings.todayFocusIds = picked.concat(others);
     state.settings.todayFocusDate = today;
     save();
     renderAll();
@@ -6188,6 +6193,39 @@ function myDayRollover(){
 function myDayIds(){ myDayRollover(); return state.settings.todayFocusIds; }
 function myDayTasks(){ return myDayIds().map(getTask).filter(function(t){ return t && !t.archived; }); }
 function isInMyDay(id){ return myDayIds().indexOf(id) >= 0; }
+/* ---- Mein Tag über alle Boards ----
+   todayFocusIds ist persönlich (state.settings) und kann IDs aus allen Boards
+   enthalten, auch aus geteilten. Normal zeigt Mein Tag nur die Tasks des offenen
+   Boards; mit state.settings.myDayAllBoards alle, mit dem Board als Zusatz.
+   Abhaken, Timer und Öffnen bei einem Task aus einem anderen Board wechseln
+   zuerst in dieses Board, damit die Änderung dort gespeichert und (bei geteilten
+   Boards) synchronisiert wird. Vorschläge aus geteilten Boards nur, wenn der
+   Task niemand anderem zugewiesen ist (wie im Planer). */
+function myDayAll(){ return !!state.settings.myDayAllBoards; }
+function anyBoardTask(id){
+  var t = getTask(id);
+  if(t) return t;
+  var found = null;
+  allBoardSources().some(function(src){ found = src.tasks.find(function(x){ return x && x.id === id; }) || null; return !!found; });
+  return found;
+}
+function myDaySources(){
+  return myDayAll() ? allBoardSources() : [{kind: activeShared ? 'shared' : 'local', name: currentBoardName(), columns: state.columns, tasks: state.tasks, active: true}];
+}
+/* [{t, src}] in der Reihenfolge von Mein Tag. */
+function myDayEntries(){
+  var map = {};
+  myDaySources().forEach(function(src){
+    src.tasks.forEach(function(t){ if(t && !map[t.id]) map[t.id] = {t: t, src: src}; });
+  });
+  return myDayIds().map(function(id){ return map[id]; }).filter(function(e){ return e && !e.t.archived; });
+}
+function mdGoToBoard(src){
+  if(!src || src.active) return;
+  if(src.kind === 'shared') enterSharedBoard(src.id);
+  else if(src.stash) leaveSharedBoard();
+  else switchBoard(src.name);
+}
 function setMyDay(id, on){
   var ids = myDayIds();
   var i = ids.indexOf(id);
@@ -6219,26 +6257,42 @@ function myDaySuggestions(){
   var tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
   var tomorrow = toDateInputValue(tmr);
   var ids = myDayIds();
-  var open = state.tasks.filter(function(t){ return !t.archived && !t.completedAt && !isSnoozed(t) && ids.indexOf(t.id) < 0; });
+  var all = myDayAll(), me = myUserId();
+  var open = [], srcOf = {};
+  myDaySources().forEach(function(src){
+    src.tasks.forEach(function(t){
+      if(!t || srcOf[t.id] || t.archived || t.completedAt || isSnoozed(t) || ids.indexOf(t.id) >= 0) return;
+      if(all && src.kind === 'shared' && t.assigneeId && t.assigneeId !== me) return;
+      srcOf[t.id] = src;
+      open.push(t);
+    });
+  });
   var out = [], seen = {};
-  function add(t, why){ if(t && !seen[t.id] && open.indexOf(t) >= 0){ seen[t.id] = 1; out.push({t: t, why: why}); } }
+  function add(t, why){ if(t && !seen[t.id] && srcOf[t.id]){ seen[t.id] = 1; out.push({t: t, why: why, src: srcOf[t.id]}); } }
   var prevDate = state.settings.prevFocusDate || '';
   var y = new Date(); y.setDate(y.getDate() - 1);
   var prevLabel = prevDate === toDateInputValue(y) ? 'Von gestern' : (prevDate ? 'Vom ' + new Date(prevDate + 'T00:00').toLocaleDateString('de-CH', {day:'numeric', month:'numeric'}) : '');
-  (state.settings.prevFocusIds || []).forEach(function(id){ add(getTask(id), prevLabel); });
+  var byId = {};
+  open.forEach(function(t){ byId[t.id] = t; });
+  (state.settings.prevFocusIds || []).forEach(function(id){ add(byId[id], prevLabel); });
   open.filter(function(t){ return t.dueDate && t.dueDate < today; }).forEach(function(t){ add(t, 'Überfällig'); });
   open.filter(function(t){ return t.dueDate === today; }).forEach(function(t){ add(t, 'Heute fällig'); });
   open.filter(function(t){ return t.scheduledAt && toDateInputValue(new Date(t.scheduledAt)) === today; }).forEach(function(t){ add(t, 'Heute eingeplant'); });
-  var inProg = inProgressColumn();
-  open.filter(function(t){ return isRunning(t) || (inProg !== state.columns[0] && t.columnId === inProg.id); }).forEach(function(t){ add(t, 'In Bearbeitung'); });
+  open.filter(function(t){
+    if(isRunning(t)) return true;
+    var cols = srcOf[t.id].columns || [];
+    var ip = cols.find(function(c){ return /bearbeitung|progress|in arbeit/i.test(c.name); });
+    return !!ip && t.columnId === ip.id;
+  }).forEach(function(t){ add(t, 'In Bearbeitung'); });
   open.filter(function(t){ return t.pinned; }).forEach(function(t){ add(t, 'Angeheftet'); });
   open.filter(function(t){ return t.dueDate === tomorrow; }).forEach(function(t){ add(t, 'Morgen fällig'); });
-  return out.slice(0, 10);
+  return out.slice(0, all ? 15 : 10);
 }
-function myDayMeta(t, why){
-  var col = state.columns.find(function(c){ return c.id === t.columnId; });
+function myDayMeta(t, why, src){
+  var col = ((src && src.columns) || state.columns).find(function(c){ return c.id === t.columnId; });
   var parts = [];
   if(why) parts.push('<b>' + escapeHtml(why) + '</b>');
+  if(src && myDayAll()) parts.push('<span class="md-board' + (src.active ? ' cur' : '') + '">' + (src.kind === 'shared' ? '👥 ' : '📋 ') + escapeHtml(src.name || 'Board') + '</span>');
   if(t.jiraKey) parts.push(escapeHtml(t.jiraKey));
   if(col && !t.completedAt && col.name !== why) parts.push(escapeHtml(col.name));
   if(t.dueDate && !t.completedAt && !/fällig/i.test(why || '')){
@@ -6255,18 +6309,31 @@ function renderMyDayView(){
   board.innerHTML = '';
   board.classList.remove('compact');
   var now = new Date();
-  var list = myDayTasks();
+  var all = myDayAll();
+  var entries = myDayEntries();
+  var srcById = {};
+  entries.forEach(function(e){ srcById[e.t.id] = e.src; });
+  var list = entries.map(function(e){ return e.t; });
   var open = list.filter(function(t){ return !t.completedAt; });
   var done = list.filter(function(t){ return t.completedAt; });
+  var sourceCount = allBoardSources().length;
+  var showToggle = all || sourceCount > 1;
+  var boardsWith = {};
+  entries.forEach(function(e){ boardsWith[(e.src.kind || '') + ':' + (e.src.id || e.src.name)] = 1; });
+  var boardsWithN = Object.keys(boardsWith).length;
   var pct = list.length ? Math.round(done.length / list.length * 100) : 0;
   var dayStart = startOfDay(now).getTime();
   var todaySec = timeTasks().reduce(function(s, x){ return s + secondsInRange(x, dayStart, Date.now()); }, 0);
+  if(all) allBoardSources().forEach(function(src){
+    if(!src.active) src.tasks.forEach(function(x){ if(x && Array.isArray(x.timeSessions)) todaySec += secondsInRange(x, dayStart, Date.now()); });
+  });
   var sugg = myDayShowSuggest ? myDaySuggestions() : [];
+  sugg.forEach(function(x){ srcById[x.t.id] = x.src; });
   function row(t){
     var isDone = !!t.completedAt, run = isRunning(t), sec = totalSeconds(t);
     return '<div class="md-row' + (isDone ? ' done' : '') + (run ? ' run' : '') + '" data-md-row="' + t.id + '"' + (isDone ? '' : ' draggable="true"') + '>' +
       '<button class="md-check" data-md-done="' + t.id + '" title="' + (isDone ? 'Wieder öffnen' : 'Als erledigt markieren') + '" aria-label="' + (isDone ? 'Wieder öffnen' : 'Erledigt') + '">✓</button>' +
-      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t) + '</div></div>' +
+      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t, '', srcById[t.id]) + '</div></div>' +
       (sec ? '<span class="md-time">' + fmtHM(sec) + '</span>' : '') +
       (!isDone ? '<button class="md-btn' + (run ? ' on' : '') + '" data-md-timer="' + t.id + '" title="' + (run ? 'Pause' : 'Timer starten') + '" aria-label="' + (run ? 'Pause' : 'Start') + '">' + svgIcon(run ? 'pause' : 'play') + '</button>' : '') +
       '<button class="md-btn sun" data-md-remove="' + t.id + '" title="Aus Mein Tag entfernen" aria-label="Aus Mein Tag entfernen">' + svgIcon('sun') + '</button>' +
@@ -6276,7 +6343,7 @@ function renderMyDayView(){
     var t = s.t;
     return '<div class="md-row" data-md-sugg="' + t.id + '">' +
       '<button class="md-btn add" data-md-add="' + t.id + '" title="Zu Mein Tag hinzufügen" aria-label="Zu Mein Tag hinzufügen">' + svgIcon('plus') + '</button>' +
-      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t, s.why) + '</div></div>' +
+      '<div class="md-main" data-md-open="' + t.id + '"><div class="md-title">' + escapeHtml(t.title) + '</div><div class="md-meta">' + myDayMeta(t, s.why, s.src) + '</div></div>' +
     '</div>';
   }
   var dateLabel = now.toLocaleDateString('de-CH', {weekday:'long', day:'numeric', month:'long'});
@@ -6294,7 +6361,13 @@ function renderMyDayView(){
     '<div class="md-list md-goals">' + goals.map(grow).join('') + '</div>' : '';
   board.innerHTML = '<div class="dash md-wrap">' +
     '<div class="dash-head"><div><h1>☀️ Mein Tag</h1><p>' + escapeHtml(dateLabel) + ' · ' +
-      (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p>' + loadBadgeHtml() + '</div>' +
+      (list.length ? done.length + ' von ' + list.length + ' erledigt' : 'noch nichts geplant') + ' · heute ' + fmtHM(todaySec) + ' erfasst</p>' +
+      (showToggle ? '<div class="md-scope"><div class="seg" role="group" aria-label="Welche Boards zeigen">' +
+        '<button class="seg-btn' + (all ? '' : ' on') + '" data-md-scope="one" title="Nur Tasks aus dem offenen Board">Dieses Board</button>' +
+        '<button class="seg-btn' + (all ? ' on' : '') + '" data-md-scope="all" title="Mein-Tag-Tasks aus allen deinen Boards, auch geteilten">🌐 Alle Boards</button></div>' +
+        (all ? '<span class="hint">' + (list.length ? 'aus ' + boardsWithN + ' von ' + sourceCount + (sourceCount === 1 ? ' Board' : ' Boards') : sourceCount + (sourceCount === 1 ? ' Board' : ' Boards')) +
+          (cloudReadyForSharing() && !sharedListLoaded ? ' · geteilte Boards laden noch …' : '') + '</span>' : '') + '</div>' : '') +
+      loadBadgeHtml() + '</div>' +
       '<div class="dash-actions"><button class="btn" id="mdPip" title="Mein Tag und Timer in einem kleinen Fenster, das immer im Vordergrund bleibt">' + svgIcon('pip') + '<span>Kleines Fenster</span></button>' +
       '<button class="btn" id="mdAutopilot" title="Zeitblöcke für heute im Planer verteilen">✨ Zeiten planen</button>' +
       (goals.length ? '' : '<button class="btn" id="mdReview" title="Woche durchgehen, aufräumen und bis zu 3 Wochenziele setzen">🗓️ Wochenrückblick</button>') + '</div></div>' +
@@ -6314,8 +6387,25 @@ function renderMyDayView(){
 
   var wrap = board.querySelector('.md-wrap');
   wrap.addEventListener('click', function(e){
-    var el = e.target.closest('[data-md-done], [data-md-open], [data-md-timer], [data-md-remove], [data-md-add], #mdPip, #mdAutopilot, #mdSuggToggle, #mdReview');
+    var el = e.target.closest('[data-md-done], [data-md-open], [data-md-timer], [data-md-remove], [data-md-add], [data-md-scope], #mdPip, #mdAutopilot, #mdSuggToggle, #mdReview');
     if(!el) return;
+    if(el.dataset.mdScope){
+      state.settings.myDayAllBoards = el.dataset.mdScope === 'all';
+      save(); renderMyDayView(); return;
+    }
+    var fid = el.dataset.mdDone || el.dataset.mdTimer || el.dataset.mdOpen;
+    var fsrc = fid && srcById[fid];
+    if(fsrc && !fsrc.active){
+      /* Task aus einem anderen Board: erst dorthin wechseln, dann ausführen. */
+      if(el.dataset.mdTimer && state.settings.activeTaskId) stopTimer(state.settings.activeTaskId, true);
+      mdGoToBoard(fsrc);
+      var ft = getTask(fid);
+      if(!ft){ toast('Dieses Board ist gerade nicht verfügbar.'); renderAll(); return; }
+      if(el.dataset.mdDone){ setTaskDone(ft.id, !ft.completedAt); renderAll(); }
+      else if(el.dataset.mdTimer){ if(isRunning(ft)) stopTimer(ft.id); else startTimer(ft.id); renderAll(); }
+      else { renderAll(); openTaskModal(ft.id); }
+      return;
+    }
     if(el.dataset.mdDone){ var dt = getTask(el.dataset.mdDone); if(dt) setTaskDone(dt.id, !dt.completedAt); renderAll(); }
     else if(el.dataset.mdTimer){ var tt = getTask(el.dataset.mdTimer); if(tt){ if(isRunning(tt)) stopTimer(tt.id); else startTimer(tt.id); } }
     else if(el.dataset.mdRemove){ setMyDay(el.dataset.mdRemove, false); renderAll(); }
@@ -7247,7 +7337,7 @@ function sdDayLabel(ds){
 function sdApplyPlan(s, today){
   var p = s.tomorrowPlan;
   if(!p || typeof p !== 'object' || !Array.isArray(p.ids) || typeof p.date !== 'string' || p.date > today) return;
-  s.todayFocusIds = p.ids.filter(function(id, i, arr){ var t = getTask(id); return typeof id === 'string' && arr.indexOf(id) === i && t && !t.archived && !t.completedAt; }).slice(0, 30);
+  s.todayFocusIds = p.ids.filter(function(id, i, arr){ var t = anyBoardTask(id); return typeof id === 'string' && arr.indexOf(id) === i && t && !t.archived && !t.completedAt; }).slice(0, 30);
   delete s.tomorrowPlan;
   sdPlanApplied = s.todayFocusIds.length;
   save();
@@ -13166,6 +13256,14 @@ function leaveSharedBoard(silent){
   if(!sb) return;
   if(state.settings.activeTaskId) stopTimer(state.settings.activeTaskId, true);
   checkinShared();
+  /* loadSharedBoards kann die Liste inzwischen durch neue Objekte ersetzt haben:
+     den Eintrag auf den Stand dieses Boards bringen, damit Übersichten über alle
+     Boards (Mein Tag, Filter) nach dem Verlassen nicht alte Tasks zeigen. */
+  var li = sharedList.findIndex(function(x){ return x.id === sb.id; });
+  if(li >= 0 && sharedList[li] !== sb && (sb.version || 0) >= (sharedList[li].version || 0)){
+    sharedList[li].content = sb.content;
+    sharedList[li].name = sb.name;
+  }
   sharedCacheSave(sb);
   sharedSync(0, sb);
   state.settings.activeSharedBoardId = '';
